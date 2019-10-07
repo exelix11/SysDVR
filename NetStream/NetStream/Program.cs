@@ -1,9 +1,15 @@
-﻿using libusbK;
+﻿
+//#define PRINT_DEBUG
+#define PLAY_STATS
+
+using libusbK;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace NetStream
 {
@@ -16,8 +22,6 @@ namespace NetStream
 		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBA5EBA11);
 		const int VbufSz = 0x32000;
 		const int AbufSz = 0x1000;
-
-		const bool PrintDebug = false;
 
 		interface IOutTarget : IDisposable
 		{
@@ -70,6 +74,46 @@ namespace NetStream
 			}
 		}
 
+		class StdInMPV : IOutTarget
+		{
+			Process proc;
+
+			public StdInMPV(string path, string args)
+			{
+				ProcessStartInfo p = new ProcessStartInfo()
+				{
+					Arguments = " - " + args,
+					FileName = path,
+					RedirectStandardInput = true,
+				};
+				proc = Process.Start(p);
+			}
+
+			public void Dispose()
+			{
+				if (!proc.HasExited)
+					proc.Kill(); 
+			}
+
+			public void SendData(byte[] data, int offset, int size)
+			{
+				proc.StandardInput.BaseStream.Write(data, offset, size);
+			}
+		}
+
+		class NullTarget : IOutTarget
+		{
+			public void Dispose()
+			{
+
+			}
+
+			public void SendData(byte[] data, int offset, int size)
+			{
+
+			}
+		}
+
 		static UsbDevStream GetDevice() 
 		{
 			var pat = new KLST_PATTERN_MATCH { DeviceID = @"USB\VID_057E&PID_3000" };
@@ -78,6 +122,10 @@ namespace NetStream
 			return new UsbDevStream(dinfo);
 		}
 
+#if PLAY_STATS
+		static long TransfersPerSecond = 0;
+		static long BytesPerSecond = 0;
+#endif
 		static bool StreamLoop(IOutTarget VTarget, UsbDevStream stream, IOutTarget ATarget = null)
 		{
 			bool FirstPacket = true;
@@ -108,13 +156,14 @@ namespace NetStream
 				while (true)
 				{
 					if (Console.KeyAvailable) return true;
-					
+
 					stream.Write(ATarget == null ? REQMagic : REQMagic_AUDIO);
 
 					var size = ReadToSharedArray();
 					if (size > VbufSz || size == 0)
 					{
 						Console.WriteLine($"Discarding vid packet of size {size}");
+						stream.Flush();
 					}
 					else
 					{
@@ -131,8 +180,14 @@ namespace NetStream
 
 						VTarget.SendData(data, 0, (int)size);
 						FreeBuffer();
-						if (PrintDebug)
+						#if PRINT_DEBUG
 							Console.WriteLine($"video {size}");
+						#endif
+						
+						#if PLAY_STATS
+							TransfersPerSecond++;
+							BytesPerSecond += size;
+						#endif
 					}
 
 					if (ATarget == null) continue;
@@ -141,13 +196,20 @@ namespace NetStream
 					if (size > AbufSz || size == 0)
 					{
 						Console.WriteLine($"Discarding aud packet of size {size}");
+						stream.Flush();
 					}
 					else
 					{
 						ATarget.SendData(data, 0, (int)size);
 						FreeBuffer();
-						if (PrintDebug)
+						#if PRINT_DEBUG
 							Console.WriteLine($"audio {size}");
+						#endif
+						
+						#if PLAY_STATS
+							TransfersPerSecond++;
+							BytesPerSecond += size;
+						#endif
 					}
 				}
 			}
@@ -183,6 +245,10 @@ namespace NetStream
 					VTarget = new OutFileTarget(args[1]);
 				else if (args[0] == "tcp")
 					VTarget = new TCPTarget(System.Net.IPAddress.Any, int.Parse(args[1]));
+				else if (args[0] == "mpv")
+					VTarget = new StdInMPV(@"D:\E\Downloads\mpv\mpv", "--no-correct-pts --fps=30 --cache=no --cache-secs=0");
+				else if (args[0] == "null")
+					VTarget = new NullTarget();
 				else throw new Exception("Unknown video method");
 
 				if (args[2] == "file")
@@ -193,13 +259,27 @@ namespace NetStream
 					ATarget = null;
 				else throw new Exception("Unknown audio method");
 
+				#if PLAY_STATS
+					Timer t = new Timer(delegate (object o) 
+					{
+					if (Console.CursorTop > 0)
+						Console.SetCursorPosition(0, Console.CursorTop - 1);
+						Console.WriteLine($"Transfers : {TransfersPerSecond} {BytesPerSecond / 1024} KB/s |");
+						TransfersPerSecond = 0;
+						BytesPerSecond = 0;
+					},null,1000,1000);
+				#endif
+
 				var stream = GetDevice();
 				var res = StreamLoop(VTarget, stream, ATarget);
 
 				VTarget?.Dispose();
 				ATarget?.Dispose();
-
-				if (res) break;
+				
+#if DEBUG
+				if (res)
+#endif
+					break;
 			}
 		}
 	}
