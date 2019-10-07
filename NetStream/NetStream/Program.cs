@@ -15,6 +15,9 @@ namespace NetStream
 		static readonly byte[] REQMagic = BitConverter.GetBytes(0xDEADCAFE);
 		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBA5EBA11);
 		const int VbufSz = 0x32000;
+		const int AbufSz = 0x1000;
+
+		const bool PrintDebug = false;
 
 		interface IOutTarget : IDisposable
 		{
@@ -128,12 +131,14 @@ namespace NetStream
 
 						VTarget.SendData(data, 0, (int)size);
 						FreeBuffer();
+						if (PrintDebug)
+							Console.WriteLine($"video {size}");
 					}
 
 					if (ATarget == null) continue;
 					
 					size = ReadToSharedArray();
-					if (size > VbufSz || size == 0)
+					if (size > AbufSz || size == 0)
 					{
 						Console.WriteLine($"Discarding aud packet of size {size}");
 					}
@@ -141,6 +146,8 @@ namespace NetStream
 					{
 						ATarget.SendData(data, 0, (int)size);
 						FreeBuffer();
+						if (PrintDebug)
+							Console.WriteLine($"audio {size}");
 					}
 				}
 			}
@@ -162,7 +169,7 @@ namespace NetStream
 				"Note that tcp initialization will block till a program connects\r\n\r\n" +
 				"Useful commands: \r\n" +
 				"mpv tcp://localhost:1337 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
-				"mpv tcp://localhost:1338 --no-video --demuxer=rawaudio");
+				"mpv tcp://localhost:1338 --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000");
 				return;
 			}
 
