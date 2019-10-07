@@ -1,15 +1,16 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <tuple>
+#include <thread>   
 #include <switch.h>
 
 #include "usb.h"
 #include "USBSerialInterface.h"
 
 #if !__SWITCH__
+//Silence visual studio errors
 #define __attribute__(x) 
 #endif
+#include <mutex>
 
 void StopRecording();
 
@@ -37,7 +38,6 @@ void __libnx_initheap(void)
 	fake_heap_end   = (char*)addr + size;
 }
 
-// Init/exit services, update as needed.
 void __attribute__((weak)) __appInit(void)
 {
 	svcSleepThread(1E+10);
@@ -102,9 +102,13 @@ void UsbInit()
 }
 
 const int VbufSz = 0x32000;
+const int AbufSz = 0x1000;
 const u32 REQMAGIC = 0xDEADCAFE;
 const u32 REQMAGIC_AUD = 0xBA5EBA11;
 u8* Vbuf = nullptr;
+u8* Abuf = nullptr;
+u32 VOutSz = 0;
+u32 AOutSz = 0;
 
 bool g_recInited = false;
 void InitRecording() 
@@ -123,6 +127,10 @@ void InitRecording()
 	if (!Vbuf)
 		fatalSimple(MAKERESULT(1, 40));
 
+	Abuf = new (std::align_val_t(0x1000))  u8[AbufSz];
+	if (!Vbuf)
+		fatalSimple(MAKERESULT(1, 50));
+
 	g_recInited = true;
 }
 
@@ -131,10 +139,11 @@ void StopRecording()
 	if (!g_recInited) return;
 	grcdExit();
 	delete[] Vbuf;
+	delete[] Abuf;
 	g_recInited = false;
 }
 
-u32 WaitForInputReq()
+static u32 WaitForInputReq()
 {
 	while (true)
 	{
@@ -150,22 +159,34 @@ u32 WaitForInputReq()
 	return 0;
 }
 
-int GetAndSendStream(GrcStream stream)
+static void ReadStream(GrcStream stream)
 {
 	u32 unk = 0;
-	u32 size = 0;
 	u64 timestamp = 0;
 
-	auto res = grcdRead(stream, Vbuf, VbufSz, &unk, &size, &timestamp);
-	if (R_FAILED(res) || size <= 0)
+	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	u32 BufSz = stream == GrcStream_Video ? VbufSz : AbufSz;
+	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+
+	auto res = grcdRead(stream, TargetBuf, BufSz, &unk, size, &timestamp);
+	if (R_FAILED(res) || *size <= 0)
+		*size = 0;
+}
+
+static int SendStream(GrcStream stream)
+{
+	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+
+	if (*size <= 0)
 	{
-		size = 0;
-		serial_interface->write((char*)&size, sizeof(size), (u64)1e+9);
+		*size = 0;
+		serial_interface->write((char*)size, sizeof(*size), (u64)1e+8);
 		return 1;
 	}
 
-	if (serial_interface->write((char*)&size, sizeof(size), (u64)1e+8) != sizeof(size)) return 1;
-	if (serial_interface->write((char*)Vbuf, size, (u64)2E+9) != size) return 1;
+	if (serial_interface->write((char*)size, sizeof(*size), (u64)1e+8) != sizeof(*size)) return 1;
+	if (serial_interface->write((char*)TargetBuf, *size, (u64)2E+9) != *size) return 1;
 	return 0;
 }
 
@@ -182,18 +203,22 @@ int main(int argc, char* argv[])
 	while (true)
 	{
 		auto cmd = WaitForInputReq();
-		
+
 		if (cmd == REQMAGIC)
 		{
-			if (GetAndSendStream(GrcStream_Video))
+			ReadStream(GrcStream_Video);
+			if (SendStream(GrcStream_Video))
 				svcSleepThread(10000000); // 10ms
 			continue;
 		}
 		else if (cmd == REQMAGIC_AUD) 
 		{
-			GetAndSendStream(GrcStream_Video);
-			GetAndSendStream(GrcStream_Audio);
+			ReadStream(GrcStream_Video);
+			ReadStream(GrcStream_Audio);
+			SendStream(GrcStream_Video);
+			SendStream(GrcStream_Audio);
 		}
+		else fatalSimple(MAKERESULT(1, 80));
 	}
 	
     return 0;
