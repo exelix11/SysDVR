@@ -2,7 +2,7 @@
   "profiles": {
     "NetStream": {
       "commandName": "Project",
-      "commandLineArgs": "tcp 1337 file F:/aud.raw"
+      "commandLineArgs": "null null tcp 1338"
     }
   }
 }
