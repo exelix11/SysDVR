@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace NetStream
 {
@@ -18,10 +19,16 @@ namespace NetStream
 		static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 		static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
-		static readonly byte[] REQMagic = BitConverter.GetBytes(0xDEADCAFE);
-		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBA5EBA11);
-		const int VbufSz = 0x32000;
-		const int AbufSz = 0x1000;
+		enum StreamKind 
+		{
+			Video,
+			Audio
+		};
+
+		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
+		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBBBBBBBB);
+		const int VbufMaxSz = 0x32000;
+		const int AbufMaxSz = 0x1000 * 10;
 
 		interface IOutTarget : IDisposable
 		{
@@ -101,34 +108,45 @@ namespace NetStream
 			}
 		}
 
-		class NullTarget : IOutTarget
-		{
-			public void Dispose()
-			{
-
-			}
-
-			public void SendData(byte[] data, int offset, int size)
-			{
-
-			}
-		}
-
-		static UsbDevStream GetDevice() 
+		static UsbDevice GetDevice() 
 		{
 			var pat = new KLST_PATTERN_MATCH { DeviceID = @"USB\VID_057E&PID_3000" };
 			var lst = new LstK(0, ref pat);
 			lst.MoveNext(out var dinfo);
-			return new UsbDevStream(dinfo);
+			return new UsbDevice(dinfo);
 		}
 
-#if PLAY_STATS
-		static long TransfersPerSecond = 0;
-		static long BytesPerSecond = 0;
-#endif
-		static bool StreamLoop(IOutTarget VTarget, UsbDevStream stream, IOutTarget ATarget = null)
+
+		static bool StreamLoop(IOutTarget Target, UsbDevStream stream, StreamKind kind)
 		{
-			bool FirstPacket = true;
+#if PLAY_STATS
+			Stopwatch ThreadTimer = new Stopwatch();
+			long TransfersPerSecond = 0;
+			long BytesPerSecond = 0;
+			ThreadTimer.Start();
+
+			void UpdatePlayStats() 
+			{
+				if (ThreadTimer.ElapsedMilliseconds < 1000) return;
+				ThreadTimer.Stop();
+				Console.WriteLine($"{kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
+				TransfersPerSecond = 0;
+				BytesPerSecond = 0;
+				ThreadTimer.Restart();
+			}
+#endif
+
+			byte[] ReqMagic = kind == StreamKind.Video ? REQMagic_VIDEO : REQMagic_AUDIO;
+			int MaxBufSize = kind == StreamKind.Video ? VbufMaxSz : AbufMaxSz;
+
+			//For video start by sending an SPS and PPS packet to set the resolution, these packets are only sent when launching a game
+			//Not sure if they're the same for every game, likely yes due to hardware encoding
+			if (kind == StreamKind.Video)
+			{
+				Target.SendData(SPS);
+				Target.SendData(PPS);
+			}
+
 			byte[] SizeBuf = new byte[4];
 			ArrayPool<byte> sh = ArrayPool<byte>.Create();
 			byte[] data = null;
@@ -137,7 +155,7 @@ namespace NetStream
 			{
 				stream.Read(SizeBuf);
 				var size = BitConverter.ToUInt32(SizeBuf);
-				if (size > VbufSz || size == 0) return size;
+				if (size > MaxBufSize || size == 0) return size;
 
 				data = sh.Rent((int)size);
 				stream.Read(data, 0, (int)size);
@@ -153,32 +171,19 @@ namespace NetStream
 
 			try
 			{
-				while (true)
+				while (!Console.KeyAvailable)
 				{
-					if (Console.KeyAvailable) return true;
-
-					stream.Write(ATarget == null ? REQMagic : REQMagic_AUDIO);
+					stream.Write(ReqMagic);
 
 					var size = ReadToSharedArray();
-					if (size > VbufSz || size == 0)
+					if (size > MaxBufSize || size == 0)
 					{
-						Console.WriteLine($"Discarding vid packet of size {size}");
+						Console.WriteLine($"Discarding {kind} packet of size {size}");
 						stream.Flush();
 					}
 					else
 					{
-						if (FirstPacket)
-						{
-							if (!data.Matches(0, SPS, 0, 5))
-							{
-								Console.WriteLine("Warning: Couldn't find SPS NAL, the built-in one will be used. Image artifacts may occour");
-								VTarget.SendData(SPS);
-								VTarget.SendData(PPS);
-							}
-							FirstPacket = false;
-						}
-
-						VTarget.SendData(data, 0, (int)size);
+						Target.SendData(data, 0, (int)size);
 						FreeBuffer();
 						#if PRINT_DEBUG
 							Console.WriteLine($"video {size}");
@@ -187,28 +192,7 @@ namespace NetStream
 						#if PLAY_STATS
 							TransfersPerSecond++;
 							BytesPerSecond += size;
-						#endif
-					}
-
-					if (ATarget == null) continue;
-					
-					size = ReadToSharedArray();
-					if (size > AbufSz || size == 0)
-					{
-						Console.WriteLine($"Discarding aud packet of size {size}");
-						stream.Flush();
-					}
-					else
-					{
-						ATarget.SendData(data, 0, (int)size);
-						FreeBuffer();
-						#if PRINT_DEBUG
-							Console.WriteLine($"audio {size}");
-						#endif
-						
-						#if PLAY_STATS
-							TransfersPerSecond++;
-							BytesPerSecond += size;
+							UpdatePlayStats();
 						#endif
 					}
 				}
@@ -235,52 +219,49 @@ namespace NetStream
 				return;
 			}
 
-			while (true)
+			IOutTarget VTarget = null;
+			IOutTarget ATarget = null;
+
+			int AudioArgsStart = 2;
+
+			if (args[0] == "file")
+				VTarget = new OutFileTarget(args[1]);
+			else if (args[0] == "tcp")
+				VTarget = new TCPTarget(System.Net.IPAddress.Any, int.Parse(args[1]));
+			else if (args[0] == "mpv")
+				VTarget = new StdInMPV(args[1], "--no-correct-pts --fps=30 --cache=no --cache-secs=0");
+			else if (args[0] == "null")
 			{
-				//IVideoTarget Target = new OutFileTarget("F:/vid.264");
-				IOutTarget VTarget = null;
-				IOutTarget ATarget = null;
-
-				if (args[0] == "file")
-					VTarget = new OutFileTarget(args[1]);
-				else if (args[0] == "tcp")
-					VTarget = new TCPTarget(System.Net.IPAddress.Any, int.Parse(args[1]));
-				else if (args[0] == "mpv")
-					VTarget = new StdInMPV(@"D:\E\Downloads\mpv\mpv", "--no-correct-pts --fps=30 --cache=no --cache-secs=0");
-				else if (args[0] == "null")
-					VTarget = new NullTarget();
-				else throw new Exception("Unknown video method");
-
-				if (args[2] == "file")
-					ATarget = new OutFileTarget(args[3]);
-				else if (args[2] == "tcp")
-					ATarget = new TCPTarget(System.Net.IPAddress.Any, int.Parse(args[3]));
-				else if (args[2] == "null")
-					ATarget = null;
-				else throw new Exception("Unknown audio method");
-
-				#if PLAY_STATS
-					Timer t = new Timer(delegate (object o) 
-					{
-					if (Console.CursorTop > 0)
-						Console.SetCursorPosition(0, Console.CursorTop - 1);
-						Console.WriteLine($"Transfers : {TransfersPerSecond} {BytesPerSecond / 1024} KB/s |");
-						TransfersPerSecond = 0;
-						BytesPerSecond = 0;
-					},null,1000,1000);
-				#endif
-
-				var stream = GetDevice();
-				var res = StreamLoop(VTarget, stream, ATarget);
-
-				VTarget?.Dispose();
-				ATarget?.Dispose();
-				
-#if DEBUG
-				if (res)
-#endif
-					break;
+				VTarget = null;
+				AudioArgsStart = 1;
 			}
+			else throw new Exception("Unknown video method");
+
+			if (args[AudioArgsStart] == "file")
+				ATarget = new OutFileTarget(args[AudioArgsStart + 1]);
+			else if (args[AudioArgsStart] == "tcp")
+				ATarget = new TCPTarget(System.Net.IPAddress.Any, int.Parse(args[AudioArgsStart + 1]));
+			else if (args[AudioArgsStart] == "null")
+				ATarget = null;
+			else if (args[AudioArgsStart] == "mpv")
+				ATarget = new StdInMPV(args[AudioArgsStart + 1], "--no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000");
+			else throw new Exception("Unknown audio method");
+
+			var stream = GetDevice();
+
+			var VTask =
+				VTarget == null ? Task.CompletedTask :
+				Task.Run(() => StreamLoop(VTarget, stream.OpenStreamDefault(), StreamKind.Video));
+
+			var ATask =
+				ATarget == null ? Task.CompletedTask :
+				Task.Run(() => StreamLoop(ATarget, stream.OpenStreamAlt(), StreamKind.Audio));
+
+			Task.WaitAll(VTask, ATask);
+
+			VTarget?.Dispose();
+			ATarget?.Dispose();
+
 		}
 	}
 
