@@ -210,8 +210,8 @@ namespace NetStream
 			if (args.Length < 3)
 			{
 				Console.WriteLine("Usage: \r\n" +
-				"NetStream <video method> <video file/port> <audio method> <audio file/port>\r\n" +
-				"Method is either file, tcp or null (only for audio)\r\n" +
+				"NetStream <video method> <video file/port/mpv path> <audio method> <audio file/port/mpv path>\r\n" +
+				"Method is either mpv, file, tcp or null (only for audio)\r\n" +
 				"Note that tcp initialization will block till a program connects\r\n\r\n" +
 				"Useful commands: \r\n" +
 				"mpv tcp://localhost:1337 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
@@ -249,17 +249,20 @@ namespace NetStream
 
 			var stream = GetDevice();
 
-			var VTask =
-				VTarget == null ? Task.CompletedTask :
-				Task.Run(() => StreamLoop(VTarget, stream.OpenStreamDefault(), StreamKind.Video));
+			Thread VideoThread = null;
+			if (VTarget != null)
+				VideoThread = new Thread(() => StreamLoop(VTarget, stream.OpenStreamDefault(), StreamKind.Video));
 
-			var ATask =
-				ATarget == null ? Task.CompletedTask :
-				Task.Run(() => StreamLoop(ATarget, stream.OpenStreamAlt(), StreamKind.Audio));
+			Thread AudioThread = null;
+			if (ATarget != null)
+				AudioThread = new Thread(() => StreamLoop(ATarget, stream.OpenStreamAlt(), StreamKind.Audio));
 
-			Task.WaitAll(VTask, ATask);
+			VideoThread?.Start();
+			AudioThread?.Start();
 
+			VideoThread?.Join();
 			VTarget?.Dispose();
+			AudioThread?.Join();
 			ATarget?.Dispose();
 
 		}
