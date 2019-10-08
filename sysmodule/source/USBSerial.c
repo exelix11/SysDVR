@@ -14,15 +14,15 @@ struct usb_endpoint_descriptor serial_endpoint_descriptor_in_1 = {
    .bDescriptorType = USB_DT_ENDPOINT,
    .bEndpointAddress = USB_ENDPOINT_IN | 1,
    .bmAttributes = USB_TRANSFER_TYPE_BULK,
-   .wMaxPacketSize = 0x10,
+   .wMaxPacketSize = 0x200,
 };
 
 struct usb_endpoint_descriptor serial_endpoint_descriptor_out_1 = {
    .bLength = USB_DT_ENDPOINT_SIZE,
    .bDescriptorType = USB_DT_ENDPOINT,
    .bEndpointAddress = USB_ENDPOINT_OUT | 1,
-   .bmAttributes = USB_TRANSFER_TYPE_ISOCHRONOUS,
-   .wMaxPacketSize = 0x200,
+   .bmAttributes = USB_TRANSFER_TYPE_BULK,
+   .wMaxPacketSize = 0x10,
 };
 
 struct usb_endpoint_descriptor serial_endpoint_descriptor_in_2 = {
@@ -30,15 +30,15 @@ struct usb_endpoint_descriptor serial_endpoint_descriptor_in_2 = {
    .bDescriptorType = USB_DT_ENDPOINT,
    .bEndpointAddress = USB_ENDPOINT_IN | 2,
    .bmAttributes = USB_TRANSFER_TYPE_BULK,
-   .wMaxPacketSize = 0x10,
+   .wMaxPacketSize = 0x200,
 };
 
 struct usb_endpoint_descriptor serial_endpoint_descriptor_out_2 = {
    .bLength = USB_DT_ENDPOINT_SIZE,
    .bDescriptorType = USB_DT_ENDPOINT,
    .bEndpointAddress = USB_ENDPOINT_OUT | 2,
-   .bmAttributes = USB_TRANSFER_TYPE_ISOCHRONOUS,
-   .wMaxPacketSize = 0x200,
+   .bmAttributes = USB_TRANSFER_TYPE_BULK,
+   .wMaxPacketSize = 0x10,
 };
 
 void UsbEndpointPairInit(UsbInterfaceDesc* info, USBDevStream* out1, USBDevStream* out2, int interface)
