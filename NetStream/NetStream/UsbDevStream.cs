@@ -8,18 +8,34 @@ using libusbK;
 
 namespace NetStream
 {
-	class UsbDevStream : Stream
+	class UsbDevice 
 	{
 		private KLST_DEVINFO_HANDLE handle;
 		private UsbK device;
 
-		private const byte ReadPipe = 0x81;
-		private const byte WritePipe = 0x1;
-
-		public UsbDevStream(KLST_DEVINFO_HANDLE dev)
+		public UsbDevice(KLST_DEVINFO_HANDLE dev)
 		{
 			handle = dev;
 			device = new UsbK(handle);
+		}
+
+		public UsbDevStream OpenStreamDefault() => OpenStream(0x81, 0x1);
+		public UsbDevStream OpenStreamAlt() => OpenStream(0x82, 0x2);
+		public UsbDevStream OpenStream(byte readPipe, byte writePipe) => new UsbDevStream(device, readPipe, writePipe);
+	}
+
+	class UsbDevStream : Stream
+	{
+		private UsbK device;
+
+		private byte ReadPipe;
+		private byte WritePipe;
+
+		public UsbDevStream(UsbK dev, byte readPipe, byte writePipe)
+		{
+			device = dev;
+			WritePipe = writePipe;
+			ReadPipe = readPipe;
 			device.ResetPipe(WritePipe);
 			device.ResetPipe(ReadPipe);
 		}
@@ -50,7 +66,7 @@ namespace NetStream
 		{
 			device.WritePipe(WritePipe, Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset), count, out int outLen, IntPtr.Zero);
 			if (outLen != count)
-				Debugger.Break();
+				throw new Exception("Writing to the device failed");
 		}
 
 		public override void Flush()
