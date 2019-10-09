@@ -52,15 +52,11 @@ namespace NetStream
 			return outLen;
 		}
 
-		public override long Seek(long offset, SeekOrigin origin)
-		{
+		public override long Seek(long offset, SeekOrigin origin) =>
 			throw new NotImplementedException();
-		}
 
-		public override void SetLength(long value)
-		{
+		public override void SetLength(long value) => 
 			throw new NotImplementedException();
-		}
 
 		public override void Write(byte[] buffer, int offset, int count)
 		{
