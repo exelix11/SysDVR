@@ -58,8 +58,6 @@ void __attribute__((weak)) __appInit(void)
 	fsdevMountSdmc();
 }
 
-void __attribute__((weak)) userAppExit(void);
-
 void __attribute__((weak)) __appExit(void)
 {
 	fsdevUnmountAll();
@@ -210,11 +208,11 @@ int main(int argc, char* argv[])
 
 	InitRecording();
 
-	pthread_t videoThread;
-	if (pthread_create(&videoThread, NULL, StreamThreadMain, (void*)GrcStream_Video))
+	pthread_t audioThread;
+	if (pthread_create(&audioThread, NULL, StreamThreadMain, (void*)GrcStream_Audio))
 		fatalSimple(MAKERESULT(1, 90));
 
-	StreamThreadMain((void*)GrcStream_Audio);
+	StreamThreadMain((void*)GrcStream_Video);
 
     return 0;
 }
