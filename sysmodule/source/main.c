@@ -2,12 +2,10 @@
 #include <switch.h>
 #include <pthread.h>
 
-#include "usb.h"
-#include "USBSerial.h"
-
 #if !defined(__SWITCH__)
 //Silence visual studio errors
 #define __attribute__(x) 
+typedef u64 ssize_t;
 #endif
 
 void StopRecording();
@@ -66,33 +64,13 @@ void __attribute__((weak)) __appExit(void)
 {
 	fsdevUnmountAll();
 	fsExit();
-	usbExit();
+	usbCommsExit();
 	StopRecording();
 	smExit();
 }
 
-USBDevStream VideoStream;
-USBDevStream AudioStream;
-static Result UsbInit() 
-{
-	struct usb_device_descriptor device_descriptor = {
-	  .bLength = USB_DT_DEVICE_SIZE,
-	  .bDescriptorType = USB_DT_DEVICE,
-	  .bcdUSB = 0x0110,
-	  .bDeviceClass = 0x00,
-	  .bDeviceSubClass = 0x00,
-	  .bDeviceProtocol = 0x00,
-	  .bMaxPacketSize0 = 0x40,
-	  .idVendor = 0x057e,
-	  .idProduct = 0x3000,
-	  .bcdDevice = 0x0100,
-	  .bNumConfigurations = 0x01
-	};
-
-	UsbInterfaceDesc info;
-	UsbEndpointPairInit(&info, &VideoStream, &AudioStream, 0);
-	return usbInitialize(&device_descriptor, 1, &info);
-}
+const u32 VideoStream = 0;
+const u32 AudioStream = 1;
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
@@ -137,16 +115,13 @@ void StopRecording()
 	g_recInited = false;
 }
 
-static u32 WaitForInputReq(USBDevStream* dev)
+static u32 WaitForInputReq(u32 dev)
 {
 	while (true)
 	{
 		u32 initSeq = 0;
-		ssize_t rc = UsbRead(dev, &initSeq, sizeof(initSeq), 16666666);
-
-		if (rc == sizeof(initSeq)) return initSeq;
-
-		svcSleepThread(3E+9);
+		if (usbCommsReadEx(&initSeq, sizeof(initSeq), dev) == sizeof(initSeq))
+			return initSeq;
 	}
 	return 0;
 }
@@ -187,27 +162,28 @@ static void ReadVideoStream()
 	}
 }
 
-static void SendStream(GrcStream stream, USBDevStream* Dev)
+static void SendStream(GrcStream stream, u32 Dev)
 {
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	 
 	if (*size <= 0)
 	{
 		*size = 0;
-		UsbWrite(Dev, size, sizeof(*size), (u64)1e+8);
+		usbCommsWriteEx(size, sizeof(*size), Dev);
 	}
 
 	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
-	if (UsbWrite(Dev, size, sizeof(*size), (u64)1e+8) != sizeof(*size)) return;
-	if (UsbWrite(Dev, TargetBuf, *size, (u64)2E+9) != *size) return;
+	if (usbCommsWriteEx(size, sizeof(*size), Dev) != sizeof(*size)) return;
+	if (usbCommsWriteEx(TargetBuf, *size, Dev) != *size) return;
 	return;
 }
 
 void* StreamThreadMain(void* _stream)
 {
 	GrcStream stream = (GrcStream)_stream;
-	USBDevStream* Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
+	const u32 Dev = stream == GrcStream_Video ? VideoStream : AudioStream;
+	
 	u8 ErrorCode = stream == GrcStream_Video ? 70 : 80;
 	u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
@@ -229,7 +205,7 @@ void* StreamThreadMain(void* _stream)
 
 int main(int argc, char* argv[])
 {
-	if (R_FAILED(UsbInit()))
+	if (R_FAILED(usbCommsInitializeEx(2, NULL)))
 		fatalSimple(MAKERESULT(1, 60));
 
 	InitRecording();
