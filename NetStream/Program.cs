@@ -207,15 +207,34 @@ namespace NetStream
 
 		static void Main(string[] args)
 		{
+			Console.WriteLine("SysVStream - 1.0 by exelix");
+			Console.WriteLine("https://github.com/exelix11/SysVStream \r\n");
 			if (args.Length < 3)
 			{
 				Console.WriteLine("Usage: \r\n" +
-				"NetStream <video method> <video file/port/mpv path> <audio method> <audio file/port/mpv path>\r\n" +
-				"Method is either mpv, file, tcp or null (only for audio)\r\n" +
-				"Note that tcp initialization will block till a program connects\r\n\r\n" +
-				"Useful commands: \r\n" +
-				"mpv tcp://localhost:1337 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
-				"mpv tcp://localhost:1338 --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000");
+				"NetStream <video config> <audio conifg>\r\n" +
+				"Supported configurations are: \r\n" +
+				" - tcp <port> : stream the data over a the network on the specified port.\r\n" +
+				" - file <file name> : stores the received data to a file\r\n" +
+				"   The format is raw h264 data for video and uncompressed s16le stereo 48kHz samples for sound\r\n" +
+				" - mpv <mpv player path> : streams the received data to mpv player via stdin\r\n" +
+				" - null : ignore this stream\r\n" +
+				"It is not recommended to stream audio and video at the same time\r\n" +
+				"Note that tcp initialization will block untill a program connects\r\n\r\n" +
+				"Example commands: \r\n" +
+				"NetStream null mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
+				"NetStream mpv C:/programs/mpv/mpv mpv C:/programs/mpv/mpv : Plays video and audio via mpv (path has to be specified twice)\r\n" +
+				"NetStream tcp 1337 file C:/audio.raw : Streams video over port 1337 while saving audio to disk\r\n\r\n" +
+				"Opening raw files in mpv: \r\n" +
+				"mpv videofile.264 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
+				"mpv audiofile.raw --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000\r\n" +
+				"(you can also use tcp://localhost:<port> instead of the file name to open the tcp stream)\r\n\r\n" +
+				"Info to keep in mind:\r\n" +
+				"Streaming works only with games that have game recording enabled.\r\n" +
+				"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
+				"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n" +
+				"Currently streaming audio and video at the same time is very laggy, haven't found any fix for this yet.");
+				Console.ReadLine();
 				return;
 			}
 
