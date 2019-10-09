@@ -86,12 +86,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\main.c" />
-    <ClCompile Include="source\usb.c" />
-    <ClCompile Include="source\USBSerial.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="source\usb.h" />
-    <ClInclude Include="source\USBSerial.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
