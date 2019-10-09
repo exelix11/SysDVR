@@ -7,22 +7,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\usb.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\USBSerial.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="source\usb.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\USBSerial.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

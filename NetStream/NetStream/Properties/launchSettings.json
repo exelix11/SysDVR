@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "NetStream": {
-      "commandName": "Project",
-      "commandLineArgs": "mpv D:\\E\\Downloads\\mpv\\mpv null"
-    }
-  }
-}

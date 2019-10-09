@@ -353,3 +353,4 @@ MigrationBackup/
 *.nsp
 
 build/
+NetStream/Properties/launchSettings.json
