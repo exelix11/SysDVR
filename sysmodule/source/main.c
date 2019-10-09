@@ -96,7 +96,7 @@ static Result UsbInit()
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
-const int AudioBatchSz = 8;
+const int AudioBatchSz = 12;
 const u32 REQMAGIC_VID = 0xAAAAAAAA;
 const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 u8* Vbuf = NULL;
@@ -175,9 +175,16 @@ static void ReadVideoStream()
 	u32 unk = 0;
 	u64 timestamp = 0;
 
-	Result res = grcdRead(GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
-	if (R_FAILED(res) || VOutSz <= 0)
-		VOutSz = 0;
+	while (true) {
+		Result res = grcdRead(GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
+		if (R_FAILED(res) || VOutSz <= 0)
+		{
+			VOutSz = 0;
+			svcSleepThread(5000000);
+			continue;
+		}
+		break;
+	}
 }
 
 static void SendStream(GrcStream stream, USBDevStream* Dev)

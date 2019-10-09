@@ -2,7 +2,7 @@
   "profiles": {
     "NetStream": {
       "commandName": "Project",
-      "commandLineArgs": "mpv D:\\E\\Downloads\\mpv\\mpv mpv D:\\E\\Downloads\\mpv\\mpv"
+      "commandLineArgs": "mpv D:\\E\\Downloads\\mpv\\mpv null"
     }
   }
 }

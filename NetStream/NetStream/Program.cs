@@ -28,7 +28,7 @@ namespace NetStream
 		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
 		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBBBBBBBB);
 		const int VbufMaxSz = 0x32000;
-		const int AbufMaxSz = 0x1000 * 10;
+		const int AbufMaxSz = 0x1000 * 12;
 
 		interface IOutTarget : IDisposable
 		{
@@ -264,22 +264,6 @@ namespace NetStream
 			VTarget?.Dispose();
 			AudioThread?.Join();
 			ATarget?.Dispose();
-
 		}
 	}
-
-	static class Exten 
-	{
-		public static bool Matches(this byte[] arr, byte[] Magic) =>
-			arr.Matches(0, Magic, 0, Magic.Length);
-
-		public static bool Matches(this byte[] arr, int arrOfset, byte[] Magic, int MagicOffset, int length)
-		{
-			for (int i = 0; i < length; i++)
-				if (arr[arrOfset + i] != Magic[MagicOffset + i])
-					return false;
-			return true;
-		}
-	}
-
 }
