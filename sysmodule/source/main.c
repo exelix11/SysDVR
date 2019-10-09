@@ -362,15 +362,16 @@ int main(int argc, char* argv[])
 
 	InitRecording();
 
+#if defined(MODE_USB)
 	//TODO: why does accept() on the main thread block the audioThread ?
 	pthread_t audioThread;
 	if (pthread_create(&audioThread, NULL, StreamThreadMain, (void*)GrcStream_Audio))
 		fatalSimple(MAKERESULT(1, 90));
-
+#endif
 	StreamThreadMain((void*)GrcStream_Video);
 
-	void* dummy;
-	pthread_join(audioThread, &dummy);
+	//void* dummy;
+	//pthread_join(audioThread, &dummy);
 
     return 0;
 }
