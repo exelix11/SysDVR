@@ -1,5 +1,4 @@
-﻿
-//#define PRINT_DEBUG
+﻿//#define PRINT_DEBUG
 #define PLAY_STATS
 
 using libusbK;
@@ -151,16 +150,17 @@ namespace NetStream
 			ArrayPool<byte> sh = ArrayPool<byte>.Create();
 			byte[] data = null;
 
-			uint ReadToSharedArray() 
+			int ReadToSharedArray() 
 			{
+				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
 				stream.Read(SizeBuf);
 				var size = BitConverter.ToUInt32(SizeBuf);
-				if (size > MaxBufSize || size == 0) return size;
+				if (size > MaxBufSize || size == 0) return 0;
 
 				data = sh.Rent((int)size);
-				stream.Read(data, 0, (int)size);
-
-				return size;
+				int actualsize = stream.Read(data, 0, (int)size);
+				if (actualsize != size) Console.WriteLine("Warning: Reported size doesn't match received size");
+				return actualsize;
 			}
 
 			void FreeBuffer() 
@@ -169,8 +169,10 @@ namespace NetStream
 				data = null;
 			}
 
+			#if !DEBUG
 			try
 			{
+			#endif
 				while (!Console.KeyAvailable)
 				{
 					stream.Write(ReqMagic);
@@ -196,12 +198,15 @@ namespace NetStream
 						#endif
 					}
 				}
+#if !DEBUG
+				
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("There was an exception: " + ex.ToString());
 				FreeBuffer();
 			}
+#endif
 			return false;
 		}
 
@@ -248,7 +253,7 @@ namespace NetStream
 			else if (args[0] == "tcp")
 				VTarget = new TCPTarget(System.Net.IPAddress.Any, int.Parse(args[1]));
 			else if (args[0] == "mpv")
-				VTarget = new StdInMPV(args[1], "--no-correct-pts --fps=30 --cache=no --cache-secs=0");
+				VTarget = new StdInMPV(args[1], "--no-correct-pts --fps=30");
 			else if (args[0] == "null")
 			{
 				VTarget = null;

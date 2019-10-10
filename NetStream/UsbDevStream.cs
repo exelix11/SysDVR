@@ -31,13 +31,17 @@ namespace NetStream
 		private byte ReadPipe;
 		private byte WritePipe;
 
-		public UsbDevStream(UsbK dev, byte readPipe, byte writePipe)
+		public unsafe UsbDevStream(UsbK dev, byte readPipe, byte writePipe)
 		{
 			device = dev;
 			WritePipe = writePipe;
 			ReadPipe = readPipe;
 			device.ResetPipe(WritePipe);
 			device.ResetPipe(ReadPipe);
+
+			UInt64 MillisTimeout = 1000;
+			device.SetPipePolicy(readPipe, (int)libusbK.PipePolicyType.PIPE_TRANSFER_TIMEOUT, 8, new IntPtr(&MillisTimeout));
+			device.SetPipePolicy(writePipe, (int)libusbK.PipePolicyType.PIPE_TRANSFER_TIMEOUT, 8, new IntPtr(&MillisTimeout));
 		}
 
 		public override bool CanRead => true;
@@ -62,7 +66,11 @@ namespace NetStream
 		{
 			device.WritePipe(WritePipe, Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset), count, out int outLen, IntPtr.Zero);
 			if (outLen != count)
-				throw new Exception("Writing to the device failed");
+			{
+				Console.WriteLine("Warning: writing to the device failed");
+				Flush();
+				System.Threading.Thread.Sleep(1000);
+			}
 		}
 
 		public override void Flush()
