@@ -2,8 +2,8 @@
 #include <switch.h>
 #include <pthread.h>
 
-#define MODE_USB
-//#define MODE_SOCKET
+//#define MODE_USB
+#define MODE_SOCKET
 
 #if defined(MODE_USB) && defined(MODE_SOCKET)
 #error Define only one between MODE_USB and MODE_SOCKET
@@ -320,6 +320,11 @@ void* StreamThreadMain(void* _stream)
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
+	{
+		Result rc = SocketInit(stream);
+		if (R_FAILED(rc)) fatalSimple(rc);
+	}
+
 	while (true) {
 		int curSock = accept(sock, 0, 0);
 
@@ -357,10 +362,6 @@ int main(int argc, char* argv[])
 		fatalSimple(MAKERESULT(1, 60));
 #else
 	Result rc = socketInitializeDefault();
-	if (R_FAILED(rc)) fatalSimple(rc);
-	rc = SocketInit(GrcStream_Video);
-	if (R_FAILED(rc)) fatalSimple(rc);
-	rc = SocketInit(GrcStream_Audio);
 	if (R_FAILED(rc)) fatalSimple(rc);
 #endif
 
