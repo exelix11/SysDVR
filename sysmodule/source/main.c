@@ -2,8 +2,8 @@
 #include <switch.h>
 #include <pthread.h>
 
-//#define MODE_USB
-#define MODE_SOCKET
+#define MODE_USB
+//#define MODE_SOCKET
 
 #if defined(MODE_USB) && defined(MODE_SOCKET)
 #error Define only one between MODE_USB and MODE_SOCKET
@@ -88,7 +88,11 @@ void __attribute__((weak)) __appExit(void)
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
+#if defined(MODE_USB) 
+const int AudioBatchSz = 6;
+#else 
 const int AudioBatchSz = 12;
+#endif
 
 u8* Vbuf = NULL;
 u8* Abuf = NULL;
