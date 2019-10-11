@@ -33,7 +33,7 @@ namespace NetStream
 		private UsbEndpointWriter writer;
 		private UsbEndpointReader reader;
 
-		public int  MillisTimeout = 400;
+		public int  MillisTimeout = 300;
 
 		public unsafe UsbDevStream(IUsbDevice dev, WriteEndpointID writePipe, ReadEndpointID readPipe)
 		{
