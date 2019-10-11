@@ -39,7 +39,7 @@ namespace NetStream
 			device.ResetPipe(WritePipe);
 			device.ResetPipe(ReadPipe);
 
-			UInt64 MillisTimeout = 1000;
+			UInt64 MillisTimeout = 400;
 			device.SetPipePolicy(readPipe, (int)libusbK.PipePolicyType.PIPE_TRANSFER_TIMEOUT, 8, new IntPtr(&MillisTimeout));
 			device.SetPipePolicy(writePipe, (int)libusbK.PipePolicyType.PIPE_TRANSFER_TIMEOUT, 8, new IntPtr(&MillisTimeout));
 		}

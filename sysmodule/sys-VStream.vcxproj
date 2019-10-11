@@ -68,7 +68,7 @@
     <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>make clean &amp;&amp; make</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <IncludePath>D:\Ermes\Projects\VM\libnx\nx\include\;$(IncludePath)</IncludePath>
+    <IncludePath>D:\E\Projects\VM\libnx\nx\include;D:\E\Projects\VM\libnx\external\bsd\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>make</NMakeBuildCommandLine>
@@ -85,11 +85,15 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\main.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
     <None Include="sysmodule.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\grcd.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

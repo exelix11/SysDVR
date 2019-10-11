@@ -2,6 +2,8 @@
 #include <switch.h>
 #include <pthread.h>
 
+#include "grcd.h"
+
 //#define MODE_USB
 #define MODE_SOCKET
 
@@ -17,8 +19,6 @@
 #define __attribute__(x) 
 typedef u64 ssize_t;
 #endif
-
-void StopRecording();
 
 extern u32 __start__;
 u32 __nx_applet_type = AppletType_None;
@@ -81,37 +81,23 @@ void __attribute__((weak)) __appExit(void)
 #else
 	socketExit();
 #endif
-	StopRecording();
 	smExit();
 }
 
-
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
-#if defined(MODE_USB) 
-const int AudioBatchSz = 6;
-#else 
 const int AudioBatchSz = 12;
-#endif
 
 u8* Vbuf = NULL;
 u8* Abuf = NULL;
 u32 VOutSz = 0;
 u32 AOutSz = 0;
 
-bool g_recInited = false;
-void InitRecording() 
+Service grcdVideo;
+Service grcdAudio;
+
+void AllocateRecordingBuf() 
 {
-	if (g_recInited) return;
-
-	Result res = grcdInitialize();
-	if (R_FAILED(res))
-		fatalSimple(MAKERESULT(1, 20));
-
-	res = grcdBegin();
-	if (R_FAILED(res))
-		fatalSimple(MAKERESULT(1, 30));
-
 	Vbuf = aligned_alloc(0x1000, VbufSz);
 	if (!Vbuf)
 		fatalSimple(MAKERESULT(1, 40));
@@ -119,17 +105,26 @@ void InitRecording()
 	Abuf = aligned_alloc(0x1000, AbufSz * AudioBatchSz);
 	if (!Vbuf)
 		fatalSimple(MAKERESULT(1, 50));
-
-	g_recInited = true;
 }
 
-void StopRecording()
+void FreeRecordingBuf()
 {
-	if (!g_recInited) return;
-	grcdExit();
 	free(Vbuf);
 	free(Abuf);
-	g_recInited = false;
+}
+
+Result OpenGrcdForThread(GrcStream stream) 
+{
+	Result rc;
+	if (stream == GrcStream_Audio)
+		rc = grcdServiceOpen(&grcdAudio);
+	else 
+	{
+		rc = grcdServiceOpen(&grcdVideo);
+		if (R_FAILED(rc)) return rc;
+		rc = grcdServiceBegin(&grcdVideo);
+	}
+	return rc;
 }
 
 //Batch sending audio samples to improve speed
@@ -141,7 +136,7 @@ static void ReadAudioStream()
 	AOutSz = 0;
 	for (int i = 0; i < AudioBatchSz; i++)
 	{
-		Result res = grcdRead(GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
+		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
 			--i;
@@ -157,7 +152,7 @@ static void ReadVideoStream()
 	u64 timestamp = 0;
 
 	while (true) {
-		Result res = grcdRead(GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
+		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
 		if (R_FAILED(res) || VOutSz <= 0)
 		{
 			VOutSz = 0;
@@ -211,6 +206,11 @@ void* StreamThreadMain(void* _stream)
 
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
+	{
+		Result rc = OpenGrcdForThread(stream);
+		if (R_FAILED(rc)) fatalSimple(rc);
+	}
+
 	while (true)
 	{
 		u32 cmd = WaitForInputReq(Dev);
@@ -232,12 +232,15 @@ void* StreamThreadMain(void* _stream)
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <errno.h>
 #else
+//not actually used, just to stop visual studio from complaining.
+//~~i regret nothing~~
+#define F_SETFL 1
+#define O_NONBLOCK 1
+#define F_GETFL 1
 #include <WinSock2.h>
 #endif
-
-int VideoSock = -1;
-int AudioSock = -1;
 
 Result CreateSocket(int *OutSock, int port, int baseError)
 {
@@ -251,6 +254,9 @@ Result CreateSocket(int *OutSock, int port, int baseError)
 	temp.sin_family = AF_INET;
 	temp.sin_addr.s_addr = INADDR_ANY;
 	temp.sin_port = htons(port);
+
+	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
+	fcntl(sock, F_SETFL, O_NONBLOCK);
 
 	const int optVal = 1;
 	err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
@@ -269,6 +275,11 @@ Result CreateSocket(int *OutSock, int port, int baseError)
 	return 0;
 }
 
+int VideoSock = -1;
+int AudioSock = -1;
+int AudioCurSock = -1;
+int VideoCurSock = -1;
+
 Result SocketInit(GrcStream stream)
 {
 	Result rc;
@@ -285,69 +296,67 @@ Result SocketInit(GrcStream stream)
 	return 0;
 }
 
-int AudioCurSock = -1;
-int VideoCurSock = -1;
-
-Result SocketReset(GrcStream stream)
-{
-	if (stream == GrcStream_Video)
-	{
-		if (VideoSock != -1) close(VideoSock);
-		if (VideoCurSock != -1) close(VideoCurSock);
-		VideoSock = -1;
-		VideoCurSock = -1;
-	}
-	else 
-	{
-		if (AudioSock != -1) close(AudioSock);
-		if (AudioCurSock != -1) close(AudioCurSock);
-		AudioSock = -1;
-		AudioCurSock = -1;
-	}
-
-	return SocketInit(stream);
-}
-
 const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 void* StreamThreadMain(void* _stream)
 {
 	GrcStream stream = (GrcStream)_stream;
-	int sock = stream == GrcStream_Video ? VideoSock : AudioSock;
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
+	int* sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
+	int* OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
+
 	{
-		Result rc = SocketInit(stream);
+		Result rc = OpenGrcdForThread(stream);
+		if (R_FAILED(rc)) fatalSimple(rc);
+		rc = SocketInit(stream);
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
 	while (true) {
-		int curSock = accept(sock, 0, 0);
-
-		int* OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
-		*OutSock = curSock;
-
-		if (curSock >= 0)
+		int curSock = accept(*sock, 0, 0);
+		if (curSock < 0)
 		{
-			if (stream == GrcStream_Video) {
-				write(curSock, SPS, sizeof(SPS));
-				write(curSock, PPS, sizeof(PPS));
-			}
-
-			while (true)
-			{
-				ReadStreamFn();
-				if (write(curSock, TargetBuf, *size) < 0)
-					break;
-			}
+			svcSleepThread(3E+9);
+			continue;
 		}
 		
-		svcSleepThread(1E+9);
-		SocketReset(stream);
+		/*
+			There appear to be an issue with socketing, even if the video and audio listeners are used on different threads
+			for some reason calling accept on one of them blocks the other thread as well, even while a client is connected.
+			The workaround is making the socket non-blocking and then to set the client socket as blocking.
+			By default the socket returned from accept inherits this flag.
+		*/
+		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
+
+		*OutSock = curSock;
+
+		int res = 0;
+
+		if (stream == GrcStream_Video) {
+			res = write(curSock, SPS, sizeof(SPS));
+			if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) fatalSimple(MAKERESULT(66,66));
+			res = write(curSock, PPS, sizeof(PPS));
+			if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) fatalSimple(MAKERESULT(66, 66));
+		}
+
+		while (true)
+		{
+			ReadStreamFn();
+			res = write(curSock, TargetBuf, *size);
+			if (res == -1)
+			{
+				if (errno == EWOULDBLOCK || errno == EAGAIN) fatalSimple(MAKERESULT(66, 66));
+				else break;
+			}
+		}
+
+		close(curSock);
+		*OutSock = -1;
 		svcSleepThread(1E+9);
 	}
 	return NULL;
@@ -365,18 +374,19 @@ int main(int argc, char* argv[])
 	if (R_FAILED(rc)) fatalSimple(rc);
 #endif
 
-	InitRecording();
+	AllocateRecordingBuf();
 
-#if defined(MODE_USB)
-	//TODO: why does accept() on the main thread block the audioThread ?
 	pthread_t audioThread;
 	if (pthread_create(&audioThread, NULL, StreamThreadMain, (void*)GrcStream_Audio))
 		fatalSimple(MAKERESULT(1, 90));
-#endif
+
 	StreamThreadMain((void*)GrcStream_Video);
 
-	//void* dummy;
-	//pthread_join(audioThread, &dummy);
+	pthread_join(audioThread, NULL);
+
+	grcdServiceClose(&grcdVideo);
+	grcdServiceClose(&grcdAudio);
+	FreeRecordingBuf();
 
     return 0;
 }
