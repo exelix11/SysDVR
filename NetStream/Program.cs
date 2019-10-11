@@ -1,15 +1,18 @@
 ﻿//#define PRINT_DEBUG
 #define PLAY_STATS
 
-using libusbK;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using LibUsbDotNet;
+using LibUsbDotNet.LibUsb;
+using LibUsbDotNet.Main;
 
 namespace NetStream
 {
@@ -109,10 +112,25 @@ namespace NetStream
 
 		static UsbDevice GetDevice() 
 		{
-			var pat = new KLST_PATTERN_MATCH { DeviceID = @"USB\VID_057E&PID_3000" };
-			var lst = new LstK(0, ref pat);
-			lst.MoveNext(out var dinfo);
-			return new UsbDevice(dinfo);
+			using (var context = new UsbContext())
+			{
+				context.SetDebugLevel(LogLevel.Error);
+
+				//Get a list of all connected devices
+				var usbDeviceCollection = context.List();
+
+				//Narrow down the device by vendor and pid
+				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3000 && d.VendorId == 0x057e);
+
+				if (selectedDevice == null)
+					throw new Exception("Device not found");
+
+				//Open the device
+				selectedDevice.Open();
+
+				return new UsbDevice(selectedDevice);
+			}
+
 		}
 
 

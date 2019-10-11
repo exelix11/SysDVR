@@ -12,4 +12,8 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="LibUsbDotNet" Version="3.0.48-alpha" />
+  </ItemGroup>
+
 </Project>
