@@ -120,7 +120,7 @@ namespace NetStream
 				var usbDeviceCollection = context.List();
 
 				//Narrow down the device by vendor and pid
-				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3000 && d.VendorId == 0x057e);
+				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3004 && d.VendorId == 0x057e);
 
 				if (selectedDevice == null)
 					throw new Exception("Device not found");
