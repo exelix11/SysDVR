@@ -78,7 +78,7 @@ void __attribute__((weak)) __appExit(void)
 	fsdevUnmountAll();
 	fsExit();
 #if defined(MODE_USB)
-	UsbSerialExit();
+	usbExit();
 #else
 	socketExit();
 #endif
@@ -164,43 +164,43 @@ static void ReadVideoStream()
 }
 
 #if defined(MODE_USB)
-const u32 VideoStream = 0;
-const u32 AudioStream = 1;
+UsbInterface VideoStream ;
+UsbInterface AudioStream ;
 const u32 REQMAGIC_VID = 0xAAAAAAAA;
 const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
-static u32 WaitForInputReq(u32 dev)
+static u32 WaitForInputReq(UsbInterface* dev)
 {
 	while (true)
 	{
 		u32 initSeq = 0;
-		if (UsbSerialRead(&initSeq, sizeof(initSeq), dev, U64_MAX) == sizeof(initSeq))
+		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), U64_MAX) == sizeof(initSeq))
 			return initSeq;
 	}
 	return 0;
 }
 
-static void SendStream(GrcStream stream, u32 Dev)
+static void SendStream(GrcStream stream, UsbInterface *Dev)
 {
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	 
 	if (*size <= 0)
 	{
 		*size = 0;
-		UsbSerialWrite(size, sizeof(*size), Dev, 1E+8);
+		UsbSerialWrite(Dev, size, sizeof(*size), 1E+8);
 	}
 
 	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
-	if (UsbSerialWrite(size, sizeof(*size), Dev, 1E+8) != sizeof(*size)) return;
-	if (UsbSerialWrite(TargetBuf, *size, Dev, 1E+9) != *size) return; // 1 second
+	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size)) return;
+	if (UsbSerialWrite(Dev, TargetBuf, *size, 1E+9) != *size) return; // 1 second
 	return;
 }
 
 void* StreamThreadMain(void* _stream)
 {
 	GrcStream stream = (GrcStream)_stream;
-	const u32 Dev = stream == GrcStream_Video ? VideoStream : AudioStream;
+	UsbInterface *Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
 	u8 ErrorCode = stream == GrcStream_Video ? 70 : 80;
 	u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
@@ -367,7 +367,7 @@ void* StreamThreadMain(void* _stream)
 int main(int argc, char* argv[])
 {
 #if defined(MODE_USB)
-	if (R_FAILED(UsbSerialInitialize(2, NULL)))
+	if (R_FAILED(UsbSerialInitialize(&VideoStream, &AudioStream)))
 		fatalSimple(MAKERESULT(1, 60));
 #else
 	Result rc = socketInitializeDefault();
