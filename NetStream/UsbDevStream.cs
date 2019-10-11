@@ -16,6 +16,7 @@ namespace NetStream
 		public UsbDevice(IUsbDevice device)
 		{
 			dev = device;
+			device.ClaimInterface(device.Configs[0].Interfaces[0].Number);
 		}
 
 		public UsbDevStream OpenStreamDefault() => OpenStream(WriteEndpointID.Ep01, ReadEndpointID.Ep01);
@@ -33,15 +34,13 @@ namespace NetStream
 		private UsbEndpointWriter writer;
 		private UsbEndpointReader reader;
 
-		public int  MillisTimeout = 300;
+		public int MillisTimeout = 100000;
 
 		public unsafe UsbDevStream(IUsbDevice dev, WriteEndpointID writePipe, ReadEndpointID readPipe)
 		{
 			device = dev;
 			WritePipe = writePipe;
 			ReadPipe = readPipe;
-
-			device.ClaimInterface(device.Configs[0].Interfaces[(int)WritePipe - 1].Number);
 
 			writer = device.OpenEndpointWriter(writePipe);
 			reader = device.OpenEndpointReader(readPipe);

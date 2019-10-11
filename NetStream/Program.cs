@@ -1,4 +1,4 @@
-﻿//#define PRINT_DEBUG
+﻿#define PRINT_DEBUG
 #define PLAY_STATS
 
 using System;
@@ -120,7 +120,7 @@ namespace NetStream
 				var usbDeviceCollection = context.List();
 
 				//Narrow down the device by vendor and pid
-				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3004 && d.VendorId == 0x057e);
+				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3000 && d.VendorId == 0x057e);
 
 				if (selectedDevice == null)
 					throw new Exception("Device not found");
@@ -171,10 +171,13 @@ namespace NetStream
 			int ReadToSharedArray() 
 			{
 				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
+				stream.MillisTimeout = 500;
 				stream.Read(SizeBuf);
 				var size = BitConverter.ToUInt32(SizeBuf);
-				if (size > MaxBufSize || size == 0) return 0;
+				if (size > MaxBufSize) return -1;
+				if (size == 0) return 0;
 
+				stream.MillisTimeout = 30000;
 				data = sh.Rent((int)size);
 				int actualsize = stream.Read(data, 0, (int)size);
 				if (actualsize != size) Console.WriteLine("Warning: Reported size doesn't match received size");
@@ -196,7 +199,7 @@ namespace NetStream
 					stream.Write(ReqMagic);
 
 					var size = ReadToSharedArray();
-					if (size > MaxBufSize || size == 0)
+					if (size > MaxBufSize || size <= 0)
 					{
 						Console.WriteLine($"Discarding {kind} packet of size {size}");
 						stream.Flush();
