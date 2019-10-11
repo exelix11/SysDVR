@@ -6,5 +6,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\main.c" />
+    <ClCompile Include="source\grcd.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\grcd.h" />
   </ItemGroup>
 </Project>

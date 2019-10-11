@@ -237,8 +237,7 @@ namespace NetStream
 				"Info to keep in mind:\r\n" +
 				"Streaming works only with games that have game recording enabled.\r\n" +
 				"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
-				"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n" +
-				"Currently streaming audio and video at the same time is very laggy, haven't found any fix for this yet.");
+				"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.");
 				Console.ReadLine();
 				return;
 			}
