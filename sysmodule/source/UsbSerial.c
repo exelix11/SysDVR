@@ -477,7 +477,7 @@ Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
 		.bDeviceProtocol = 0x00,
 		.bMaxPacketSize0 = 0x40,
 		.idVendor = 0x057e,
-		.idProduct = 0x3000,
+		.idProduct = 0x3006,
 		.bcdDevice = 0x0100,
 		.bNumConfigurations = 0x01
 	};
