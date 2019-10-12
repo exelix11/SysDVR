@@ -14,7 +14,7 @@ using LibUsbDotNet;
 using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 
-namespace NetStream
+namespace UsbStream
 {
 	class Program
 	{
@@ -129,11 +129,10 @@ namespace NetStream
 
 		}
 
-
+		static bool UseDesyncFix = false;
+		static bool PrintStats = false;
 		static bool StreamLoop(IOutTarget Target, UsbDevStream stream, StreamKind kind)
 		{
-			bool PreventDesync = false;
-#if PLAY_STATS
 			Stopwatch ThreadTimer = new Stopwatch();
 			long TransfersPerSecond = 0;
 			long BytesPerSecond = 0;
@@ -143,16 +142,20 @@ namespace NetStream
 			{
 				if (ThreadTimer.ElapsedMilliseconds < 1000) return;
 				ThreadTimer.Stop();
-				Console.WriteLine($"{kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
+				if (PrintStats)
+					Console.WriteLine($"{kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
 
-				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds < 10)
-					PreventDesync = true;
+				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 10 && UseDesyncFix)
+				{
+					Console.WriteLine("Preventing desync");
+					stream.Flush();
+					System.Threading.Thread.Sleep(1500);
+				}
 
 				TransfersPerSecond = 0;
 				BytesPerSecond = 0;
 				ThreadTimer.Restart();
 			}
-#endif
 
 			byte[] ReqMagic = kind == StreamKind.Video ? REQMagic_VIDEO : REQMagic_AUDIO;
 			int MaxBufSize = kind == StreamKind.Video ? VbufMaxSz : AbufMaxSz;
@@ -197,13 +200,6 @@ namespace NetStream
 #endif
 			while (!Console.KeyAvailable)
 			{
-				if (PreventDesync)
-				{
-					Console.WriteLine("Preventing desync");
-					System.Threading.Thread.Sleep(1000);
-					PreventDesync = false;
-				}
-
 				stream.Write(ReqMagic);
 
 				var size = ReadToSharedArray();
@@ -242,7 +238,7 @@ namespace NetStream
 		static void PrintGuide()
 		{
 			Console.WriteLine("Usage: \r\n" +
-					"NetStream video <stream config for video> audio <stream config for audio>\r\n" +
+					"UsbStream video <stream config for video> audio <stream config for audio>\r\n" +
 					"You can omit the stream you don't want\r\n" +
 					"Stream config is one of the following:\r\n" +
 					" - tcp <port> : stream the data over a the network on the specified port.\r\n" +
@@ -253,10 +249,10 @@ namespace NetStream
 					"It is not recommended to stream audio and video at the same time\r\n" +
 					"Note that tcp mode will wait until a program connects\r\n\r\n" +
 					"Example commands: \r\n" +
-					"NetStream audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
-					"NetStream video mpv ./mpv audio mpv ./mpv : Plays video and audio via mpv (path has to be specified twice)\r\n" +
-					"NetStream video mpv ./mpv args \"--cache=no --cache-secs=0\" : Plays video in mpv disabling cache, audio is ignored\r\n" +
-					"NetStream video tcp 1337 audio file C:/audio.raw : Streams video over port 1337 while saving audio to disk\r\n\r\n" +
+					"UsbStream audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
+					"UsbStream video mpv ./mpv audio mpv ./mpv : Plays video and audio via mpv (path has to be specified twice)\r\n" +
+					"UsbStream video mpv ./mpv args \"--cache=no --cache-secs=0\" : Plays video in mpv disabling cache, audio is ignored\r\n" +
+					"UsbStream video tcp 1337 audio file C:/audio.raw : Streams video over port 1337 while saving audio to disk\r\n\r\n" +
 					"Opening raw files in mpv: \r\n" +
 					"mpv videofile.264 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
 					"mpv audiofile.raw --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000\r\n" +
@@ -264,7 +260,9 @@ namespace NetStream
 					"Info to keep in mind:\r\n" +
 					"Streaming works only with games that have game recording enabled.\r\n" +
 					"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
-					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.");
+					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n" +
+					"Experimental options:\r\n" +
+					"--desync-fix will flush incoming packets and delay further requests to avoid desync when the bandwidth goes under a certain threshold");
 			Console.ReadLine();
 		}
 
@@ -319,6 +317,13 @@ namespace NetStream
 				if (index >= 0) ParseTargetArgs(index, ref VTarget);
 				index = Array.IndexOf(args, "audio");
 				if (index >= 0) ParseTargetArgs(index, ref ATarget);
+
+				PrintStats = Array.IndexOf(args, "--stats") != -1;
+				UseDesyncFix = Array.IndexOf(args, "--desync-fix") != -1;
+
+#if PLAY_STATS && DEBUG
+				PrintStats = true;
+#endif
 			}
 
 			if (VTarget == null && ATarget == null)
