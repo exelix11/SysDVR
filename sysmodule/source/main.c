@@ -3,9 +3,10 @@
 #include <pthread.h>
 
 #include "grcd.h"
+#include "UsbSerial.h"
 
-//#define MODE_USB
-#define MODE_SOCKET
+#define MODE_USB
+//#define MODE_SOCKET
 
 #if defined(MODE_USB) && defined(MODE_SOCKET)
 #error Define only one between MODE_USB and MODE_SOCKET
@@ -45,7 +46,7 @@ void __libnx_initheap(void)
 
 void __attribute__((weak)) __appInit(void)
 {
-	svcSleepThread(2E+10);
+	svcSleepThread(2E+10); // 20 seconds
 
 	Result rc;
 
@@ -77,7 +78,7 @@ void __attribute__((weak)) __appExit(void)
 	fsdevUnmountAll();
 	fsExit();
 #if defined(MODE_USB)
-	usbCommsExit();
+	usbExit();
 #else
 	socketExit();
 #endif
@@ -156,7 +157,6 @@ static void ReadVideoStream()
 		if (R_FAILED(res) || VOutSz <= 0)
 		{
 			VOutSz = 0;
-			svcSleepThread(5000000);
 			continue;
 		}
 		break;
@@ -164,43 +164,43 @@ static void ReadVideoStream()
 }
 
 #if defined(MODE_USB)
-const u32 VideoStream = 0;
-const u32 AudioStream = 1;
+UsbInterface VideoStream ;
+UsbInterface AudioStream ;
 const u32 REQMAGIC_VID = 0xAAAAAAAA;
 const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
-static u32 WaitForInputReq(u32 dev)
+static u32 WaitForInputReq(UsbInterface* dev)
 {
 	while (true)
 	{
 		u32 initSeq = 0;
-		if (usbCommsReadEx(&initSeq, sizeof(initSeq), dev) == sizeof(initSeq))
+		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), U64_MAX) == sizeof(initSeq))
 			return initSeq;
 	}
 	return 0;
 }
 
-static void SendStream(GrcStream stream, u32 Dev)
+static void SendStream(GrcStream stream, UsbInterface *Dev)
 {
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	 
 	if (*size <= 0)
 	{
 		*size = 0;
-		usbCommsWriteEx(size, sizeof(*size), Dev);
+		UsbSerialWrite(Dev, size, sizeof(*size), 1E+8);
 	}
 
 	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
-	if (usbCommsWriteEx(size, sizeof(*size), Dev) != sizeof(*size)) return;
-	if (usbCommsWriteEx(TargetBuf, *size, Dev) != *size) return;
+	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size)) return;
+	if (UsbSerialWrite(Dev, TargetBuf, *size, 1E+9) != *size) return; // 1 second
 	return;
 }
 
 void* StreamThreadMain(void* _stream)
 {
 	GrcStream stream = (GrcStream)_stream;
-	const u32 Dev = stream == GrcStream_Video ? VideoStream : AudioStream;
+	UsbInterface *Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
 	u8 ErrorCode = stream == GrcStream_Video ? 70 : 80;
 	u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
@@ -367,7 +367,7 @@ void* StreamThreadMain(void* _stream)
 int main(int argc, char* argv[])
 {
 #if defined(MODE_USB)
-	if (R_FAILED(usbCommsInitializeEx(2, NULL)))
+	if (R_FAILED(UsbSerialInitialize(&VideoStream, &AudioStream)))
 		fatalSimple(MAKERESULT(1, 60));
 #else
 	Result rc = socketInitializeDefault();
