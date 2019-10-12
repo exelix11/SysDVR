@@ -335,24 +335,16 @@ void* StreamThreadMain(void* _stream)
 
 		*OutSock = curSock;
 
-		int res = 0;
-
 		if (stream == GrcStream_Video) {
-			res = write(curSock, SPS, sizeof(SPS));
-			if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) fatalSimple(MAKERESULT(66,66));
-			res = write(curSock, PPS, sizeof(PPS));
-			if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) fatalSimple(MAKERESULT(66, 66));
+			write(curSock, SPS, sizeof(SPS));
+			write(curSock, PPS, sizeof(PPS));
 		}
 
 		while (true)
 		{
 			ReadStreamFn();
-			res = write(curSock, TargetBuf, *size);
-			if (res == -1)
-			{
-				if (errno == EWOULDBLOCK || errno == EAGAIN) fatalSimple(MAKERESULT(66, 66));
-				else break;
-			}
+			if (write(curSock, TargetBuf, *size) == -1)
+				break;
 		}
 
 		close(curSock);
