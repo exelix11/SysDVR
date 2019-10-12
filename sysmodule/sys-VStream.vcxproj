@@ -87,6 +87,7 @@
   <ItemGroup>
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\main.c" />
+    <ClCompile Include="source\UsbSerial.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
@@ -94,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
+    <ClInclude Include="source\UsbSerial.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

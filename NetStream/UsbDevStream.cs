@@ -4,44 +4,48 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using libusbK;
+using LibUsbDotNet.LibUsb;
+using LibUsbDotNet.Main;
 
 namespace NetStream
 {
 	class UsbDevice 
 	{
-		private KLST_DEVINFO_HANDLE handle;
-		private UsbK device;
+		private IUsbDevice dev;
 
-		public UsbDevice(KLST_DEVINFO_HANDLE dev)
+		public UsbDevice(IUsbDevice device)
 		{
-			handle = dev;
-			device = new UsbK(handle);
+			dev = device;
+			device.ClaimInterface(device.Configs[0].Interfaces[0].Number);
 		}
 
-		public UsbDevStream OpenStreamDefault() => OpenStream(0x81, 0x1);
-		public UsbDevStream OpenStreamAlt() => OpenStream(0x82, 0x2);
-		public UsbDevStream OpenStream(byte readPipe, byte writePipe) => new UsbDevStream(device, readPipe, writePipe);
+		public UsbDevStream OpenStreamDefault() => OpenStream(WriteEndpointID.Ep01, ReadEndpointID.Ep01);
+		public UsbDevStream OpenStreamAlt() => OpenStream(WriteEndpointID.Ep02, ReadEndpointID.Ep02);
+		public UsbDevStream OpenStream(WriteEndpointID WriteEp, ReadEndpointID ReadEp) => new UsbDevStream(dev, WriteEp, ReadEp);
 	}
 
 	class UsbDevStream : Stream
 	{
-		private UsbK device;
+		private IUsbDevice device;
 
-		private byte ReadPipe;
-		private byte WritePipe;
+		private ReadEndpointID ReadPipe;
+		private WriteEndpointID WritePipe;
 
-		public unsafe UsbDevStream(UsbK dev, byte readPipe, byte writePipe)
+		private UsbEndpointWriter writer;
+		private UsbEndpointReader reader;
+
+		public int MillisTimeout = 100000;
+
+		public unsafe UsbDevStream(IUsbDevice dev, WriteEndpointID writePipe, ReadEndpointID readPipe)
 		{
 			device = dev;
 			WritePipe = writePipe;
 			ReadPipe = readPipe;
-			device.ResetPipe(WritePipe);
-			device.ResetPipe(ReadPipe);
 
-			UInt64 MillisTimeout = 300;
-			device.SetPipePolicy(readPipe, (int)libusbK.PipePolicyType.PIPE_TRANSFER_TIMEOUT, 8, new IntPtr(&MillisTimeout));
-			device.SetPipePolicy(writePipe, (int)libusbK.PipePolicyType.PIPE_TRANSFER_TIMEOUT, 8, new IntPtr(&MillisTimeout));
+			writer = device.OpenEndpointWriter(writePipe);
+			reader = device.OpenEndpointReader(readPipe);
+
+			Flush();
 		}
 
 		public override bool CanRead => true;
@@ -52,8 +56,8 @@ namespace NetStream
 
 		public override int Read(byte[] buffer, int offset, int count)
 		{
-			device.ReadPipe(ReadPipe, Marshal.UnsafeAddrOfPinnedArrayElement(buffer,offset), count, out int outLen, IntPtr.Zero);
-			return outLen;
+			reader.Read(buffer, offset, count, MillisTimeout, out int read);
+			return read;
 		}
 
 		public override long Seek(long offset, SeekOrigin origin) =>
@@ -64,8 +68,8 @@ namespace NetStream
 
 		public override void Write(byte[] buffer, int offset, int count)
 		{
-			device.WritePipe(WritePipe, Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset), count, out int outLen, IntPtr.Zero);
-			if (outLen != count)
+			writer.Write(buffer, offset, count, MillisTimeout, out int written);
+			if (written != count)
 			{
 				Console.WriteLine("Warning: writing to the device failed");
 				Flush();
@@ -75,8 +79,7 @@ namespace NetStream
 
 		public override void Flush()
 		{
-			device.FlushPipe(WritePipe);
-			device.FlushPipe(ReadPipe);
+			reader.ReadFlush();
 		}
 	}
 }
