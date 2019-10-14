@@ -174,8 +174,9 @@ static u32 WaitForInputReq(UsbInterface* dev)
 	while (true)
 	{
 		u32 initSeq = 0;
-		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), U64_MAX) == sizeof(initSeq))
+		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), 1E+9) == sizeof(initSeq))
 			return initSeq;
+		svcSleepThread(2E+9);
 	}
 	return 0;
 }
