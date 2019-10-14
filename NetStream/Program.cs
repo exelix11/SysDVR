@@ -94,7 +94,7 @@ namespace UsbStream
 					Arguments = " - " + args,
 					FileName = path,
 					RedirectStandardInput = true,
-					RedirectStandardOutput = true,
+					RedirectStandardOutput = true
 				};
 				proc = Process.Start(p);
 			}
@@ -138,6 +138,7 @@ namespace UsbStream
 			long BytesPerSecond = 0;
 			ThreadTimer.Start();
 
+			bool DesyncFlag = false;
 			void UpdatePlayStats()
 			{
 				if (ThreadTimer.ElapsedMilliseconds < 1000) return;
@@ -145,15 +146,21 @@ namespace UsbStream
 				if (PrintStats)
 					Console.WriteLine($"{kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
 
-				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 10 && UseDesyncFix)
+				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 10 && UseDesyncFix && kind == StreamKind.Video && TransfersPerSecond > 2 && !DesyncFlag)
+				{
+					DesyncFlag = true;
+				}
+				else if (DesyncFlag && BytesPerSecond / ThreadTimer.ElapsedMilliseconds >= 100)
 				{
 					Console.WriteLine("Preventing desync");
 					stream.Flush();
-					System.Threading.Thread.Sleep(1500);
+					System.Threading.Thread.Sleep(500);
+					DesyncFlag = false;
 				}
-
+				
 				TransfersPerSecond = 0;
 				BytesPerSecond = 0;
+
 				ThreadTimer.Restart();
 			}
 
