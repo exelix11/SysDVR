@@ -29,14 +29,14 @@ typedef enum {
 	UsbDirection_Write = 1,
 } UsbDirection;
 
-Result usbInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos);
-void usbExit(void);
-size_t usbTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* buffer, size_t size, u64 timeout);
+Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos);
+void usbSerialExit(void);
+size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* buffer, size_t size, u64 timeout);
 
 typedef struct {
 	u32 interface, WriteEP, ReadEP;
 } UsbInterface;
 
-Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream);
+Result UsbSerialInitializeDefault(UsbInterface* VideoStream, UsbInterface* AudioStream);
 size_t UsbSerialRead(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout);
 size_t UsbSerialWrite(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout);

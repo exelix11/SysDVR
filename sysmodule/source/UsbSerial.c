@@ -46,7 +46,7 @@ static int ep_out = 1;
 static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbInterfaceDesc* info);
 static Result _usbCommsInterfaceInit(u32 intf_ind, const UsbInterfaceDesc* info);
 
-Result usbInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos)
+Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos)
 {
 	Result rc = 0;
 	rwlockWriteLock(&g_usbCommsLock);
@@ -141,7 +141,7 @@ Result usbInitialize(struct usb_device_descriptor* device_descriptor, u32 num_in
 		}
 
 		if (R_FAILED(rc)) {
-			usbExit();
+			usbSerialExit();
 		}
 	}
 
@@ -177,7 +177,7 @@ static void _usbCommsInterfaceFree(usbCommsInterface* interface)
 	rwlockWriteUnlock(&interface->lock);
 }
 
-void usbExit(void)
+void usbSerialExit(void)
 {
 	u32 i;
 
@@ -387,7 +387,7 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 	return rc;
 }
 
-size_t usbTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* buffer, size_t size, u64 timeout)
+size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* buffer, size_t size, u64 timeout)
 {
 	size_t transferredSize = -1;
 	u32 state = 0;
@@ -466,7 +466,7 @@ struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_out = {
 };
 
 
-Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
+Result UsbSerialInitializeDefault(UsbInterface* VideoStream, UsbInterface* AudioStream)
 {
 	struct usb_device_descriptor device_descriptor = {
 		.bLength = USB_DT_DEVICE_SIZE,
@@ -499,15 +499,15 @@ Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
 	info.endpoint_desc[AudioStream->ReadEP] = &audio_serial_endpoint_descriptor_out;
 	info.string_descriptor = NULL;
 
-	return usbInitialize(&device_descriptor, 1, &info);
+	return usbSerialInitialize(&device_descriptor, 1, &info);
 }
 
 size_t UsbSerialRead(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout)
 {
-	return usbTransfer(stream->interface, stream->ReadEP, UsbDirection_Read, buf, bufSize, timeout);
+	return usbSerialTransfer(stream->interface, stream->ReadEP, UsbDirection_Read, buf, bufSize, timeout);
 }
 
 size_t UsbSerialWrite(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout)
 {
-	return usbTransfer(stream->interface, stream->WriteEP, UsbDirection_Write, buf, bufSize, timeout);
+	return usbSerialTransfer(stream->interface, stream->WriteEP, UsbDirection_Write, buf, bufSize, timeout);
 }

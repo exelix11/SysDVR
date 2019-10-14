@@ -78,7 +78,7 @@ void __attribute__((weak)) __appExit(void)
 	fsdevUnmountAll();
 	fsExit();
 #if defined(MODE_USB)
-	usbExit();
+	usbSerialExit();
 #else
 	socketExit();
 #endif
@@ -185,15 +185,17 @@ static void SendStream(GrcStream stream, UsbInterface *Dev)
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	 
 	if (*size <= 0)
-	{
 		*size = 0;
-		UsbSerialWrite(Dev, size, sizeof(*size), 1E+8);
+
+	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size))
+		return;
+
+	if (*size)
+	{
+		u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+		if (UsbSerialWrite(Dev, TargetBuf, *size, 1E+9) != *size) // 1 second 
+			return; 
 	}
-
-	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-
-	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size)) return;
-	if (UsbSerialWrite(Dev, TargetBuf, *size, 1E+9) != *size) return; // 1 second
 	return;
 }
 
@@ -359,7 +361,7 @@ void* StreamThreadMain(void* _stream)
 int main(int argc, char* argv[])
 {
 #if defined(MODE_USB)
-	if (R_FAILED(UsbSerialInitialize(&VideoStream, &AudioStream)))
+	if (R_FAILED(UsbSerialInitializeDefault(&VideoStream, &AudioStream)))
 		fatalSimple(MAKERESULT(1, 60));
 #else
 	Result rc = socketInitializeDefault();
