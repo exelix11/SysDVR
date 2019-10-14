@@ -426,50 +426,54 @@ size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* bu
 	return transferredSize;
 }
 
-struct usb_interface_descriptor serial_interface_descriptor = {
-	.bLength = USB_DT_INTERFACE_SIZE,
-	.bDescriptorType = USB_DT_INTERFACE,
-	.bNumEndpoints = 4,
-	.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
-	.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC,
-	.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC,
-};
-
-struct usb_endpoint_descriptor video_serial_endpoint_descriptor_in = {
-   .bLength = USB_DT_ENDPOINT_SIZE,
-   .bDescriptorType = USB_DT_ENDPOINT,
-   .bEndpointAddress = USB_ENDPOINT_IN | 1,
-   .bmAttributes = USB_TRANSFER_TYPE_BULK,
-   .wMaxPacketSize = 0x200,
-};
-
-struct usb_endpoint_descriptor video_serial_endpoint_descriptor_out = {
-   .bLength = USB_DT_ENDPOINT_SIZE,
-   .bDescriptorType = USB_DT_ENDPOINT,
-   .bEndpointAddress = USB_ENDPOINT_OUT | 1,
-   .bmAttributes = USB_TRANSFER_TYPE_BULK,
-   .wMaxPacketSize = 0x200,
-};
-
-struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_in = {
-   .bLength = USB_DT_ENDPOINT_SIZE,
-   .bDescriptorType = USB_DT_ENDPOINT,
-   .bEndpointAddress = USB_ENDPOINT_IN | 2,
-   .bmAttributes = USB_TRANSFER_TYPE_BULK,
-   .wMaxPacketSize = 0x200,
-};
-
-struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_out = {
-   .bLength = USB_DT_ENDPOINT_SIZE,
-   .bDescriptorType = USB_DT_ENDPOINT,
-   .bEndpointAddress = USB_ENDPOINT_OUT | 2,
-   .bmAttributes = USB_TRANSFER_TYPE_BULK,
-   .wMaxPacketSize = 0x200,
-};
-
+struct usb_interface_descriptor serial_interface_descriptor;
+struct usb_endpoint_descriptor video_serial_endpoint_descriptor_in;
+struct usb_endpoint_descriptor video_serial_endpoint_descriptor_out;
+struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_in;
+struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_out;
 
 Result UsbSerialInitializeDefault(UsbInterface* VideoStream, UsbInterface* AudioStream)
 {
+	//reset the global descriptors as they get modified by the usb code
+#define clearVal(x) memset(&x, 0, sizeof(x))
+	clearVal(serial_interface_descriptor);
+	clearVal(video_serial_endpoint_descriptor_in);
+	clearVal(video_serial_endpoint_descriptor_out);
+	clearVal(audio_serial_endpoint_descriptor_in);
+	clearVal(audio_serial_endpoint_descriptor_out);
+#undef clearVal
+
+	serial_interface_descriptor.bLength = USB_DT_INTERFACE_SIZE;
+	serial_interface_descriptor.bDescriptorType = USB_DT_INTERFACE;
+	serial_interface_descriptor.bNumEndpoints = 4;
+	serial_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
+	serial_interface_descriptor.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC;
+	serial_interface_descriptor.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC;
+
+	video_serial_endpoint_descriptor_in.bLength = USB_DT_ENDPOINT_SIZE;
+	video_serial_endpoint_descriptor_in.bDescriptorType = USB_DT_ENDPOINT;
+	video_serial_endpoint_descriptor_in.bEndpointAddress = USB_ENDPOINT_IN | 1;
+	video_serial_endpoint_descriptor_in.bmAttributes = USB_TRANSFER_TYPE_BULK;
+	video_serial_endpoint_descriptor_in.wMaxPacketSize = 0x200;
+	
+	video_serial_endpoint_descriptor_out.bLength = USB_DT_ENDPOINT_SIZE;
+	video_serial_endpoint_descriptor_out.bDescriptorType = USB_DT_ENDPOINT;
+	video_serial_endpoint_descriptor_out.bEndpointAddress = USB_ENDPOINT_OUT | 1;
+	video_serial_endpoint_descriptor_out.bmAttributes = USB_TRANSFER_TYPE_BULK;
+	video_serial_endpoint_descriptor_out.wMaxPacketSize = 0x200;
+
+	audio_serial_endpoint_descriptor_in.bLength = USB_DT_ENDPOINT_SIZE;
+	audio_serial_endpoint_descriptor_in.bDescriptorType = USB_DT_ENDPOINT;
+	audio_serial_endpoint_descriptor_in.bEndpointAddress = USB_ENDPOINT_IN | 2;
+	audio_serial_endpoint_descriptor_in.bmAttributes = USB_TRANSFER_TYPE_BULK;
+	audio_serial_endpoint_descriptor_in.wMaxPacketSize = 0x200;
+
+	audio_serial_endpoint_descriptor_out.bLength = USB_DT_ENDPOINT_SIZE;
+	audio_serial_endpoint_descriptor_out.bDescriptorType = USB_DT_ENDPOINT;
+	audio_serial_endpoint_descriptor_out.bEndpointAddress = USB_ENDPOINT_OUT | 2;
+	audio_serial_endpoint_descriptor_out.bmAttributes = USB_TRANSFER_TYPE_BULK;
+	audio_serial_endpoint_descriptor_out.wMaxPacketSize = 0x200;
+
 	struct usb_device_descriptor device_descriptor = {
 		.bLength = USB_DT_DEVICE_SIZE,
 		.bDescriptorType = USB_DT_DEVICE,

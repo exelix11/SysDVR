@@ -1,38 +1,27 @@
 #include <stdlib.h>
 #include <switch.h>
+#include <string.h>
 #include <pthread.h>
 
 #include "grcd.h"
+#include "UsbSerial.h"
 
-#if !defined(RELEASE)
-#define MODE_USB
-//#define MODE_SOCKET
-#else
+#if defined(RELEASE)
 #pragma message "Building release"
 #endif
 
-#if defined(MODE_USB) && defined(MODE_SOCKET)
-#error Define only one between MODE_USB and MODE_SOCKET
-#elif !defined(MODE_USB) && !defined(MODE_SOCKET)
-#error "No stream mode has been defined compile with either MODE_USB or MODE_SOCKET"
-#endif
-
-#if !defined(__SWITCH__)
 //Silence visual studio errors
+#if defined(__SWITCH__)
+#include <stdatomic.h>
+#else
 #define __attribute__(x) 
-typedef u64 ssize_t;
+typedef bool atomic_bool;
 #endif
 
 extern u32 __start__;
 u32 __nx_applet_type = AppletType_None;
-#if defined(MODE_USB)
-	#pragma message "Target USB mode"
-	#include "UsbSerial.h"
-	#define INNER_HEAP_SIZE 0x80000
-#elif defined(MODE_SOCKET)
-	#pragma message "Target socket mode"
-	#define INNER_HEAP_SIZE 0x300000
-#endif
+	
+#define INNER_HEAP_SIZE 0x300000
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -63,6 +52,10 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
+	rc = hidInitialize();
+	if (R_FAILED(rc))
+		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
+
 	rc = setsysInitialize();
     if (R_SUCCEEDED(rc)) {
         SetSysFirmwareVersion fw;
@@ -82,11 +75,6 @@ void __attribute__((weak)) __appExit(void)
 {
 	fsdevUnmountAll();
 	fsExit();
-#if defined(MODE_USB)
-	usbSerialExit();
-#elif defined(MODE_SOCKET)
-	socketExit();
-#endif
 	smExit();
 }
 
@@ -101,6 +89,8 @@ u32 AOutSz = 0;
 
 Service grcdVideo;
 Service grcdAudio;
+
+atomic_bool IsThreadRunning = false;
 
 void AllocateRecordingBuf() 
 {
@@ -162,21 +152,21 @@ static void ReadVideoStream()
 		if (R_FAILED(res) || VOutSz <= 0)
 		{
 			VOutSz = 0;
-			continue;
+			if (IsThreadRunning)
+				continue;
 		}
 		break;
 	}
 }
 
-#if defined(MODE_USB)
 UsbInterface VideoStream;
 UsbInterface AudioStream;
 const u32 REQMAGIC_VID = 0xAAAAAAAA;
 const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
-static u32 WaitForInputReq(UsbInterface* dev)
+static u32 USB_WaitForInputReq(UsbInterface* dev)
 {
-	while (true)
+	while (IsThreadRunning)
 	{
 		u32 initSeq = 0;
 		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), 1E+9) == sizeof(initSeq))
@@ -186,7 +176,7 @@ static u32 WaitForInputReq(UsbInterface* dev)
 	return 0;
 }
 
-static void SendStream(GrcStream stream, UsbInterface *Dev)
+static void USB_SendStream(GrcStream stream, UsbInterface *Dev)
 {
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
@@ -208,34 +198,30 @@ static void SendStream(GrcStream stream, UsbInterface *Dev)
 	return;
 }
 
-void* StreamThreadMain(void* _stream)
+void* USB_StreamThreadMain(void* _stream)
 {
+	if (!IsThreadRunning)
+		fatalSimple(MAKERESULT(1, 67));
+
 	GrcStream stream = (GrcStream)_stream;
 	UsbInterface *Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
-	u8 ErrorCode = stream == GrcStream_Video ? 70 : 80;
 	u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
+	while (IsThreadRunning)
 	{
-		Result rc = OpenGrcdForThread(stream);
-		if (R_FAILED(rc)) fatalSimple(rc);
-	}
-
-	while (true)
-	{
-		u32 cmd = WaitForInputReq(Dev);
+		u32 cmd = USB_WaitForInputReq(Dev);
 
 		if (cmd == ThreadMagic)
 		{
 			ReadStreamFn();
-			SendStream(stream, Dev);
+			USB_SendStream(stream, Dev);
 		}
-		else fatalSimple(MAKERESULT(1, ErrorCode));
 	}
+	pthread_exit(NULL);
 	return NULL;
 }
-#elif defined(MODE_SOCKET)
 
 #ifdef __SWITCH__
 #include <unistd.h>
@@ -292,7 +278,7 @@ int AudioSock = -1;
 int AudioCurSock = -1;
 int VideoCurSock = -1;
 
-Result SocketInit(GrcStream stream)
+Result SocketingInit(GrcStream stream)
 {
 	Result rc;
 	if (stream == GrcStream_Video)
@@ -313,8 +299,11 @@ Result SocketInit(GrcStream stream)
 const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
-void* StreamThreadMain(void* _stream)
+void* TCP_StreamThreadMain(void* _stream)
 {
+	if (!IsThreadRunning)
+		fatalSimple(MAKERESULT(1, 66));
+
 	GrcStream stream = (GrcStream)_stream;
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
@@ -325,18 +314,16 @@ void* StreamThreadMain(void* _stream)
 	int* OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
 
 	{
-		Result rc = OpenGrcdForThread(stream);
-		if (R_FAILED(rc)) fatalSimple(rc);
-		rc = SocketInit(stream);
+		Result rc = SocketingInit(stream);
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
 	int fails = 0;
-	while (true) {
+	while (IsThreadRunning) {
 		int curSock = accept(*sock, 0, 0);
 		if (curSock < 0)
 		{
-			if (++fails > 2)
+			if (++fails > 2 && IsThreadRunning)
 			{
 				fails = 0;
 				Result rc = SocketInit(stream);
@@ -371,32 +358,147 @@ void* StreamThreadMain(void* _stream)
 		
 		close(curSock);
 		*OutSock = -1;
+		if (!IsThreadRunning) break;
 		svcSleepThread(1E+9);
 	}
+	pthread_exit(NULL);
 	return NULL;
 }
-#endif
 
+typedef struct _streamMode
+{
+	void (*InitFn)();
+	void (*ExitFn)();
+	void* (*MainThread)(void*);
+} StreamMode ;
+
+static void USB_Init() 
+{
+	Result rc = UsbSerialInitializeDefault(&VideoStream, &AudioStream);
+	if (R_FAILED(rc)) fatalSimple(rc);
+}
+
+static void USB_Exit() 
+{
+	usbSerialExit();
+}
+
+static void TCP_Init() 
+{
+	Result rc = socketInitializeDefault();
+		if (R_FAILED(rc)) fatalSimple(rc);
+}
+
+static void TCP_Exit() 
+{
+#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
+	CloseSock(VideoSock);
+	CloseSock(AudioSock);
+	CloseSock(AudioCurSock);
+	CloseSock(VideoCurSock);
+#undef CloseSock
+	socketExit();
+}
+
+StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
+StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamThreadMain };
+StreamMode* CurrentMode = NULL;
+
+pthread_t VideoThread, AudioThread;
+
+void SetMode(StreamMode* mode)
+{
+	if (CurrentMode)
+	{
+		IsThreadRunning = false;
+
+		if (CurrentMode->ExitFn)
+			CurrentMode->ExitFn();
+		pthread_join(VideoThread, NULL);
+		pthread_join(AudioThread, NULL);
+	}
+	CurrentMode = mode;
+	if (mode)
+	{
+		IsThreadRunning = true;
+		svcSleepThread(5E+8);
+		if (mode->InitFn)
+			mode->InitFn();
+		pthread_create(&VideoThread, NULL, mode->MainThread, (void*)GrcStream_Video);
+		pthread_create(&AudioThread, NULL, mode->MainThread, (void*)GrcStream_Audio);
+	}
+}
+
+u32 VibrationDeviceHandles[2][2];
+HidVibrationValue VibrationValue;
+HidVibrationValue VibrationValue_stop;
+HidVibrationValue VibrationValues[2];
+
+void Vibrate() 
+{
+	int target_device = 0;
+	if (!hidGetHandheldMode())
+		target_device = 1;
+
+	memcpy(&VibrationValues[0], &VibrationValue, sizeof(HidVibrationValue));
+	memcpy(&VibrationValues[1], &VibrationValue, sizeof(HidVibrationValue));
+	hidSendVibrationValues(VibrationDeviceHandles[target_device], VibrationValues, 2);
+	
+	svcSleepThread(5E+8);
+
+	memcpy(&VibrationValues[0], &VibrationValue_stop, sizeof(HidVibrationValue));
+	memcpy(&VibrationValues[1], &VibrationValue_stop, sizeof(HidVibrationValue));
+	hidSendVibrationValues(VibrationDeviceHandles[target_device], VibrationValues, 2);
+	hidSendVibrationValues(VibrationDeviceHandles[1 - target_device], VibrationValues, 2);
+}
 
 int main(int argc, char* argv[])
 {
-#if defined(MODE_USB)
-	if (R_FAILED(UsbSerialInitializeDefault(&VideoStream, &AudioStream)))
-		fatalSimple(MAKERESULT(1, 60));
-#elif defined(MODE_SOCKET)
-	Result rc = socketInitializeDefault();
-	if (R_FAILED(rc)) fatalSimple(rc);
-#endif
-
 	AllocateRecordingBuf();
 
-	pthread_t audioThread;
-	if (pthread_create(&audioThread, NULL, StreamThreadMain, (void*)GrcStream_Audio))
-		fatalSimple(MAKERESULT(1, 90));
+	Result rc = OpenGrcdForThread(GrcStream_Audio);
+	if (R_FAILED(rc)) fatalSimple(rc);
+	rc = OpenGrcdForThread(GrcStream_Video);
+	if (R_FAILED(rc)) fatalSimple(rc);
 
-	StreamThreadMain((void*)GrcStream_Video);
+	rc = hidInitializeVibrationDevices(VibrationDeviceHandles[0], 2, CONTROLLER_HANDHELD, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+	if (R_SUCCEEDED(rc)) rc = hidInitializeVibrationDevices(VibrationDeviceHandles[1], 2, CONTROLLER_PLAYER_1, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
 
-	pthread_join(audioThread, NULL);
+	VibrationValue.amp_low = 0.2f;
+	VibrationValue.freq_low = 10.0f;
+	VibrationValue.amp_high = 0.2f;
+	VibrationValue.freq_high = 10.0f;
+
+	memset(VibrationValues, 0, sizeof(VibrationValues));
+
+	memset(&VibrationValue_stop, 0, sizeof(HidVibrationValue));
+	VibrationValue_stop.freq_low = 160.0f;
+	VibrationValue_stop.freq_high = 320.0f;
+
+	const u64 combo = KEY_L | KEY_R;
+
+	while (1)
+	{
+		hidScanInput();
+		u64 kDown = hidKeysHeld(CONTROLLER_P1_AUTO);
+
+		if (kDown == (combo | KEY_MINUS))
+		{
+			SetMode(&USB_MODE);
+			Vibrate();
+		}
+		else if (kDown == (combo | KEY_PLUS))
+		{
+			SetMode(&TCP_MODE);
+			Vibrate();
+		}
+		else if (kDown == (combo | KEY_DDOWN))
+			Vibrate();
+
+		svcSleepThread(1E+9);
+	}	
+	
+	SetMode(NULL);
 
 	grcdServiceClose(&grcdVideo);
 	grcdServiceClose(&grcdAudio);
