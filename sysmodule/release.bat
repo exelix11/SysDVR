@@ -20,7 +20,7 @@ mkdir Release\Network\atmosphere\titles\%TITLEID% > nul
 mkdir Release\Network\atmosphere\titles\%TITLEID%\flags > nul
 copy sysmodule.nsp Release\Network\atmosphere\titles\%TITLEID%\exefs.nsp
 echo . > Release\Network\atmosphere\titles\%TITLEID%\flags\boot2.flag
-7z a Release\Networl.zip .\Release\Network\*
+7z a Release\Network.zip .\Release\Network\*
 
 make clean
 echo done.
