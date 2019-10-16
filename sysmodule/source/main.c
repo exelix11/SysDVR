@@ -3,16 +3,16 @@
 #include <pthread.h>
 
 #include "grcd.h"
-#include "UsbSerial.h"
 
-#define MODE_USB
+#if !defined(RELEASE)
+//#define MODE_USB
 //#define MODE_SOCKET
+#endif
 
 #if defined(MODE_USB) && defined(MODE_SOCKET)
 #error Define only one between MODE_USB and MODE_SOCKET
 #elif !defined(MODE_USB) && !defined(MODE_SOCKET)
-#pragma message "No mode has been defined, dafaulting to MODE_USB"
-#define MODE_USB
+#error "No stream mode has been defined compile with either MODE_USB or MODE_SOCKET"
 #endif
 
 #if !defined(__SWITCH__)
@@ -24,8 +24,11 @@ typedef u64 ssize_t;
 extern u32 __start__;
 u32 __nx_applet_type = AppletType_None;
 #if defined(MODE_USB)
+	#pragma message "Building USB mode"
+	#include "UsbSerial.h"
 	#define INNER_HEAP_SIZE 0x80000
 #else
+	#pragma message "Building socket mode"
 	#define INNER_HEAP_SIZE 0x300000
 #endif
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
