@@ -275,7 +275,7 @@ namespace UsbStream
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("SysVStream - 1.0 by exelix");
+			Console.WriteLine("UsbStream - 1.0 by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysVStream \r\n");
 			if (args.Length < 3)
 			{
