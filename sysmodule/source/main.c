@@ -6,7 +6,9 @@
 
 #if !defined(RELEASE)
 //#define MODE_USB
-//#define MODE_SOCKET
+#define MODE_SOCKET
+#else
+#pragma message "Building release"
 #endif
 
 #if defined(MODE_USB) && defined(MODE_SOCKET)
@@ -24,11 +26,11 @@ typedef u64 ssize_t;
 extern u32 __start__;
 u32 __nx_applet_type = AppletType_None;
 #if defined(MODE_USB)
-	#pragma message "Building USB mode"
+	#pragma message "Target USB mode"
 	#include "UsbSerial.h"
 	#define INNER_HEAP_SIZE 0x80000
-#else
-	#pragma message "Building socket mode"
+#elif defined(MODE_SOCKET)
+	#pragma message "Target socket mode"
 	#define INNER_HEAP_SIZE 0x300000
 #endif
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
@@ -82,7 +84,7 @@ void __attribute__((weak)) __appExit(void)
 	fsExit();
 #if defined(MODE_USB)
 	usbSerialExit();
-#else
+#elif defined(MODE_SOCKET)
 	socketExit();
 #endif
 	smExit();
@@ -230,7 +232,8 @@ void* StreamThreadMain(void* _stream)
 	}
 	return NULL;
 }
-#else
+#elif defined(MODE_SOCKET)
+
 #ifdef __SWITCH__
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -291,11 +294,13 @@ Result SocketInit(GrcStream stream)
 	Result rc;
 	if (stream == GrcStream_Video)
 	{
+		if (VideoSock != -1) close(VideoSock);
 		rc = CreateSocket(&VideoSock, 6666, 2);
 		if (R_FAILED(rc)) return rc;
 	}
 	else 
 	{
+		if (AudioSock != -1) close(AudioSock);
 		rc = CreateSocket(&AudioSock, 6667, 3);
 		if (R_FAILED(rc)) return rc;
 	}
@@ -323,11 +328,18 @@ void* StreamThreadMain(void* _stream)
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
+	int fails = 0;
 	while (true) {
 		int curSock = accept(*sock, 0, 0);
 		if (curSock < 0)
 		{
-			svcSleepThread(3E+9);
+			if (++fails > 2)
+			{
+				fails = 0;
+				Result rc = SocketInit(stream);
+				if (R_FAILED(rc)) fatalSimple(rc);
+			}
+			svcSleepThread(1E+9);
 			continue;
 		}
 		
@@ -353,6 +365,7 @@ void* StreamThreadMain(void* _stream)
 				break;
 		}
 
+		
 		close(curSock);
 		*OutSock = -1;
 		svcSleepThread(1E+9);
@@ -367,7 +380,7 @@ int main(int argc, char* argv[])
 #if defined(MODE_USB)
 	if (R_FAILED(UsbSerialInitializeDefault(&VideoStream, &AudioStream)))
 		fatalSimple(MAKERESULT(1, 60));
-#else
+#elif defined(MODE_SOCKET)
 	Result rc = socketInitializeDefault();
 	if (R_FAILED(rc)) fatalSimple(rc);
 #endif
