@@ -1,5 +1,4 @@
 ﻿//#define PRINT_DEBUG
-#define PLAY_STATS
 
 using System;
 using System.Buffers;
@@ -120,7 +119,7 @@ namespace UsbStream
 				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
 
 				if (selectedDevice == null)
-					throw new Exception("Device not found");
+					return null;
 
 				selectedDevice.Open();
 
@@ -153,8 +152,8 @@ namespace UsbStream
 				else if (DesyncFlag && BytesPerSecond / ThreadTimer.ElapsedMilliseconds >= 100)
 				{
 					Console.WriteLine("Preventing desync");
+					System.Threading.Thread.Sleep(600);
 					stream.Flush();
-					System.Threading.Thread.Sleep(500);
 					DesyncFlag = false;
 				}
 				
@@ -222,12 +221,9 @@ namespace UsbStream
 #if PRINT_DEBUG
 					Console.WriteLine($"video {size}");
 #endif
-
-#if PLAY_STATS
 					TransfersPerSecond++;
 					BytesPerSecond += size;
 					UpdatePlayStats();
-#endif
 				}
 			}
 #if !DEBUG
@@ -252,8 +248,8 @@ namespace UsbStream
 					" - file <file name> : stores the received data to a file\r\n" +
 					"   The format is raw h264 data for video and uncompressed s16le stereo 48kHz samples for sound\r\n" +
 					" - stdin <executable path> args <program arguments> : Pipes the received data to another program, <executable path> is the other program's path and <program arguments> are the args to pass to the target program, you can omit args if the program doesn't need any configuration\r\n" +
-					" - mpv <mpv player path> : same as stdin but automatically configures args for mpv\r\n" +
-					"It is not recommended to stream audio and video at the same time\r\n" +
+					" - mpv <mpv player path> : same as stdin but automatically configures args for mpv. On windows use mpv.com instead of mpv.exe, omitting the extension will automatically use the right one\r\n" +
+					"Streaming both video and audio at the same time could cause performance issues.\r\n" +
 					"Note that tcp mode will wait until a program connects\r\n\r\n" +
 					"Example commands: \r\n" +
 					"UsbStream audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
@@ -267,16 +263,17 @@ namespace UsbStream
 					"Info to keep in mind:\r\n" +
 					"Streaming works only with games that have game recording enabled.\r\n" +
 					"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
-					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n" +
-					"Experimental options:\r\n" +
-					"--desync-fix will flush incoming packets and delay further requests to avoid desync when the bandwidth goes under a certain threshold");
+					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n\r\n" +
+					"Experimental/Debug options:\r\n" +
+					"--desync-fix will flush incoming packets and delay further requests to avoid desync when the bandwidth goes under a certain threshold\r\n" +
+					"--print-stats will print the average transfer speed and loop count for each thread every second");
 			Console.ReadLine();
 		}
 
 		static void Main(string[] args)
 		{
 			Console.WriteLine("UsbStream - 1.0 by exelix");
-			Console.WriteLine("https://github.com/exelix11/SysVStream \r\n");
+			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 3)
 			{
 				PrintGuide();
@@ -328,15 +325,25 @@ namespace UsbStream
 				PrintStats = Array.IndexOf(args, "--stats") != -1;
 				UseDesyncFix = Array.IndexOf(args, "--desync-fix") != -1;
 
-#if PLAY_STATS && DEBUG
+#if DEBUG
 				PrintStats = true;
+#else
+				PrintStats = Array.IndexOf(args, "--print-stats") != -1;
 #endif
 			}
 
 			if (VTarget == null && ATarget == null)
-				throw new Exception("Specify at least a video or audio target");
+			{
+				Console.WriteLine("Specify at least a video or audio target");
+				return;
+			}
 
 			var stream = GetDevice();
+			if (stream == null)
+			{
+				Console.WriteLine("Device not found, did you configure the drivers properly ?");
+				return;
+			}
 
 			Thread VideoThread = null;
 			if (VTarget != null)

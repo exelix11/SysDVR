@@ -5,11 +5,20 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <Platforms>AnyCPU;x86</Platforms>
     <AssemblyName>UsbStream</AssemblyName>
+    <Description>https://github.com/exelix11/SysDVR</Description>
+    <Authors>exelix</Authors>
+    <Company />
+    <PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
