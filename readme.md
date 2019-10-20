@@ -3,10 +3,10 @@ This is an experimental sysmodule that allows capturing the running game output 
 Two versions are provided: one to stream via USB and one to stream over the network (TCP). Currently it's not possible to use both at the same time.\
 Using [mpv player](https://mpv.io/) is recommended as it's the most straight forward to set up, any other player that supports raw h264 streams via tcp or stdin should work but you may have to configure it manually.
 ## Limitations
-- Video quality is fixed to 720p @ 30fps with h264 compression (hardware limit)
+- **Video quality is fixed to 720p @ 30fps with h264 compression (hardware limit)**
 - Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed
+- **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
 - Video and audio are two different streams, they're likely to desync as they require two different player instances. Vlc does support a secondary audio stream but i didn't manage to get it working properly.
-- Only works on games that have video recording enabled (aka you can long-press the capture button to save a video)
 - Only captures game output. System UI, home menu and homebrews running as applet won't be captured
 - Video feed is not realitme, there will always be a minimum of ~1 second of delay.
 - Stream quality depends heavily on the environment, bad usb wires or low wifi signal can affect it significantly.
