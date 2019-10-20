@@ -92,7 +92,7 @@ void __attribute__((weak)) __appExit(void)
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
-const int AudioBatchSz = 10;
+const int AudioBatchSz = 12;
 
 u8* Vbuf = NULL;
 u8* Abuf = NULL;

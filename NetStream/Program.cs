@@ -29,7 +29,7 @@ namespace UsbStream
 		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
 		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBBBBBBBB);
 		const int VbufMaxSz = 0x32000;
-		const int AbufMaxSz = 0x1000 * 10;
+		const int AbufMaxSz = 0x1000 * 12;
 
 		interface IOutTarget : IDisposable
 		{
