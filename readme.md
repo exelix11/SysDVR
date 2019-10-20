@@ -8,7 +8,7 @@ Using [mpv player](https://mpv.io/) is recommended as it's the most straight for
 - **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
 - Video and audio are two different streams, they're likely to desync as they require two different player instances. Vlc does support a secondary audio stream but i didn't manage to get it working properly.
 - Only captures game output. System UI, home menu and homebrews running as applet won't be captured
-- Video feed is not realitme, there will always be a minimum of ~1 second of delay.
+- Video feed is not realtime, there will always be a minimum of ~1 second of delay.
 - Stream quality depends heavily on the environment, bad usb wires or low wifi signal can affect it significantly.
 - Stream quality is also affected by software configuration, more details at the bottom.
 - USB streaming is not available when docked
