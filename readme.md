@@ -1,6 +1,6 @@
-# SysVStream (Name TBD)
-This is an experimental sysmodule that allows streaming the running game to a pc.\
-Two versions are provided: one to stream via USB and one to stream via network (TCP). Currently it's not possible both at the same time.\
+# SysDVR
+This is an experimental sysmodule that allows capturing the running game output to a pc.\
+Two versions are provided: one to stream via USB and one to stream over the network (TCP). Currently it's not possible to use both at the same time.\
 Using [mpv player](https://mpv.io/) is recommended as it's the most straight forward to set up, any other player that supports raw h264 streams via tcp or stdin should work but you may have to configure it manually.
 ## Limitations
 - Video quality is fixed to 720p @ 30fps with h264 compression (hardware limit)
@@ -54,6 +54,7 @@ UsbStream audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/prog
 UsbStream video mpv ./mpv audio mpv ./mpv : Plays video and audio via mpv (path has to be specified twice)
 UsbStream video tcp 1337 audio file C:/audio.raw : Streams video over port 1337 while saving audio to disk
 ```
+Note that on windows you should use the mpv.com file and not mpv.exe, omitting the extension will automatically use the right one
 Launching UsbStream without any parameter will display more options and examples.\
 To connect to the tcp streams you can use: `mpv tcp://localhost:<video port> --no-correct-pts --fps=30 ` for video and `mpv tcp://localhost:<audio port> --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000` for audio
 ## Tips
@@ -69,6 +70,7 @@ To get the most out of this sysmodule you have to do a lot of testing to find th
 - The usb version stops working when launching another homebrew that requires usb access like nxmtp or goldleaf.
   - Implement a key combination to reinitialize usb when this happens (?)
 - Merge the usb and network stream versions and make an homebrew app to toggle between the two 
+- Improve automatic desync detection and fix for UsbStream
 
 ## Credits
 - Everyone from libnx and the people who reversed grc:d and wrote the service wrapper, mission2000 in particular for the suggestion on how to fix audio lag.

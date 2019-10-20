@@ -36,7 +36,7 @@ namespace UsbStream
 
 		public int MillisTimeout = 100000;
 
-		public unsafe UsbDevStream(IUsbDevice dev, WriteEndpointID writePipe, ReadEndpointID readPipe)
+		public UsbDevStream(IUsbDevice dev, WriteEndpointID writePipe, ReadEndpointID readPipe)
 		{
 			device = dev;
 			WritePipe = writePipe;
