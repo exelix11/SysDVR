@@ -5,8 +5,8 @@
 #include "grcd.h"
 
 #if !defined(RELEASE)
-//#define MODE_USB
-#define MODE_SOCKET
+#define MODE_USB
+//#define MODE_SOCKET
 #else
 #pragma message "Building release"
 #endif
@@ -92,7 +92,7 @@ void __attribute__((weak)) __appExit(void)
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
-const int AudioBatchSz = 12;
+const int AudioBatchSz = 10;
 
 u8* Vbuf = NULL;
 u8* Abuf = NULL;
@@ -169,8 +169,8 @@ static void ReadVideoStream()
 }
 
 #if defined(MODE_USB)
-UsbInterface VideoStream ;
-UsbInterface AudioStream ;
+UsbInterface VideoStream;
+UsbInterface AudioStream;
 const u32 REQMAGIC_VID = 0xAAAAAAAA;
 const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
@@ -189,17 +189,20 @@ static u32 WaitForInputReq(UsbInterface* dev)
 static void SendStream(GrcStream stream, UsbInterface *Dev)
 {
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	 
+	u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
+
 	if (*size <= 0)
 		*size = 0;
 
+	if (UsbSerialWrite(Dev, &Magic, sizeof(Magic), 1E+8) != sizeof(Magic))
+		return;
 	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size))
 		return;
 
 	if (*size)
 	{
 		u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-		if (UsbSerialWrite(Dev, TargetBuf, *size, 1E+9) != *size) // 1 second 
+		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size) 
 			return; 
 	}
 	return;
