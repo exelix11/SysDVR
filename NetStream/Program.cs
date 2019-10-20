@@ -29,7 +29,7 @@ namespace UsbStream
 		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
 		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBBBBBBBB);
 		const int VbufMaxSz = 0x32000;
-		const int AbufMaxSz = 0x1000 * 12;
+		const int AbufMaxSz = 0x1000 * 10;
 
 		interface IOutTarget : IDisposable
 		{
@@ -180,14 +180,19 @@ namespace UsbStream
 
 			int ReadToSharedArray()
 			{
-				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
-				stream.MillisTimeout = 500;
+				stream.MillisTimeout = 100;
+				while (true)
+				{
+					SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
+					stream.Read(SizeBuf);
+					if (SizeBuf.SequenceEqual(ReqMagic)) break;
+				}
 				stream.Read(SizeBuf);
 				var size = BitConverter.ToUInt32(SizeBuf);
 				if (size > MaxBufSize) return -1;
 				if (size == 0) return 0;
 
-				stream.MillisTimeout = 30000;
+				stream.MillisTimeout = 1000;
 				data = sh.Rent((int)size);
 				int actualsize = stream.Read(data, 0, (int)size);
 				if (actualsize != size) Console.WriteLine("Warning: Reported size doesn't match received size");
@@ -206,12 +211,18 @@ namespace UsbStream
 #endif
 			while (!Console.KeyAvailable)
 			{
-				stream.Write(ReqMagic);
+				while (stream.WriteWResult(ReqMagic) != ReqMagic.Length)
+				{
+					Console.WriteLine($"Warning: Couldn't write data to device ({kind} thread)");
+					System.Threading.Thread.Sleep(500);
+					stream.Flush();
+				}
 
 				var size = ReadToSharedArray();
 				if (size > MaxBufSize || size <= 0)
 				{
-					Console.WriteLine($"Discarding {kind} packet of size {size}");
+					Console.WriteLine($"Warning: Discarding packet of size {size} ({kind} thread)");
+					System.Threading.Thread.Sleep(500);
 					stream.Flush();
 				}
 				else

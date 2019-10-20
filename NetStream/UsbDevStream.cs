@@ -66,16 +66,15 @@ namespace UsbStream
 		public override void SetLength(long value) => 
 			throw new NotImplementedException();
 
-		public override void Write(byte[] buffer, int offset, int count)
+		public int WriteWResult(byte[] buffer) => WriteWResult(buffer, 0, buffer.Length);
+
+		public int WriteWResult(byte[] buffer, int offset, int count)
 		{
 			writer.Write(buffer, offset, count, MillisTimeout, out int written);
-			if (written != count)
-			{
-				Console.WriteLine("Warning: writing to the device failed");
-				Flush();
-				System.Threading.Thread.Sleep(1000);
-			}
+			return written;
 		}
+
+		public override void Write(byte[] buffer, int offset, int count) => WriteWResult(buffer, offset, count);
 
 		public override void Flush()
 		{
