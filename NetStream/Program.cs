@@ -333,9 +333,7 @@ namespace UsbStream
 				index = Array.IndexOf(args, "audio");
 				if (index >= 0) ParseTargetArgs(index, ref ATarget);
 
-				PrintStats = Array.IndexOf(args, "--stats") != -1;
 				UseDesyncFix = Array.IndexOf(args, "--desync-fix") != -1;
-
 #if DEBUG
 				PrintStats = true;
 #else
