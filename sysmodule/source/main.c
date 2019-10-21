@@ -109,7 +109,7 @@ void AllocateRecordingBuf()
 		fatalSimple(MAKERESULT(1, 40));
 
 	Abuf = aligned_alloc(0x1000, AbufSz * AudioBatchSz);
-	if (!Vbuf)
+	if (!Abuf)
 		fatalSimple(MAKERESULT(1, 50));
 }
 
