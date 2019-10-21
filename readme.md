@@ -28,7 +28,7 @@ When using network streaming it's not recommended to stream both audio and video
 To stream via usb you need the UsbStream program, it's built using dotnet core 3.0 and is compatible with linux as well.\
 First of all you should make sure your drivers are set up correctly (only the first time) :
 #### Driver setup on windows
-On windows you may get the `device not found` or `unsupported driver` errors or very bad performance on the stream, in this case you may have the wrong driver set up, download zadig and install the `libusb-win32` driver for the "Nintendo Switch" device. This won't interfere with other application that communicate with the switch via usb as this sysmodule uses a different product id.
+On windows you may get the `device not found` or `unsupported driver` errors or very bad performance on the stream, in this case you may have the wrong driver set up, download zadig and install the `libusb-win32` driver for the "Nintendo Switch" device. **Before installing make sure the target device USB ID is `057e 3006`**, if it's different the sysmodule may not be running, try waiting a bit (it should start around 20 seconds after the console boot) or check again your setup. This won't interfere with other application that communicate with the switch via usb as this sysmodule uses a different product id.
 #### Driver setup on linux 
 On linux you may have errors about loading the `libusb-1.0` library, this happens when the file name is different than the one expected by dotnet, you can make a symlink as described on the [LibUsbDotNet repo](https://github.com/LibUsbDotNet/LibUsbDotNet#linux-users):\
 `sudo find / -name "libusb-1.0*.so*"` and then
