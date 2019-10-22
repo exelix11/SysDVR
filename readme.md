@@ -25,10 +25,11 @@ This is the easiest way to stream, In this mode the sysmodule is completely stan
 When using network streaming it's not recommended to stream both audio and video at the same time as it may cause slowdowns.
 *In general network streaming has more lag and delay compared to USB, it is worth the time to set it up, especially for gameplay recording.*
 ### USB streaming
-To stream via usb you need the UsbStream program, it's built using dotnet core 3.0 and is compatible with linux as well.\
-First of all you should make sure your drivers are set up correctly (only the first time) :
+To stream via usb you need the UsbStream program, it's built using .NET core and is compatible with linux as well.\
+First of all you should make sure to install [.NET core 3](https://dotnet.microsoft.com/download) on your pc, then proceed to setup the drivers, this step is needed only the first time:
 #### Driver setup on windows
-On windows you may get the `device not found` or `unsupported driver` errors or very bad performance on the stream, in this case you may have the wrong driver set up, download zadig and install the `libusb-win32` driver for the "Nintendo Switch" device. **Before installing make sure the target device USB ID is `057e 3006`**, if it's different the sysmodule may not be running, try waiting a bit (it should start around 20 seconds after the console boot) or check again your setup. This won't interfere with other application that communicate with the switch via usb as this sysmodule uses a different product id.
+On windows you may get the `device not found` or `unsupported driver` errors or very bad performance on the stream, in this case you may have the wrong driver set up, download zadig and install the `libusb-win32` driver for the "Nintendo Switch" device. **Before installing make sure the target device USB ID is `057e 3006`**, if it's different the sysmodule may not be running, try waiting a bit (it should start around 20 seconds after the console boot) or check again your setup.\
+This won't interfere with other application that communicate with the switch via usb as this sysmodule uses a different product id.
 #### Driver setup on linux 
 On linux you may have errors about loading the `libusb-1.0` library, this happens when the file name is different than the one expected by dotnet, you can make a symlink as described on the [LibUsbDotNet repo](https://github.com/LibUsbDotNet/LibUsbDotNet#linux-users):\
 `sudo find / -name "libusb-1.0*.so*"` and then
@@ -45,7 +46,7 @@ UsbStream supports three streaming modes:
 
 Launch UsbStream like this:
 `UsbStream video <streaming mode> <arg> audio <streaming mode> <arg>` \
-When using `mpv` the arg is the mpv executable (.com file on windows) path, you have to repeat it twice if using both streams. \
+When using `mpv` the arg is the path of mpv on your pc (use the .com file on windows), you have to repeat it twice if using both streams. \
 The `tcp` option requires a free port number and the `file` option the output file path. \
 To disable a stream just omit the name and its fields.\
 Example commands:
