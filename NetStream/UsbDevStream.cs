@@ -9,7 +9,7 @@ using LibUsbDotNet.Main;
 
 namespace UsbStream
 {
-	class UsbDevice 
+	public class UsbDevice 
 	{
 		private IUsbDevice dev;
 
@@ -24,7 +24,7 @@ namespace UsbStream
 		public UsbDevStream OpenStream(WriteEndpointID WriteEp, ReadEndpointID ReadEp) => new UsbDevStream(dev, WriteEp, ReadEp);
 	}
 
-	class UsbDevStream : Stream
+	public class UsbDevStream : Stream
 	{
 		private IUsbDevice device;
 

@@ -1,6 +1,4 @@
-﻿//#define PRINT_DEBUG
-
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,236 +15,24 @@ namespace UsbStream
 {
 	class Program
 	{
-		static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
-		static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
+		public static UsbContext LibUsbCtx = null;
 
-		enum StreamKind 
+		static UsbDevice GetDevice(LibUsbDotNet.LogLevel level) 
 		{
-			Video,
-			Audio
-		};
+			if (LibUsbCtx != null)
+				throw new Exception("Libusb has already been initialized");
 
-		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
-		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBBBBBBBB);
-		const int VbufMaxSz = 0x32000;
-		const int AbufMaxSz = 0x1000 * 12;
+			LibUsbCtx = new UsbContext();
+			LibUsbCtx.SetDebugLevel(level);
+			var usbDeviceCollection = LibUsbCtx.List();
+			var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
 
-		interface IOutTarget : IDisposable
-		{
-			public void SendData(byte[] data) => SendData(data, 0, data.Length);
-			void SendData(byte[] data, int offset, int size);
-		}
+			if (selectedDevice == null)
+				return null;
 
-		class OutFileTarget : IOutTarget
-		{
-			FileStream Vfs;
+			selectedDevice.Open();
 
-			public OutFileTarget(string fname) 
-			{
-				Vfs = File.Open(fname, FileMode.Create);
-			}
-
-			public void Dispose()
-			{
-				Vfs.Close();
-				Vfs.Dispose();
-			}
-
-			public void SendData(byte[] data, int offset, int size)
-			{
-				Vfs.Write(data, offset, size);
-			}
-		}
-
-		class TCPTarget : IOutTarget
-		{
-			Socket VidSoc;
-
-			public TCPTarget(System.Net.IPAddress addr, int port)
-			{
-				var v = new TcpListener(addr, port);
-				v.Start();
-				VidSoc = v.AcceptSocket();
-				v.Stop();
-			}
-
-			public void Dispose()
-			{
-				VidSoc.Close();
-				VidSoc.Dispose();
-			}
-					   
-			public void SendData(byte[] data, int offset, int size)
-			{
-				VidSoc.Send(data, offset, size, SocketFlags.None);
-			}
-		}
-
-		class StdInTarget : IOutTarget
-		{
-			Process proc;
-
-			public StdInTarget(string path, string args)
-			{
-				ProcessStartInfo p = new ProcessStartInfo()
-				{
-					Arguments = " - " + args,
-					FileName = path,
-					RedirectStandardInput = true,
-					RedirectStandardOutput = true
-				};
-				proc = Process.Start(p);
-			}
-
-			public void Dispose()
-			{
-				if (!proc.HasExited)
-					proc.Kill(); 
-			}
-
-			public void SendData(byte[] data, int offset, int size)
-			{
-				proc.StandardInput.BaseStream.Write(data, offset, size);
-			}
-		}
-
-		static UsbDevice GetDevice() 
-		{
-			using (var context = new UsbContext())
-			{
-				context.SetDebugLevel(LogLevel.Error);
-				var usbDeviceCollection = context.List();
-				var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
-
-				if (selectedDevice == null)
-					return null;
-
-				selectedDevice.Open();
-
-				return new UsbDevice(selectedDevice);
-			}
-
-		}
-
-		static bool UseDesyncFix = false;
-		static bool PrintStats = false;
-		static bool StreamLoop(IOutTarget Target, UsbDevStream stream, StreamKind kind)
-		{
-			Stopwatch ThreadTimer = new Stopwatch();
-			long TransfersPerSecond = 0;
-			long BytesPerSecond = 0;
-			ThreadTimer.Start();
-
-			bool DesyncFlag = false;
-			void UpdatePlayStats()
-			{
-				if (ThreadTimer.ElapsedMilliseconds < 1000) return;
-				ThreadTimer.Stop();
-				if (PrintStats)
-					Console.WriteLine($"{kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
-
-				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 10 && UseDesyncFix && kind == StreamKind.Video && TransfersPerSecond > 2 && !DesyncFlag)
-				{
-					DesyncFlag = true;
-				}
-				else if (DesyncFlag && BytesPerSecond / ThreadTimer.ElapsedMilliseconds >= 100)
-				{
-					Console.WriteLine("Preventing desync");
-					System.Threading.Thread.Sleep(600);
-					stream.Flush();
-					DesyncFlag = false;
-				}
-				
-				TransfersPerSecond = 0;
-				BytesPerSecond = 0;
-
-				ThreadTimer.Restart();
-			}
-
-			byte[] ReqMagic = kind == StreamKind.Video ? REQMagic_VIDEO : REQMagic_AUDIO;
-			int MaxBufSize = kind == StreamKind.Video ? VbufMaxSz : AbufMaxSz;
-
-			//For video start by sending an SPS and PPS packet to set the resolution, these packets are only sent when launching a game
-			//Not sure if they're the same for every game, likely yes due to hardware encoding
-			if (kind == StreamKind.Video)
-			{
-				Target.SendData(SPS);
-				Target.SendData(PPS);
-			}
-
-			byte[] SizeBuf = new byte[4];
-			ArrayPool<byte> sh = ArrayPool<byte>.Create();
-			byte[] data = null;
-
-			int ReadToSharedArray()
-			{
-				stream.MillisTimeout = 100;
-				while (true)
-				{
-					SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
-					stream.Read(SizeBuf);
-					if (SizeBuf.SequenceEqual(ReqMagic)) break;
-				}
-				stream.Read(SizeBuf);
-				var size = BitConverter.ToUInt32(SizeBuf);
-				if (size > MaxBufSize) return -1;
-				if (size == 0) return 0;
-
-				stream.MillisTimeout = 1000;
-				data = sh.Rent((int)size);
-				int actualsize = stream.Read(data, 0, (int)size);
-				if (actualsize != size) Console.WriteLine("Warning: Reported size doesn't match received size");
-				return actualsize;
-			}
-
-			void FreeBuffer()
-			{
-				if (data != null) sh.Return(data);
-				data = null;
-			}
-
-#if !DEBUG
-			try
-			{
-#endif
-			while (!Console.KeyAvailable)
-			{
-				while (stream.WriteWResult(ReqMagic) != ReqMagic.Length)
-				{
-					Console.WriteLine($"Warning: Couldn't write data to device ({kind} thread)");
-					System.Threading.Thread.Sleep(500);
-					stream.Flush();
-				}
-
-				var size = ReadToSharedArray();
-				if (size > MaxBufSize || size <= 0)
-				{
-					Console.WriteLine($"Warning: Discarding packet of size {size} ({kind} thread)");
-					System.Threading.Thread.Sleep(500);
-					stream.Flush();
-				}
-				else
-				{
-					Target.SendData(data, 0, (int)size);
-					FreeBuffer();
-#if PRINT_DEBUG
-					Console.WriteLine($"video {size}");
-#endif
-					TransfersPerSecond++;
-					BytesPerSecond += size;
-					UpdatePlayStats();
-				}
-			}
-#if !DEBUG
-				
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("There was an exception: " + ex.ToString());
-				FreeBuffer();
-			}
-#endif
-			return false;
+			return new UsbDevice(selectedDevice);
 		}
 
 		static void PrintGuide()
@@ -276,14 +62,16 @@ namespace UsbStream
 					"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
 					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n\r\n" +
 					"Experimental/Debug options:\r\n" +
-					"--desync-fix will flush incoming packets and delay further requests to avoid desync when the bandwidth goes under a certain threshold\r\n" +
-					"--print-stats will print the average transfer speed and loop count for each thread every second");
+					"--desync-fix : flush incoming packets and delay further requests to avoid desync when the bandwidth goes under a certain threshold\r\n" +
+					"--print-stats : print the average transfer speed and loop count for each thread every second\r\n" +
+					"--usb-warn : print warnings from libusb\r\n" +
+					"--usb-debug : print verbose output from libusb");
 			Console.ReadLine();
 		}
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("UsbStream - 1.0 by exelix");
+			Console.WriteLine("UsbStream - 1.0 (TEST BUILD) by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 3)
 			{
@@ -293,6 +81,9 @@ namespace UsbStream
 
 			IOutTarget VTarget = null;
 			IOutTarget ATarget = null;
+			bool PrintStats = false;
+			bool DesyncFix = false;
+			LogLevel UsbLogLevel = LogLevel.Error;
 
 			void ParseTargetArgs(int baseIndex, ref IOutTarget t)
 			{
@@ -327,18 +118,18 @@ namespace UsbStream
 				}
 			}
 
+			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
+
 			{
 				int index = Array.IndexOf(args, "video");
 				if (index >= 0) ParseTargetArgs(index, ref VTarget);
 				index = Array.IndexOf(args, "audio");
 				if (index >= 0) ParseTargetArgs(index, ref ATarget);
 
-				UseDesyncFix = Array.IndexOf(args, "--desync-fix") != -1;
-#if DEBUG
-				PrintStats = true;
-#else
-				PrintStats = Array.IndexOf(args, "--print-stats") != -1;
-#endif
+				DesyncFix = HasArg("--desync-fix");
+				PrintStats = HasArg("--print-stats");
+				if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
+				if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
 			}
 
 			if (VTarget == null && ATarget == null)
@@ -347,28 +138,38 @@ namespace UsbStream
 				return;
 			}
 
-			var stream = GetDevice();
+			var stream = GetDevice(UsbLogLevel);
 			if (stream == null)
 			{
 				Console.WriteLine("Device not found, did you configure the drivers properly ?");
 				return;
 			}
 
-			Thread VideoThread = null;
+			CancellationTokenSource StopThreads = new CancellationTokenSource();
+
+			VideoStreamThread Video = null;
 			if (VTarget != null)
-				VideoThread = new Thread(() => StreamLoop(VTarget, stream.OpenStreamDefault(), StreamKind.Video));
-
-			Thread AudioThread = null;
+				Video = new VideoStreamThread(StopThreads.Token, VTarget, stream.OpenStreamDefault(), PrintStats, DesyncFix);
+				
+			AudioStreamThread Audio = null;
 			if (ATarget != null)
-				AudioThread = new Thread(() => StreamLoop(ATarget, stream.OpenStreamAlt(), StreamKind.Audio));
+				Audio = new AudioStreamThread(StopThreads.Token, ATarget, stream.OpenStreamAlt(), PrintStats);	
 
-			VideoThread?.Start();
-			AudioThread?.Start();
+			Video?.StartThread();
+			Audio?.StartThread();
 
-			VideoThread?.Join();
-			VTarget?.Dispose();
-			AudioThread?.Join();
-			ATarget?.Dispose();
+			Console.WriteLine("Starting stream, press return to stop");
+			Console.ReadLine();
+			Console.WriteLine("Terminating threads...");
+			StopThreads.Cancel();
+
+			Video?.JoinThread();
+			Audio?.JoinThread();
+
+			Video?.Dispose();
+			Audio?.Dispose();
+
+			LibUsbCtx.Dispose();
 		}
 	}
 }
