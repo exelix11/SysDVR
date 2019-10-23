@@ -14,6 +14,7 @@ namespace UsbStreamGUI
 	public partial class Form1 : Form
 	{
 		StreamTarget CurTarget = StreamTarget.File;
+		StreamKind CurKind = StreamKind.Audio;
 
 		Dictionary<StreamTarget, IStreamTargetControl> StreamControls = new Dictionary<StreamTarget, IStreamTargetControl>
 		{
@@ -39,6 +40,10 @@ namespace UsbStreamGUI
 				this.Close();
 			}
 
+			if (Utils.FindExecutableInPath("dotnet.exe") == null)
+				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for UsbStream, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+					System.Diagnostics.Process.Start("https://dotnet.microsoft.com/download");
+			
 			radioButton6.Checked = true;
 			radioButton1.Checked = true;
 		}
@@ -56,10 +61,10 @@ namespace UsbStreamGUI
 		{
 			if (!((RadioButton)sender).Checked) return;
 
-			var kind = (StreamKind)Enum.Parse(typeof(StreamKind), ((RadioButton)sender).Text);
+			CurKind = (StreamKind)Enum.Parse(typeof(StreamKind), ((RadioButton)sender).Text);
 
 			foreach (IStreamTargetControl c in StreamControls.Values)
-				c.TargetKind = kind;
+				c.TargetKind = CurKind;
 		}
 
 		string GetExtraArgs() 
@@ -102,17 +107,26 @@ namespace UsbStreamGUI
 		{
 			string cmd = GetFinalCommand();
 			if (cmd != null)
-				File.WriteAllText("LaunchStream.bat", cmd);
+				File.WriteAllText($"Launch_{CurTarget}_{CurKind}.bat", cmd);
 		}
 
 		private void BatchInfo(object sender, EventArgs e) =>
-			MessageBox.Show("This will create a LaunchStream.bat file you just need to double click to launch UsbStream with the selected options.\r\n");
+			MessageBox.Show("This will create a bat file you just need to double click to launch UsbStream with the selected options. The file name depends on the configuration, you can rename it later.\r\n");
 
 		private void button4_Click(object sender, EventArgs e) => MessageBox.Show(
-				"UsbStream requires .NET core 3 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
+				"UsbStream requires .NET core 3.0 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
 				"Make sure to properly setup the drivers following the github guide before attempting to stream\r\n\r\n" +
 				"In case of issues check UsbStream output for errors and search in the github issues or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
 
 		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");
+	}
+
+	static class Utils 
+	{
+		public static string FindExecutableInPath(string fileName) =>
+			Environment.GetEnvironmentVariable("PATH")
+				.Split(Path.PathSeparator)
+				.Select(x => Path.Combine(x, fileName))
+				.FirstOrDefault(x => File.Exists(x));
 	}
 }

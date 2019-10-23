@@ -217,7 +217,7 @@
 			// cbStats
 			// 
 			this.cbStats.AutoSize = true;
-			this.cbStats.Location = new System.Drawing.Point(140, 19);
+			this.cbStats.Location = new System.Drawing.Point(140, 21);
 			this.cbStats.Name = "cbStats";
 			this.cbStats.Size = new System.Drawing.Size(114, 17);
 			this.cbStats.TabIndex = 3;
@@ -229,9 +229,9 @@
 			this.cbUsbLog.AutoSize = true;
 			this.cbUsbLog.Location = new System.Drawing.Point(140, 44);
 			this.cbUsbLog.Name = "cbUsbLog";
-			this.cbUsbLog.Size = new System.Drawing.Size(292, 17);
+			this.cbUsbLog.Size = new System.Drawing.Size(325, 17);
 			this.cbUsbLog.TabIndex = 2;
-			this.cbUsbLog.Text = "Usb log verbose (not recommended for actual streaming)";
+			this.cbUsbLog.Text = "Print LibUsb debug info (not recommended for actual streaming)";
 			this.cbUsbLog.UseVisualStyleBackColor = true;
 			// 
 			// cbUsbWarn
@@ -239,9 +239,9 @@
 			this.cbUsbWarn.AutoSize = true;
 			this.cbUsbWarn.Location = new System.Drawing.Point(7, 45);
 			this.cbUsbWarn.Name = "cbUsbWarn";
-			this.cbUsbWarn.Size = new System.Drawing.Size(107, 17);
+			this.cbUsbWarn.Size = new System.Drawing.Size(128, 17);
 			this.cbUsbWarn.TabIndex = 1;
-			this.cbUsbWarn.Text = "Usb log warnings";
+			this.cbUsbWarn.Text = "Print LibUsb warnings";
 			this.cbUsbWarn.UseVisualStyleBackColor = true;
 			// 
 			// cbDesync
@@ -264,7 +264,8 @@
 			this.label1.Size = new System.Drawing.Size(620, 43);
 			this.label1.TabIndex = 7;
 			this.label1.Text = "This utility will configure the UsbStream command line automatically, remember th" +
-    "at you still need to setup the USB drivers as explained on the guide";
+    "at for the first time you still need to setup the USB drivers as explained on th" +
+    "e guide";
 			// 
 			// linkLabel1
 			// 
