@@ -26,7 +26,7 @@ namespace UsbStream
 
 		public void StartThread() 
 		{
-			thread = new Thread(() => MainLoop());
+			thread = new Thread(MainLoop);
 			thread.Start();
 		}
 
@@ -68,7 +68,7 @@ namespace UsbStream
 				while (Device.WriteWResult(MagicPacket) != MagicPacket.Length)
 				{
 					Console.WriteLine($"Warning: Couldn't write data to device ({Kind} thread)");
-					System.Threading.Thread.Sleep(500);
+					System.Threading.Thread.Sleep(1000);
 					Device.Flush();
 				}
 
@@ -117,13 +117,14 @@ namespace UsbStream
 			while (true)
 			{
 				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
-				Device.Read(SizeBuf,0,4);
+				if (Device.Read(SizeBuf,0,4) != 4)
+					continue;
 				if (SizeBuf.SequenceEqual(MagicPacket))
 					break;
 			}
 
 			//read the payload size
-			Device.Read(SizeBuf, 0, 4);
+			if (Device.Read(SizeBuf, 0, 4) != 4) return -2;
 			var size = BitConverter.ToUInt32(SizeBuf);
 			if (size > MaxBufSize) return -1;
 			if (size == 0) return 0;
