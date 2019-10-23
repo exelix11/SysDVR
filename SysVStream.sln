@@ -7,6 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UsbStream", "NetStream\UsbS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sys-VStream", "sysmodule\sys-VStream.vcxproj", "{4C556D1E-0F9A-4879-8424-F4DD216F765F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UsbStreamGUI", "UsbStreamGUI\UsbStreamGUI.csproj", "{EDF194B2-F484-425F-9BF9-357CF9BF065A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{79443CAF-C9CC-4EBD-996E-B711C7709ED0} = {79443CAF-C9CC-4EBD-996E-B711C7709ED0}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +44,18 @@ Global
 		{4C556D1E-0F9A-4879-8424-F4DD216F765F}.Release|x64.Build.0 = Release|x64
 		{4C556D1E-0F9A-4879-8424-F4DD216F765F}.Release|x86.ActiveCfg = Release|Win32
 		{4C556D1E-0F9A-4879-8424-F4DD216F765F}.Release|x86.Build.0 = Release|Win32
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Debug|x64.Build.0 = Debug|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Debug|x86.Build.0 = Debug|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Release|x64.ActiveCfg = Release|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Release|x64.Build.0 = Release|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Release|x86.ActiveCfg = Release|Any CPU
+		{EDF194B2-F484-425F-9BF9-357CF9BF065A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
