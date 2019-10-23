@@ -60,5 +60,12 @@ namespace UsbStreamGUI
 		{
 
 		}
+
+		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://mpv.io/installation/");
+
+		private void MpvStreamControl_Load(object sender, EventArgs e)
+		{
+
+		}
 	}
 }
