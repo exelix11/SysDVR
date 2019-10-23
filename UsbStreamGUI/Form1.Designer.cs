@@ -308,6 +308,7 @@
 			this.Controls.Add(this.button1);
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
+			this.MinimumSize = new System.Drawing.Size(646, 441);
 			this.Name = "Form1";
 			this.Text = "UsbStreamGUI";
 			this.Load += new System.EventHandler(this.Form1_Load);

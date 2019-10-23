@@ -31,6 +31,8 @@ namespace UsbStreamGUI
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
+			SetDefaultText();
+
 			if (!File.Exists("UsbStream.exe"))
 			{
 				MessageBox.Show("UsbStream.exe not found, did you extract all the files in the same folder ?");
