@@ -98,6 +98,7 @@ namespace UsbStream
 				Console.WriteLine("There was an exception: " + ex.ToString());
 			}
 #endif
+			Console.WriteLine($"{Kind} thread stopped.");
 		}
 
 		private readonly ArrayPool<byte> StreamingPool = ArrayPool<byte>.Create();
