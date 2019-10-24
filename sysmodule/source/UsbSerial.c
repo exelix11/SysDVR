@@ -195,15 +195,18 @@ void usbSerialExit(void)
 	{
 		_usbCommsInterfaceFree(&g_usbCommsInterfaces[i]);
 	}
+
+	ep_in = 1;
+	ep_out = 1;
 }
 
 static Result _usbCommsInterfaceInit(u32 intf_ind, const UsbInterfaceDesc* info)
 {
-	/*if (hosversionAtLeast(5,0,0)) {*/
-	return _usbCommsInterfaceInit5x(intf_ind, info);
-	/*} else {
-		return _usbCommsInterfaceInit1x(intf_ind, info);
-	}*/
+	if (hosversionAtLeast(5,0,0)) {
+		return _usbCommsInterfaceInit5x(intf_ind, info);
+	} else {
+		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer));
+	}
 }
 
 static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbInterfaceDesc* info)
