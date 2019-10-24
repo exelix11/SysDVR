@@ -135,6 +135,11 @@ static void ReadAudioStream()
 		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
+			if (!IsThreadRunning)
+			{
+				AOutSz = 0;
+				break;
+			}
 			--i;
 			continue;
 		}
@@ -166,13 +171,13 @@ const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
 static u32 USB_WaitForInputReq(UsbInterface* dev)
 {
-	while (IsThreadRunning)
+	do
 	{
 		u32 initSeq = 0;
 		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), 1E+9) == sizeof(initSeq))
 			return initSeq;
-		svcSleepThread(2E+9);
-	}
+		svcSleepThread(1E+9);
+	} while (IsThreadRunning);
 	return 0;
 }
 
@@ -209,7 +214,7 @@ void* USB_StreamThreadMain(void* _stream)
 
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
-	while (IsThreadRunning)
+	while (true)
 	{
 		u32 cmd = USB_WaitForInputReq(Dev);
 
@@ -218,6 +223,7 @@ void* USB_StreamThreadMain(void* _stream)
 			ReadStreamFn();
 			USB_SendStream(stream, Dev);
 		}
+		else if (!IsThreadRunning) break;
 	}
 	pthread_exit(NULL);
 	return NULL;
@@ -326,7 +332,7 @@ void* TCP_StreamThreadMain(void* _stream)
 			if (++fails > 2 && IsThreadRunning)
 			{
 				fails = 0;
-				Result rc = SocketInit(stream);
+				Result rc = SocketingInit(stream);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
 			svcSleepThread(1E+9);
@@ -354,7 +360,6 @@ void* TCP_StreamThreadMain(void* _stream)
 			if (write(curSock, TargetBuf, *size) == -1)
 				break;
 		}
-
 		
 		close(curSock);
 		*OutSock = -1;
