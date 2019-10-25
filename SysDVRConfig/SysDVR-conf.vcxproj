@@ -20,10 +20,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{4C556D1E-0F9A-4879-8424-F4DD216F765F}</ProjectGuid>
+    <ProjectGuid>{C1F4E078-6C37-42FA-AC47-07128598B1BE}</ProjectGuid>
     <Keyword>MakeFileProj</Keyword>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>SysDVR-module</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -77,26 +75,13 @@
     <NMakeReBuildCommandLine>make clean &amp;&amp; make</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\E\Projects\VM\libnx\nx\include\;$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
+  <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\main.c" />
-    <ClCompile Include="source\UsbSerial.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
-    <None Include="sysmodule.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="source\grcd.h" />
-    <ClInclude Include="source\UsbSerial.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
