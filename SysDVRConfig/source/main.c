@@ -149,6 +149,9 @@ void ReadCurrentMode(int sock)
 bool MenuSetMode(int sock, u32 mode)
 {
 	printf("\x1b[6;0H\x1b[0J");
+	printf("Loading...");
+	consoleUpdate(NULL);
+	printf("\x1b[6;0H\x1b[0J");
 	if (!SendValue(sock, mode))
 	{
 		FatalError("Couldn't communicate with the sysmodule");

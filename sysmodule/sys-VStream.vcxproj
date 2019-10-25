@@ -92,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="release.bat" />
     <None Include="sysmodule.json" />
   </ItemGroup>
   <ItemGroup>
