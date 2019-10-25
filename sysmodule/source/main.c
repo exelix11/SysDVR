@@ -10,7 +10,7 @@
 #if defined(RELEASE)
 #pragma message "Building release"
 #else
-#define MODE_USB
+//#define MODE_USB
 #endif
 
 //Build with MODE_USB to have a smaller impact on memory,
@@ -159,7 +159,7 @@ static void ReadAudioStream()
 		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
-			if (fails++ > 8 && !IsThreadRunning)
+			if (fails++ > 9 && !IsThreadRunning)
 			{
 				AOutSz = 0;
 				break;
@@ -356,7 +356,7 @@ void* TCP_StreamThreadMain(void* _stream)
 		int curSock = accept(*sock, 0, 0);
 		if (curSock < 0)
 		{
-			if (sockFails++ > 3 && IsThreadRunning)
+			if (sockFails++ >= 3 && IsThreadRunning)
 			{
 				Result rc = SocketingInit(stream);
 				if (R_FAILED(rc)) fatalSimple(rc);
@@ -384,7 +384,7 @@ void* TCP_StreamThreadMain(void* _stream)
 		while (true)
 		{
 			ReadStreamFn();
-			if (write(curSock, TargetBuf, *size) == -1)
+			if (write(curSock, TargetBuf, *size) <= 0)
 				break;
 		}
 		
@@ -493,8 +493,9 @@ void ConfigThread()
 		int curSock = accept(ConfigSock, 0, 0);
 		if (curSock < 0)
 		{
-			if (sockFails++ > 3)
+			if (sockFails++ >= 3)
 			{
+				sockFails = 0;
 				close(ConfigSock);
 				Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
 				if (R_FAILED(rc)) fatalSimple(rc);
@@ -502,6 +503,7 @@ void ConfigThread()
 			svcSleepThread(1E+9);
 			continue;
 		}
+		sockFails = 0;
 		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
 
 		/*
