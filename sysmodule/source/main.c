@@ -9,12 +9,25 @@
 
 #if defined(RELEASE)
 #pragma message "Building release"
+#else
+#define MODE_USB
 #endif
 
+//Build with MODE_USB to have a smaller impact on memory,
+//it will only stream via USB and won't support the config app.
+//Socketing requires a lot more memory
+#if defined(MODE_USB)
+#define INNER_HEAP_SIZE 0x80000
+#pragma message "Building USB-only mode"
+#else
+#define INNER_HEAP_SIZE 0x300000
 #if defined(__SWITCH__)
 #include <stdatomic.h>
-#else
+#endif
+#endif
+
 //Silence visual studio errors
+#if !defined(__SWITCH__)
 #define __attribute__(x) 
 typedef bool atomic_bool;
 #endif
@@ -22,7 +35,6 @@ typedef bool atomic_bool;
 extern u32 __start__;
 u32 __nx_applet_type = AppletType_None;
 	
-#define INNER_HEAP_SIZE 0x300000
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -53,9 +65,10 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
-	rc = hidInitialize();
-	if (R_FAILED(rc))
-		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
+#if !defined(USB_MODE)
+	rc = socketInitializeDefault();
+	if (R_FAILED(rc)) fatalSimple(rc);
+#endif
 
 	rc = setsysInitialize();
     if (R_SUCCEEDED(rc)) {
@@ -75,6 +88,9 @@ void __attribute__((weak)) __appInit(void)
 void __attribute__((weak)) __appExit(void)
 {
 	fsdevUnmountAll();
+#if !defined(USB_MODE)
+	socketExit();
+#endif
 	fsExit();
 	smExit();
 }
@@ -91,10 +107,14 @@ u32 AOutSz = 0;
 Service grcdVideo;
 Service grcdAudio;
 
+#if defined(MODE_USB)
+const bool IsThreadRunning = true;
+#else
 //Accessing this is rather slow, avoid using it in the main flow of execution.
 //When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
 //Only in that case this variable should be checked
 atomic_bool IsThreadRunning = false;
+#endif
 
 void AllocateRecordingBuf() 
 {
@@ -231,6 +251,7 @@ void* USB_StreamThreadMain(void* _stream)
 	return NULL;
 }
 
+#if !defined(MODE_USB)
 #ifdef __SWITCH__
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -375,12 +396,18 @@ void* TCP_StreamThreadMain(void* _stream)
 	return NULL;
 }
 
-typedef struct _streamMode
+//Don't need a TCP_Init funciton as each thread will initialize its own sockets
+static void TCP_Exit()
 {
-	void (*InitFn)();
-	void (*ExitFn)();
-	void* (*MainThread)(void*);
-} StreamMode ;
+#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
+	CloseSock(VideoSock);
+	CloseSock(AudioSock);
+	CloseSock(AudioCurSock);
+	CloseSock(VideoCurSock);
+#undef CloseSock
+}
+
+#endif
 
 static void USB_Init() 
 {
@@ -393,24 +420,24 @@ static void USB_Exit()
 	usbSerialExit();
 }
 
-static void TCP_Exit() 
+typedef struct _streamMode
 {
-#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
-	CloseSock(VideoSock);
-	CloseSock(AudioSock);
-	CloseSock(AudioCurSock);
-	CloseSock(VideoCurSock);
-#undef CloseSock
-}
+	void (*InitFn)();
+	void (*ExitFn)();
+	void* (*MainThread)(void*);
+} StreamMode;
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
+#if !defined(MODE_USB)
 StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
+#endif
 StreamMode* CurrentMode = NULL;
 
 pthread_t VideoThread, AudioThread;
 
 void SetMode(StreamMode* mode)
 {
+#if !defined(MODE_USB)
 	if (CurrentMode)
 	{
 		IsThreadRunning = false;
@@ -420,10 +447,13 @@ void SetMode(StreamMode* mode)
 		pthread_join(VideoThread, NULL);
 		pthread_join(AudioThread, NULL);
 	}
+#endif
 	CurrentMode = mode;
 	if (mode)
 	{
+#if !defined(MODE_USB)
 		IsThreadRunning = true;
+#endif
 		svcSleepThread(5E+8);
 		if (mode->InitFn)
 			mode->InitFn();
@@ -432,6 +462,7 @@ void SetMode(StreamMode* mode)
 	}
 }
 
+#if !defined(MODE_USB)
 #define SYSDVR_VERSION 1
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
@@ -448,27 +479,14 @@ static bool FileExists(const char* fname)
 	return false;
 }
 
-int main(int argc, char* argv[])
+void ConfigThread() 
 {
-	AllocateRecordingBuf();
-
-	Result rc = OpenGrcdForThread(GrcStream_Audio);
-	if (R_FAILED(rc)) fatalSimple(rc);
-	rc = OpenGrcdForThread(GrcStream_Video);
-	if (R_FAILED(rc)) fatalSimple(rc);
-
-	rc = socketInitializeDefault();
-	if (R_FAILED(rc)) fatalSimple(rc);
-
-	if (FileExists("/config/sysdvr/usb"))
-		SetMode(&USB_MODE);
-	else if (FileExists("/config/sysdvr/tcp"))
-		SetMode(&TCP_MODE);
-
 	//Maybe hosting our own service is better but it looks harder than this
 	int ConfigSock = -1, sockFails = 0;
-	rc = CreateSocket(&ConfigSock, 6668, 3, true);
-	if (R_FAILED(rc)) fatalSimple(rc);
+	{
+		Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
+		if (R_FAILED(rc)) fatalSimple(rc);
+	}
 
 	while (1)
 	{
@@ -478,7 +496,7 @@ int main(int argc, char* argv[])
 			if (sockFails++ > 3)
 			{
 				close(ConfigSock);
-				rc = CreateSocket(&ConfigSock, 6668, 3, true);
+				Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
 			svcSleepThread(1E+9);
@@ -534,14 +552,35 @@ int main(int argc, char* argv[])
 
 		svcSleepThread(1E+9);
 		close(curSock);
-	}	
-	
+	}
+}
+#endif
+
+int main(int argc, char* argv[])
+{
+	AllocateRecordingBuf();
+
+	Result rc = OpenGrcdForThread(GrcStream_Audio);
+	if (R_FAILED(rc)) fatalSimple(rc);
+	rc = OpenGrcdForThread(GrcStream_Video);
+	if (R_FAILED(rc)) fatalSimple(rc);
+
+#if defined(MODE_USB)
+	SetMode(&USB_MODE);
+	svcSleepThread(-1);
+#else
+	if (FileExists("/config/sysdvr/usb"))
+		SetMode(&USB_MODE);
+	else if (FileExists("/config/sysdvr/tcp"))
+		SetMode(&TCP_MODE);
+
+	ConfigThread();
+#endif
 	SetMode(NULL);
 
 	grcdServiceClose(&grcdVideo);
 	grcdServiceClose(&grcdAudio);
 	FreeRecordingBuf();
-	socketExit();
 
     return 0;
 }
