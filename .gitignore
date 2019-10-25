@@ -354,3 +354,5 @@ MigrationBackup/
 
 build/
 NetStream/Properties/launchSettings.json
+*.nacp
+*.nro

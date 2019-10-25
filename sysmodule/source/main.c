@@ -11,10 +11,10 @@
 #pragma message "Building release"
 #endif
 
-//Silence visual studio errors
 #if defined(__SWITCH__)
 #include <stdatomic.h>
 #else
+//Silence visual studio errors
 #define __attribute__(x) 
 typedef bool atomic_bool;
 #endif
@@ -248,7 +248,7 @@ void* USB_StreamThreadMain(void* _stream)
 #include <WinSock2.h>
 #endif
 
-Result CreateSocket(int *OutSock, int port, int baseError, u64 inaddr)
+Result CreateSocket(int *OutSock, int port, int baseError, bool LocalOnly)
 {
 	int err = 0, sock = -1;
 	struct sockaddr_in temp;
@@ -258,7 +258,7 @@ Result CreateSocket(int *OutSock, int port, int baseError, u64 inaddr)
 		return MAKERESULT(baseError, 1);
 	
 	temp.sin_family = AF_INET;
-	temp.sin_addr.s_addr = inaddr;
+	temp.sin_addr.s_addr = LocalOnly ? htonl(INADDR_LOOPBACK) : INADDR_ANY;
 	temp.sin_port = htons(port);
 
 	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
@@ -292,13 +292,13 @@ Result SocketingInit(GrcStream stream)
 	if (stream == GrcStream_Video)
 	{
 		if (VideoSock != -1) close(VideoSock);
-		rc = CreateSocket(&VideoSock, 6666, 2, INADDR_ANY);
+		rc = CreateSocket(&VideoSock, 6666, 2, false);
 		if (R_FAILED(rc)) return rc;
 	}
 	else 
 	{
 		if (AudioSock != -1) close(AudioSock);
-		rc = CreateSocket(&AudioSock, 6667, 3, INADDR_ANY);
+		rc = CreateSocket(&AudioSock, 6667, 3, false);
 		if (R_FAILED(rc)) return rc;
 	}
 	return 0;
@@ -326,14 +326,17 @@ void* TCP_StreamThreadMain(void* _stream)
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
-	int fails = 0;
+	/*
+		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
+		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
+	*/
+	int sockFails = 0;
 	while (IsThreadRunning) {
 		int curSock = accept(*sock, 0, 0);
 		if (curSock < 0)
 		{
-			if (++fails > 4 && IsThreadRunning)
+			if (sockFails++ > 3 && IsThreadRunning)
 			{
-				fails = 0;
 				Result rc = SocketingInit(stream);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
@@ -457,21 +460,27 @@ int main(int argc, char* argv[])
 	rc = socketInitializeDefault();
 	if (R_FAILED(rc)) fatalSimple(rc);
 
-	//Maybe hosting our own service is better but it looks harder than this
-	int ConfigSock = -1;
-	rc = CreateSocket(&ConfigSock, 6668, 3, INADDR_LOOPBACK);
-	if (R_FAILED(rc)) fatalSimple(rc);
-
 	if (FileExists("/config/sysdvr/usb"))
 		SetMode(&USB_MODE);
 	else if (FileExists("/config/sysdvr/tcp"))
 		SetMode(&TCP_MODE);
+
+	//Maybe hosting our own service is better but it looks harder than this
+	int ConfigSock = -1, sockFails = 0;
+	rc = CreateSocket(&ConfigSock, 6668, 3, true);
+	if (R_FAILED(rc)) fatalSimple(rc);
 
 	while (1)
 	{
 		int curSock = accept(ConfigSock, 0, 0);
 		if (curSock < 0)
 		{
+			if (sockFails++ > 3)
+			{
+				close(ConfigSock);
+				rc = CreateSocket(&ConfigSock, 6668, 3, true);
+				if (R_FAILED(rc)) fatalSimple(rc);
+			}
 			svcSleepThread(1E+9);
 			continue;
 		}
@@ -480,37 +489,48 @@ int main(int argc, char* argv[])
 		/*
 			Very simple protocol, only consists of u32 excanges :
 			Sysmodule sends version and current mode
-			Client sends mode to set
-			Sysmodule confirms and closes the connection
+			While client is connected:
+				Client sends mode to set
+				Sysmodule confirms
 		*/
-		write(curSock, (u32)SYSDVR_VERSION, sizeof(u32));
+		u32 ver = SYSDVR_VERSION;
+		write(curSock, &ver, sizeof(u32));
 
+		u32 Type = 0;
 		if (CurrentMode == NULL)
-			write(curSock, (u32)TYPE_MODE_NULL, sizeof(u32));
+			Type = TYPE_MODE_NULL;
 		else if (CurrentMode == &USB_MODE)
-			write(curSock, (u32)TYPE_MODE_USB, sizeof(u32));
+			Type = TYPE_MODE_USB;
 		else if (CurrentMode == &TCP_MODE)
-			write(curSock, (u32)TYPE_MODE_TCP, sizeof(u32));
-		else fatalSimple(MAKERESULT(1,15));
+			Type = TYPE_MODE_TCP;
+		else fatalSimple(MAKERESULT(1, 15));
 
-		u32 cmd = 0;
-		read(curSock, &cmd, sizeof(cmd));
+		write(curSock, &Type, sizeof(u32));
 
-		switch (cmd)
+		while (1)
 		{
-		case TYPE_MODE_USB:
-			SetMode(&USB_MODE);
-			break;
-		case TYPE_MODE_TCP:
-			SetMode(&TCP_MODE);
-			break;
-		case TYPE_MODE_NULL:
-			SetMode(NULL);
-			break;
-		}
+			u32 cmd = 0;
+			if (read(curSock, &cmd, sizeof(cmd)) != sizeof(cmd))
+				break;
 
-		//Due to syncronization terminating the threads may require a few seconds, answer with the mode as confirmation
-		write(curSock, (u32)cmd, sizeof(u32));
+			switch (cmd)
+			{
+			case TYPE_MODE_USB:
+				SetMode(&USB_MODE);
+				break;
+			case TYPE_MODE_TCP:
+				SetMode(&TCP_MODE);
+				break;
+			case TYPE_MODE_NULL:
+				SetMode(NULL);
+				break;
+			default:
+				fatalSimple(MAKERESULT(1, 16));
+			}
+
+			//Due to syncronization terminating the threads may require a few seconds, answer with the mode as confirmation
+			write(curSock, &cmd, sizeof(u32));
+		}
 
 		svcSleepThread(1E+9);
 		close(curSock);
