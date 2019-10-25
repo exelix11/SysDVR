@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#if !defined(RELEASE) || defined(MODE_USB)
-
 #include <string.h>
 #include <malloc.h>
 
@@ -520,5 +518,3 @@ size_t UsbSerialWrite(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout)
 {
 	return usbSerialTransfer(stream->interface, stream->WriteEP, UsbDirection_Write, buf, bufSize, timeout);
 }
-
-#endif
