@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <switch.h>
 #include <string.h>
 #include <pthread.h>
@@ -90,17 +91,20 @@ u32 AOutSz = 0;
 Service grcdVideo;
 Service grcdAudio;
 
+//Accessing this is rather slow, avoid using it in the main flow of execution.
+//When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
+//Only in that case this variable should be checked
 atomic_bool IsThreadRunning = false;
 
 void AllocateRecordingBuf() 
 {
 	Vbuf = aligned_alloc(0x1000, VbufSz);
 	if (!Vbuf)
-		fatalSimple(MAKERESULT(1, 40));
+		fatalSimple(MAKERESULT(1, 11));
 
 	Abuf = aligned_alloc(0x1000, AbufSz * AudioBatchSz);
 	if (!Abuf)
-		fatalSimple(MAKERESULT(1, 50));
+		fatalSimple(MAKERESULT(1, 12));
 }
 
 void FreeRecordingBuf()
@@ -130,12 +134,12 @@ static void ReadAudioStream()
 	u64 timestamp = 0;
 	u32 TmpAudioSz = 0;
 	AOutSz = 0;
-	for (int i = 0; i < AudioBatchSz; i++)
+	for (int i = 0, fails = 0; i < AudioBatchSz; i++)
 	{
 		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
-			if (!IsThreadRunning)
+			if (fails++ > 8 && !IsThreadRunning)
 			{
 				AOutSz = 0;
 				break;
@@ -143,6 +147,7 @@ static void ReadAudioStream()
 			--i;
 			continue;
 		}
+		fails = 0;
 		AOutSz += TmpAudioSz;
 	}
 }
@@ -151,16 +156,13 @@ static void ReadVideoStream()
 {
 	u32 unk = 0;
 	u64 timestamp = 0;
+	int fails = 0;
 
 	while (true) {
 		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
-		if (R_FAILED(res) || VOutSz <= 0)
-		{
-			VOutSz = 0;
-			if (IsThreadRunning)
-				continue;
-		}
-		break;
+		if (R_SUCCEEDED(res) && VOutSz > 0) break;
+		VOutSz = 0;
+		if (fails++ > 8 && !IsThreadRunning) break;
 	}
 }
 
@@ -206,7 +208,7 @@ static void USB_SendStream(GrcStream stream, UsbInterface *Dev)
 void* USB_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 67));
+		fatalSimple(MAKERESULT(1, 13));
 
 	GrcStream stream = (GrcStream)_stream;
 	UsbInterface *Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
@@ -246,7 +248,7 @@ void* USB_StreamThreadMain(void* _stream)
 #include <WinSock2.h>
 #endif
 
-Result CreateSocket(int *OutSock, int port, int baseError)
+Result CreateSocket(int *OutSock, int port, int baseError, u64 inaddr)
 {
 	int err = 0, sock = -1;
 	struct sockaddr_in temp;
@@ -256,7 +258,7 @@ Result CreateSocket(int *OutSock, int port, int baseError)
 		return MAKERESULT(baseError, 1);
 	
 	temp.sin_family = AF_INET;
-	temp.sin_addr.s_addr = INADDR_ANY;
+	temp.sin_addr.s_addr = inaddr;
 	temp.sin_port = htons(port);
 
 	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
@@ -290,13 +292,13 @@ Result SocketingInit(GrcStream stream)
 	if (stream == GrcStream_Video)
 	{
 		if (VideoSock != -1) close(VideoSock);
-		rc = CreateSocket(&VideoSock, 6666, 2);
+		rc = CreateSocket(&VideoSock, 6666, 2, INADDR_ANY);
 		if (R_FAILED(rc)) return rc;
 	}
 	else 
 	{
 		if (AudioSock != -1) close(AudioSock);
-		rc = CreateSocket(&AudioSock, 6667, 3);
+		rc = CreateSocket(&AudioSock, 6667, 3, INADDR_ANY);
 		if (R_FAILED(rc)) return rc;
 	}
 	return 0;
@@ -308,7 +310,7 @@ const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 void* TCP_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 66));
+		fatalSimple(MAKERESULT(1, 14));
 
 	GrcStream stream = (GrcStream)_stream;
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
@@ -329,7 +331,7 @@ void* TCP_StreamThreadMain(void* _stream)
 		int curSock = accept(*sock, 0, 0);
 		if (curSock < 0)
 		{
-			if (++fails > 2 && IsThreadRunning)
+			if (++fails > 4 && IsThreadRunning)
 			{
 				fails = 0;
 				Result rc = SocketingInit(stream);
@@ -340,8 +342,9 @@ void* TCP_StreamThreadMain(void* _stream)
 		}
 		
 		/*
-			There appear to be an issue with socketing, even if the video and audio listeners are used on different threads
-			for some reason calling accept on one of them blocks the other thread as well, even while a client is connected.
+			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
+			even if the video and audio listeners are used on different threads calling accept on one of them
+			blocks the others as well, even while a client is connected.
 			The workaround is making the socket non-blocking and then to set the client socket as blocking.
 			By default the socket returned from accept inherits this flag.
 		*/
@@ -363,7 +366,6 @@ void* TCP_StreamThreadMain(void* _stream)
 		
 		close(curSock);
 		*OutSock = -1;
-		if (!IsThreadRunning) break;
 		svcSleepThread(1E+9);
 	}
 	pthread_exit(NULL);
@@ -388,12 +390,6 @@ static void USB_Exit()
 	usbSerialExit();
 }
 
-static void TCP_Init() 
-{
-	Result rc = socketInitializeDefault();
-		if (R_FAILED(rc)) fatalSimple(rc);
-}
-
 static void TCP_Exit() 
 {
 #define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
@@ -402,11 +398,10 @@ static void TCP_Exit()
 	CloseSock(AudioCurSock);
 	CloseSock(VideoCurSock);
 #undef CloseSock
-	socketExit();
 }
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
-StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamThreadMain };
+StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
 StreamMode* CurrentMode = NULL;
 
 pthread_t VideoThread, AudioThread;
@@ -416,7 +411,7 @@ void SetMode(StreamMode* mode)
 	if (CurrentMode)
 	{
 		IsThreadRunning = false;
-
+		svcSleepThread(5E+8);
 		if (CurrentMode->ExitFn)
 			CurrentMode->ExitFn();
 		pthread_join(VideoThread, NULL);
@@ -434,27 +429,20 @@ void SetMode(StreamMode* mode)
 	}
 }
 
-u32 VibrationDeviceHandles[2][2];
-HidVibrationValue VibrationValue;
-HidVibrationValue VibrationValue_stop;
-HidVibrationValue VibrationValues[2];
+#define SYSDVR_VERSION 1
+#define TYPE_MODE_USB 1
+#define TYPE_MODE_TCP 2
+#define TYPE_MODE_NULL 3
 
-void Vibrate() 
+static bool FileExists(const char* fname)
 {
-	int target_device = 0;
-	if (!hidGetHandheldMode())
-		target_device = 1;
-
-	memcpy(&VibrationValues[0], &VibrationValue, sizeof(HidVibrationValue));
-	memcpy(&VibrationValues[1], &VibrationValue, sizeof(HidVibrationValue));
-	hidSendVibrationValues(VibrationDeviceHandles[target_device], VibrationValues, 2);
-	
-	svcSleepThread(5E+8);
-
-	memcpy(&VibrationValues[0], &VibrationValue_stop, sizeof(HidVibrationValue));
-	memcpy(&VibrationValues[1], &VibrationValue_stop, sizeof(HidVibrationValue));
-	hidSendVibrationValues(VibrationDeviceHandles[target_device], VibrationValues, 2);
-	hidSendVibrationValues(VibrationDeviceHandles[1 - target_device], VibrationValues, 2);
+	FILE* f = fopen(fname, "rb");
+	if (f)
+	{
+		fclose(f);
+		return true;
+	}
+	return false;
 }
 
 int main(int argc, char* argv[])
@@ -466,41 +454,66 @@ int main(int argc, char* argv[])
 	rc = OpenGrcdForThread(GrcStream_Video);
 	if (R_FAILED(rc)) fatalSimple(rc);
 
-	rc = hidInitializeVibrationDevices(VibrationDeviceHandles[0], 2, CONTROLLER_HANDHELD, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
-	if (R_SUCCEEDED(rc)) rc = hidInitializeVibrationDevices(VibrationDeviceHandles[1], 2, CONTROLLER_PLAYER_1, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+	rc = socketInitializeDefault();
+	if (R_FAILED(rc)) fatalSimple(rc);
 
-	VibrationValue.amp_low = 0.2f;
-	VibrationValue.freq_low = 10.0f;
-	VibrationValue.amp_high = 0.2f;
-	VibrationValue.freq_high = 10.0f;
+	//Maybe hosting our own service is better but it looks harder than this
+	int ConfigSock = -1;
+	rc = CreateSocket(&ConfigSock, 6668, 3, INADDR_LOOPBACK);
+	if (R_FAILED(rc)) fatalSimple(rc);
 
-	memset(VibrationValues, 0, sizeof(VibrationValues));
-
-	memset(&VibrationValue_stop, 0, sizeof(HidVibrationValue));
-	VibrationValue_stop.freq_low = 160.0f;
-	VibrationValue_stop.freq_high = 320.0f;
-
-	const u64 combo = KEY_L | KEY_R;
+	if (FileExists("/config/sysdvr/usb"))
+		SetMode(&USB_MODE);
+	else if (FileExists("/config/sysdvr/tcp"))
+		SetMode(&TCP_MODE);
 
 	while (1)
 	{
-		hidScanInput();
-		u64 kDown = hidKeysHeld(CONTROLLER_P1_AUTO);
+		int curSock = accept(ConfigSock, 0, 0);
+		if (curSock < 0)
+		{
+			svcSleepThread(1E+9);
+			continue;
+		}
+		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
 
-		if (kDown == (combo | KEY_MINUS))
+		/*
+			Very simple protocol, only consists of u32 excanges :
+			Sysmodule sends version and current mode
+			Client sends mode to set
+			Sysmodule confirms and closes the connection
+		*/
+		write(curSock, (u32)SYSDVR_VERSION, sizeof(u32));
+
+		if (CurrentMode == NULL)
+			write(curSock, (u32)TYPE_MODE_NULL, sizeof(u32));
+		else if (CurrentMode == &USB_MODE)
+			write(curSock, (u32)TYPE_MODE_USB, sizeof(u32));
+		else if (CurrentMode == &TCP_MODE)
+			write(curSock, (u32)TYPE_MODE_TCP, sizeof(u32));
+		else fatalSimple(MAKERESULT(1,15));
+
+		u32 cmd = 0;
+		read(curSock, &cmd, sizeof(cmd));
+
+		switch (cmd)
 		{
+		case TYPE_MODE_USB:
 			SetMode(&USB_MODE);
-			Vibrate();
-		}
-		else if (kDown == (combo | KEY_PLUS))
-		{
+			break;
+		case TYPE_MODE_TCP:
 			SetMode(&TCP_MODE);
-			Vibrate();
+			break;
+		case TYPE_MODE_NULL:
+			SetMode(NULL);
+			break;
 		}
-		else if (kDown == (combo | KEY_DDOWN))
-			Vibrate();
+
+		//Due to syncronization terminating the threads may require a few seconds, answer with the mode as confirmation
+		write(curSock, (u32)cmd, sizeof(u32));
 
 		svcSleepThread(1E+9);
+		close(curSock);
 	}	
 	
 	SetMode(NULL);
@@ -508,6 +521,7 @@ int main(int argc, char* argv[])
 	grcdServiceClose(&grcdVideo);
 	grcdServiceClose(&grcdAudio);
 	FreeRecordingBuf();
+	socketExit();
 
     return 0;
 }
