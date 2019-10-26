@@ -22,6 +22,7 @@
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_NULL 3
+#define TYPE_MODE_ERROR 999999
 
 static bool FileExists(const char* fname)
 {
@@ -69,7 +70,7 @@ bool SetDefaultBootMode(u32 mode)
 
 void FatalError(const char* msg)
 {
-	printf(CONSOLE_RED "Error: " CONSOLE_WHITE "%s\nPress the A button to quit", msg);
+	printf(CONSOLE_RED "Error: " CONSOLE_WHITE "%s\nPress A to quit", msg);
 }
 
 void FatalErrorLoop() 
@@ -100,6 +101,11 @@ int ConnectToSysmodule()
 	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	servaddr.sin_port = htons(6668);
 
+	struct timeval tv;
+	tv.tv_sec = 8;
+	tv.tv_usec = 0;
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
 	if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
 		FatalError("Failed to connect to SysDVR, is the module set up properly ?");
 		return ERR_CONNECT;
@@ -113,11 +119,9 @@ bool SendValue(int sock, u32 value)
 	return write(sock, &value, sizeof(value)) == sizeof(value);
 }
 
-u32 ReadValue(int sock)
+bool ReadValue(int sock, u32 *out)
 {
-	u32 res = 0;
-	read(sock, &res, sizeof(res));
-	return res;
+	return read(sock, out, sizeof(*out)) == sizeof(*out);
 }
 
 u32 CurrentStreamMode;
@@ -126,23 +130,24 @@ void PrintCurrentMode()
 	switch (CurrentStreamMode)
 	{
 	case TYPE_MODE_NULL:
-		printf("SysDVR is not streaming currently.");
+		printf("SysDVR is not streaming currently.\n");
 		break;
 	case TYPE_MODE_USB:
-		printf("SysDVR is streaming over USB.");
+		printf("SysDVR is streaming over USB.\n");
 		break;
 	case TYPE_MODE_TCP:
-		printf("SysDVR is streaming over NETWORK.");
+		printf("SysDVR is streaming over NETWORK.\n");
 		break;
 	default:
-		printf("SysDVR is in an unknown state :thinking:");
+		printf(CONSOLE_RED "Couldn't read SysDVR's status.\n" CONSOLE_WHITE);
 	}
-	printf("\n\n");
+	printf("\n");
 }
 
 void ReadCurrentMode(int sock)
 {
-	CurrentStreamMode = ReadValue(sock);
+	u32 mode = 0;
+	CurrentStreamMode = ReadValue(sock, &mode) ? mode : TYPE_MODE_ERROR;
 	PrintCurrentMode();
 }
 
@@ -176,9 +181,17 @@ bool DefaultMenu(int sock)
 	};
 
 	printf("\x1b[9;0H\x1b[0J");
-
 	if (!appletMainLoop()) return false;
 	u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+
+	if (CurrentStreamMode == TYPE_MODE_ERROR)
+	{
+		printf(
+			"It seems SysDVR is not responding, this can happen if the mode was changed while streaming\n"
+			"The sysmodule is stuck waiting for the next frame, when resuming the game it will start working again and switch modes as requested\n\n"
+			"Press A to quit");
+		return !(kDown & KEY_A);
+	}
 
 	printf("Select an option: \n");
 	for (int i = 0; MenuOptions[i] != NULL; i++)
@@ -186,6 +199,7 @@ bool DefaultMenu(int sock)
 		if (Selection == i) printf(" >> "); else printf("    ");
 		printf("%s\n", MenuOptions[i]);
 	}
+	printf("\n");
 	printf(CONSOLE_YELLOW "Warning:" CONSOLE_WHITE " Changing mode while streaming will hang, if you're streaming currently resume the game, close the client and come back here.");
 
 	if (kDown & KEY_DOWN)
@@ -225,11 +239,10 @@ FAIL:
 
 void MainLoop(int sock)
 {
-	printf(CONSOLE_GREEN "Connected to SysDVR !\n" CONSOLE_WHITE);
-
-	u32 version = ReadValue(sock);
-	
-	if (version > SYSDVR_VERSION)
+	u32 version = 0;
+	if (!ReadValue(sock, &version))
+		FatalError("Couldn't communicate with SysDVR");
+	else if (version > SYSDVR_VERSION)
 		FatalError("You're running a newer version of SysDVR that is not supported by this application, download latest SysDVR Settings app from GitHub");
 	else if (version < SYSDVR_VERSION)
 		FatalError("You're running an outdated version of SysDVR, download latest version from GitHub");
@@ -240,6 +253,8 @@ void MainLoop(int sock)
 		FatalErrorLoop();
 		return;
 	}
+
+	printf(CONSOLE_GREEN "Connected to SysDVR !\n" CONSOLE_WHITE);
 
 	printf("\x1b[6;0H\x1b[0J");
 	PrintDefaultBootMode();
