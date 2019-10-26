@@ -10,17 +10,17 @@
 #if defined(RELEASE)
 #pragma message "Building release"
 #else
-//#define MODE_USB
+#define MODE_USB
 #endif
 
 //Build with MODE_USB to have a smaller impact on memory,
 //it will only stream via USB and won't support the config app.
 //Socketing requires a lot more memory
 #if defined(MODE_USB)
-#define INNER_HEAP_SIZE 0x80000
+#define INNER_HEAP_SIZE 500 * 1024
 #pragma message "Building USB-only mode"
 #else
-#define INNER_HEAP_SIZE 0x300000
+#define INNER_HEAP_SIZE 3 * 1024 * 1024
 #if defined(__SWITCH__)
 #include <stdatomic.h>
 #endif
@@ -61,11 +61,11 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
+#if !defined(MODE_USB)
 	rc = fsInitialize();
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
-#if !defined(USB_MODE)
 	rc = socketInitializeDefault();
 	if (R_FAILED(rc)) fatalSimple(rc);
 #endif
@@ -88,10 +88,10 @@ void __attribute__((weak)) __appInit(void)
 void __attribute__((weak)) __appExit(void)
 {
 	fsdevUnmountAll();
-#if !defined(USB_MODE)
+#if !defined(MODE_USB)
 	socketExit();
-#endif
 	fsExit();
+#endif
 	smExit();
 }
 
@@ -395,18 +395,6 @@ void* TCP_StreamThreadMain(void* _stream)
 	pthread_exit(NULL);
 	return NULL;
 }
-
-//Don't need a TCP_Init funciton as each thread will initialize its own sockets
-static void TCP_Exit()
-{
-#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
-	CloseSock(VideoSock);
-	CloseSock(AudioSock);
-	CloseSock(AudioCurSock);
-	CloseSock(VideoCurSock);
-#undef CloseSock
-}
-
 #endif
 
 static void USB_Init() 
@@ -420,6 +408,21 @@ static void USB_Exit()
 	usbSerialExit();
 }
 
+pthread_t AudioThread;
+#if !defined(MODE_USB)
+pthread_t VideoThread;
+
+//Don't need a TCP_Init funciton as each thread will initialize its own sockets
+static void TCP_Exit()
+{
+#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
+	CloseSock(VideoSock);
+	CloseSock(AudioSock);
+	CloseSock(AudioCurSock);
+	CloseSock(VideoCurSock);
+#undef CloseSock
+}
+
 typedef struct _streamMode
 {
 	void (*InitFn)();
@@ -428,32 +431,28 @@ typedef struct _streamMode
 } StreamMode;
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
-#if !defined(MODE_USB)
 StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
-#endif
 StreamMode* CurrentMode = NULL;
-
-pthread_t VideoThread, AudioThread;
 
 void SetMode(StreamMode* mode)
 {
-#if !defined(MODE_USB)
 	if (CurrentMode)
 	{
 		IsThreadRunning = false;
 		svcSleepThread(5E+8);
 		if (CurrentMode->ExitFn)
 			CurrentMode->ExitFn();
+		/*
+			If a client is connected this will hang as GrcdServiceRead will block till it acquires a new buffer,
+			to resume you need to go back in the game and disconnect the client
+		*/
 		pthread_join(VideoThread, NULL);
 		pthread_join(AudioThread, NULL);
 	}
-#endif
 	CurrentMode = mode;
 	if (mode)
 	{
-#if !defined(MODE_USB)
 		IsThreadRunning = true;
-#endif
 		svcSleepThread(5E+8);
 		if (mode->InitFn)
 			mode->InitFn();
@@ -462,7 +461,6 @@ void SetMode(StreamMode* mode)
 	}
 }
 
-#if !defined(MODE_USB)
 #define SYSDVR_VERSION 1
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
@@ -568,8 +566,10 @@ int main(int argc, char* argv[])
 	if (R_FAILED(rc)) fatalSimple(rc);
 
 #if defined(MODE_USB)
-	SetMode(&USB_MODE);
-	svcSleepThread(-1);
+	USB_Init();
+	pthread_create(&AudioThread, NULL, USB_StreamThreadMain, (void*)GrcStream_Audio);
+	USB_StreamThreadMain((void*)GrcStream_Video);
+	USB_Exit();
 #else
 	if (FileExists("/config/sysdvr/usb"))
 		SetMode(&USB_MODE);
@@ -577,8 +577,8 @@ int main(int argc, char* argv[])
 		SetMode(&TCP_MODE);
 
 	ConfigThread();
-#endif
 	SetMode(NULL);
+#endif
 
 	grcdServiceClose(&grcdVideo);
 	grcdServiceClose(&grcdAudio);
