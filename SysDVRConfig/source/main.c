@@ -149,7 +149,7 @@ void ReadCurrentMode(int sock)
 bool MenuSetMode(int sock, u32 mode)
 {
 	printf("\x1b[6;0H\x1b[0J");
-	printf("Loading...");
+	printf("Loading...\n");
 	consoleUpdate(NULL);
 	printf("\x1b[6;0H\x1b[0J");
 	if (!SendValue(sock, mode))
@@ -186,6 +186,7 @@ bool DefaultMenu(int sock)
 		if (Selection == i) printf(" >> "); else printf("    ");
 		printf("%s\n", MenuOptions[i]);
 	}
+	printf(CONSOLE_YELLOW "Warning:" CONSOLE_WHITE " Changing mode while streaming will hang, if you're streaming currently resume the game, close the client and come back here.");
 
 	if (kDown & KEY_DOWN)
 		Selection = Selection >= 4 ? 0 : Selection + 1;
