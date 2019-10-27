@@ -34,7 +34,7 @@ namespace UsbStream
 		private UsbEndpointWriter writer;
 		private UsbEndpointReader reader;
 
-		public int MillisTimeout = 100000;
+		public int MillisTimeout = 10000;
 
 		public UsbDevStream(IUsbDevice dev, WriteEndpointID writePipe, ReadEndpointID readPipe)
 		{
