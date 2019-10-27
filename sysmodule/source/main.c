@@ -466,17 +466,6 @@ void SetMode(StreamMode* mode)
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_NULL 3
 
-static bool FileExists(const char* fname)
-{
-	FILE* f = fopen(fname, "rb");
-	if (f)
-	{
-		fclose(f);
-		return true;
-	}
-	return false;
-}
-
 void ConfigThread() 
 {
 	//Maybe hosting our own service is better but it looks harder than this
@@ -553,6 +542,17 @@ void ConfigThread()
 		svcSleepThread(1E+9);
 		close(curSock);
 	}
+}
+
+static bool FileExists(const char* fname)
+{
+	FILE* f = fopen(fname, "rb");
+	if (f)
+	{
+		fclose(f);
+		return true;
+	}
+	return false;
 }
 #endif
 
