@@ -241,7 +241,7 @@ void MainLoop(int sock)
 {
 	u32 version = 0;
 	if (!ReadValue(sock, &version))
-		FatalError("Couldn't communicate with SysDVR");
+		FatalError("Couldn't communicate with SysDVR, are you sure it's running ? Also make sure you're not using the USB-only version.");
 	else if (version > SYSDVR_VERSION)
 		FatalError("You're running a newer version of SysDVR that is not supported by this application, download latest SysDVR Settings app from GitHub");
 	else if (version < SYSDVR_VERSION)
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
 	consoleInit(NULL);
 
 	printf(
-		"SysDVR Settings 1.0 - by exelix\n"
+		"SysDVR 2.0 Settings - by exelix\n"
 		"https://github.com/exelix11/SysDVR\n\n"
 	);
 	consoleUpdate(NULL);

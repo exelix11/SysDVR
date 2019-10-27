@@ -106,16 +106,20 @@ namespace UsbStreamGUI
 		private void ExportBatch(object sender, EventArgs e)
 		{
 			string cmd = GetFinalCommand();
-			if (cmd != null)
-				File.WriteAllText($"Launch_{CurTarget}_{CurKind}.bat", cmd);
+			if (cmd == null) return;
+			File.WriteAllText($"Launch_{CurTarget}_{CurKind}.bat", cmd);
+			if (MessageBox.Show("Done, launch UsbStream now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				Launch(sender,e);
 		}
 
 		private void BatchInfo(object sender, EventArgs e) =>
-			MessageBox.Show("This will create a bat file you just need to double click to launch UsbStream with the selected options. The file name depends on the configuration, you can rename it later.\r\n");
+			MessageBox.Show("This will create a bat file to launch UsbStream with the selected options you will just need to double click it. The file name depends on the configuration, you can rename it later.\r\n");
 
 		private void button4_Click(object sender, EventArgs e) => MessageBox.Show(
 				"UsbStream requires .NET core 3.0 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
-				"Make sure to properly setup the drivers following the github guide before attempting to stream\r\n\r\n" +
+				"Make sure to properly setup the drivers following the github guide before attempting to stream\r\n" +
+				"If UsbStream can't connect to SysDVR make sure it's running and that it's in usb mode (you can set that from the settings homebrew)\r\n\r\n" + 
+				"If the stream is laggy open the home menu for a few seconds to let UsbStream flush the data\r\n\r\n" +
 				"In case of issues check UsbStream output for errors and search in the github issues or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
 
 		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");

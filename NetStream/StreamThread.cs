@@ -118,7 +118,10 @@ namespace UsbStream
 			{
 				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
 				if (Device.Read(SizeBuf,0,4) != 4)
-					continue;
+					if (Token.IsCancellationRequested)
+						return -3;
+					else 
+						continue;
 				if (SizeBuf.SequenceEqual(MagicPacket))
 					break;
 			}
@@ -149,16 +152,19 @@ namespace UsbStream
 			if (PrintStats)
 				Console.WriteLine($"{Kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
 
-			if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 10 && UseDesyncFix && TransfersPerSecond > 2 && !DesyncFlag)
+			if (UseDesyncFix)
 			{
-				DesyncFlag = true;
-			}
-			else if (DesyncFlag && BytesPerSecond / ThreadTimer.ElapsedMilliseconds >= 100)
-			{
-				Console.WriteLine("Preventing desync");
-				System.Threading.Thread.Sleep(600);
-				Device.Flush();
-				DesyncFlag = false;
+				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 30 && TransfersPerSecond > 2 && !DesyncFlag)
+				{
+					DesyncFlag = true;
+				}
+				else if (DesyncFlag && BytesPerSecond / ThreadTimer.ElapsedMilliseconds >= 100)
+				{
+					Console.WriteLine("Preventing desync");
+					System.Threading.Thread.Sleep(600);
+					Device.Flush();
+					DesyncFlag = false;
+				}
 			}
 
 			TransfersPerSecond = 0;
@@ -187,9 +193,7 @@ namespace UsbStream
 		static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
-		static readonly byte[] REQMagic_AUDIO = BitConverter.GetBytes(0xBBBBBBBB);
 		const int VbufMaxSz = 0x32000;
-		const int AbufMaxSz = 0x1000 * 12;
 
 		public VideoStreamThread(CancellationToken token, IOutTarget StreamTarget, UsbDevStream InputDevice, bool PrintStatsArg = false, bool DesyncFix = false) :
 			base(token, StreamKind.Video, InputDevice, StreamTarget, REQMagic_VIDEO, VbufMaxSz)
