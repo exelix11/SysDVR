@@ -10,13 +10,15 @@
 #if defined(RELEASE)
 #pragma message "Building release"
 #else
-#define MODE_USB
+#define USB_ONLY
 #endif
 
-//Build with MODE_USB to have a smaller impact on memory,
-//it will only stream via USB and won't support the config app.
-//Socketing requires a lot more memory
-#if defined(MODE_USB)
+/*
+	Build with USB_ONLY to have a smaller impact on memory,
+	it will only stream via USB and won't support the config app.
+	Socketing requires a lot more memory
+*/
+#if defined(USB_ONLY)
 #define INNER_HEAP_SIZE 500 * 1024
 #pragma message "Building USB-only mode"
 #else
@@ -34,13 +36,13 @@ typedef bool atomic_bool;
 
 extern u32 __start__;
 u32 __nx_applet_type = AppletType_None;
-	
+
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char nx_inner_heap[INNER_HEAP_SIZE];
 
 void __libnx_initheap(void)
 {
-	void*  addr = nx_inner_heap;
+	void* addr = nx_inner_heap;
 	size_t size = nx_inner_heap_size;
 
 	// Newlib
@@ -48,7 +50,7 @@ void __libnx_initheap(void)
 	extern char* fake_heap_end;
 
 	fake_heap_start = (char*)addr;
-	fake_heap_end   = (char*)addr + size;
+	fake_heap_end = (char*)addr + size;
 }
 
 void __attribute__((weak)) __appInit(void)
@@ -61,7 +63,7 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
-#if !defined(MODE_USB)
+#if !defined(USB_ONLY)
 	rc = fsInitialize();
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
@@ -71,24 +73,24 @@ void __attribute__((weak)) __appInit(void)
 #endif
 
 	rc = setsysInitialize();
-    if (R_SUCCEEDED(rc)) {
-        SetSysFirmwareVersion fw;
-        rc = setsysGetFirmwareVersion(&fw);
-        if (R_SUCCEEDED(rc))
-            hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
-        setsysExit();
-    }
-	
+	if (R_SUCCEEDED(rc)) {
+		SetSysFirmwareVersion fw;
+		rc = setsysGetFirmwareVersion(&fw);
+		if (R_SUCCEEDED(rc))
+			hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
+		setsysExit();
+	}
+
 	if (R_FAILED(rc))
 		fatalSimple(MAKERESULT(1, 10));
-	
+
 	fsdevMountSdmc();
 }
 
 void __attribute__((weak)) __appExit(void)
 {
 	fsdevUnmountAll();
-#if !defined(MODE_USB)
+#if !defined(USB_ONLY)
 	socketExit();
 	fsExit();
 #endif
@@ -107,16 +109,18 @@ u32 AOutSz = 0;
 Service grcdVideo;
 Service grcdAudio;
 
-#if defined(MODE_USB)
+#if defined(USB_ONLY)
 const bool IsThreadRunning = true;
 #else
-//Accessing this is rather slow, avoid using it in the main flow of execution.
-//When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
-//Only in that case this variable should be checked
+/*
+	Accessing this is rather slow, avoid using it in the main flow of execution.
+	When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
+	Only in that case this variable should be checked
+*/
 atomic_bool IsThreadRunning = false;
 #endif
 
-void AllocateRecordingBuf() 
+static void AllocateRecordingBuf()
 {
 	Vbuf = aligned_alloc(0x1000, VbufSz);
 	if (!Vbuf)
@@ -127,18 +131,18 @@ void AllocateRecordingBuf()
 		fatalSimple(MAKERESULT(1, 12));
 }
 
-void FreeRecordingBuf()
+static void FreeRecordingBuf()
 {
 	free(Vbuf);
 	free(Abuf);
 }
 
-Result OpenGrcdForThread(GrcStream stream) 
+static Result OpenGrcdForThread(GrcStream stream)
 {
 	Result rc;
 	if (stream == GrcStream_Audio)
 		rc = grcdServiceOpen(&grcdAudio);
-	else 
+	else
 	{
 		rc = grcdServiceOpen(&grcdVideo);
 		if (R_FAILED(rc)) return rc;
@@ -203,7 +207,7 @@ static u32 USB_WaitForInputReq(UsbInterface* dev)
 	return 0;
 }
 
-static void USB_SendStream(GrcStream stream, UsbInterface *Dev)
+static void USB_SendStream(GrcStream stream, UsbInterface* Dev)
 {
 	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
@@ -219,19 +223,19 @@ static void USB_SendStream(GrcStream stream, UsbInterface *Dev)
 	if (*size)
 	{
 		u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size) 
-			return; 
+		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size)
+			return;
 	}
 	return;
 }
 
-void* USB_StreamThreadMain(void* _stream)
+static void* USB_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
 		fatalSimple(MAKERESULT(1, 13));
 
 	GrcStream stream = (GrcStream)_stream;
-	UsbInterface *Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
+	UsbInterface* Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
 	u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
 	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
@@ -251,7 +255,7 @@ void* USB_StreamThreadMain(void* _stream)
 	return NULL;
 }
 
-#if !defined(MODE_USB)
+#if !defined(USB_ONLY)
 #ifdef __SWITCH__
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -269,7 +273,7 @@ void* USB_StreamThreadMain(void* _stream)
 #include <WinSock2.h>
 #endif
 
-Result CreateSocket(int *OutSock, int port, int baseError, bool LocalOnly)
+static Result CreateSocket(int* OutSock, int port, int baseError, bool LocalOnly)
 {
 	int err = 0, sock = -1;
 	struct sockaddr_in temp;
@@ -277,7 +281,7 @@ Result CreateSocket(int *OutSock, int port, int baseError, bool LocalOnly)
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0)
 		return MAKERESULT(baseError, 1);
-	
+
 	temp.sin_family = AF_INET;
 	temp.sin_addr.s_addr = LocalOnly ? htonl(INADDR_LOOPBACK) : INADDR_ANY;
 	temp.sin_port = htons(port);
@@ -307,7 +311,7 @@ int AudioSock = -1;
 int AudioCurSock = -1;
 int VideoCurSock = -1;
 
-Result SocketingInit(GrcStream stream)
+static Result SocketingInit(GrcStream stream)
 {
 	Result rc;
 	if (stream == GrcStream_Video)
@@ -316,7 +320,7 @@ Result SocketingInit(GrcStream stream)
 		rc = CreateSocket(&VideoSock, 6666, 2, false);
 		if (R_FAILED(rc)) return rc;
 	}
-	else 
+	else
 	{
 		if (AudioSock != -1) close(AudioSock);
 		rc = CreateSocket(&AudioSock, 6667, 3, false);
@@ -328,7 +332,7 @@ Result SocketingInit(GrcStream stream)
 const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
-void* TCP_StreamThreadMain(void* _stream)
+static void* TCP_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
 		fatalSimple(MAKERESULT(1, 14));
@@ -364,7 +368,7 @@ void* TCP_StreamThreadMain(void* _stream)
 			svcSleepThread(1E+9);
 			continue;
 		}
-		
+
 		/*
 			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
 			even if the video and audio listeners are used on different threads calling accept on one of them
@@ -387,7 +391,7 @@ void* TCP_StreamThreadMain(void* _stream)
 			if (write(curSock, TargetBuf, *size) <= 0)
 				break;
 		}
-		
+
 		close(curSock);
 		*OutSock = -1;
 		svcSleepThread(1E+9);
@@ -397,22 +401,22 @@ void* TCP_StreamThreadMain(void* _stream)
 }
 #endif
 
-static void USB_Init() 
+static void USB_Init()
 {
 	Result rc = UsbSerialInitializeDefault(&VideoStream, &AudioStream);
 	if (R_FAILED(rc)) fatalSimple(rc);
 }
 
-static void USB_Exit() 
+static void USB_Exit()
 {
 	usbSerialExit();
 }
 
 pthread_t AudioThread;
-#if !defined(MODE_USB)
+#if !defined(USB_ONLY)
 pthread_t VideoThread;
 
-//Don't need a TCP_Init funciton as each thread will initialize its own sockets
+//Don't need a TCP_Init funciton as each thread will initialize its own socket
 static void TCP_Exit()
 {
 #define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
@@ -434,7 +438,7 @@ StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
 StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
 StreamMode* CurrentMode = NULL;
 
-void SetMode(StreamMode* mode)
+static void SetMode(StreamMode* mode)
 {
 	if (CurrentMode)
 	{
@@ -466,7 +470,7 @@ void SetMode(StreamMode* mode)
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_NULL 3
 
-void ConfigThread() 
+static void ConfigThread()
 {
 	//Maybe hosting our own service is better but it looks harder than this
 	int ConfigSock = -1, sockFails = 0;
@@ -565,7 +569,7 @@ int main(int argc, char* argv[])
 	rc = OpenGrcdForThread(GrcStream_Video);
 	if (R_FAILED(rc)) fatalSimple(rc);
 
-#if defined(MODE_USB)
+#if defined(USB_ONLY)
 	USB_Init();
 	pthread_create(&AudioThread, NULL, USB_StreamThreadMain, (void*)GrcStream_Audio);
 	USB_StreamThreadMain((void*)GrcStream_Video);
@@ -584,5 +588,5 @@ int main(int argc, char* argv[])
 	grcdServiceClose(&grcdAudio);
 	FreeRecordingBuf();
 
-    return 0;
+	return 0;
 }
