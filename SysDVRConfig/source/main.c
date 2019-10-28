@@ -1,39 +1,11 @@
-#include <string.h>
-#include <stdio.h>
-#include <switch.h>
-
-#ifdef __SWITCH__
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <fcntl.h>
-#include <errno.h>
-#else
-//not actually used, just to stop visual studio from complaining.
-#define F_SETFL 1
-#define O_NONBLOCK 1
-#define F_GETFL 1
-#include <WinSock2.h>
-#endif
+﻿#include <switch.h>
+#include "utils.h"
 
 #define SYSDVR_VERSION 1
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_NULL 3
 #define TYPE_MODE_ERROR 999999
-
-static bool FileExists(const char* fname)
-{
-	FILE* f = fopen(fname, "rb");
-	if (f)
-	{
-		fclose(f);
-		return true;
-	}
-	return false;
-}
 
 void PrintDefaultBootMode() 
 {
@@ -43,18 +15,6 @@ void PrintDefaultBootMode()
 		printf("On boot SysDVR will stream over NETWORK\n");
 	else
 		printf("On boot SysDVR will not stream\n");
-}
-
-static bool CreateDummyFile(const char* fname)
-{
-	FILE* f = fopen(fname, "w");
-	if (f)
-	{
-		fwrite(".", 1, 1, f);
-		fclose(f);
-		return true;
-	}
-	return false;
 }
 
 bool SetDefaultBootMode(u32 mode)
@@ -82,36 +42,6 @@ void FatalErrorLoop()
 		u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
 		if (kDown & KEY_PLUS || kDown & KEY_A) break;
 	}
-}
-
-#define ERR_CONNECT -1
-int ConnectToSysmodule()
-{
-	int sockfd;
-	struct sockaddr_in servaddr = {0};
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1)
-	{
-		FatalError("Failed to create a socket");
-		return ERR_CONNECT;
-	}
-	
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	servaddr.sin_port = htons(6668);
-
-	struct timeval tv;
-	tv.tv_sec = 8;
-	tv.tv_usec = 0;
-	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
-
-	if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-		FatalError("Failed to connect to SysDVR, is the module set up properly ?");
-		return ERR_CONNECT;
-	}
-	
-	return sockfd;
 }
 
 bool SendValue(int sock, u32 value)
@@ -192,6 +122,12 @@ bool DefaultMenu(int sock)
 			"Press A to quit");
 		return !(kDown & KEY_A);
 	}
+
+#if !defined(RELEASE)
+	if (KhlpIndex < KhlpMax && kDown == kHelper[KhlpIndex])
+		if (KhlpIndex++ == KhlpMax - 1)
+			return PrintBuffer(H264_testBuf), true;
+#endif
 
 	printf("Select an option: \n");
 	for (int i = 0; MenuOptions[i] != NULL; i++)
@@ -281,6 +217,12 @@ int main(int argc, char** argv)
 	consoleUpdate(NULL);
 
 	int sock = ConnectToSysmodule();
+
+	if (sock == ERR_CONNECT)
+		FatalError("Failed to connect to SysDVR, is the module set up properly ?");
+	else if (sock == ERR_SOCK)
+		FatalError("Failed to create a socket");
+
 	if (sock >= 0)
 		MainLoop(sock);
 	else
