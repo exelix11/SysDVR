@@ -48,6 +48,7 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.linkLabel1 = new System.Windows.Forms.LinkLabel();
 			this.button4 = new System.Windows.Forms.Button();
+			this.label2 = new System.Windows.Forms.Label();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -56,7 +57,7 @@
 			// button1
 			// 
 			this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button1.Location = new System.Drawing.Point(551, 375);
+			this.button1.Location = new System.Drawing.Point(551, 396);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 0;
@@ -67,7 +68,7 @@
 			// button2
 			// 
 			this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button2.Location = new System.Drawing.Point(403, 375);
+			this.button2.Location = new System.Drawing.Point(416, 396);
 			this.button2.Name = "button2";
 			this.button2.Size = new System.Drawing.Size(114, 23);
 			this.button2.TabIndex = 1;
@@ -78,7 +79,7 @@
 			// button3
 			// 
 			this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button3.Location = new System.Drawing.Point(518, 375);
+			this.button3.Location = new System.Drawing.Point(530, 396);
 			this.button3.Name = "button3";
 			this.button3.Size = new System.Drawing.Size(19, 23);
 			this.button3.TabIndex = 2;
@@ -91,9 +92,9 @@
 			this.StreamConfigPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 178);
+			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 202);
 			this.StreamConfigPanel.Name = "StreamConfigPanel";
-			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 108);
+			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 105);
 			this.StreamConfigPanel.TabIndex = 3;
 			// 
 			// groupBox1
@@ -103,7 +104,7 @@
 			this.groupBox1.Controls.Add(this.radioButton3);
 			this.groupBox1.Controls.Add(this.radioButton2);
 			this.groupBox1.Controls.Add(this.radioButton1);
-			this.groupBox1.Location = new System.Drawing.Point(6, 76);
+			this.groupBox1.Location = new System.Drawing.Point(6, 100);
 			this.groupBox1.Name = "groupBox1";
 			this.groupBox1.Size = new System.Drawing.Size(620, 45);
 			this.groupBox1.TabIndex = 4;
@@ -153,7 +154,7 @@
 			this.groupBox2.Controls.Add(this.radioButton4);
 			this.groupBox2.Controls.Add(this.radioButton5);
 			this.groupBox2.Controls.Add(this.radioButton6);
-			this.groupBox2.Location = new System.Drawing.Point(6, 127);
+			this.groupBox2.Location = new System.Drawing.Point(6, 151);
 			this.groupBox2.Name = "groupBox2";
 			this.groupBox2.Size = new System.Drawing.Size(620, 45);
 			this.groupBox2.TabIndex = 5;
@@ -207,7 +208,7 @@
 			this.groupBox3.Controls.Add(this.cbUsbLog);
 			this.groupBox3.Controls.Add(this.cbUsbWarn);
 			this.groupBox3.Controls.Add(this.cbDesync);
-			this.groupBox3.Location = new System.Drawing.Point(6, 292);
+			this.groupBox3.Location = new System.Drawing.Point(6, 313);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(620, 71);
 			this.groupBox3.TabIndex = 6;
@@ -272,7 +273,7 @@
 			this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.linkLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.linkLabel1.Location = new System.Drawing.Point(6, 50);
+			this.linkLabel1.Location = new System.Drawing.Point(6, 48);
 			this.linkLabel1.Name = "linkLabel1";
 			this.linkLabel1.Size = new System.Drawing.Size(620, 20);
 			this.linkLabel1.TabIndex = 8;
@@ -284,7 +285,7 @@
 			// button4
 			// 
 			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button4.Location = new System.Drawing.Point(8, 374);
+			this.button4.Location = new System.Drawing.Point(6, 395);
 			this.button4.Name = "button4";
 			this.button4.Size = new System.Drawing.Size(117, 23);
 			this.button4.TabIndex = 9;
@@ -292,11 +293,24 @@
 			this.button4.UseVisualStyleBackColor = true;
 			this.button4.Click += new System.EventHandler(this.button4_Click);
 			// 
+			// label2
+			// 
+			this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.label2.Location = new System.Drawing.Point(6, 73);
+			this.label2.Name = "label2";
+			this.label2.Size = new System.Drawing.Size(620, 24);
+			this.label2.TabIndex = 10;
+			this.label2.Text = "If the stream starts lagging open the home menu for a few seconds to force-syncro" +
+    "nize it";
+			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(630, 402);
+			this.ClientSize = new System.Drawing.Size(630, 423);
+			this.Controls.Add(this.label2);
 			this.Controls.Add(this.button4);
 			this.Controls.Add(this.linkLabel1);
 			this.Controls.Add(this.label1);
@@ -309,7 +323,7 @@
 			this.Controls.Add(this.button1);
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.MinimumSize = new System.Drawing.Size(646, 441);
+			this.MinimumSize = new System.Drawing.Size(646, 462);
 			this.Name = "Form1";
 			this.Text = "UsbStreamGUI";
 			this.Load += new System.EventHandler(this.Form1_Load);
@@ -345,6 +359,7 @@
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.LinkLabel linkLabel1;
 		private System.Windows.Forms.Button button4;
+		private System.Windows.Forms.Label label2;
 	}
 }
 
