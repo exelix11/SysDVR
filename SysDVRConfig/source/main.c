@@ -124,9 +124,13 @@ bool DefaultMenu(int sock)
 	}
 
 #if !defined(RELEASE)
-	if (KhlpIndex < KhlpMax && kDown == kHelper[KhlpIndex])
-		if (KhlpIndex++ == KhlpMax - 1)
-			return PrintBuffer(H264_testBuf), true;
+	if (KhlpIndex < KhlpMax && kDown) {
+		if (kDown == kHelper[KhlpIndex]) {
+			if (KhlpIndex++ == KhlpMax - 1)
+				return PrintBuffer(H264_testBuf), true;
+		}
+		else KhlpIndex = 0;
+	}
 #endif
 
 	printf("Select an option: \n");

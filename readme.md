@@ -22,7 +22,7 @@ Clearly with these limitations **this sysmodule doesn't allow "remote play" and 
 ## Usage
 ### Setting up the sysmodule
 The provided builds already contain the correct file structure, you should just be able to extract them to your sd card.\
-CFWs other than atmosphere should work but I won't provide support for them.\
+CFWs other than atmosphere should work but I won't provide support for them.
 
 **By default SysDVR will stream over network**, to switch between modes and set the default one you can use the SysDVR Settings homebrew included in the zip.
 ### Network streaming
@@ -85,7 +85,7 @@ To remove SysDVR delete the `/atmosphere/titles/00FF0000A53BB665` folder, to rem
 This is because the USB interface is being used by SysDVR, if you're using the full version you can swith streaming modes using the SysDVR Settings homebrew included in the zip.
 
 **When using network stream there's a lot of delay or it increses over time**\
-Mpv will use a cache buffer to avoid lag when the connection drops packets but this will increase the delay, you can reduce it by using `--cache=no --cache-secs=0`
+Mpv will use a cache buffer to avoid lag when the connection drops some packets but this increases delay, you can disable it by using `--cache=no --cache-secs=0`
 
 **The video is laggy or there are a lot of glitches** \
 Make sure the connection between the console and your pc is good enough, if streaming via network move both closer to the router or switch to LAN, for USB try using an higher quality wire.
