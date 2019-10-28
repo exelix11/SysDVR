@@ -24,7 +24,7 @@ copy ..\SysDVRConfig\SysDVR-conf.nro Release\Main\switch\SysDVR-conf.nro
 7z a Release\SysDVR.zip .\Release\Main\*
 
 make clean
-make DEFINES="-DRELEASE -DMODE_USB" || goto quit
+make DEFINES="-DRELEASE -DUSB_ONLY" || goto quit
 mkdir Release\USB\atmosphere\titles\%TITLEID% > nul
 mkdir Release\USB\atmosphere\titles\%TITLEID%\flags > nul
 copy sysmodule.nsp Release\USB\atmosphere\titles\%TITLEID%\exefs.nsp
