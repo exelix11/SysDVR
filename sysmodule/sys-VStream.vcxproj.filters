@@ -3,6 +3,7 @@
   <ItemGroup>
     <None Include="sysmodule.json" />
     <None Include="Makefile" />
+    <None Include="release.bat" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\main.c" />
