@@ -1,13 +1,8 @@
 # SysDVR
 This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.\
-Two versions are provided:
-- `SysDVR.zip` is the "full" version, can stream using both modes and comes with an homebrew app to switch between them
-- `SysDVR-USB-Only.zip` will only stream via USB but uses less memory and should run alongside multiple sysmodules.
+Before opening issues make sure to read the full readme, the tips and commmon issues sections in particular.
 
-You should use the full version unless you have specific requirements.
-
-To play the stream [mpv player](https://mpv.io/) is recommended as it's the most straight forward to set up, any other player that supports raw h264 streams via tcp or stdin should work but you may have to configure it manually.
-## Limitations
+## Features/Limitations
 - **Video quality is fixed to 720p @ 30fps with h264 compression (hardware limit)**
 - Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed
 - **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
@@ -18,16 +13,29 @@ To play the stream [mpv player](https://mpv.io/) is recommended as it's the most
 - USB streaming is not available when docked
 - Requires firmware >= 6.0.0
 
-Clearly with these limitations **this sysmodule doesn't allow "remote play" and does not replace a capture card**.
+Clearly with these limitations **this sysmodule doesn't allow "remote play" and does not fully replace a capture card**.
+
+## Supporting the project
+If you like my work consider supporting me on [patreon](https://www.patreon.com/exelix11)
+
 ## Usage
 ### Setting up the sysmodule
-The provided builds already contain the correct file structure, you should just be able to extract them to your sd card.\
-CFWs other than atmosphere should work but I won't provide support for them.
+Before continuing make sure you're using latest version of atmosphere (other CFWs should work but I won't provide support for them)
+
+Two versions are provided in the [Releases tab](https://github.com/exelix11/SysDVR/releases):
+- `SysDVR.zip` is the "full" version, can stream using both modes and comes with an homebrew app to switch between them
+- `SysDVR-USB-Only.zip` will only stream via USB but uses less memory and should run alongside multiple sysmodules.
+
+You should use the full version unless you have specific requirements.\
+Download one of the builds and extract it in the root of your sd card, the zips already contain the correct file structure.
 
 **By default SysDVR will stream over network**, to switch between modes and set the default one you can use the SysDVR Settings homebrew included in the zip.
+
+To play the stream [mpv player](https://mpv.io/) is recommended as it's the most straight forward to set up, any other player that supports raw h264 streams via tcp or stdin should work but you may have to configure it manually.
 ### Network streaming
-This is the easiest way to stream, In this mode the sysmodule is completely standalone, you should be able to play the video stream just by running `mpv tcp://<switch ip address>:6666 --no-correct-pts --fps=30 ` and `mpv tcp://<switch ip addr>:6667 --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000` for audio.\
-When using network streaming it's not recommended to stream both audio and video at the same time as it may cause slowdowns.
+This is the easiest way to stream, in this mode the sysmodule is completely standalone.\
+Open a terminal (cmd on windows) in mpv's directory and run `mpv tcp://<switch ip address>:6666 --no-correct-pts --fps=30 ` for video and `mpv tcp://<switch ip addr>:6667 --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000` for audio.\
+When using network streaming it's not recommended to stream both audio and video at the same time as it may cause slowdowns.\
 *In general network streaming has more lag and delay compared to USB, it is worth the time to set it up, especially for gameplay recording.*
 ### USB streaming
 To stream via usb you need the UsbStream program, it's built using .NET core and is compatible with linux as well.\
