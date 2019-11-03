@@ -57,7 +57,8 @@ namespace UsbStream
 
 		private void MainLoop()
 		{
-			StreamInitialized();
+			Target.ClientConnected += StreamInitialized;
+			Target.Ready();
 			ThreadTimer.Start();
 #if !DEBUG
 			try

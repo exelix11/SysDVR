@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="LibUsbDotNet" Version="3.0.48-alpha" />
+    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

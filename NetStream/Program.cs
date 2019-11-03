@@ -121,11 +121,15 @@ namespace UsbStream
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 
 			{
-				int index = Array.IndexOf(args, "video");
-				if (index >= 0) ParseTargetArgs(index, ref VTarget);
-				index = Array.IndexOf(args, "audio");
-				if (index >= 0) ParseTargetArgs(index, ref ATarget);
-
+				if (args[0] == "live")
+					(VTarget, ATarget) = LiveStreamHelper.ParseArgs(args);
+				else
+				{
+					int index = Array.IndexOf(args, "video");
+					if (index >= 0) ParseTargetArgs(index, ref VTarget);
+					index = Array.IndexOf(args, "audio");
+					if (index >= 0) ParseTargetArgs(index, ref ATarget);
+				}
 				DesyncFix = HasArg("--desync-fix");
 				PrintStats = HasArg("--print-stats");
 				if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
