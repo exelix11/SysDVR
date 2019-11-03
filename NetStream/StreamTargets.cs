@@ -9,13 +9,19 @@ namespace UsbStream
 {
 	public interface IOutTarget : IDisposable
 	{
+		public delegate void ClientConnectedDelegate();
+		public event ClientConnectedDelegate ClientConnected;
+
 		public void SendData(byte[] data) => SendData(data, 0, data.Length);
 		void SendData(byte[] data, int offset, int size);
+		void Ready();
 	}
 
 	class OutFileTarget : IOutTarget
 	{
 		FileStream Vfs;
+
+		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public OutFileTarget(string fname)
 		{
@@ -32,35 +38,63 @@ namespace UsbStream
 		{
 			Vfs.Write(data, offset, size);
 		}
+
+		public void Ready() { ClientConnected(); }
 	}
 
 	class TCPTarget : IOutTarget
 	{
-		Socket VidSoc;
+		Socket Sock;
+
+		System.Net.IPAddress HostAddr;
+		int HostPort;
+
+		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public TCPTarget(System.Net.IPAddress addr, int port)
 		{
-			var v = new TcpListener(addr, port);
+			HostAddr = addr;
+			HostPort = port;
+		}
+
+		private void ReceiveConnection() 
+		{
+			var v = new TcpListener(HostAddr, HostPort);
 			v.Start();
-			VidSoc = v.AcceptSocket();
+			Console.WriteLine($"Waiting for connection on port {HostPort}...");
+			Sock = v.AcceptSocket();
 			v.Stop();
+			ClientConnected();
 		}
 
 		public void Dispose()
 		{
-			VidSoc.Close();
-			VidSoc.Dispose();
+			Sock.Close();
+			Sock.Dispose();
 		}
 
 		public void SendData(byte[] data, int offset, int size)
 		{
-			VidSoc.Send(data, offset, size, SocketFlags.None);
+			try
+			{
+				Sock.Send(data, offset, size, SocketFlags.None);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"WARNING - Closing socket on port {HostPort} : {ex.Message}");
+				Sock.Close();
+				ReceiveConnection();
+			}
 		}
+
+		public void Ready() => ReceiveConnection();
 	}
 
 	class StdInTarget : IOutTarget
 	{
 		Process proc;
+
+		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public StdInTarget(string path, string args)
 		{
@@ -84,5 +118,7 @@ namespace UsbStream
 		{
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
+
+		public void Ready() { ClientConnected(); }
 	}
 }
