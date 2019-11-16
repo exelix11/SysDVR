@@ -27,7 +27,8 @@ Two versions are provided in the [Releases tab](https://github.com/exelix11/SysD
 - `SysDVR-USB-Only.zip` will only stream via USB but uses less memory and should run alongside multiple sysmodules.
 
 You should use the full version unless you have specific requirements.\
-Download one of the builds and extract it in the root of your sd card, the zips already contain the correct file structure.
+Download one of the builds and extract it in the root of your sd card, the zips already contain the correct file structure.\
+If you added the module with the console on, you will need to reload your CFW for the new module to be loaded. This can normally be accomplished by rebooting from the Power menu.
 
 **By default SysDVR will stream over network**, to switch between modes and set the default one you can use the SysDVR Settings homebrew included in the zip.
 
