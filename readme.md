@@ -28,7 +28,7 @@ Two versions are provided in the [Releases tab](https://github.com/exelix11/SysD
 
 You should use the full version unless you have specific requirements.\
 Download one of the builds and extract it in the root of your sd card, the zips already contain the correct file structure.\
-You will need to reload your CFW for the new module to be loaded. If you are using default Atmosphere, rebooting from the Power menu (hold power button) should reboot to your bootloader, or RCM if you have AutoRCM on.
+If you added the module with the console on, you will need to reload your CFW for the new module to be loaded. This can normally be accomplished by rebooting from the Power menu.
 
 **By default SysDVR will stream over network**, to switch between modes and set the default one you can use the SysDVR Settings homebrew included in the zip.
 
