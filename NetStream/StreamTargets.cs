@@ -14,7 +14,7 @@ namespace UsbStream
 
 		public void SendData(byte[] data) => SendData(data, 0, data.Length);
 		void SendData(byte[] data, int offset, int size);
-		void Ready();
+		void InitializeStreaming();
 	}
 
 	class OutFileTarget : IOutTarget
@@ -39,7 +39,7 @@ namespace UsbStream
 			Vfs.Write(data, offset, size);
 		}
 
-		public void Ready() { ClientConnected(); }
+		public void InitializeStreaming() { ClientConnected(); }
 	}
 
 	class TCPTarget : IOutTarget
@@ -87,7 +87,7 @@ namespace UsbStream
 			}
 		}
 
-		public void Ready() => ReceiveConnection();
+		public void InitializeStreaming() => ReceiveConnection();
 	}
 
 	class StdInTarget : IOutTarget
@@ -119,6 +119,6 @@ namespace UsbStream
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
 
-		public void Ready() { ClientConnected(); }
+		public void InitializeStreaming() { ClientConnected(); }
 	}
 }
