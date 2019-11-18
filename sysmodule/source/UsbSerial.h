@@ -31,12 +31,20 @@ typedef enum {
 
 Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos);
 void usbSerialExit(void);
-size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* buffer, size_t size, u64 timeout);
+size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, const void* buffer, size_t size, u64 timeout);
 
 typedef struct {
 	u32 interface, WriteEP, ReadEP;
 } UsbInterface;
 
 Result UsbSerialInitializeDefault(UsbInterface* VideoStream, UsbInterface* AudioStream);
-size_t UsbSerialRead(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout);
-size_t UsbSerialWrite(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout);
+
+static inline size_t UsbSerialRead(const UsbInterface* stream, const void* buf, u32 bufSize, u64 timeout)
+{
+	return usbSerialTransfer(stream->interface, stream->ReadEP, UsbDirection_Read, buf, bufSize, timeout);
+}
+
+static inline size_t UsbSerialWrite(const UsbInterface* stream, const void* buf, u32 bufSize, u64 timeout)
+{
+	return usbSerialTransfer(stream->interface, stream->WriteEP, UsbDirection_Write, buf, bufSize, timeout);
+}

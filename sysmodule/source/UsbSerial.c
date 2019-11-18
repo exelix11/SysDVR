@@ -390,7 +390,7 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 	return rc;
 }
 
-size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, void* buffer, size_t size, u64 timeout)
+size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, const void* buffer, size_t size, u64 timeout)
 {
 	size_t transferredSize = -1;
 	u32 state = 0;
@@ -507,14 +507,4 @@ Result UsbSerialInitializeDefault(UsbInterface* VideoStream, UsbInterface* Audio
 	info.string_descriptor = NULL;
 
 	return usbSerialInitialize(&device_descriptor, 1, &info);
-}
-
-size_t UsbSerialRead(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout)
-{
-	return usbSerialTransfer(stream->interface, stream->ReadEP, UsbDirection_Read, buf, bufSize, timeout);
-}
-
-size_t UsbSerialWrite(UsbInterface* stream, void* buf, u32 bufSize, u64 timeout)
-{
-	return usbSerialTransfer(stream->interface, stream->WriteEP, UsbDirection_Write, buf, bufSize, timeout);
 }
