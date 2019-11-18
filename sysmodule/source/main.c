@@ -10,7 +10,7 @@
 #if defined(RELEASE)
 #pragma message "Building release"
 #else
-#define USB_ONLY
+//#define USB_ONLY
 #endif
 
 /*
@@ -195,7 +195,7 @@ UsbInterface AudioStream;
 const u32 REQMAGIC_VID = 0xAAAAAAAA;
 const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
-static u32 USB_WaitForInputReq(UsbInterface* dev)
+static u32 USB_WaitForInputReq(const UsbInterface* dev)
 {
 	do
 	{
@@ -207,9 +207,9 @@ static u32 USB_WaitForInputReq(UsbInterface* dev)
 	return 0;
 }
 
-static void USB_SendStream(GrcStream stream, UsbInterface* Dev)
+static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
 {
-	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	u32 *const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
 	u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
 	if (*size <= 0)
@@ -222,7 +222,7 @@ static void USB_SendStream(GrcStream stream, UsbInterface* Dev)
 
 	if (*size)
 	{
-		u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+		u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size)
 			return;
 	}
@@ -234,11 +234,11 @@ static void* USB_StreamThreadMain(void* _stream)
 	if (!IsThreadRunning)
 		fatalSimple(MAKERESULT(1, 13));
 
-	GrcStream stream = (GrcStream)_stream;
-	UsbInterface* Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
-	u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
+	const GrcStream stream = (GrcStream)_stream;
+	const UsbInterface *const Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
+	const u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
-	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
+	void (*const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
 	while (true)
 	{
@@ -337,14 +337,14 @@ static void* TCP_StreamThreadMain(void* _stream)
 	if (!IsThreadRunning)
 		fatalSimple(MAKERESULT(1, 14));
 
-	GrcStream stream = (GrcStream)_stream;
-	void (*ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
+	const GrcStream stream = (GrcStream)_stream;
+	void (*const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
-	u32* size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	u8* TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	u32 *const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
-	int* sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
-	int* OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
+	int *const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
+	int *const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
 
 	{
 		Result rc = SocketingInit(stream);
@@ -552,10 +552,7 @@ static bool FileExists(const char* fname)
 {
 	FILE* f = fopen(fname, "rb");
 	if (f)
-	{
-		fclose(f);
-		return true;
-	}
+		return fclose(f), true;
 	return false;
 }
 #endif
