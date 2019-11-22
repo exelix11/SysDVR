@@ -128,12 +128,13 @@ namespace UsbStream
 			IOutTarget ATarget = null;
 			
 			bool PrintStats = false;
-			bool DesyncFix = false;
 			LogLevel UsbLogLevel = LogLevel.Error;
 
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 
-			DesyncFix = HasArg("--desync-fix");
+			if (HasArg("--desync-fix"))
+				Console.WriteLine("Warning: the --desync-fix fix option has been deprecated and will be ignored");
+
 			PrintStats = HasArg("--print-stats");
 			if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
 			if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
@@ -162,22 +163,37 @@ namespace UsbStream
 
 			VideoStreamThread Video = null;
 			if (VTarget != null)
-				Video = new VideoStreamThread(StopThreads.Token, VTarget, stream.OpenStreamDefault(), PrintStats, DesyncFix);
+				Video = new VideoStreamThread(StopThreads.Token, VTarget, stream.OpenStreamDefault(), PrintStats);
 				
 			AudioStreamThread Audio = null;
 			if (ATarget != null)
 				Audio = new AudioStreamThread(StopThreads.Token, ATarget, stream.OpenStreamAlt(), PrintStats);	
 
-			Video?.StartThread();
-			Audio?.StartThread();
+			Video?.Start();
+			Audio?.Start();
 
 			Console.WriteLine("Starting stream, press return to stop");
-			Console.ReadLine();
+			Console.WriteLine("If the stream lags press Q to force a resync");
+
+			ConsoleKey c;
+			while ((c = Console.ReadKey().Key) != ConsoleKey.Enter)
+			{
+				if (c == ConsoleKey.Q)
+				{
+					Console.WriteLine("Pausing streams for 3 seconds to flush buffer data");
+					Video?.Pause();
+					Audio?.Pause();
+					Thread.Sleep(3000);
+					Video?.Resume();
+					Audio?.Resume();
+				}
+			}
+
 			Console.WriteLine("Terminating threads...");
 			StopThreads.Cancel();
 
-			Video?.JoinThread();
-			Audio?.JoinThread();
+			Video?.Join();
+			Audio?.Join();
 
 			Video?.Dispose();
 			Audio?.Dispose();
