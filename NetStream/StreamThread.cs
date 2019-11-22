@@ -1,4 +1,6 @@
-﻿using System;
+﻿//#define BENCHMARK
+
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,24 +20,38 @@ namespace UsbStream
 	public abstract class StreamThread : IDisposable
 	{
 		public bool PrintStats = false;
-		public bool UseDesyncFix = false;
 		public readonly StreamKind Kind;
 
 		protected readonly CancellationToken Token;
 		protected Thread thread;
 
-		public void StartThread() 
+		public void Start() 
 		{
 			thread = new Thread(MainLoop);
 			thread.Start();
 		}
 
-		public void JoinThread() => thread.Join();
+		public void Join() => thread.Join();
 
 		public void Dispose()
 		{
 			Dispose(true);
 			GC.SuppressFinalize(this);
+		}
+
+		EventWaitHandle wait = new EventWaitHandle(false, EventResetMode.AutoReset);
+		bool SuspendThread = false;
+		public void Pause() 
+		{
+			lock (wait)
+				SuspendThread = true;
+		}
+
+		public void Resume()
+		{
+			lock (wait)
+				SuspendThread = false;
+			wait.Set();
 		}
 
 		readonly protected UsbDevStream Device;
@@ -60,12 +76,25 @@ namespace UsbStream
 			Target.ClientConnected += StreamInitialized;
 			Target.InitializeStreaming();
 			ThreadTimer.Start();
+
+#if BENCHMARK
+			Stopwatch benchmark = new Stopwatch();
+#endif
 #if !DEBUG
 			try
 			{
 #endif
 			while (!Token.IsCancellationRequested)
 			{
+#if BENCHMARK
+				benchmark.Restart();
+#endif
+				bool ShouldBlock = false;
+				lock (wait)
+					ShouldBlock = SuspendThread;
+				if (ShouldBlock)
+					wait.WaitOne();
+
 				while (Device.WriteWResult(MagicPacket) != MagicPacket.Length)
 				{
 					Console.WriteLine($"Warning: Couldn't write data to device ({Kind} thread)");
@@ -90,6 +119,10 @@ namespace UsbStream
 					BytesPerSecond += size;
 					CheckPlayStats();
 				}
+#if BENCHMARK
+				if (Kind == StreamKind.Video)
+					Console.WriteLine(benchmark.ElapsedMilliseconds);
+#endif
 			}
 #if !DEBUG
 				
@@ -145,28 +178,13 @@ namespace UsbStream
 		private Stopwatch ThreadTimer = new Stopwatch();
 		private long TransfersPerSecond = 0;
 		private long BytesPerSecond = 0;
-		private bool DesyncFlag = false;
 		protected void CheckPlayStats()
 		{
 			if (ThreadTimer.ElapsedMilliseconds < 1000) return;
 			ThreadTimer.Stop();
+
 			if (PrintStats)
 				Console.WriteLine($"{Kind} stream: {TransfersPerSecond} - {BytesPerSecond / ThreadTimer.ElapsedMilliseconds} KB/s");
-
-			if (UseDesyncFix)
-			{
-				if (BytesPerSecond / ThreadTimer.ElapsedMilliseconds <= 30 && TransfersPerSecond > 2 && !DesyncFlag)
-				{
-					DesyncFlag = true;
-				}
-				else if (DesyncFlag && BytesPerSecond / ThreadTimer.ElapsedMilliseconds >= 100)
-				{
-					Console.WriteLine("Preventing desync");
-					System.Threading.Thread.Sleep(600);
-					Device.Flush();
-					DesyncFlag = false;
-				}
-			}
 
 			TransfersPerSecond = 0;
 			BytesPerSecond = 0;
@@ -196,11 +214,10 @@ namespace UsbStream
 		static readonly byte[] REQMagic_VIDEO = BitConverter.GetBytes(0xAAAAAAAA);
 		const int VbufMaxSz = 0x32000;
 
-		public VideoStreamThread(CancellationToken token, IOutTarget StreamTarget, UsbDevStream InputDevice, bool PrintStatsArg = false, bool DesyncFix = false) :
+		public VideoStreamThread(CancellationToken token, IOutTarget StreamTarget, UsbDevStream InputDevice, bool PrintStatsArg = false) :
 			base(token, StreamKind.Video, InputDevice, StreamTarget, REQMagic_VIDEO, VbufMaxSz)
 		{
 			PrintStats = PrintStatsArg;
-			UseDesyncFix = DesyncFix;
 		}
 
 		//For video start by sending an SPS and PPS packet to set the resolution, these packets are only sent when launching a game
@@ -221,7 +238,6 @@ namespace UsbStream
 			base(token, StreamKind.Audio, InputDevice, StreamTarget, REQMagic_AUDIO, AbufMaxSz)
 		{
 			PrintStats = PrintStatsArg;
-			UseDesyncFix = false;
 		}
 	}
 }
