@@ -81,7 +81,7 @@ namespace UsbStream
 				}
 				else
 				{
-					Target.SendData(Data, 0, (int)size);
+					Target.SendData(Data, 0, (int)size, Timestamp);
 #if PRINT_DEBUG
 					Console.WriteLine($"video {size}");
 #endif
@@ -103,7 +103,9 @@ namespace UsbStream
 
 		private readonly ArrayPool<byte> StreamingPool = ArrayPool<byte>.Create();
 		protected byte[] Data = null;
+		protected ulong Timestamp = 0;
 		readonly private byte[] SizeBuf = new byte[4];
+		readonly private byte[] TsBuf = new byte[8];
 		protected int ReadNextPacket()
 		{
 			if (Data != null)
@@ -117,20 +119,24 @@ namespace UsbStream
 			while (true)
 			{
 				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
-				if (Device.Read(SizeBuf,0,4) != 4)
+				if (Device.Read(SizeBuf, 0, 4) != 4)
 					if (Token.IsCancellationRequested)
 						return -3;
-					else 
+					else
 						continue;
 				if (SizeBuf.SequenceEqual(MagicPacket))
 					break;
 			}
-
+			
 			//read the payload size
 			if (Device.Read(SizeBuf, 0, 4) != 4) return -2;
-			var size = BitConverter.ToUInt32(SizeBuf);
+			var size = BitConverter.ToUInt32(SizeBuf,0);
 			if (size > MaxBufSize) return -1;
 			if (size == 0) return 0;
+
+			//read the timestamp
+			if (Device.Read(TsBuf, 0, 8) != 8) return -4;
+			Timestamp = BitConverter.ToUInt64(TsBuf);
 
 			//Read the actual data
 			Device.MillisTimeout = 1000;

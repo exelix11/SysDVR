@@ -9,8 +9,11 @@ namespace UsbStream
 {
 	public interface IOutTarget : IDisposable
 	{
-		public void SendData(byte[] data) => SendData(data, 0, data.Length);
+		public void SendData(byte[] data) => SendData(data, 0, data.Length, 0);
 		void SendData(byte[] data, int offset, int size);
+
+		void SendData(byte[] data, int offset, int size, UInt64 timestamp) =>
+			SendData(data, offset, size);
 	}
 
 	class OutFileTarget : IOutTarget
@@ -85,4 +88,39 @@ namespace UsbStream
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
 	}
+
+#if DEBUG
+	class LoggingTarget : IOutTarget
+	{
+		readonly BinaryWriter bin;
+		readonly MemoryStream mem = new MemoryStream();
+		readonly string filename;
+
+		public LoggingTarget(string filename)
+		{
+			this.filename = filename;
+			bin = new BinaryWriter(mem);
+		}
+
+		public void Dispose()
+		{
+			File.WriteAllBytes(filename, mem.ToArray());
+		}
+
+		Stopwatch sw = new Stopwatch();
+		public void SendData(byte[] data, int offset, int size)
+		{
+			throw new NotImplementedException();	
+		}
+
+		public void SendData(byte[] data, int offset, int size, UInt64 ts)
+		{
+			Console.WriteLine($"{filename} - ts: {ts}");
+			bin.Write(sw.ElapsedMilliseconds);
+			bin.Write(ts);
+			bin.Write(data, offset, size);
+			sw.Restart();
+		}
+	}
+#endif
 }

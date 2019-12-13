@@ -101,10 +101,13 @@ const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
 const int AudioBatchSz = 12;
 
-u8* Vbuf = NULL;
-u8* Abuf = NULL;
-u32 VOutSz = 0;
-u32 AOutSz = 0;
+static u8* Vbuf = NULL;
+static u8* Abuf = NULL;
+static u32 VOutSz = 0;
+static u32 AOutSz = 0;
+
+static u64 VTimestamp = 0;
+static u64 ATimestamp = 0;
 
 Service grcdVideo;
 Service grcdAudio;
@@ -154,13 +157,12 @@ static Result OpenGrcdForThread(GrcStream stream)
 //Batch sending audio samples to improve speed
 static void ReadAudioStream()
 {
-	u32 unk = 0;
 	u64 timestamp = 0;
 	u32 TmpAudioSz = 0;
 	AOutSz = 0;
 	for (int i = 0, fails = 0; i < AudioBatchSz; i++)
 	{
-		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
+		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, NULL, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
 			if (fails++ > 9 && !IsThreadRunning)
@@ -173,17 +175,17 @@ static void ReadAudioStream()
 		}
 		fails = 0;
 		AOutSz += TmpAudioSz;
+		if (i == 0)
+			ATimestamp = timestamp;
 	}
 }
 
 static void ReadVideoStream()
 {
-	u32 unk = 0;
-	u64 timestamp = 0;
 	int fails = 0;
 
 	while (true) {
-		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
+		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, NULL, &VOutSz, &VTimestamp);
 		if (R_SUCCEEDED(res) && VOutSz > 0) break;
 		VOutSz = 0;
 		if (fails++ > 8 && !IsThreadRunning) break;
@@ -209,8 +211,8 @@ static u32 USB_WaitForInputReq(const UsbInterface* dev)
 
 static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
 {
-	u32 *const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
+	u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	const u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
 	if (*size <= 0)
 		*size = 0;
@@ -222,7 +224,12 @@ static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
 
 	if (*size)
 	{
+		u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
 		u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+
+		if (UsbSerialWrite(Dev, ts, sizeof(*ts), 1E+8) != sizeof(*ts))
+			return;
+
 		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size)
 			return;
 	}
