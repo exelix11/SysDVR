@@ -13,22 +13,22 @@ make || goto quit
 cd ..\sysmodule
 make clean
 make DEFINES="-DRELEASE" || goto quit
-mkdir Release\Main\atmosphere\titles\%TITLEID% > nul
-mkdir Release\Main\atmosphere\titles\%TITLEID%\flags > nul
+mkdir Release\Main\atmosphere\contents\%TITLEID% > nul
+mkdir Release\Main\atmosphere\contents\%TITLEID%\flags > nul
 mkdir Release\Main\switch > nul
 mkdir Release\Main\config\sysdvr > nul
 echo . > Release\Main\config\sysdvr\tcp
-copy sysmodule.nsp Release\Main\atmosphere\titles\%TITLEID%\exefs.nsp
-echo . > Release\Main\atmosphere\titles\%TITLEID%\flags\boot2.flag
+copy sysmodule.nsp Release\Main\atmosphere\contents\%TITLEID%\exefs.nsp
+echo . > Release\Main\atmosphere\contents\%TITLEID%\flags\boot2.flag
 copy ..\SysDVRConfig\SysDVR-conf.nro Release\Main\switch\SysDVR-conf.nro
 7z a Release\SysDVR.zip .\Release\Main\*
 
 make clean
 make DEFINES="-DRELEASE -DUSB_ONLY" || goto quit
-mkdir Release\USB\atmosphere\titles\%TITLEID% > nul
-mkdir Release\USB\atmosphere\titles\%TITLEID%\flags > nul
-copy sysmodule.nsp Release\USB\atmosphere\titles\%TITLEID%\exefs.nsp
-echo . > Release\USB\atmosphere\titles\%TITLEID%\flags\boot2.flag
+mkdir Release\USB\atmosphere\contents\%TITLEID% > nul
+mkdir Release\USB\atmosphere\contents\%TITLEID%\flags > nul
+copy sysmodule.nsp Release\USB\atmosphere\contents\%TITLEID%\exefs.nsp
+echo . > Release\USB\atmosphere\contents\%TITLEID%\flags\boot2.flag
 7z a Release\USB.zip .\Release\USB\*
 
 make clean
