@@ -113,6 +113,11 @@ namespace UsbStream
 					case "file":
 						t = new OutFileTarget(args[baseIndex + 2]);
 						break;
+#if DEBUG
+					case "log":
+						t = new LoggingTarget($"F:/{args[baseIndex]}.binlog");
+						break;
+#endif
 					default:
 						throw new Exception($"{args[baseIndex + 1]} is not a valid video mode");
 				}
