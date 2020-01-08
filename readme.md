@@ -91,6 +91,9 @@ To get the most out of this sysmodule you will have to do some testing to find c
 - Using cache *will* reduce lags at the cost of an higher delay, for mpv it's on by default (except when using usb stream with `mpv` mode), if you want to try without it the command line arg for mpv is `--cache=no --cache-secs=0`. There's a lot of room for experimenting here, try different values to find the combination that works best for you.
 - If using no caching when the screen goes full black or white (eg loading screens) it may cause some desync and the stream will start to drop frames, eventually it will fix by itself but it could take some time, the fastest solution is to open the home menu for a few seconds and then resume the game, for usb stream you can try setting the `--desync-fix` flag (this will introduce glitches).
 ## Common issues
+**When using Usbstream Gui on windows launching UsbStream results in a file not found error** \
+Some users had this issue [#20](https://github.com/exelix11/SysDVR/issues/20) , a workaround is to export the batch file from the GUI and edit it in notepad to launch `mpv.com` instead of just `mpv`, will be fixed in the next update. 
+
 **After copying the sysmodule to the sd atmosphere won't boot anymore** \
 This happens if you have too many sysmodules or ones particulary heavy like sysftpd, remove them to launch SysDVR.\
 If you really need other sysmodules at the same time you can try using the USB-Only version as it uses less memory (512K vs 3MB)\
