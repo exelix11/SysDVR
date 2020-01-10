@@ -97,7 +97,7 @@ Some users had this issue [#20](https://github.com/exelix11/SysDVR/issues/20) , 
 **After copying the sysmodule to the sd atmosphere won't boot anymore** \
 This happens if you have too many sysmodules or ones particulary heavy like sysftpd, remove them to launch SysDVR.\
 If you really need other sysmodules at the same time you can try using the USB-Only version as it uses less memory (512K vs 3MB)\
-To remove SysDVR delete the `/atmosphere/titles/00FF0000A53BB665` folder, to remove other sysmodules if you're not sure about the right ID delete the whole `/atmosphere` folder and download a fresh copy of atmosphere.
+To remove SysDVR delete the `/atmosphere/contents/00FF0000A53BB665` folder, to remove other sysmodules if you're not sure about the right ID delete the whole `/atmosphere` folder and download a fresh copy of atmosphere.
 
 **Homebrews using USB like GoldLeaf or nxmtp won't launch anymore**\
 This is because the USB interface is being used by SysDVR, if you're using the full version you can swith streaming modes using the SysDVR Settings homebrew included in the zip.
