@@ -109,8 +109,8 @@ static u32 AOutSz = 0;
 static u64 VTimestamp = 0;
 static u64 ATimestamp = 0;
 
-Service grcdVideo;
-Service grcdAudio;
+static Service grcdVideo;
+static Service grcdAudio;
 
 #if defined(USB_ONLY)
 const bool IsThreadRunning = true;
@@ -120,7 +120,7 @@ const bool IsThreadRunning = true;
 	When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
 	Only in that case this variable should be checked
 */
-atomic_bool IsThreadRunning = false;
+static atomic_bool IsThreadRunning = false;
 #endif
 
 static void AllocateRecordingBuf()
@@ -192,10 +192,10 @@ static void ReadVideoStream()
 	}
 }
 
-UsbInterface VideoStream;
-UsbInterface AudioStream;
-const u32 REQMAGIC_VID = 0xAAAAAAAA;
-const u32 REQMAGIC_AUD = 0xBBBBBBBB;
+static UsbInterface VideoStream;
+static UsbInterface AudioStream;
+static const u32 REQMAGIC_VID = 0xAAAAAAAA;
+static const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
 static u32 USB_WaitForInputReq(const UsbInterface* dev)
 {
@@ -263,81 +263,11 @@ static void* USB_StreamThreadMain(void* _stream)
 }
 
 #if !defined(USB_ONLY)
-#ifdef __SWITCH__
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <fcntl.h>
-#include <errno.h>
-#else
-//not actually used, just to stop visual studio from complaining.
-//~~i regret nothing~~
-#define F_SETFL 1
-#define O_NONBLOCK 1
-#define F_GETFL 1
-#include <WinSock2.h>
-#endif
+#include "socketing.h"
+#include "rtsp/RTSP.h"
 
-static Result CreateSocket(int* OutSock, int port, int baseError, bool LocalOnly)
-{
-	int err = 0, sock = -1;
-	struct sockaddr_in temp;
-
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0)
-		return MAKERESULT(baseError, 1);
-
-	temp.sin_family = AF_INET;
-	temp.sin_addr.s_addr = LocalOnly ? htonl(INADDR_LOOPBACK) : INADDR_ANY;
-	temp.sin_port = htons(port);
-
-	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
-	fcntl(sock, F_SETFL, O_NONBLOCK);
-
-	const int optVal = 1;
-	err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
-	if (err)
-		return MAKERESULT(baseError, 2);
-
-	err = bind(sock, (struct sockaddr*) & temp, sizeof(temp));
-	if (err)
-		return MAKERESULT(baseError, 3);
-
-	err = listen(sock, 1);
-	if (err)
-		return MAKERESULT(baseError, 4);
-
-	*OutSock = sock;
-	return 0;
-}
-
-int VideoSock = -1;
-int AudioSock = -1;
-int AudioCurSock = -1;
-int VideoCurSock = -1;
-
-static Result SocketingInit(GrcStream stream)
-{
-	Result rc;
-	if (stream == GrcStream_Video)
-	{
-		if (VideoSock != -1) close(VideoSock);
-		rc = CreateSocket(&VideoSock, 6666, 2, false);
-		if (R_FAILED(rc)) return rc;
-	}
-	else
-	{
-		if (AudioSock != -1) close(AudioSock);
-		rc = CreateSocket(&AudioSock, 6667, 3, false);
-		if (R_FAILED(rc)) return rc;
-	}
-	return 0;
-}
-
-const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
-const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
+//const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
+//const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 static void* TCP_StreamThreadMain(void* _stream)
 {
@@ -345,64 +275,21 @@ static void* TCP_StreamThreadMain(void* _stream)
 		fatalSimple(MAKERESULT(1, 14));
 
 	const GrcStream stream = (GrcStream)_stream;
-	void (*const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
+	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
-	u32 *const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	u8* const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
 
-	int *const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
-	int *const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
-
+	while (true)
 	{
-		Result rc = SocketingInit(stream);
-		if (R_FAILED(rc)) fatalSimple(rc);
+		while (!RTSP_ClientStreaming) svcSleepThread(1E+8); // 1/10 of second
+
+		//TODO: packetize and send streams
+		ReadStreamFn();
+		if (write(curSock, TargetBuf, *size) <= 0)
+			break;
 	}
 
-	/*
-		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
-		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
-	*/
-	int sockFails = 0;
-	while (IsThreadRunning) {
-		int curSock = accept(*sock, 0, 0);
-		if (curSock < 0)
-		{
-			if (sockFails++ >= 3 && IsThreadRunning)
-			{
-				Result rc = SocketingInit(stream);
-				if (R_FAILED(rc)) fatalSimple(rc);
-			}
-			svcSleepThread(1E+9);
-			continue;
-		}
-
-		/*
-			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
-			even if the video and audio listeners are used on different threads calling accept on one of them
-			blocks the others as well, even while a client is connected.
-			The workaround is making the socket non-blocking and then to set the client socket as blocking.
-			By default the socket returned from accept inherits this flag.
-		*/
-		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
-
-		*OutSock = curSock;
-
-		if (stream == GrcStream_Video) {
-			write(curSock, SPS, sizeof(SPS));
-			write(curSock, PPS, sizeof(PPS));
-		}
-
-		while (true)
-		{
-			ReadStreamFn();
-			if (write(curSock, TargetBuf, *size) <= 0)
-				break;
-		}
-
-		close(curSock);
-		*OutSock = -1;
-		svcSleepThread(1E+9);
-	}
 	pthread_exit(NULL);
 	return NULL;
 }
@@ -419,19 +306,20 @@ static void USB_Exit()
 	usbSerialExit();
 }
 
-pthread_t AudioThread;
+static pthread_t AudioThread;
 #if !defined(USB_ONLY)
-pthread_t VideoThread;
+static pthread_t VideoThread;
+static pthread_t RTSPThread;
 
-//Don't need a TCP_Init funciton as each thread will initialize its own socket
+static void TCP_Init()
+{
+	pthread_create(&VideoThread, NULL, RTSP_ServerThread, NULL);
+}
+
 static void TCP_Exit()
 {
-#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
-	CloseSock(VideoSock);
-	CloseSock(AudioSock);
-	CloseSock(AudioCurSock);
-	CloseSock(VideoCurSock);
-#undef CloseSock
+	RTSP_StopServer();
+	pthread_join(RTSPThread, NULL);
 }
 
 typedef struct _streamMode
@@ -442,7 +330,7 @@ typedef struct _streamMode
 } StreamMode;
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
-StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
+StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamThreadMain };
 StreamMode* CurrentMode = NULL;
 
 static void SetMode(StreamMode* mode)
