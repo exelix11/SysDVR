@@ -9,9 +9,33 @@
     <ClCompile Include="source\main.c" />
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\UsbSerial.c" />
+    <ClCompile Include="source\rtsp\RTSP.c">
+      <Filter>rtsp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
     <ClInclude Include="source\UsbSerial.h" />
+    <ClInclude Include="source\rtsp\RTP.h">
+      <Filter>rtsp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rtsp\RTSP.h">
+      <Filter>rtsp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rtsp\H264Packetizer.h">
+      <Filter>rtsp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rtsp\LE16Packetizer.h">
+      <Filter>rtsp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rtsp\defines.h">
+      <Filter>rtsp</Filter>
+    </ClInclude>
+    <ClInclude Include="source\socketing.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="rtsp">
+      <UniqueIdentifier>{20070232-dcc8-443d-9fea-7690d5e1cc99}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
