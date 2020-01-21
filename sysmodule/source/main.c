@@ -265,6 +265,8 @@ static void* USB_StreamThreadMain(void* _stream)
 #if !defined(USB_ONLY)
 #include "socketing.h"
 #include "rtsp/RTSP.h"
+#include "rtsp/H264Packetizer.h"
+#include "rtsp/LE16Packetizer.h"
 
 //const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 //const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
@@ -275,19 +277,26 @@ static void* TCP_StreamThreadMain(void* _stream)
 		fatalSimple(MAKERESULT(1, 14));
 
 	const GrcStream stream = (GrcStream)_stream;
-	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
-
-	u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	u8* const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-
-	while (true)
+	while (IsThreadRunning)
 	{
-		while (!RTSP_ClientStreaming) svcSleepThread(1E+8); // 1/10 of second
+		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(2E+8); // 1/5 of second
+		if (!IsThreadRunning) break;
 
-		//TODO: packetize and send streams
-		ReadStreamFn();
-		if (write(curSock, TargetBuf, *size) <= 0)
-			break;
+		while (true)
+		{
+			int error = 0;
+			if (stream == GrcStream_Video)
+			{
+				ReadVideoStream();
+				error = PacketizeH264((char*)Vbuf, VOutSz, VTimestamp, RTSP_H264SendPacket);
+			}
+			else
+			{
+				ReadAudioStream();
+				error = PacketizeLE16((char*)Abuf, AOutSz, ATimestamp, RTSP_LE16SendPacket);
+			}
+			if (error) break;
+		}
 	}
 
 	pthread_exit(NULL);
