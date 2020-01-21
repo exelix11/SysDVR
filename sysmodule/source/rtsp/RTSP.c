@@ -241,7 +241,7 @@ static inline int recvAll(int sock, char* data, int size)
 		int res = recv(sock, data, size, MSG_DONTWAIT);
 		if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) 
 		{
-			svcSleepThread(1E+8); 
+			svcSleepThread(2E+8); 
 			continue; 
 		}
 		else return res;

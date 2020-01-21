@@ -2,9 +2,9 @@
 
 #include <stdint.h>
 
-#define MaxPacketSize 2048
+#define MaxRTPPacketSize 2048
 #define RTPHeaderSz 12
-#define MaxRTPPayloadSz (MaxPacketSize - RTPHeaderSz)
+#define MaxRTPPayloadSz (MaxRTPPacketSize - RTPHeaderSz)
 
 static uint16_t SequenceNumbers[2];
 static const char PT[2] = {96, 97};
