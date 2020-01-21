@@ -31,21 +31,21 @@ int client = -1;
 static atomic_bool RTSP_Running = false;
 atomic_bool RTSP_ClientStreaming = false;
 
-static inline void CloseSocket(int* soc)
+static inline void CloseSocket(int* sptr)
 {
-	if (*soc != -1)
-	{
-		close(*soc);
-		*soc = -1;
-	}
+	int sock = *sptr;
+	*sptr = -1;
+	if (sock != -1)
+		close(sock);
 }
 
-static inline void RTSP_MainLoop(int socket);
+static inline void RTSP_MainLoop();
 
 void* RTSP_ServerThread(void* arg)
 {
 	Result rc = CreateSocket(&RTSPSock, 6666, 4, false);
 	if (R_FAILED(rc)) fatalSimple(rc);
+
 	/*
 		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
 		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
@@ -54,8 +54,8 @@ void* RTSP_ServerThread(void* arg)
 	RTSP_Running = true;
 	while (RTSP_Running)
 	{
-		int curSock = accept(RTSPSock, 0, 0);
-		if (curSock < 0)
+		client = accept(RTSPSock, 0, 0);
+		if (client < 0)
 		{
 			if (sockFails++ >= 3 && RTSP_Running)
 			{
@@ -66,7 +66,7 @@ void* RTSP_ServerThread(void* arg)
 			svcSleepThread(1E+9);
 			continue;
 		}
-
+		
 		/*
 			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
 			even if the video and audio listeners are used on different threads calling accept on one of them
@@ -74,11 +74,11 @@ void* RTSP_ServerThread(void* arg)
 			The workaround is making the socket non-blocking and then to set the client socket as blocking.
 			By default the socket returned from accept inherits this flag.
 		*/
-		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
-		RTSP_MainLoop(curSock);
+		fcntl(client, F_SETFL, fcntl(client, F_GETFL, 0) & ~O_NONBLOCK);
+		RTSP_MainLoop();
 
 		RTSP_ClientStreaming = false;
-		close(curSock);
+		CloseSocket(&client);
 		svcSleepThread(1E+9);
 	}
 	pthread_exit(NULL);
@@ -100,11 +100,13 @@ typedef struct
 
 static RtspPorts ports[2];
 
-static inline int RTSP_Send(const void* const data, const size_t len) 
+static inline int RTSP_Send(const char* data, size_t len) 
 {
-	if (send(client, data, len, 0) <= 0)
+	if (client < 0) return 1;
+	if (write(client, data, len) <= 0)
 	{
-		CloseSocket(&client); //TODO is this enough go get the main thread out of receive ?
+		//printl("RTSP_Send error %s %d \n", strerror(errno), errno);
+		CloseSocket(&client);
 		RTSP_ClientStreaming = false;
 		return 1;
 	}
@@ -156,7 +158,7 @@ static inline void RTSP_StartPlayback()
 
 static inline void RTSP_SendHeader()
 {
-	//printf("> %s", RTSPHeader);
+	//printl("> %s", RTSPHeader);
 	RTSP_Send(RTSPHeader, sizeof(RTSPHeader) - 1);
 }
 
@@ -167,7 +169,7 @@ static inline void RTSP_SendTerminator()
 
 static inline void RTSP_SendText(const char* source)
 {
-	//printf("> %s", source)
+	//printl("> %s", source);
 	RTSP_Send(source, strlen(source));
 }
 
@@ -231,17 +233,33 @@ static inline void RTSP_AnswerTextContent(char* source, char* text, const char* 
 	RTSP_SendText(content);
 }
 
-static inline void RTSP_MainLoop(int socket)
+//recev in non blocking mode
+static inline int recvAll(int sock, char* data, int size)
+{
+	while (true)
+	{
+		int res = recv(sock, data, size, MSG_DONTWAIT);
+		if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) 
+		{
+			svcSleepThread(1E+8); 
+			continue; 
+		}
+		else return res;
+	}
+}
+
+static inline void RTSP_MainLoop()
 {
 	char rtspBuf[512];
 
 	while (client > 0 && RTSP_Running)
 	{
-		int len = recv(client, rtspBuf, sizeof(rtspBuf), 0);
-		if (len <= 0) return;
+		int len = recvAll(client, rtspBuf, sizeof(rtspBuf));
+		if (len <= 0) break;
+
 		rtspBuf[len] = '\0';
 
-		//printf("%s\n", rtspBuf);
+		//printl("%s\n", rtspBuf);
 
 #define ISCOMMAND(command) (!strncmp(rtspBuf, command, sizeof(command) - 1))
 
@@ -305,8 +323,7 @@ static inline void RTSP_MainLoop(int socket)
 		}
 		else if (ISCOMMAND("TEARDOWN"))
 		{
-			return;
+			break;
 		}
-
 	}
 }

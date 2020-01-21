@@ -22,7 +22,8 @@
 #define INNER_HEAP_SIZE 500 * 1024
 #pragma message "Building USB-only mode"
 #else
-#define INNER_HEAP_SIZE 3 * 1024 * 1024
+//TODO This value is for testing, Reduce memory usage to 3 or lower
+#define INNER_HEAP_SIZE 5 * 1024 * 1024
 #if defined(__SWITCH__)
 #include <stdatomic.h>
 #endif
@@ -322,7 +323,7 @@ static pthread_t RTSPThread;
 
 static void TCP_Init()
 {
-	pthread_create(&VideoThread, NULL, RTSP_ServerThread, NULL);
+	pthread_create(&RTSPThread, NULL, RTSP_ServerThread, NULL);
 }
 
 static void TCP_Exit()

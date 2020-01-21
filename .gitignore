@@ -356,3 +356,4 @@ build/
 NetStream/Properties/launchSettings.json
 *.nacp
 *.nro
+sysmodule/00FF0000A53BB665.lnk
