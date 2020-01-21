@@ -19,14 +19,20 @@
 	Socketing requires a lot more memory
 */
 #if defined(USB_ONLY)
-#define INNER_HEAP_SIZE 500 * 1024
-#pragma message "Building USB-only mode"
+	#define INNER_HEAP_SIZE 500 * 1024
+	#pragma message "Building USB-only mode"
 #else
-//TODO This value is for testing, Reduce memory usage to 3 or lower
-#define INNER_HEAP_SIZE 5 * 1024 * 1024
-#if defined(__SWITCH__)
-#include <stdatomic.h>
-#endif
+	//TODO This value is for testing, Reduce memory usage to 3 or lower
+	#define INNER_HEAP_SIZE 3 * 1024 * 1024
+	
+	#if defined(__SWITCH__)
+		#include <stdatomic.h>
+	#endif
+	
+	#include "socketing.h"
+	#include "rtsp/RTSP.h"
+	#include "rtsp/H264Packetizer.h"
+	#include "rtsp/LE16Packetizer.h"
 #endif
 
 //Silence visual studio errors
@@ -264,11 +270,6 @@ static void* USB_StreamThreadMain(void* _stream)
 }
 
 #if !defined(USB_ONLY)
-#include "socketing.h"
-#include "rtsp/RTSP.h"
-#include "rtsp/H264Packetizer.h"
-#include "rtsp/LE16Packetizer.h"
-
 //const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 //const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
@@ -280,7 +281,7 @@ static void* TCP_StreamThreadMain(void* _stream)
 	const GrcStream stream = (GrcStream)_stream;
 	while (IsThreadRunning)
 	{
-		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(2E+8); // 1/5 of second
+		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
 		if (!IsThreadRunning) break;
 
 		while (true)
