@@ -3,7 +3,7 @@
 #include "RTP.h"
 #include "defines.h"
 
-typedef void (*H264SendPacketFn)(void* header, void* extHeader, size_t extLen, void* data, size_t len);
+typedef int (*H264SendPacketFn)(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len);
 
 #define FU_START 0x80
 #define FU_END 0x40
@@ -25,7 +25,7 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t ts, H264SendPack
 	if (len <= MaxRTPPayloadSz)
 	{
 		RTP_PrepareHeader(header, ts * 90.0 / 1000, (nal[0] & 0x1f) <= 5, STREAM_VIDEO);
-		cb(header, NULL, NULL, nal, len);
+		cb(header, nullptr, 0, nal, len);
 		return 1;
 	}
 
@@ -39,7 +39,6 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t ts, H264SendPack
 	nal++; len--;
 
 	fu_header |= FU_START;
-	int packetCount = 0;
 	while (len > 0)
 	{
 		size_t dataLen = MaxRTPPayloadSz - FU_HEADER_SZ;
@@ -51,14 +50,13 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t ts, H264SendPack
 		}
 
 		RTP_PrepareHeader(header, ts * 90.0 / 1000, fu_header & FU_END, STREAM_VIDEO);
-		cb(header, FU_A, 2, nal, dataLen);
+		if (cb(header, FU_A, 2, nal, dataLen)) return 1;
 
 		nal += dataLen;
 		len -= dataLen;
 		fu_header &= 0x1F;
-		packetCount++;
 	}
-	return packetCount;
+	return 0;
 #undef fu_indicator
 #undef fu_header
 }

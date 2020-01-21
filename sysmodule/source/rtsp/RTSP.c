@@ -1,15 +1,22 @@
 #include <switch.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
+#include <string.h>
+#include <pthread.h>
+#include <stdarg.h>
+
 #include "../socketing.h"
 #include "RTSP.h"
+#include "defines.h"
+#include "RTP.h"
 
 static const char RTSPHeader[] = "RTSP/1.0 200 OK\r\n";
 
 static const char SDP[] =	"s=SysDVR - https://github.com/exelix11/sysdvr \r\n"
 							"m=video 0 RTP/AVP 96\r\n"
 							"a=rtpmap:96 H264/90000\r\n"
-							"a=fmtp:96 profile-level-id=42A01E; sprop-parameter-sets=Z2QMIKwrQCgC3TUBDQHggA==,aO48sA==;\r\n"
+							"a=fmtp:96 profile-level-id=42A01E; sprop-parameter-sets=Z2QMIKwrQCgC3TUBDQHggA==,aO48sA==;\r\n" /* Hardcoded SPS and PPS*/
 							"a=StreamName:string;\"Video\"\r\n"
 							"a=control:video\r\n"
 							"m=audio 0 RTP/AVP 97\r\n"
@@ -44,6 +51,7 @@ void* RTSP_ServerThread(void* arg)
 		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
 	*/
 	int sockFails = 0;
+	RTSP_Running = true;
 	while (RTSP_Running)
 	{
 		int curSock = accept(RTSPSock, 0, 0);
@@ -90,67 +98,86 @@ typedef struct
 	unsigned char data, control;
 } RtspPorts;
 
-#define VIDEO_PORT 0
-#define AUDIO_PORT 1
-
 static RtspPorts ports[2];
 
-static inline void RTSP_Send(const void* const data, const size_t len) 
+static inline int RTSP_Send(const void* const data, const size_t len) 
 {
 	if (send(client, data, len, 0) <= 0)
 	{
 		CloseSocket(&client); //TODO is this enough go get the main thread out of receive ?
 		RTSP_ClientStreaming = false;
+		return 1;
 	}
+	return 0;
 }
 
 //Send data over the data channel, RTCP is not used currently
-void RTSP_SendBinaryHeader(const size_t totalLen, unsigned int stream)
+static inline int RTSP_SendBinaryHeader(const size_t totalLen, unsigned int stream)
 {
 	char header[4];
 	header[0] = '$';
 	header[1] = ports[stream].data;
 	header[2] = (totalLen & 0xFF00) >> 8;
 	header[3] = totalLen & 0x00FF;
-	RTSP_Send(client, header, 4);
+	return RTSP_Send(header, 4);
 }
 
-void RTSP_SendRawData(const void* const data, const size_t len)
+static inline int RTSP_SendRawData(const void* const data, const size_t len)
 {
-	RTSP_Send(client, data, len);
+	return RTSP_Send(data, len);
 }
 
-void RTSP_SendData(const void* const data, const size_t len, unsigned char stream)
+//Not optimal but if the the first send fails the last is going to fail as well
+static inline int RTSP_SendData(const void* const data, const size_t len, unsigned char stream)
 {
-	RTSP_BeginPushData(len, stream);
-	RTSP_SendRaw(data, len);
+	RTSP_SendBinaryHeader(len, stream);
+	return RTSP_SendRawData(data, len);
+}
+
+int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len)
+{
+	RTSP_SendBinaryHeader(RTPHeaderSz + extLen + len, STREAM_VIDEO);
+	RTSP_SendRawData(header, RTPHeaderSz);
+	RTSP_SendRawData(extHeader, extLen);
+	return RTSP_SendRawData(data, len);
+}
+
+int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
+{
+	RTSP_SendBinaryHeader(RTPHeaderSz + len, STREAM_AUDIO);
+	RTSP_SendRawData(header, RTPHeaderSz);
+	return RTSP_SendRawData(data, len);
 }
 
 static inline void RTSP_StartPlayback() 
 {
-	// TODO
+	RTSP_ClientStreaming = true;
 }
 
 static inline void RTSP_SendHeader()
 {
 	//printf("> %s", RTSPHeader);
-	RTSP_Send(client, RTSPHeader, sizeof(RTSPHeader) - 1);
+	RTSP_Send(RTSPHeader, sizeof(RTSPHeader) - 1);
 }
 
 static inline void RTSP_SendTerminator()
 {
-	RTSP_Send(client, "\r\n", 2);
+	RTSP_Send("\r\n", 2);
 }
 
 static inline void RTSP_SendText(const char* source)
 {
 	//printf("> %s", source)
-	RTSP_Send(client, source, strlen(source));
+	RTSP_Send(source, strlen(source));
 }
 
 static inline void RTSP_SendFormat(int buf, const char* format, ...)
 {
+#ifdef __SWITCH__
+	char toSend[buf];
+#else
 	char* toSend = (char*)malloc(buf);
+#endif
 
 	va_list args;
 	va_start(args, format);
@@ -159,7 +186,9 @@ static inline void RTSP_SendFormat(int buf, const char* format, ...)
 
 	RTSP_SendText(toSend);
 
+#ifndef  __SWITCH__
 	free(toSend);
+#endif
 }
 
 static inline void RTSP_SendError(const char* error)
@@ -253,12 +282,13 @@ static inline void RTSP_MainLoop(int socket)
 					*transportOptEnd = '\0';
 
 					strncpy(transport, transportOpt, sizeof(transport));
+					transport[sizeof(transport) - 1] = '\0';
 					*transportOptEnd = original;
 				}
 
 				char* portSettings = strstr(transport, "interleaved=") + sizeof("interleaved");
 
-				int targetStream = strstr(rtspBuf, "/video") ? VIDEO_PORT : AUDIO_PORT;
+				int targetStream = strstr(rtspBuf, "/video") ? STREAM_VIDEO : STREAM_AUDIO;
 
 				ports[targetStream].data = portSettings[0] - '0';
 				ports[targetStream].control = portSettings[2] - '0';
