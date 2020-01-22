@@ -9,7 +9,7 @@ typedef int (*H264SendPacketFn)(const void* header, const void* extHeader, const
 #define FU_END 0x40
 #define FU_HEADER_SZ 2
 
-static inline int PacketizeH264(char* nal, size_t len, uint32_t ts, H264SendPacketFn cb)
+static inline int PacketizeH264(char* nal, size_t len, uint32_t tsMs, H264SendPacketFn cb)
 {
 	//Strip nal header
 	for (int i = 2; i < len; i++)
@@ -24,7 +24,8 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t ts, H264SendPack
 
 	if (len <= MaxRTPPayloadSz)
 	{
-		RTP_PrepareHeader(header, ts * 90.0 / 1000, (nal[0] & 0x1f) <= 5, STREAM_VIDEO);
+		//ts is in ms, convert to seconds /1000 and sample at 90khz *90000
+		RTP_PrepareHeader(header, tsMs * 90.0, true, STREAM_VIDEO);
 		cb(header, nullptr, 0, nal, len);
 		return 1;
 	}
@@ -49,7 +50,7 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t ts, H264SendPack
 			dataLen = len;
 		}
 
-		RTP_PrepareHeader(header, ts * 90.0 / 1000, fu_header & FU_END, STREAM_VIDEO);
+		RTP_PrepareHeader(header, tsMs * 90.0, true, STREAM_VIDEO);
 		if (cb(header, FU_A, 2, nal, dataLen)) return 1;
 
 		nal += dataLen;

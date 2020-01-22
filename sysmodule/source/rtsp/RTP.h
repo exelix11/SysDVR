@@ -2,7 +2,8 @@
 
 #include <stdint.h>
 
-#define MaxRTPPacketSize 2048
+//32 KB
+#define MaxRTPPacketSize 0x8000
 #define RTPHeaderSz 12
 #define MaxRTPPayloadSz (MaxRTPPacketSize - RTPHeaderSz)
 
