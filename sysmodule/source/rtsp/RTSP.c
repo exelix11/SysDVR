@@ -25,8 +25,12 @@ static const char SDP[] =	"s=SysDVR - https://github.com/exelix11/sysdvr \r\n"
 							"a=control:audio\r\n";
 
 
-int RTSPSock = -1;
-int client = -1;
+static int RTSPSock = -1;
+static int client = -1;
+
+static Mutex RTSP_operation_lock;
+#define LOCK_SOCKETING mutexLock(&RTSP_operation_lock)
+#define UNLOCK_SOCKETING mutexUnlock(&RTSP_operation_lock)
 
 static atomic_bool RTSP_Running = false;
 atomic_bool RTSP_ClientStreaming = false;
@@ -45,6 +49,8 @@ void* RTSP_ServerThread(void* arg)
 {
 	Result rc = CreateSocket(&RTSPSock, 6666, 4, false);
 	if (R_FAILED(rc)) fatalSimple(rc);
+
+	mutexInit(&RTSP_operation_lock);
 
 	/*
 		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
@@ -77,8 +83,12 @@ void* RTSP_ServerThread(void* arg)
 		fcntl(client, F_SETFL, fcntl(client, F_GETFL, 0) & ~O_NONBLOCK);
 		RTSP_MainLoop();
 
+		//MainLoop returns on TEARDOWN or error, wait for all the socketing operation to finish
+		LOCK_SOCKETING;
 		RTSP_ClientStreaming = false;
 		CloseSocket(&client);
+		UNLOCK_SOCKETING;
+		
 		svcSleepThread(1E+9);
 	}
 	pthread_exit(NULL);
@@ -100,7 +110,14 @@ typedef struct
 
 static RtspPorts ports[2];
 
-static inline int RTSP_Send(const char* data, size_t len) 
+/*
+	Directly sending data has to be locked between operations because to save memory
+	most replies are composed by sending multiple buffers and we must prevent other
+	threads from breaking the order.
+	RTSP_Answer* and the encoder callback functions will call SOCKETING_LOCK,
+	RTSP_Send* functions won't but should be used onlny in a locked context.
+*/
+static inline int RTSP_SendInternal(const char* data, size_t len)
 {
 	if (client < 0) return 1;
 	if (write(client, data, len) <= 0)
@@ -121,12 +138,12 @@ static inline int RTSP_SendBinaryHeader(const size_t totalLen, unsigned int stre
 	header[1] = ports[stream].data;
 	header[2] = (totalLen & 0xFF00) >> 8;
 	header[3] = totalLen & 0x00FF;
-	return RTSP_Send(header, 4);
+	return RTSP_SendInternal(header, 4);
 }
 
 static inline int RTSP_SendRawData(const void* const data, const size_t len)
 {
-	return RTSP_Send(data, len);
+	return RTSP_SendInternal(data, len);
 }
 
 //Not optimal but if the the first send fails the last is going to fail as well
@@ -138,17 +155,24 @@ static inline int RTSP_SendData(const void* const data, const size_t len, unsign
 
 int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len)
 {
+	LOCK_SOCKETING;
 	RTSP_SendBinaryHeader(RTPHeaderSz + extLen + len, STREAM_VIDEO);
 	RTSP_SendRawData(header, RTPHeaderSz);
-	RTSP_SendRawData(extHeader, extLen);
-	return RTSP_SendRawData(data, len);
+	if (extHeader)
+		RTSP_SendRawData(extHeader, extLen);
+	int res = RTSP_SendRawData(data, len);
+	UNLOCK_SOCKETING;
+	return res;
 }
 
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
+	LOCK_SOCKETING;
 	RTSP_SendBinaryHeader(RTPHeaderSz + len, STREAM_AUDIO);
 	RTSP_SendRawData(header, RTPHeaderSz);
-	return RTSP_SendRawData(data, len);
+	int res = RTSP_SendRawData(data, len);
+	UNLOCK_SOCKETING;
+	return res;
 }
 
 static inline void RTSP_StartPlayback() 
@@ -159,18 +183,18 @@ static inline void RTSP_StartPlayback()
 static inline void RTSP_SendHeader()
 {
 	//printl("> %s", RTSPHeader);
-	RTSP_Send(RTSPHeader, sizeof(RTSPHeader) - 1);
+	RTSP_SendInternal(RTSPHeader, sizeof(RTSPHeader) - 1);
 }
 
 static inline void RTSP_SendTerminator()
 {
-	RTSP_Send("\r\n", 2);
+	RTSP_SendInternal("\r\n", 2);
 }
 
 static inline void RTSP_SendText(const char* source)
 {
 	//printl("> %s", source);
-	RTSP_Send(source, strlen(source));
+	RTSP_SendInternal(source, strlen(source));
 }
 
 static inline void RTSP_SendFormat(int buf, const char* format, ...)
@@ -193,12 +217,6 @@ static inline void RTSP_SendFormat(int buf, const char* format, ...)
 #endif
 }
 
-static inline void RTSP_SendError(const char* error)
-{
-	RTSP_SendFormat(80, "RTSP/1.0 %s\r\n", error);
-	RTSP_SendTerminator();
-}
-
 static inline void RTSP_SendCseq(const char* source)
 {
 	const char* cseq = strstr(source, "CSeq:");
@@ -207,23 +225,36 @@ static inline void RTSP_SendCseq(const char* source)
 	RTSP_SendFormat(30, "CSeq: %d\r\n", atoi(cseq + sizeof("CSeq:")));
 }
 
+static inline void RTSP_AnswerError(const char* error)
+{
+	LOCK_SOCKETING;
+	RTSP_SendFormat(80, "RTSP/1.0 %s\r\n", error);
+	RTSP_SendTerminator();
+	UNLOCK_SOCKETING;
+}
+
 static inline void RTSP_AnswerEmpty(char* source)
 {
+	LOCK_SOCKETING;
 	RTSP_SendHeader();
 	RTSP_SendCseq(source);
 	RTSP_SendTerminator();
+	UNLOCK_SOCKETING;
 }
 
 static inline void RTSP_AnswerText(char* source, const char* text)
 {
+	LOCK_SOCKETING;
 	RTSP_SendHeader();
 	RTSP_SendCseq(source);
 	RTSP_SendText(text);
 	RTSP_SendTerminator();
+	UNLOCK_SOCKETING;
 }
 
 static inline void RTSP_AnswerTextContent(char* source, char* text, const char* content)
 {
+	LOCK_SOCKETING;
 	RTSP_SendHeader();
 	RTSP_SendCseq(source);
 	RTSP_SendText("Content-Type: application/sdp\r\n");
@@ -231,6 +262,7 @@ static inline void RTSP_AnswerTextContent(char* source, char* text, const char* 
 	RTSP_SendText(text);
 	RTSP_SendTerminator();
 	RTSP_SendText(content);
+	UNLOCK_SOCKETING;
 }
 
 //recev in non blocking mode
@@ -248,6 +280,7 @@ static inline int recvAll(int sock, char* data, int size)
 	}
 }
 
+//Don't use RTSP_Send* functions here !
 static inline void RTSP_MainLoop()
 {
 	char rtspBuf[512];
@@ -275,7 +308,7 @@ static inline void RTSP_MainLoop()
 			char original = *arg1End;
 			*arg1End = '\0';
 
-			char contBase[60];
+			char contBase[80];
 			snprintf(contBase, sizeof(contBase), "Content-Base: %s\r\n", arg1);
 			*arg1End = original;
 
@@ -285,14 +318,13 @@ static inline void RTSP_MainLoop()
 		{
 			char* transportOpt = strstr(rtspBuf, "Transport:");
 
-			if (!strstr(rtspBuf, "RTP/AVP/TCP") || !transportOpt || !strstr(rtspBuf, "interleaved"))
-				RTSP_SendError("461 Unsupported transport");
+			if (!strstr(rtspBuf, "RTP/AVP/TCP") || !transportOpt || !strstr(rtspBuf, "interleaved="))
+				RTSP_AnswerError("461 Unsupported transport");
 			else
 			{
 				char transport[100];
 				{
 					transportOpt += sizeof("Transport:");
-					char* transportOpt = strstr(rtspBuf, "Transport:") + sizeof("Transport:");
 					char* transportOptEnd = transportOpt;
 					while (*transportOptEnd != 0 && *transportOptEnd != ' ' && *transportOptEnd != '\r') transportOptEnd++;
 

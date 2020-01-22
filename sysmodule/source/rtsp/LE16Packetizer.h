@@ -7,9 +7,9 @@ typedef int (*LE16SendPacketFn)(const void* header, const void* data, const size
 
 #define SampleRate 48000.0
 #define SamplesInRtpPacket (MaxRTPPayloadSz / 4.0)
-#define AudiolenRtpPackeMs (SamplesInRtpPacket / SampleRate * 1000)
+#define AudiolenRtpPackeMs (SamplesInRtpPacket / SampleRate * 1000.0)
 
-static inline int PacketizeLE16(char* data, size_t len, uint32_t ts, LE16SendPacketFn cb)
+static inline int PacketizeLE16(char* data, size_t len, uint32_t tsMs, LE16SendPacketFn cb)
 {
 	char header[RTPHeaderSz];
 	double incrementalTs = 0;
@@ -27,8 +27,8 @@ static inline int PacketizeLE16(char* data, size_t len, uint32_t ts, LE16SendPac
 			samples[i + 1] = tmp;
 		}
 
-		//ts for audio seems to be in usec, while it's msec for video (?)
-		RTP_PrepareHeader(header, (ts / 1000.0 + incrementalTs) * 48 / 1000, false, STREAM_AUDIO);
+		//ts is in ms, convert to seconds /1000 and sample at 48khz *48000
+		RTP_PrepareHeader(header, (tsMs + incrementalTs) * 48.0, false, STREAM_AUDIO);
 		if (cb(header, data, dataLen)) 
 			return 1;
 

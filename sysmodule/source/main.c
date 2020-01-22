@@ -1,4 +1,4 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include <stdio.h>
 #include <switch.h>
 #include <string.h>
@@ -106,13 +106,14 @@ void __attribute__((weak)) __appExit(void)
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
-const int AudioBatchSz = 12;
+const int AudioBatchSz = 10;
 
 static u8* Vbuf = NULL;
 static u8* Abuf = NULL;
 static u32 VOutSz = 0;
 static u32 AOutSz = 0;
 
+//Note: timestamps are in usecs
 static u64 VTimestamp = 0;
 static u64 ATimestamp = 0;
 
@@ -290,12 +291,13 @@ static void* TCP_StreamThreadMain(void* _stream)
 			if (stream == GrcStream_Video)
 			{
 				ReadVideoStream();
-				error = PacketizeH264((char*)Vbuf, VOutSz, VTimestamp, RTSP_H264SendPacket);
+				//Convert timestamps to msec
+				error = PacketizeH264((char*)Vbuf, VOutSz, VTimestamp / 1000, RTSP_H264SendPacket);
 			}
 			else
 			{
 				ReadAudioStream();
-				error = PacketizeLE16((char*)Abuf, AOutSz, ATimestamp, RTSP_LE16SendPacket);
+				error = PacketizeLE16((char*)Abuf, AOutSz, ATimestamp / 1000, RTSP_LE16SendPacket);
 			}
 			if (error) break;
 		}
