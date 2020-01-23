@@ -8,8 +8,14 @@
 #define RTPHeaderSz 12
 #define MaxRTPPayloadSz (MaxRTPPacketSize - RTPHeaderSz)
 
-static uint16_t SequenceNumbers[2];
+extern uint16_t SequenceNumbers[2];
 static const char PT[2] = {96, 97};
+
+static inline void RTP_InitializeSequenceNumbers() 
+{
+	SequenceNumbers[0] = 1;
+	SequenceNumbers[1] = 1;
+}
 
 static inline uint32_t SwapBytes(uint32_t x)
 {

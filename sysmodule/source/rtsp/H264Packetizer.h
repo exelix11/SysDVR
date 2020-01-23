@@ -26,8 +26,7 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t tsMs, H264SendPa
 	{
 		//ts is in ms, convert to seconds /1000 and sample at 90khz *90000
 		RTP_PrepareHeader(header, tsMs * 90.0, true, STREAM_VIDEO);
-		cb(header, nullptr, 0, nal, len);
-		return 1;
+		return cb(header, nullptr, 0, nal, len);
 	}
 
 	unsigned char FU_A[2] = { 0,0 };
