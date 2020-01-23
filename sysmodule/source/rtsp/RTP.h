@@ -2,8 +2,9 @@
 
 #include <stdint.h>
 
-//32 KB
-#define MaxRTPPacketSize 0x8000
+//8 KB
+//TODO: for UDP streaming it should be even lower
+#define MaxRTPPacketSize 0x2000
 #define RTPHeaderSz 12
 #define MaxRTPPayloadSz (MaxRTPPacketSize - RTPHeaderSz)
 

@@ -5,11 +5,19 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <assert.h>
 
-#include "../socketing.h"
+#include "../sockUtil.h"
 #include "RTSP.h"
 #include "defines.h"
 #include "RTP.h"
+
+#define INTERLEAVED_SUPPORT
+#define UDP_SUPPORT
+
+#if !(defined(UDP_SUPPORT) || defined(INTERLEAVED_SUPPORT))
+#pragma error no streaming mode is supported
+#endif
 
 static const char RTSPHeader[] = "RTSP/1.0 200 OK\r\n";
 
@@ -24,13 +32,47 @@ static const char SDP[] =	"s=SysDVR - https://github.com/exelix11/sysdvr \r\n"
 							"a=StreamName:string;\"Audio\"\r\n"
 							"a=control:audio\r\n";
 
-
 static int RTSPSock = -1;
 static int client = -1;
 
+struct sockaddr_in clientAddress;
+#ifdef UDP_SUPPORT
+struct sockaddr_in clientVAddr;
+struct sockaddr_in clientAAddr;
+static int clientAudio = -1;
+static int clientVideo = -1;
+#endif
+
+#ifdef INTERLEAVED_SUPPORT
+/*
+	When using interleaved mode directly sending data has to be locked between operations
+	because to save memory most replies are composed by sending multiple buffers and we
+	must prevent other threads from breaking the order.
+	RTSP_Answer* and the encoder callback functions will call SOCKETING_LOCK,
+	RTSP_Send* functions won't but should be used only in a locked context.
+*/
 static Mutex RTSP_operation_lock;
 #define LOCK_SOCKETING mutexLock(&RTSP_operation_lock)
 #define UNLOCK_SOCKETING mutexUnlock(&RTSP_operation_lock)
+#else
+#define LOCK_SOCKETING 
+#define UNLOCK_SOCKETING 
+#endif
+
+#if (defined(INTERLEAVED_SUPPORT) && !defined(UDP_SUPPORT))
+#define INTERLEAVED_FLAG_CONST true
+#elif (!defined(INTERLEAVED_SUPPORT) && defined(UDP_SUPPORT))
+#define INTERLEAVED_FLAG_CONST false
+#endif
+
+#ifdef INTERLEAVED_FLAG_CONST
+static const bool RTSP_Transfer_interleaved = INTERLEAVED_FLAG_CONST;
+#else 
+//Are we streaming via TCP or UDP ?
+static bool RTSP_Transfer_interleaved = false;
+#endif
+
+#define printl(...) 
 
 static atomic_bool RTSP_Running = false;
 atomic_bool RTSP_ClientStreaming = false;
@@ -47,11 +89,12 @@ static inline void RTSP_MainLoop();
 
 void* RTSP_ServerThread(void* arg)
 {
-	Result rc = CreateSocket(&RTSPSock, 6666, 4, false);
+	Result rc = CreateTCPListener(&RTSPSock, 6666, 4, false);
 	if (R_FAILED(rc)) fatalSimple(rc);
 
+#ifdef INTERLEAVED_SUPPORT
 	mutexInit(&RTSP_operation_lock);
-
+#endif
 	/*
 		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
 		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
@@ -60,13 +103,14 @@ void* RTSP_ServerThread(void* arg)
 	RTSP_Running = true;
 	while (RTSP_Running)
 	{
-		client = accept(RTSPSock, 0, 0);
+		unsigned int	 clientAddRlen = sizeof(clientAddress);
+		client = accept(RTSPSock, (struct sockaddr*)&clientAddress, &clientAddRlen);
 		if (client < 0)
 		{
 			if (sockFails++ >= 3 && RTSP_Running)
 			{
 				CloseSocket(&RTSPSock);
-				Result rc = CreateSocket(&RTSPSock, 6666, 4, false);
+				Result rc = CreateTCPListener(&RTSPSock, 6666, 4, false);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
 			svcSleepThread(1E+9);
@@ -87,6 +131,8 @@ void* RTSP_ServerThread(void* arg)
 		LOCK_SOCKETING;
 		RTSP_ClientStreaming = false;
 		CloseSocket(&client);
+		CloseSocket(&clientAudio);
+		CloseSocket(&clientVideo);
 		UNLOCK_SOCKETING;
 		
 		svcSleepThread(1E+9);
@@ -101,28 +147,25 @@ void RTSP_StopServer()
 	RTSP_ClientStreaming = false;
 	CloseSocket(&RTSPSock);
 	CloseSocket(&client);
+#ifdef UDP_SUPPORT
+	CloseSocket(&clientAudio);
+	CloseSocket(&clientVideo);
+#endif
 }
 
 typedef struct
 {
-	unsigned char data, control;
+	unsigned short data, control;
 } RtspPorts;
 
 static RtspPorts ports[2];
 
-/*
-	Directly sending data has to be locked between operations because to save memory
-	most replies are composed by sending multiple buffers and we must prevent other
-	threads from breaking the order.
-	RTSP_Answer* and the encoder callback functions will call SOCKETING_LOCK,
-	RTSP_Send* functions won't but should be used onlny in a locked context.
-*/
 static inline int RTSP_SendInternal(const char* data, size_t len)
 {
 	if (client < 0) return 1;
-	if (write(client, data, len) <= 0)
+	if (send(client, data, len, 0) <= 0)
 	{
-		//printl("RTSP_Send error %s %d \n", strerror(errno), errno);
+		printl("RTSP_Send error %s %d \n", strerror(errno), errno);
 		CloseSocket(&client);
 		RTSP_ClientStreaming = false;
 		return 1;
@@ -153,36 +196,76 @@ static inline int RTSP_SendData(const void* const data, const size_t len, unsign
 	return RTSP_SendRawData(data, len);
 }
 
+#ifdef UDP_SUPPORT
+//For streaming via TCP it would be better to increase the max packet
+char VideoSendBuffer[MaxRTPPacketSize];
+#endif
 int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len)
 {
-	LOCK_SOCKETING;
-	RTSP_SendBinaryHeader(RTPHeaderSz + extLen + len, STREAM_VIDEO);
-	RTSP_SendRawData(header, RTPHeaderSz);
-	if (extHeader)
-		RTSP_SendRawData(extHeader, extLen);
-	int res = RTSP_SendRawData(data, len);
-	UNLOCK_SOCKETING;
+	int res = 0;
+
+	if (RTSP_Transfer_interleaved) {
+#ifdef INTERLEAVED_SUPPORT
+		LOCK_SOCKETING;
+		RTSP_SendBinaryHeader(RTPHeaderSz + extLen + len, STREAM_VIDEO);
+		RTSP_SendRawData(header, RTPHeaderSz);
+		if (extHeader)
+			RTSP_SendRawData(extHeader, extLen);
+		res = RTSP_SendRawData(data, len);
+		UNLOCK_SOCKETING;
+#endif
+	}
+	else
+	{
+#ifdef UDP_SUPPORT
+		memcpy(VideoSendBuffer, header, RTPHeaderSz);
+		if (extHeader)
+			memcpy(VideoSendBuffer + RTPHeaderSz, extHeader, extLen);
+		memcpy(VideoSendBuffer + RTPHeaderSz + extLen, data, len);
+		sendto(clientVideo, VideoSendBuffer, RTPHeaderSz + extLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr));
+#endif
+	}
+
 	return res;
 }
 
+#ifdef UDP_SUPPORT
+char AudioSendBuffer[MaxRTPPacketSize];
+#endif
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
-	LOCK_SOCKETING;
-	RTSP_SendBinaryHeader(RTPHeaderSz + len, STREAM_AUDIO);
-	RTSP_SendRawData(header, RTPHeaderSz);
-	int res = RTSP_SendRawData(data, len);
-	UNLOCK_SOCKETING;
+	int res = 0;
+
+	if (RTSP_Transfer_interleaved)
+	{
+#ifdef INTERLEAVED_SUPPORT
+		LOCK_SOCKETING;
+		RTSP_SendBinaryHeader(RTPHeaderSz + len, STREAM_AUDIO);
+		RTSP_SendRawData(header, RTPHeaderSz);
+		res = RTSP_SendRawData(data, len);
+		UNLOCK_SOCKETING;
+#endif
+	}
+	else
+	{
+#ifdef UDP_SUPPORT
+		memcpy(AudioSendBuffer, header, RTPHeaderSz);
+		memcpy(AudioSendBuffer + RTPHeaderSz, data, len);
+		sendto(clientVideo, AudioSendBuffer, RTPHeaderSz + len, 0, (struct sockaddr*) & clientAAddr, sizeof(clientAAddr));
+#endif
+	}
+
 	return res;
 }
 
-static inline void RTSP_StartPlayback() 
+static inline void RTSP_StartPlayback()
 {
 	RTSP_ClientStreaming = true;
 }
 
 static inline void RTSP_SendHeader()
 {
-	//printl("> %s", RTSPHeader);
+	printl("> %s", RTSPHeader);
 	RTSP_SendInternal(RTSPHeader, sizeof(RTSPHeader) - 1);
 }
 
@@ -193,7 +276,7 @@ static inline void RTSP_SendTerminator()
 
 static inline void RTSP_SendText(const char* source)
 {
-	//printl("> %s", source);
+	printl("> %s", source);
 	RTSP_SendInternal(source, strlen(source));
 }
 
@@ -265,6 +348,7 @@ static inline void RTSP_AnswerTextContent(char* source, char* text, const char* 
 	UNLOCK_SOCKETING;
 }
 
+
 //recev in non blocking mode
 static inline int recvAll(int sock, char* data, int size)
 {
@@ -292,7 +376,7 @@ static inline void RTSP_MainLoop()
 
 		rtspBuf[len] = '\0';
 
-		//printl("%s\n", rtspBuf);
+		printl("%s\n", rtspBuf);
 
 #define ISCOMMAND(command) (!strncmp(rtspBuf, command, sizeof(command) - 1))
 
@@ -318,13 +402,25 @@ static inline void RTSP_MainLoop()
 		{
 			char* transportOpt = strstr(rtspBuf, "Transport:");
 
-			if (!strstr(rtspBuf, "RTP/AVP/TCP") || !transportOpt || !strstr(rtspBuf, "interleaved="))
+			if (!transportOpt)
+			{
 				RTSP_AnswerError("461 Unsupported transport");
-			else
+				continue;
+			}
+
+			bool interleaved = false, udp = false;
+#ifdef INTERLEAVED_SUPPORT
+			interleaved = strstr(rtspBuf, "RTP/AVP/TCP") && strstr(rtspBuf, "interleaved=");
+#endif		
+#ifdef UDP_SUPPORT
+			udp = strstr(rtspBuf, "RTP/AVP") && !strstr(rtspBuf, "RTP/AVP/TCP") && strstr(rtspBuf, "client_port=");
+#endif
+			if (interleaved || udp)
 			{
 				char transport[100];
 				{
 					transportOpt += sizeof("Transport:");
+					char* transportOpt = strstr(rtspBuf, "Transport:") + sizeof("Transport:");
 					char* transportOptEnd = transportOpt;
 					while (*transportOptEnd != 0 && *transportOptEnd != ' ' && *transportOptEnd != '\r') transportOptEnd++;
 
@@ -336,17 +432,83 @@ static inline void RTSP_MainLoop()
 					*transportOptEnd = original;
 				}
 
-				char* portSettings = strstr(transport, "interleaved=") + sizeof("interleaved");
+				const int targetStream = strstr(rtspBuf, "/video") ? STREAM_VIDEO : STREAM_AUDIO;
 
-				int targetStream = strstr(rtspBuf, "/video") ? STREAM_VIDEO : STREAM_AUDIO;
 
-				ports[targetStream].data = portSettings[0] - '0';
-				ports[targetStream].control = portSettings[2] - '0';
+				if (interleaved)
+				{
+#ifdef INTERLEAVED_SUPPORT
+					char* portSettings = strstr(transport, "interleaved=") + sizeof("interleaved");
+
+					if (!portSettings || strlen(portSettings) < 3)
+					{
+						RTSP_AnswerError("461 Unsupported transport");
+						continue;
+					}
+
+					ports[targetStream].data = portSettings[0] - '0';
+					ports[targetStream].control = portSettings[2] - '0';
+
+#ifndef INTERLEAVED_FLAG_CONST
+					RTSP_Transfer_interleaved = true;
+#endif					
+#endif
+				}
+				else
+				{
+#ifdef UDP_SUPPORT
+					char* portSettings = strstr(transport, "client_port=") + sizeof("client_port");
+					char* endPort1 = portSettings;
+
+					while (*endPort1 && *endPort1 != ' ' && *endPort1 != ';' && *endPort1 != '-' && *endPort1 != '\r') endPort1++;
+
+					//TODO: parse RTCP port as well
+
+					char oldChar = *endPort1;
+					*endPort1 = '\0';
+
+					ports[targetStream].data = atoi(portSettings);
+					ports[targetStream].control = 0;
+
+					assert(ports[targetStream].data);
+					*endPort1 = oldChar;
+
+					if (!ports[targetStream].data)
+					{
+						RTSP_AnswerError("461 Unsupported transport");
+						continue;
+					}
+
+					struct sockaddr_in* updateAddr;
+					if (targetStream == STREAM_VIDEO)
+					{
+						CloseSocket(&clientVideo);
+						clientVideo = socket(AF_INET, SOCK_DGRAM, 0);
+						updateAddr = &clientVAddr;
+						assert(clientVideo >= 0);
+					}
+					else
+					{
+						CloseSocket(&clientAudio);
+						clientAudio = socket(AF_INET, SOCK_DGRAM, 0);
+						updateAddr = &clientAAddr;
+						assert(clientAudio >= 0);
+					}
+
+					*updateAddr = clientAddress;
+					updateAddr->sin_port = htons(ports[targetStream].data);
+
+#ifndef INTERLEAVED_FLAG_CONST
+					RTSP_Transfer_interleaved = false;
+#endif
+#endif
+				}
 
 				char transportRespnse[130];
 				snprintf(transportRespnse, sizeof(transportRespnse), "Transport: %s\r\n", transport);
 				RTSP_AnswerText(rtspBuf, transportRespnse);
 			}
+			else RTSP_AnswerError("461 Unsupported transport");
 		}
 		else if (ISCOMMAND("PLAY"))
 		{

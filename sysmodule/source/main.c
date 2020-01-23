@@ -29,7 +29,7 @@
 		#include <stdatomic.h>
 	#endif
 	
-	#include "socketing.h"
+	#include "sockUtil.h"
 	#include "rtsp/RTSP.h"
 	#include "rtsp/H264Packetizer.h"
 	#include "rtsp/LE16Packetizer.h"
@@ -383,7 +383,7 @@ static void ConfigThread()
 	//Maybe hosting our own service is better but it looks harder than this
 	int ConfigSock = -1, sockFails = 0;
 	{
-		Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
+		Result rc = CreateTCPListener(&ConfigSock, 6668, 3, true);
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
@@ -396,7 +396,7 @@ static void ConfigThread()
 			{
 				sockFails = 0;
 				close(ConfigSock);
-				Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
+				Result rc = CreateTCPListener(&ConfigSock, 6668, 3, true);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
 			svcSleepThread(1E+9);
