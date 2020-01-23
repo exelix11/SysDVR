@@ -10,7 +10,9 @@
 #include "../sockUtil.h"
 #include "RTSP.h"
 #include "defines.h"
+
 #include "RTP.h"
+uint16_t SequenceNumbers[2]; //Declared in RTP.h
 
 #define INTERLEAVED_SUPPORT
 #define UDP_SUPPORT
@@ -260,6 +262,7 @@ int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 
 static inline void RTSP_StartPlayback()
 {
+	RTP_InitializeSequenceNumbers();
 	RTSP_ClientStreaming = true;
 }
 
