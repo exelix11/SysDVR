@@ -12,6 +12,7 @@
     <ClCompile Include="source\rtsp\RTSP.c">
       <Filter>rtsp</Filter>
     </ClCompile>
+    <ClCompile Include="source\sockUtil.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -31,7 +32,7 @@
     <ClInclude Include="source\rtsp\defines.h">
       <Filter>rtsp</Filter>
     </ClInclude>
-    <ClInclude Include="source\socketing.h" />
+    <ClInclude Include="source\sockUtil.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">
