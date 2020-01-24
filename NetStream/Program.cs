@@ -35,7 +35,7 @@ namespace UsbStream
 			return new UsbDevice(selectedDevice);
 		}
 
-		static (IOutTarget, IOutTarget) ParseLegacyArgs(string[] args)
+		static IMutliStreamManager ParseLegacyArgs(string[] args)
 		{
 			IOutTarget VTarget = null, ATarget = null;
 
@@ -77,12 +77,23 @@ namespace UsbStream
 			index = Array.IndexOf(args, "audio");
 			if (index >= 0) ParseTargetArgs(index, ref ATarget);
 
-			return (VTarget, ATarget);
+			return new SimpleStreamManager(VTarget, ATarget);
 		}
 
-		static void PrintGuide()
+		static void PrintGuide(bool full)
 		{
+			if (!full) {
+				Console.WriteLine("Basic usage:\r\n" +
+						"Simply launching this exectuable will show this message and launch the RTSP server.\r\n" +
+						"Use 'UsbStream rtsp' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+						"Command line options for the previous version are still available, with 'UsbStream --help'\r\n" +
+						"Press enter to continue.\r\n");
+				Console.ReadLine();
+				return;
+			}
 			Console.WriteLine("Usage: \r\n" +
+					"Stream via RTSP: 'UsbStream rtsp', add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+					"Raw streaming options:\r\n" +
 					"UsbStream video <stream config for video> audio <stream config for audio>\r\n" +
 					"You can omit the stream you don't want\r\n" +
 					"Stream config is one of the following:\r\n" +
@@ -107,26 +118,26 @@ namespace UsbStream
 					"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
 					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n\r\n" +
 					"Experimental/Debug options:\r\n" +
-					"--desync-fix : flush incoming packets and delay further requests to avoid desync when the bandwidth goes under a certain threshold\r\n" +
 					"--print-stats : print the average transfer speed and loop count for each thread every second\r\n" +
 					"--usb-warn : print warnings from libusb\r\n" +
 					"--usb-debug : print verbose output from libusb");
-			Console.ReadLine();
 		}
 
 		static void Main(string[] args)
 		{
 			Console.WriteLine("UsbStream - 2.0 by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
-			if (args.Length < 2)
+			if (args.Length < 1)
+				PrintGuide(false);
+			else if (args[0].Contains("help"))
 			{
-				PrintGuide();
+				PrintGuide(true);
 				return;
 			}
 
-			IOutTarget VTarget = null;
-			IOutTarget ATarget = null;
-			
+			IMutliStreamManager Streams = null;
+			bool NoAudio = false, NoVideo = false;
+
 			bool PrintStats = false;
 			LogLevel UsbLogLevel = LogLevel.Error;
 
@@ -139,14 +150,21 @@ namespace UsbStream
 			if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
 			if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
 
-			if (args[0] == "live")
-				(VTarget, ATarget) = FFmpegStreamHelper.ParseArgsLive(args);
-			else if (args[0] == "play")
-				(VTarget, ATarget) = FFmpegStreamHelper.ParseArgsPlay(args);
-			else
-				(VTarget, ATarget) = ParseLegacyArgs(args);
+			NoAudio = HasArg("--no-audio");
+			NoVideo = HasArg("--no-video");
 
-			if (VTarget == null && ATarget == null)
+			if (NoVideo && NoAudio)
+			{
+				Console.WriteLine("Specify at least a video or audio target");
+				return;
+			}
+
+			if (args.Length == 0 || args[0] == "rtsp")
+				Streams = new RTSP.SysDvrRTSPServer(!NoVideo, !NoAudio, false);
+			else
+				Streams = ParseLegacyArgs(args);
+
+			if (Streams == null || !Streams.HasAStream)
 			{
 				Console.WriteLine("Specify at least a video or audio target");
 				return;
@@ -162,13 +180,14 @@ namespace UsbStream
 			CancellationTokenSource StopThreads = new CancellationTokenSource();
 
 			VideoStreamThread Video = null;
-			if (VTarget != null)
-				Video = new VideoStreamThread(StopThreads.Token, VTarget, stream.OpenStreamDefault(), PrintStats);
+			if (Streams.Video != null)
+				Video = new VideoStreamThread(StopThreads.Token, Streams.Video, stream.OpenStreamDefault(), PrintStats);
 				
 			AudioStreamThread Audio = null;
-			if (ATarget != null)
-				Audio = new AudioStreamThread(StopThreads.Token, ATarget, stream.OpenStreamAlt(), PrintStats);	
+			if (Streams.Audio != null)
+				Audio = new AudioStreamThread(StopThreads.Token, Streams.Audio, stream.OpenStreamAlt(), PrintStats);
 
+			Streams.Begin();
 			Video?.Start();
 			Audio?.Start();
 
@@ -192,9 +211,11 @@ namespace UsbStream
 			Console.WriteLine("Terminating threads...");
 			StopThreads.Cancel();
 
+			Streams.Stop();
 			Video?.Join();
 			Audio?.Join();
 
+			Streams.Dispose();
 			Video?.Dispose();
 			Audio?.Dispose();
 

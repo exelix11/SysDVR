@@ -12,9 +12,41 @@ namespace UsbStream
 		public delegate void ClientConnectedDelegate();
 		public event ClientConnectedDelegate ClientConnected;
 
-		public void SendData(byte[] data) => SendData(data, 0, data.Length);
-		void SendData(byte[] data, int offset, int size);
+		public void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
+		void SendData(byte[] data, int offset, int size, UInt64 ts);
 		void InitializeStreaming();
+	}
+
+	public interface IMutliStreamManager : IDisposable 
+	{
+		IOutTarget Video { get; }
+		IOutTarget Audio { get; }
+
+		bool HasAStream => Video != null || Audio != null;
+
+		void Begin();
+		void Stop();
+	}
+
+	class SimpleStreamManager : IMutliStreamManager
+	{
+		public IOutTarget Video { get; set; }
+		public IOutTarget Audio { get; set; }
+
+		public SimpleStreamManager(IOutTarget v, IOutTarget a)
+		{
+			Video = v;
+			Audio = a;
+		}
+
+		public void Begin() { }
+		public void Stop() { }
+
+		public void Dispose()
+		{
+			Video?.Dispose();
+			Audio?.Dispose();
+		}
 	}
 
 	class OutFileTarget : IOutTarget
@@ -34,7 +66,7 @@ namespace UsbStream
 			Vfs.Dispose();
 		}
 
-		public void SendData(byte[] data, int offset, int size)
+		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
 			Vfs.Write(data, offset, size);
 		}
@@ -73,7 +105,7 @@ namespace UsbStream
 			Sock.Dispose();
 		}
 
-		public void SendData(byte[] data, int offset, int size)
+		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
 			try
 			{
@@ -114,7 +146,7 @@ namespace UsbStream
 				proc.Kill();
 		}
 
-		public void SendData(byte[] data, int offset, int size)
+		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
@@ -143,11 +175,6 @@ namespace UsbStream
 		Stopwatch sw = new Stopwatch();
 
 		public event IOutTarget.ClientConnectedDelegate ClientConnected;
-
-		public void SendData(byte[] data, int offset, int size)
-		{
-			throw new NotImplementedException();	
-		}
 
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{

@@ -18,6 +18,7 @@ namespace UsbStreamGUI
 
 		Dictionary<StreamTarget, IStreamTargetControl> StreamControls = new Dictionary<StreamTarget, IStreamTargetControl>
 		{
+		  { StreamTarget.RTSP, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
 		  { StreamTarget.Mpv , new MpvStreamControl() { Dock = DockStyle.Fill} },
 		  { StreamTarget.File , new FileStreamControl() { Dock = DockStyle.Fill} },
 		  { StreamTarget.Tcp , new TCPStreamControl(){ Dock = DockStyle.Fill} },
@@ -44,8 +45,8 @@ namespace UsbStreamGUI
 				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for UsbStream, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 					System.Diagnostics.Process.Start("https://dotnet.microsoft.com/download");
 			
-			radioButton6.Checked = true;
-			radioButton1.Checked = true;
+			radioButton7.Checked = true;
+			radioButton3.Checked = true;
 		}
 
 		private void StreamTargetSelected(object sender, EventArgs e)
@@ -74,7 +75,6 @@ namespace UsbStreamGUI
 			void append(string s) { if (str.Length != 0) str.Append(" "); str.Append(s); }
 
 			if (cbStats.Checked) append("--print-stats");
-			if (cbDesync.Checked) append("--desync-fix");
 			if (cbUsbLog.Checked) append("--usb-debug");
 			if (cbUsbWarn.Checked) append("--usb-warn");
 			return str.ToString();
@@ -84,7 +84,9 @@ namespace UsbStreamGUI
 		{
 			try
 			{
-				return $"UsbStream.exe {StreamControls[CurTarget].GetCommandLine()} {GetExtraArgs()}";
+				string extra = StreamControls[CurTarget].GetExtraCmd();
+				string prefix = (string.IsNullOrWhiteSpace(extra) ? "" : "start ");
+				return $"{prefix}UsbStream.exe {StreamControls[CurTarget].GetCommandLine()} {GetExtraArgs()}\n{extra}";
 			}
 			catch (Exception ex)
 			{
@@ -95,12 +97,15 @@ namespace UsbStreamGUI
 
 		private void Launch(object sender, EventArgs e)
 		{
-			string cmd = GetFinalCommand();
-			if (cmd != null)
+			var cmds = GetFinalCommand()?.Split('\n');
+			string cmdArg = cmds.Length > 1 ? "/C" : "/K";
+			if (cmds != null)
 			{
-				System.Diagnostics.Process.Start("cmd", $"/K {cmd}");
+				foreach (var cmd in cmds)
+					System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
 				this.Close();
 			}
+
 		}
 
 		private void ExportBatch(object sender, EventArgs e)

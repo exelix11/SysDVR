@@ -17,6 +17,7 @@ namespace UsbStreamGUI
 
 	public enum StreamTarget 
 	{
+		RTSP,
 		Mpv,
 		File,
 		Tcp
@@ -26,5 +27,6 @@ namespace UsbStreamGUI
 	{
 		StreamKind TargetKind { get; set; }
 		string GetCommandLine();
+		string GetExtraCmd();
 	}
 }

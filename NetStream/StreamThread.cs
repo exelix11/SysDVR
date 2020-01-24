@@ -138,10 +138,12 @@ namespace UsbStream
 		private readonly ArrayPool<byte> StreamingPool = ArrayPool<byte>.Create();
 		protected byte[] Data = null;
 		protected ulong Timestamp = 0;
+
 		readonly private byte[] SizeBuf = new byte[4];
 		readonly private byte[] TsBuf = new byte[8];
+		private ulong firtTs = 0;
 		protected int ReadNextPacket()
-		{
+		{	
 			if (Data != null)
 			{
 				StreamingPool.Return(Data);
@@ -171,6 +173,10 @@ namespace UsbStream
 			//read the timestamp
 			if (Device.Read(TsBuf, 0, 8) != 8) return -4;
 			Timestamp = BitConverter.ToUInt64(TsBuf);
+			if (firtTs == 0)
+				firtTs = Timestamp;
+
+			Timestamp -= firtTs;
 
 			//Read the actual data
 			Device.MillisTimeout = 1000;
@@ -230,8 +236,8 @@ namespace UsbStream
 		//Not sure if they're the same for every game, likely yes due to hardware encoding
 		protected override void StreamInitialized()
 		{
-			Target.SendData(SPS);
-			Target.SendData(PPS);
+			Target.SendData(SPS, 0);
+			Target.SendData(PPS, 0);
 		}
 	}
 
