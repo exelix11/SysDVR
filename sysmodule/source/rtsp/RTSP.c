@@ -11,8 +11,8 @@
 #include "RTSP.h"
 #include "defines.h"
 
-#include "RTP.h"
-uint16_t SequenceNumbers[2]; //Declared in RTP.h
+int MaxRTPPacket;
+int MaxRTPPayload;
 
 #define INTERLEAVED_SUPPORT
 #define UDP_SUPPORT
@@ -200,7 +200,7 @@ static inline int RTSP_SendData(const void* const data, const size_t len, unsign
 
 #ifdef UDP_SUPPORT
 //For streaming via TCP it would be better to increase the max packet
-char VideoSendBuffer[MaxRTPPacketSize];
+char VideoSendBuffer[MaxRTPPacketSize_UDP];
 #endif
 int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len)
 {
@@ -224,7 +224,7 @@ int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t 
 		if (extHeader)
 			memcpy(VideoSendBuffer + RTPHeaderSz, extHeader, extLen);
 		memcpy(VideoSendBuffer + RTPHeaderSz + extLen, data, len);
-		sendto(clientVideo, VideoSendBuffer, RTPHeaderSz + extLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr));
+		res = sendto(clientVideo, VideoSendBuffer, RTPHeaderSz + extLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr)) < 0;
 #endif
 	}
 
@@ -232,7 +232,7 @@ int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t 
 }
 
 #ifdef UDP_SUPPORT
-char AudioSendBuffer[MaxRTPPacketSize];
+char AudioSendBuffer[MaxRTPPacketSize_UDP];
 #endif
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
@@ -253,7 +253,7 @@ int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 #ifdef UDP_SUPPORT
 		memcpy(AudioSendBuffer, header, RTPHeaderSz);
 		memcpy(AudioSendBuffer + RTPHeaderSz, data, len);
-		sendto(clientVideo, AudioSendBuffer, RTPHeaderSz + len, 0, (struct sockaddr*) & clientAAddr, sizeof(clientAAddr));
+		res = sendto(clientVideo, AudioSendBuffer, RTPHeaderSz + len, 0, (struct sockaddr*) & clientAAddr, sizeof(clientAAddr)) < 0;
 #endif
 	}
 
@@ -262,7 +262,8 @@ int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 
 static inline void RTSP_StartPlayback()
 {
-	RTP_InitializeSequenceNumbers();
+	MaxRTPPacket = RTSP_Transfer_interleaved ? MaxRTPPacketSize_TCP : MaxRTPPacketSize_UDP;
+	MaxRTPPayload = MaxRTPPacket - RTPHeaderSz;
 	RTSP_ClientStreaming = true;
 }
 

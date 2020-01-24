@@ -2,13 +2,10 @@
 
 #include <stdint.h>
 
-//8 KB
-//TODO: for UDP streaming it should be even lower
-#define MaxRTPPacketSize 0x2000
-#define RTPHeaderSz 12
-#define MaxRTPPayloadSz (MaxRTPPacketSize - RTPHeaderSz)
+extern int MaxRTPPacket;
+extern int MaxRTPPayload;
 
-extern uint16_t SequenceNumbers[2];
+static uint16_t SequenceNumbers[2];
 static const char PT[2] = {96, 97};
 
 static inline void RTP_InitializeSequenceNumbers() 
