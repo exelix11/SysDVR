@@ -97,15 +97,11 @@ void* RTSP_ServerThread(void* arg)
 #ifdef INTERLEAVED_SUPPORT
 	mutexInit(&RTSP_operation_lock);
 #endif
-	/*
-		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
-		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
-	*/
 	int sockFails = 0;
 	RTSP_Running = true;
 	while (RTSP_Running)
 	{
-		unsigned int	 clientAddRlen = sizeof(clientAddress);
+		unsigned int clientAddRlen = sizeof(clientAddress);
 		client = accept(RTSPSock, (struct sockaddr*)&clientAddress, &clientAddRlen);
 		if (client < 0)
 		{
@@ -119,13 +115,6 @@ void* RTSP_ServerThread(void* arg)
 			continue;
 		}
 		
-		/*
-			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
-			even if the video and audio listeners are used on different threads calling accept on one of them
-			blocks the others as well, even while a client is connected.
-			The workaround is making the socket non-blocking and then to set the client socket as blocking.
-			By default the socket returned from accept inherits this flag.
-		*/
 		fcntl(client, F_SETFL, fcntl(client, F_GETFL, 0) & ~O_NONBLOCK);
 		RTSP_MainLoop();
 
@@ -133,8 +122,10 @@ void* RTSP_ServerThread(void* arg)
 		LOCK_SOCKETING;
 		RTSP_ClientStreaming = false;
 		CloseSocket(&client);
+#ifdef UDP_SUPPORT
 		CloseSocket(&clientAudio);
 		CloseSocket(&clientVideo);
+#endif
 		UNLOCK_SOCKETING;
 		
 		svcSleepThread(1E+9);
