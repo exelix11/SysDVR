@@ -6,17 +6,19 @@
 typedef int (*LE16SendPacketFn)(const void* header, const void* data, const size_t len);
 
 #define SampleRate 48000.0
-#define SamplesInRtpPacket (MaxRTPPayloadSz / 4.0)
-#define AudiolenRtpPackeMs (SamplesInRtpPacket / SampleRate * 1000.0)
+#define SamplesInRtpPacket(payloadSz) (payloadSz / 4.0)
+#define AudiolenRtpPackeMs(payloadSz) (SamplesInRtpPacket(payloadSz) / SampleRate * 1000.0)
 
 static inline int PacketizeLE16(char* data, size_t len, uint32_t tsMs, LE16SendPacketFn cb)
 {
 	char header[RTPHeaderSz];
 	double incrementalTs = 0;
 
+	const double increment = AudiolenRtpPackeMs(MaxRTPPayload);
+
 	while (len > 0)
 	{
-		size_t dataLen = len > MaxRTPPayloadSz ? MaxRTPPayloadSz : len;
+		size_t dataLen = len > MaxRTPPayload ? MaxRTPPayload : len;
 
 		uint8_t* samples = (uint8_t*)data;
 		for (int i = 0; i < dataLen; i += 2)
@@ -34,7 +36,7 @@ static inline int PacketizeLE16(char* data, size_t len, uint32_t tsMs, LE16SendP
 
 		data += dataLen;
 		len -= dataLen;
-		incrementalTs += AudiolenRtpPackeMs;
+		incrementalTs += increment;
 	}
 	return 0;
 }

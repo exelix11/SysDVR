@@ -285,6 +285,7 @@ static void* TCP_StreamThreadMain(void* _stream)
 		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
 		if (!IsThreadRunning) break;
 
+		RTP_InitializeSequenceNumbers();
 		while (true)
 		{
 			int error = 0;
