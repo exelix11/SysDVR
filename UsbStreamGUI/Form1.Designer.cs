@@ -37,6 +37,7 @@
 			this.radioButton2 = new System.Windows.Forms.RadioButton();
 			this.radioButton1 = new System.Windows.Forms.RadioButton();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
+			this.radioButton7 = new System.Windows.Forms.RadioButton();
 			this.radioButton4 = new System.Windows.Forms.RadioButton();
 			this.radioButton5 = new System.Windows.Forms.RadioButton();
 			this.radioButton6 = new System.Windows.Forms.RadioButton();
@@ -44,7 +45,6 @@
 			this.cbStats = new System.Windows.Forms.CheckBox();
 			this.cbUsbLog = new System.Windows.Forms.CheckBox();
 			this.cbUsbWarn = new System.Windows.Forms.CheckBox();
-			this.cbDesync = new System.Windows.Forms.CheckBox();
 			this.label1 = new System.Windows.Forms.Label();
 			this.linkLabel1 = new System.Windows.Forms.LinkLabel();
 			this.button4 = new System.Windows.Forms.Button();
@@ -151,6 +151,7 @@
 			// 
 			this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+			this.groupBox2.Controls.Add(this.radioButton7);
 			this.groupBox2.Controls.Add(this.radioButton4);
 			this.groupBox2.Controls.Add(this.radioButton5);
 			this.groupBox2.Controls.Add(this.radioButton6);
@@ -161,10 +162,23 @@
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Stream method";
 			// 
+			// radioButton7
+			// 
+			this.radioButton7.AutoSize = true;
+			this.radioButton7.Location = new System.Drawing.Point(7, 19);
+			this.radioButton7.Name = "radioButton7";
+			this.radioButton7.Size = new System.Drawing.Size(107, 17);
+			this.radioButton7.TabIndex = 3;
+			this.radioButton7.TabStop = true;
+			this.radioButton7.Tag = "RTSP";
+			this.radioButton7.Text = "Stream via RTSP";
+			this.radioButton7.UseVisualStyleBackColor = true;
+			this.radioButton7.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
+			// 
 			// radioButton4
 			// 
 			this.radioButton4.AutoSize = true;
-			this.radioButton4.Location = new System.Drawing.Point(361, 19);
+			this.radioButton4.Location = new System.Drawing.Point(501, 19);
 			this.radioButton4.Name = "radioButton4";
 			this.radioButton4.Size = new System.Drawing.Size(78, 17);
 			this.radioButton4.TabIndex = 2;
@@ -177,7 +191,7 @@
 			// radioButton5
 			// 
 			this.radioButton5.AutoSize = true;
-			this.radioButton5.Location = new System.Drawing.Point(156, 19);
+			this.radioButton5.Location = new System.Drawing.Point(292, 19);
 			this.radioButton5.Name = "radioButton5";
 			this.radioButton5.Size = new System.Drawing.Size(140, 17);
 			this.radioButton5.TabIndex = 1;
@@ -190,7 +204,7 @@
 			// radioButton6
 			// 
 			this.radioButton6.AutoSize = true;
-			this.radioButton6.Location = new System.Drawing.Point(6, 19);
+			this.radioButton6.Location = new System.Drawing.Point(158, 19);
 			this.radioButton6.Name = "radioButton6";
 			this.radioButton6.Size = new System.Drawing.Size(79, 17);
 			this.radioButton6.TabIndex = 0;
@@ -207,7 +221,6 @@
 			this.groupBox3.Controls.Add(this.cbStats);
 			this.groupBox3.Controls.Add(this.cbUsbLog);
 			this.groupBox3.Controls.Add(this.cbUsbWarn);
-			this.groupBox3.Controls.Add(this.cbDesync);
 			this.groupBox3.Location = new System.Drawing.Point(6, 313);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(620, 71);
@@ -218,7 +231,7 @@
 			// cbStats
 			// 
 			this.cbStats.AutoSize = true;
-			this.cbStats.Location = new System.Drawing.Point(140, 21);
+			this.cbStats.Location = new System.Drawing.Point(6, 21);
 			this.cbStats.Name = "cbStats";
 			this.cbStats.Size = new System.Drawing.Size(114, 17);
 			this.cbStats.TabIndex = 3;
@@ -244,16 +257,6 @@
 			this.cbUsbWarn.TabIndex = 1;
 			this.cbUsbWarn.Text = "Print LibUsb warnings";
 			this.cbUsbWarn.UseVisualStyleBackColor = true;
-			// 
-			// cbDesync
-			// 
-			this.cbDesync.AutoSize = true;
-			this.cbDesync.Location = new System.Drawing.Point(7, 21);
-			this.cbDesync.Name = "cbDesync";
-			this.cbDesync.Size = new System.Drawing.Size(112, 17);
-			this.cbDesync.TabIndex = 0;
-			this.cbDesync.Text = "Attempt desync fix";
-			this.cbDesync.UseVisualStyleBackColor = true;
 			// 
 			// label1
 			// 
@@ -354,12 +357,12 @@
 		private System.Windows.Forms.GroupBox groupBox3;
 		private System.Windows.Forms.CheckBox cbUsbLog;
 		private System.Windows.Forms.CheckBox cbUsbWarn;
-		private System.Windows.Forms.CheckBox cbDesync;
 		private System.Windows.Forms.CheckBox cbStats;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.LinkLabel linkLabel1;
 		private System.Windows.Forms.Button button4;
 		private System.Windows.Forms.Label label2;
+		private System.Windows.Forms.RadioButton radioButton7;
 	}
 }
 

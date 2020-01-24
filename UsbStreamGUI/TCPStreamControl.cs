@@ -53,6 +53,8 @@ namespace UsbStreamGUI
 			return res.ToString();
 		}
 
+		public string GetExtraCmd() => "";
+
 		private void TCPStreamControl_Load(object sender, EventArgs e)
 		{
 

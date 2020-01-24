@@ -28,8 +28,6 @@ namespace UsbStreamGUI
 			StringBuilder res = new StringBuilder();
 
 			string mpv = textBox1.Text;
-			if (mpv.EndsWith(".com"))
-				mpv = mpv.Substring(0, mpv.Length - 4);
 
 			if ((TargetKind & StreamKind.Video) != 0)
 			{
@@ -44,6 +42,8 @@ namespace UsbStreamGUI
 
 			return res.ToString();
 		}
+
+		public string GetExtraCmd() => "";
 
 		private void button1_Click(object sender, EventArgs e)
 		{

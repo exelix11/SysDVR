@@ -29,6 +29,7 @@ namespace UsbStreamGUI
 			}
 		}
 
+		public string GetExtraCmd() => "";
 		public string GetCommandLine()
 		{
 			StringBuilder res = new StringBuilder();
