@@ -274,7 +274,97 @@ static void* USB_StreamThreadMain(void* _stream)
 const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
+int VideoSock = -1, AudioSock = -1, VideoCurSock = -1, AudioCurSock = -1;
+static inline Result TCP_InitSockets(GrcStream stream)
+{
+	Result rc;
+	if (stream == GrcStream_Video)
+	{
+		if (VideoSock != -1) close(VideoSock);
+		rc = CreateTCPListener(&VideoSock, 6666, 2, false);
+		if (R_FAILED(rc)) return rc;
+	}
+	else
+	{
+		if (AudioSock != -1) close(AudioSock);
+		rc = CreateTCPListener(&AudioSock, 6667, 3, false);
+		if (R_FAILED(rc)) return rc;
+	}
+	return 0;
+}
+
 static void* TCP_StreamThreadMain(void* _stream)
+{
+	if (!IsThreadRunning)
+		fatalSimple(MAKERESULT(1, 14));
+
+	const GrcStream stream = (GrcStream)_stream;
+	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
+
+	const u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	const u8* const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	const u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
+
+	int* const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
+	int* const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
+
+	{
+		Result rc = TCP_InitSockets(stream);
+		if (R_FAILED(rc)) fatalSimple(rc);
+	}
+
+	/*
+		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
+		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
+	*/
+	int sockFails = 0;
+	while (IsThreadRunning) {
+		int curSock = accept(*sock, 0, 0);
+		if (curSock < 0)
+		{
+			if (sockFails++ >= 3 && IsThreadRunning)
+			{
+				Result rc = TCP_InitSockets(stream);
+				if (R_FAILED(rc)) fatalSimple(rc);
+			}
+			svcSleepThread(1E+9);
+			continue;
+		}
+
+		/*
+			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
+			even if the video and audio listeners are used on different threads calling accept on one of them
+			blocks the others as well, even while a client is connected.
+			The workaround is making the socket non-blocking and then to set the client socket as blocking.
+			By default the socket returned from accept inherits this flag.
+		*/
+		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
+
+		*OutSock = curSock;
+
+		if (stream == GrcStream_Video) {
+			write(curSock, SPS, sizeof(SPS));
+			write(curSock, PPS, sizeof(PPS));
+		}
+
+		while (true)
+		{
+			ReadStreamFn();
+			if (write(curSock, ts, sizeof(u64)) <= 0)
+				break;
+			if (write(curSock, TargetBuf, *size) <= 0)
+				break;
+		}
+
+		close(curSock);
+		*OutSock = -1;
+		svcSleepThread(1E+9);
+	}
+	pthread_exit(NULL);
+	return NULL;
+}
+
+static void* RTSP_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
 		fatalSimple(MAKERESULT(1, 14));
@@ -333,12 +423,22 @@ static pthread_t AudioThread;
 static pthread_t VideoThread;
 static pthread_t RTSPThread;
 
-static void TCP_Init()
+static void TCP_Exit()
+{
+#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
+	CloseSock(VideoSock);
+	CloseSock(AudioSock);
+	CloseSock(AudioCurSock);
+	CloseSock(VideoCurSock);
+#undef CloseSock
+}
+
+static void RTSP_Init()
 {
 	pthread_create(&RTSPThread, NULL, RTSP_ServerThread, NULL);
 }
 
-static void TCP_Exit()
+static void RTSP_Exit()
 {
 	RTSP_StopServer();
 	pthread_join(RTSPThread, NULL);
@@ -352,7 +452,8 @@ typedef struct _streamMode
 } StreamMode;
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
-StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamThreadMain };
+StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
+StreamMode RTSP_MODE = { RTSP_Init, RTSP_Exit, RTSP_StreamThreadMain };
 StreamMode* CurrentMode = NULL;
 
 static void SetMode(StreamMode* mode)
@@ -382,10 +483,11 @@ static void SetMode(StreamMode* mode)
 	}
 }
 
-#define SYSDVR_VERSION 1
+#define SYSDVR_VERSION 2
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_NULL 3
+#define TYPE_MODE_RTSP 4
 
 static void ConfigThread()
 {
@@ -431,6 +533,8 @@ static void ConfigThread()
 			Type = TYPE_MODE_USB;
 		else if (CurrentMode == &TCP_MODE)
 			Type = TYPE_MODE_TCP;
+		else if (CurrentMode == &RTSP_MODE)
+			Type = TYPE_MODE_RTSP;
 		else fatalSimple(MAKERESULT(1, 15));
 
 		write(curSock, &Type, sizeof(u32));
@@ -448,6 +552,9 @@ static void ConfigThread()
 				break;
 			case TYPE_MODE_TCP:
 				SetMode(&TCP_MODE);
+				break;
+			case TYPE_MODE_RTSP:
+				SetMode(&RTSP_MODE);
 				break;
 			case TYPE_MODE_NULL:
 				SetMode(NULL);
@@ -493,6 +600,8 @@ int main(int argc, char* argv[])
 		SetMode(&USB_MODE);
 	else if (FileExists("/config/sysdvr/tcp"))
 		SetMode(&TCP_MODE);
+	else if (FileExists("/config/sysdvr/rtsp"))
+		SetMode(&RTSP_MODE);
 
 	ConfigThread();
 	SetMode(NULL);

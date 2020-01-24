@@ -135,20 +135,11 @@ namespace UsbStream
 				return;
 			}
 
+			bool IsUsbMode = true;
 			IMutliStreamManager Streams = null;
 			bool NoAudio = false, NoVideo = false;
 
-			bool PrintStats = false;
-			LogLevel UsbLogLevel = LogLevel.Error;
-
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
-
-			if (HasArg("--desync-fix"))
-				Console.WriteLine("Warning: the --desync-fix fix option has been deprecated and will be ignored");
-
-			PrintStats = HasArg("--print-stats");
-			if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
-			if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
@@ -161,8 +152,30 @@ namespace UsbStream
 
 			if (args.Length == 0 || args[0] == "rtsp")
 				Streams = new RTSP.SysDvrRTSPServer(!NoVideo, !NoAudio, false);
+			else if (args[0] == "bridge")
+			{
+				IsUsbMode = false;
+			}
 			else
 				Streams = ParseLegacyArgs(args);
+
+			if (IsUsbMode)
+				StartUsbStreaming(Streams, args);
+		}
+
+		static void StartUsbStreaming(IMutliStreamManager Streams, string[] args)
+		{
+			bool PrintStats = false;
+			LogLevel UsbLogLevel = LogLevel.Error;
+
+			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
+
+			if (HasArg("--desync-fix"))
+				Console.WriteLine("Warning: the --desync-fix fix option has been deprecated and will be ignored");
+
+			PrintStats = HasArg("--print-stats");
+			if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
+			if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
 
 			if (Streams == null || !Streams.HasAStream)
 			{
@@ -182,7 +195,7 @@ namespace UsbStream
 			VideoStreamThread Video = null;
 			if (Streams.Video != null)
 				Video = new VideoStreamThread(StopThreads.Token, Streams.Video, stream.OpenStreamDefault(), PrintStats);
-				
+
 			AudioStreamThread Audio = null;
 			if (Streams.Audio != null)
 				Audio = new AudioStreamThread(StopThreads.Token, Streams.Audio, stream.OpenStreamAlt(), PrintStats);
