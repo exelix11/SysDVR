@@ -35,6 +35,51 @@ namespace UsbStream
 			return new UsbDevice(selectedDevice);
 		}
 
+		static (IOutTarget, IOutTarget) ParseLegacyArgs(string[] args)
+		{
+			IOutTarget VTarget = null, ATarget = null;
+
+			void ParseTargetArgs(int baseIndex, ref IOutTarget t)
+			{
+				switch (args[baseIndex + 1])
+				{
+					case "mpv":
+					case "stdin":
+						{
+							string fargs = "";
+							if (args[baseIndex + 1] == "mpv")
+								fargs = args[baseIndex] == "video" ? "- --no-correct-pts --fps=30 " : "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 ";
+
+							if (args.Length > baseIndex + 4 && args[baseIndex + 3] == "args")
+								fargs += args[baseIndex + 4];
+
+							t = new StdInTarget(args[baseIndex + 2], fargs);
+
+							break;
+						}
+					case "tcp":
+						{
+							int port = int.Parse(args[baseIndex + 2]);
+							Console.WriteLine($"Waiting for a client to connect on {port} ...");
+							t = new TCPTarget(System.Net.IPAddress.Any, port);
+							break;
+						}
+					case "file":
+						t = new OutFileTarget(args[baseIndex + 2]);
+						break;
+					default:
+						throw new Exception($"{args[baseIndex + 1]} is not a valid video mode");
+				}
+			}
+
+			int index = Array.IndexOf(args, "video");
+			if (index >= 0) ParseTargetArgs(index, ref VTarget);
+			index = Array.IndexOf(args, "audio");
+			if (index >= 0) ParseTargetArgs(index, ref ATarget);
+
+			return (VTarget, ATarget);
+		}
+
 		static void PrintGuide()
 		{
 			Console.WriteLine("Usage: \r\n" +
@@ -73,7 +118,7 @@ namespace UsbStream
 		{
 			Console.WriteLine("UsbStream - 2.0 by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
-			if (args.Length < 3)
+			if (args.Length < 2)
 			{
 				PrintGuide();
 				return;
@@ -81,61 +126,25 @@ namespace UsbStream
 
 			IOutTarget VTarget = null;
 			IOutTarget ATarget = null;
+			
 			bool PrintStats = false;
-			bool DesyncFix = false;
 			LogLevel UsbLogLevel = LogLevel.Error;
-
-			void ParseTargetArgs(int baseIndex, ref IOutTarget t)
-			{
-				switch (args[baseIndex + 1])
-				{
-					case "mpv":
-					case "stdin":
-						{
-							string fargs = "";
-							if (args[baseIndex + 1] == "mpv") 
-								fargs = args[baseIndex] == "video" ? "- --no-correct-pts --fps=30 " : "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 ";
-
-							if (args.Length > baseIndex + 4 && args[baseIndex + 3] == "args")
-								fargs += args[baseIndex + 4];
-
-							t = new StdInTarget(args[baseIndex + 2], fargs);
-
-							break;
-						}
-					case "tcp":
-						{
-							int port = int.Parse(args[baseIndex + 2]);
-							Console.WriteLine($"Waiting for a client to connect on {port} ...");
-							t = new TCPTarget(System.Net.IPAddress.Any, port);
-							break;
-						}
-					case "file":
-						t = new OutFileTarget(args[baseIndex + 2]);
-						break;
-#if DEBUG
-					case "log":
-						t = new LoggingTarget($"F:/{args[baseIndex]}.binlog");
-						break;
-#endif
-					default:
-						throw new Exception($"{args[baseIndex + 1]} is not a valid video mode");
-				}
-			}
 
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 
-			{
-				int index = Array.IndexOf(args, "video");
-				if (index >= 0) ParseTargetArgs(index, ref VTarget);
-				index = Array.IndexOf(args, "audio");
-				if (index >= 0) ParseTargetArgs(index, ref ATarget);
+			if (HasArg("--desync-fix"))
+				Console.WriteLine("Warning: the --desync-fix fix option has been deprecated and will be ignored");
 
-				DesyncFix = HasArg("--desync-fix");
-				PrintStats = HasArg("--print-stats");
-				if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
-				if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
-			}
+			PrintStats = HasArg("--print-stats");
+			if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
+			if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
+
+			if (args[0] == "live")
+				(VTarget, ATarget) = FFmpegStreamHelper.ParseArgsLive(args);
+			else if (args[0] == "play")
+				(VTarget, ATarget) = FFmpegStreamHelper.ParseArgsPlay(args);
+			else
+				(VTarget, ATarget) = ParseLegacyArgs(args);
 
 			if (VTarget == null && ATarget == null)
 			{
@@ -154,22 +163,37 @@ namespace UsbStream
 
 			VideoStreamThread Video = null;
 			if (VTarget != null)
-				Video = new VideoStreamThread(StopThreads.Token, VTarget, stream.OpenStreamDefault(), PrintStats, DesyncFix);
+				Video = new VideoStreamThread(StopThreads.Token, VTarget, stream.OpenStreamDefault(), PrintStats);
 				
 			AudioStreamThread Audio = null;
 			if (ATarget != null)
 				Audio = new AudioStreamThread(StopThreads.Token, ATarget, stream.OpenStreamAlt(), PrintStats);	
 
-			Video?.StartThread();
-			Audio?.StartThread();
+			Video?.Start();
+			Audio?.Start();
 
 			Console.WriteLine("Starting stream, press return to stop");
-			Console.ReadLine();
+			Console.WriteLine("If the stream lags press Q to force a resync");
+
+			ConsoleKey c;
+			while ((c = Console.ReadKey().Key) != ConsoleKey.Enter)
+			{
+				if (c == ConsoleKey.Q)
+				{
+					Console.WriteLine("Pausing streams for 3 seconds to flush buffer data");
+					Video?.Pause();
+					Audio?.Pause();
+					Thread.Sleep(3000);
+					Video?.Resume();
+					Audio?.Resume();
+				}
+			}
+
 			Console.WriteLine("Terminating threads...");
 			StopThreads.Cancel();
 
-			Video?.JoinThread();
-			Audio?.JoinThread();
+			Video?.Join();
+			Audio?.Join();
 
 			Video?.Dispose();
 			Audio?.Dispose();
