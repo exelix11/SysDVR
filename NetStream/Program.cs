@@ -84,17 +84,19 @@ namespace UsbStream
 		{
 			if (!full) {
 				Console.WriteLine("Basic usage:\r\n" +
-						"Simply launching this exectuable will show this message and launch the RTSP server.\r\n" +
+						"Simply launching this exectuable will show this message and launch the RTSP server via USB.\r\n" +
 						"Use 'UsbStream rtsp' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
-						"Command line options for the previous version are still available, with 'UsbStream --help'\r\n" +
+						"To stream in TCP Bridge mode launch 'UsbStream bridge <switch ip address>'\r\n" +
+						"Command line options for the previous version are still available, you can view them with 'UsbStream --help'\r\n" +
 						"Press enter to continue.\r\n");
 				Console.ReadLine();
 				return;
 			}
 			Console.WriteLine("Usage: \r\n" +
 					"Stream via RTSP: 'UsbStream rtsp', add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+					"Stream via TCP Bridge: 'UsbStream bridge <switch ip address>', '--no-audio' or '--no-video' are supported here too" +
 					"Raw streaming options:\r\n" +
-					"UsbStream video <stream config for video> audio <stream config for audio>\r\n" +
+					"'UsbStream video <stream config for video> audio <stream config for audio>'\r\n" +
 					"You can omit the stream you don't want\r\n" +
 					"Stream config is one of the following:\r\n" +
 					" - tcp <port> : stream the data over a the network on the specified port.\r\n" +
@@ -155,12 +157,27 @@ namespace UsbStream
 			else if (args[0] == "bridge")
 			{
 				IsUsbMode = false;
+				Streams = new TCPBridgeManager(!NoVideo, !NoAudio, args[1]);
 			}
 			else
 				Streams = ParseLegacyArgs(args);
 
+			Console.WriteLine("Starting stream, press return to stop");
 			if (IsUsbMode)
 				StartUsbStreaming(Streams, args);
+			else
+				StartManagedStreaming(Streams, args);
+		}
+
+		static void StartManagedStreaming(IMutliStreamManager Streams, string[] args)
+		{
+			Streams.Begin();
+
+			Console.ReadLine();
+			Console.WriteLine("Terminating threads...");
+
+			Streams.Stop();
+			Streams.Dispose();
 		}
 
 		static void StartUsbStreaming(IMutliStreamManager Streams, string[] args)
@@ -204,7 +221,6 @@ namespace UsbStream
 			Video?.Start();
 			Audio?.Start();
 
-			Console.WriteLine("Starting stream, press return to stop");
 			Console.WriteLine("If the stream lags press Q to force a resync");
 
 			ConsoleKey c;

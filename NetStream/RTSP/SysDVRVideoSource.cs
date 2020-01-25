@@ -17,11 +17,11 @@ namespace UsbStream.RTSP
 
 		public SysDvrRTSPServer(bool videoSupport, bool audioSupport, bool localOnly) 
 		{
-			SysDVRVideoSource v = null;
-			SysDVRAudioSource a = null;
+			SysDVRVideoRTSPTarget v = null;
+			SysDVRAudioRTSPTarget a = null;
 
-			if (videoSupport) v = new SysDVRVideoSource();
-			if (audioSupport) a = new SysDVRAudioSource();
+			if (videoSupport) v = new SysDVRVideoRTSPTarget();
+			if (audioSupport) a = new SysDVRAudioRTSPTarget();
 
 			Video = v;
 			Audio = a;
@@ -46,7 +46,7 @@ namespace UsbStream.RTSP
 		}
 	}
 
-	public abstract class SysDvrSource : IOutTarget
+	public abstract class SysDvrRTSPTarget : IOutTarget
 	{
 		public delegate void DataAvailableFn(Memory<byte> Data, ulong tsMsec);
 		public event DataAvailableFn DataAvailable;
@@ -55,7 +55,11 @@ namespace UsbStream.RTSP
 		protected void InvokeEvent(Memory<byte> Data, ulong tsMsec) => DataAvailable(Data, tsMsec);
 
 		public abstract void SendData(byte[] data, int offset, int size, ulong ts);
-		public abstract void InitializeStreaming();
+		
+		public void InitializeStreaming()
+		{
+			ClientConnected?.Invoke();
+		}
 
 		public void Dispose()
 		{
@@ -68,23 +72,18 @@ namespace UsbStream.RTSP
 
 		}
 
-		~SysDvrSource() { Dispose(false); }
+		~SysDvrRTSPTarget() { Dispose(false); }
 	}
 
-	public class SysDVRAudioSource : SysDvrSource
+	public class SysDVRAudioRTSPTarget : SysDvrRTSPTarget
 	{
-		public override void InitializeStreaming()
-		{
-
-		}
-
 		public override void SendData(byte[] data, int offset, int size, ulong ts)
 		{
 			InvokeEvent(new Memory<byte>(data, offset, size), ts / 1000);
 		}
 	}
 
-	public class SysDVRVideoSource : SysDvrSource
+	public class SysDVRVideoRTSPTarget : SysDvrRTSPTarget
 	{
 		public static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 		public static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
@@ -114,11 +113,11 @@ namespace UsbStream.RTSP
 			return data.Slice(nalOffset, nextOffset - nalOffset);
 		}
 
-		public override void InitializeStreaming()
-		{
-			 SendData(SPS, 0, SPS.Length, 0);
-			 SendData(PPS, 0, PPS.Length, 0);
-		}
+		//public override void InitializeStreaming()
+		//{
+		//	 SendData(SPS, 0, SPS.Length, 0);
+		//	 SendData(PPS, 0, PPS.Length, 0);
+		//}
 
 		public override void SendData(byte[] indata, int offset, int size, ulong ts)
 		{

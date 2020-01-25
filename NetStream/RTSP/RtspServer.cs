@@ -19,8 +19,8 @@ namespace UsbStream.RTSP
 		private ManualResetEvent _Stopping;
 		private Thread _ListenTread;
 
-		private SysDVRVideoSource video_source = null;
-		private SysDVRAudioSource audio_source = null;
+		private SysDVRVideoRTSPTarget video_source = null;
+		private SysDVRAudioRTSPTarget audio_source = null;
 
 		enum StreamKind : int
 		{
@@ -41,7 +41,7 @@ namespace UsbStream.RTSP
 		/// Initializes a new instance of the <see cref="RTSPServer"/> class.
 		/// </summary>
 		/// <param name="aPortNumber">A numero port.</param>
-		public RtspServer(int portNumber, SysDVRVideoSource video_source, SysDVRAudioSource audio_source, bool localOnly = false)
+		public RtspServer(int portNumber, SysDVRVideoRTSPTarget video_source, SysDVRAudioRTSPTarget audio_source, bool localOnly = false)
 		{
 			if (portNumber < System.Net.IPEndPoint.MinPort || portNumber > System.Net.IPEndPoint.MaxPort)
 				throw new ArgumentOutOfRangeException("aPortNumber", portNumber, "Port number must be between System.Net.IPEndPoint.MinPort and System.Net.IPEndPoint.MaxPort");
@@ -186,8 +186,8 @@ namespace UsbStream.RTSP
 				// TODO. Check the requsted_url is valid. In this example we accept any RTSP URL
 
 				// Make the Base64 SPS and PPS
-				raw_sps = SysDVRVideoSource.SPS; // no 0x00 0x00 0x00 0x01 or 32 bit size header
-				raw_pps = SysDVRVideoSource.PPS; // no 0x00 0x00 0x00 0x01 or 32 bit size header
+				raw_sps = SysDVRVideoRTSPTarget.SPS; // no 0x00 0x00 0x00 0x01 or 32 bit size header
+				raw_pps = SysDVRVideoRTSPTarget.PPS; // no 0x00 0x00 0x00 0x01 or 32 bit size header
 				String sps_str = Convert.ToBase64String(raw_sps);
 				String pps_str = Convert.ToBase64String(raw_pps);
 

@@ -7,6 +7,12 @@ using System.Text;
 
 namespace UsbStream
 {
+	public enum StreamKind
+	{
+		Video,
+		Audio
+	};
+
 	public interface IOutTarget : IDisposable
 	{
 		public delegate void ClientConnectedDelegate();
