@@ -112,7 +112,7 @@ bool DefaultMenu(int sock)
 	const char* MenuOptions[] = 
 	{
 		"Stream over USB",
-		"Stream over TCP (direct network mode, requires pc configuration)",
+		"Stream over TCP Bridge (direct network mode, requires pc configuration)",
 		"Stream over RTSP (simple network mode, should work without setup but may have some lag or glitches)",
 		"Stop streaming",
 		"Set current mode as default on boot",
