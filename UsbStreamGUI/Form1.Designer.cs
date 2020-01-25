@@ -167,18 +167,18 @@
 			this.radioButton7.AutoSize = true;
 			this.radioButton7.Location = new System.Drawing.Point(7, 19);
 			this.radioButton7.Name = "radioButton7";
-			this.radioButton7.Size = new System.Drawing.Size(107, 17);
+			this.radioButton7.Size = new System.Drawing.Size(188, 17);
 			this.radioButton7.TabIndex = 3;
 			this.radioButton7.TabStop = true;
 			this.radioButton7.Tag = "RTSP";
-			this.radioButton7.Text = "Stream via RTSP";
+			this.radioButton7.Text = "Stream via RTSP (Recommended)";
 			this.radioButton7.UseVisualStyleBackColor = true;
 			this.radioButton7.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
 			// 
 			// radioButton4
 			// 
 			this.radioButton4.AutoSize = true;
-			this.radioButton4.Location = new System.Drawing.Point(501, 19);
+			this.radioButton4.Location = new System.Drawing.Point(533, 19);
 			this.radioButton4.Name = "radioButton4";
 			this.radioButton4.Size = new System.Drawing.Size(78, 17);
 			this.radioButton4.TabIndex = 2;
@@ -191,7 +191,7 @@
 			// radioButton5
 			// 
 			this.radioButton5.AutoSize = true;
-			this.radioButton5.Location = new System.Drawing.Point(292, 19);
+			this.radioButton5.Location = new System.Drawing.Point(355, 19);
 			this.radioButton5.Name = "radioButton5";
 			this.radioButton5.Size = new System.Drawing.Size(140, 17);
 			this.radioButton5.TabIndex = 1;
@@ -204,7 +204,7 @@
 			// radioButton6
 			// 
 			this.radioButton6.AutoSize = true;
-			this.radioButton6.Location = new System.Drawing.Point(158, 19);
+			this.radioButton6.Location = new System.Drawing.Point(227, 19);
 			this.radioButton6.Name = "radioButton6";
 			this.radioButton6.Size = new System.Drawing.Size(79, 17);
 			this.radioButton6.TabIndex = 0;
@@ -328,7 +328,7 @@
 			this.MinimizeBox = false;
 			this.MinimumSize = new System.Drawing.Size(646, 462);
 			this.Name = "Form1";
-			this.Text = "UsbStreamGUI";
+			this.Text = "<Set in code>";
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.groupBox1.ResumeLayout(false);
 			this.groupBox1.PerformLayout();
