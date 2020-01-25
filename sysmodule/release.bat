@@ -17,7 +17,7 @@ mkdir Release\Main\atmosphere\contents\%TITLEID% > nul
 mkdir Release\Main\atmosphere\contents\%TITLEID%\flags > nul
 mkdir Release\Main\switch > nul
 mkdir Release\Main\config\sysdvr > nul
-echo . > Release\Main\config\sysdvr\tcp
+echo . > Release\Main\config\sysdvr\rtsp
 copy sysmodule.nsp Release\Main\atmosphere\contents\%TITLEID%\exefs.nsp
 echo . > Release\Main\atmosphere\contents\%TITLEID%\flags\boot2.flag
 copy ..\SysDVRConfig\SysDVR-conf.nro Release\Main\switch\SysDVR-conf.nro
