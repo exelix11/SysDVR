@@ -11,12 +11,6 @@ using System.Threading;
 
 namespace UsbStream
 {
-	public enum StreamKind
-	{
-		Video,
-		Audio
-	};
-
 	public abstract class StreamThread : IDisposable
 	{
 		public bool PrintStats = false;
