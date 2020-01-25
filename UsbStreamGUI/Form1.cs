@@ -29,7 +29,7 @@ namespace UsbStreamGUI
 			InitializeComponent();
 		}
 
-		void SetDefaultText() => this.Text = "UsbStreamGUI 1.0";
+		void SetDefaultText() => this.Text = "UsbStreamGUI 3.0 BETA";
 
 		private void Form1_Load(object sender, EventArgs e)
 		{

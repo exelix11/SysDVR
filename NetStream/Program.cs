@@ -127,7 +127,7 @@ namespace UsbStream
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("UsbStream - 2.0 by exelix");
+			Console.WriteLine("UsbStream - 3.0 BETA by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 1)
 				PrintGuide(false);

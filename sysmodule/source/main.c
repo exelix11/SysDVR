@@ -483,6 +483,7 @@ static void SetMode(StreamMode* mode)
 	}
 }
 
+//This is a version for the SysDVR Config app protocol, it's not shown annywhere
 #define SYSDVR_VERSION 2
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
