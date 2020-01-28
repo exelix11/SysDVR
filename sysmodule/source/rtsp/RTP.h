@@ -1,6 +1,9 @@
 #pragma once
-
 #include <stdint.h>
+
+#if defined(USB_ONLY)
+#pragma error This should not be included
+#endif
 
 extern int MaxRTPPacket;
 extern int MaxRTPPayload;

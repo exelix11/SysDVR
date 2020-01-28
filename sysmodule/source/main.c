@@ -22,7 +22,7 @@
 	#define INNER_HEAP_SIZE 500 * 1024
 	#pragma message "Building USB-only mode"
 #else
-	//TODO This value is for testing, Reduce memory usage to 3 or lower
+	//TODO It's probably possible to reduce memory usage by using a custom initialization for libnx sockets
 	#define INNER_HEAP_SIZE 3 * 1024 * 1024
 	
 	#if defined(__SWITCH__)
@@ -257,6 +257,7 @@ static void* USB_StreamThreadMain(void* _stream)
 
 	while (true)
 	{
+		//TODO: try improving performance by not waiting for requests like the new TCP mode
 		u32 cmd = USB_WaitForInputReq(Dev);
 
 		if (cmd == ThreadMagic)
@@ -384,7 +385,7 @@ static void* RTSP_StreamThreadMain(void* _stream)
 				static int SendPPS = 0;
 
 				ReadVideoStream();
-				//Not needed for interleaved RTSP.
+				//Not needed for interleaved RTSP but some players seem to need it for UDP.
 				if (++SendPPS > 100)
 				{
 					PacketizeH264((char*)SPS, sizeof(SPS), VTimestamp / 1000, RTSP_H264SendPacket);
@@ -444,7 +445,7 @@ static void RTSP_Exit()
 	pthread_join(RTSPThread, NULL);
 }
 
-typedef struct _streamMode
+typedef struct
 {
 	void (*InitFn)();
 	void (*ExitFn)();
@@ -599,10 +600,10 @@ int main(int argc, char* argv[])
 #else
 	if (FileExists("/config/sysdvr/usb"))
 		SetMode(&USB_MODE);
-	else if (FileExists("/config/sysdvr/tcp"))
-		SetMode(&TCP_MODE);
 	else if (FileExists("/config/sysdvr/rtsp"))
 		SetMode(&RTSP_MODE);
+	else if (FileExists("/config/sysdvr/tcp"))
+		SetMode(&TCP_MODE);
 
 	ConfigThread();
 	SetMode(NULL);
