@@ -112,12 +112,18 @@ namespace UsbStream.RTSP
 			}
 			catch (Exception error)
 			{
-				Console.WriteLine("[AcceptConnection] Error: " + error.ToString());
+				if (!_Stopping.WaitOne(0))
+					Console.WriteLine("[AcceptConnection] Error: " + error.ToString());
 			}
 		}
 
 		public void StopListen()
 		{
+			lock (rtsp_list) {
+				foreach (RTSPConnection connection in rtsp_list)
+					connection.Dispose();
+				rtsp_list.Clear();
+			}
 			_RTSPServerListener.Stop();
 			_Stopping.Set();
 			_ListenTread.Join();
@@ -464,7 +470,7 @@ namespace UsbStream.RTSP
 				{
 					// Only process Sessions in Play Mode
 					if (connection.play == false) continue;
-#if DEBUG
+#if DEBUG && LOG
 					String connection_type = "";
 					if (connection[s].client_transport.LowerTransport == Rtsp.Messages.RtspTransport.LowerTransportType.TCP) connection_type = "TCP";
 					if (connection[s].client_transport.LowerTransport == Rtsp.Messages.RtspTransport.LowerTransportType.UDP
@@ -584,6 +590,7 @@ namespace UsbStream.RTSP
 				if (!managed) return;
 				foreach (var s in sessions)
 					s.Close();
+				listener?.Stop();
 				listener?.Dispose();
 			}
 

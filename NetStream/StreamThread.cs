@@ -106,7 +106,7 @@ namespace UsbStream
 				else
 				{
 					Target.SendData(Data, 0, (int)size, Timestamp);
-#if PRINT_DEBUG
+#if LOG
 					Console.WriteLine($"video {size}");
 #endif
 					TransfersPerSecond++;
@@ -123,7 +123,8 @@ namespace UsbStream
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("There was an exception: " + ex.ToString());
+				if (!Token.IsCancellationRequested)
+					Console.WriteLine("There was an exception: " + ex.ToString());
 			}
 #endif
 			Console.WriteLine($"{Kind} thread stopped.");

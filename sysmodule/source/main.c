@@ -282,13 +282,13 @@ static inline Result TCP_InitSockets(GrcStream stream)
 	if (stream == GrcStream_Video)
 	{
 		if (VideoSock != -1) close(VideoSock);
-		rc = CreateTCPListener(&VideoSock, 6666, 2, false);
+		rc = CreateTCPListener(&VideoSock, 6667, 2, false);
 		if (R_FAILED(rc)) return rc;
 	}
 	else
 	{
 		if (AudioSock != -1) close(AudioSock);
-		rc = CreateTCPListener(&AudioSock, 6667, 3, false);
+		rc = CreateTCPListener(&AudioSock, 6668, 3, false);
 		if (R_FAILED(rc)) return rc;
 	}
 	return 0;
@@ -343,15 +343,16 @@ static void* TCP_StreamThreadMain(void* _stream)
 
 		*OutSock = curSock;
 
-		if (stream == GrcStream_Video) {
-			write(curSock, SPS, sizeof(SPS));
-			write(curSock, PPS, sizeof(PPS));
-		}
-
 		while (true)
 		{
 			ReadStreamFn();
+
+			const u32 StreamMagic = 0x11111111;
+			if (write(curSock, &StreamMagic, sizeof(StreamMagic)) <= 0)
+				break;
 			if (write(curSock, ts, sizeof(u64)) <= 0)
+				break;
+			if (write(curSock, size, sizeof(*size)) <= 0)
 				break;
 			if (write(curSock, TargetBuf, *size) <= 0)
 				break;
