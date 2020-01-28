@@ -1,3 +1,4 @@
+#if !defined(USB_ONLY)
 #include <switch.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -429,7 +430,6 @@ static inline void RTSP_MainLoop()
 
 				const int targetStream = strstr(rtspBuf, "/video") ? STREAM_VIDEO : STREAM_AUDIO;
 
-
 				if (interleaved)
 				{
 #ifdef INTERLEAVED_SUPPORT
@@ -516,3 +516,4 @@ static inline void RTSP_MainLoop()
 		}
 	}
 }
+#endif
