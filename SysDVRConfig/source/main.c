@@ -12,10 +12,10 @@ void PrintDefaultBootMode()
 {
 	if (FileExists("/config/sysdvr/usb"))
 		printf("On boot SysDVR will stream over USB\n");
-	else if (FileExists("/config/sysdvr/tcp"))
-		printf("On boot SysDVR will stream over TCP\n");
 	else if (FileExists("/config/sysdvr/rtsp"))
 		printf("On boot SysDVR will stream via RTSP\n");
+	else if (FileExists("/config/sysdvr/tcp"))
+		printf("On boot SysDVR will stream over TCP\n");
 	else
 		printf("On boot SysDVR will not stream\n");
 }
@@ -109,11 +109,12 @@ bool MenuSetMode(int sock, u32 mode)
 bool DefaultMenu(int sock) 
 {
 	static int Selection = 0;
+	const int MenuOptCount = 5;
 	const char* MenuOptions[] = 
 	{
 		"Stream over USB",
 		"Stream over TCP Bridge (direct network mode, requires pc configuration)",
-		"Stream over RTSP (simple network mode, should work without setup but may have some lag or glitches)",
+		"Stream over RTSP (simple network mode, no setup, may have some glitches)",
 		"Stop streaming",
 		"Set current mode as default on boot",
 		"Quit",
@@ -154,9 +155,9 @@ bool DefaultMenu(int sock)
 	printf(CONSOLE_YELLOW "Warning:" CONSOLE_WHITE " Changing mode while streaming will hang, if you're streaming currently resume the game, close the client and come back here.");
 
 	if (kDown & KEY_DOWN)
-		Selection = Selection >= 4 ? 0 : Selection + 1;
+		Selection = Selection >= MenuOptCount ? 0 : Selection + 1;
 	else if (kDown & KEY_UP)
-		Selection = Selection <= 0 ? 4 : Selection - 1;
+		Selection = Selection <= 0 ? MenuOptCount : Selection - 1;
 	else if (kDown & KEY_A)
 		switch(Selection)
 		{

@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace UsbStream
 {
@@ -19,9 +20,9 @@ namespace UsbStream
 			tok = new CancellationTokenSource();
 			var t = tok.Token;
 			if (hasVideo)
-				VideoThread = new TCPBridgeThread(StreamKind.Video, Video, source, 6666, t);
+				VideoThread = new TCPBridgeThread(StreamKind.Video, Video, source, 6667, t);
 			if (hasAudio)
-				AudioThread = new TCPBridgeThread(StreamKind.Audio, Audio, source, 6667, t);
+				AudioThread = new TCPBridgeThread(StreamKind.Audio, Audio, source, 6668, t);
 		}
 
 		public override void Begin()
@@ -87,13 +88,15 @@ namespace UsbStream
 		const int magicLen = 4;
 		private async void MainLoop()
 		{
-			cli = new TcpClient(Ip, Port);
-			var stream = cli.GetStream();
-			Target.InitializeStreaming();
-
-			var bin = new BinaryReader(stream);
+			cli = new TcpClient();
 			try
 			{
+				await cli.ConnectAsync(Ip, Port, Token);
+
+				var stream = cli.GetStream();
+				Target.InitializeStreaming();
+
+				var bin = new BinaryReader(stream);
 				while (!Token.IsCancellationRequested)
 				{
 					int read = 0;
@@ -119,14 +122,17 @@ namespace UsbStream
 					byte[] data = bin.ReadBytes(sz);
 
 					Target.SendData(data, 0, sz, ts);
-#if DEBUG
+#if DEBUG && LOG
 					Console.WriteLine($"[{Kind}] received {sz} ts {ts}");
 #endif
 				}
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Closing {Kind} thread due to {ex.GetType().Name}...");
+				if (!Token.IsCancellationRequested)
+					Console.WriteLine($"Terminating {Kind} thread due to {ex.GetType().Name}...");
+				else
+					Console.WriteLine($"Terminating {Kind} thread");
 			}
 		}
 
@@ -146,5 +152,22 @@ namespace UsbStream
 				thread.Abort();
 		}
 
+	}
+
+	static internal class Exten 
+	{
+		public static async Task ConnectAsync(this TcpClient tcpClient, string host, int port, CancellationToken cancellationToken)
+		{
+			if (tcpClient == null)
+				throw new ArgumentNullException(nameof(tcpClient));
+
+			cancellationToken.ThrowIfCancellationRequested();
+
+			using (cancellationToken.Register(() => tcpClient.Close()))
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				await tcpClient.ConnectAsync(host, port).ConfigureAwait(false);				
+			}
+		}
 	}
 }
