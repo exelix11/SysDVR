@@ -93,7 +93,7 @@ To get the most out of this sysmodule you will have to do some testing to find c
 - An usb 3 wire is slightly better than usb 2, but both should work.
 - Quality also depends on the cpu utilization of the game you're running, OC can improve performances.
 - Using cache *will* reduce lags at the cost of an higher delay, for mpv it's on by default (except when using usb stream with `mpv` mode), if you want to try without it the command line arg for mpv is `--cache=no --cache-secs=0`. There's a lot of room for experimenting here, try different values to find the combination that works best for you.
-- If using no caching when the screen goes full black or white (eg loading screens) it may cause some desync and the stream will start to drop frames, eventually it will fix by itself but it could take some time, the fastest solution is to open the home menu for a few seconds and then resume the game.
+- Theoretically the best streaming setup would be having a direct lan connection switch to pc, without going through a router, this is likely not easy for the average user, may consider writing a guide for this but it's currently beyond the scope of SysDVR, in theory you'd need to host a dhcp server or fiddle with the static connection settings on switch and host your own 90dns instance locally.
 ## Common issues
 **After copying the sysmodule to the sd atmosphere won't boot anymore** \
 This happens if you have too many sysmodules or ones particulary heavy like sysftpd, remove them to launch SysDVR.\
