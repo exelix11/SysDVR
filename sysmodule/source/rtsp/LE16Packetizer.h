@@ -30,7 +30,7 @@ static inline int PacketizeLE16(char* data, size_t len, uint32_t tsMs, LE16SendP
 		}
 
 		//ts is in ms, convert to seconds /1000 and sample at 48khz *48000
-		RTP_PrepareHeader(header, (tsMs + incrementalTs) * 48.0, false, STREAM_AUDIO);
+		RTP_PrepareHeader(header, (uint32_t)(((double)tsMs + incrementalTs) * 48.0), false, STREAM_AUDIO);
 		if (cb(header, data, dataLen)) 
 			return 1;
 

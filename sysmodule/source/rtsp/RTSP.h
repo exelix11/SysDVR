@@ -19,5 +19,5 @@ void* RTSP_ServerThread(void*);
 void RTSP_StopServer();
 
 //Packetizer callbacks
-int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len);
+int RTSP_H264SendPacket(const void* header, const size_t headerLen, const void* data, const size_t len);
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len);
