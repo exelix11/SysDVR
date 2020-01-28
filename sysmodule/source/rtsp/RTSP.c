@@ -194,17 +194,15 @@ static inline int RTSP_SendData(const void* const data, const size_t len, unsign
 //For streaming via TCP it would be better to increase the max packet
 char VideoSendBuffer[MaxRTPPacketSize_UDP];
 #endif
-int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t extLen, const void* data, const size_t len)
+int RTSP_H264SendPacket(const void* header, const size_t headerLen, const void* data, const size_t len)
 {
 	int res = 0;
 
 	if (RTSP_Transfer_interleaved) {
 #ifdef INTERLEAVED_SUPPORT
 		LOCK_SOCKETING;
-		RTSP_SendBinaryHeader(RTPHeaderSz + extLen + len, STREAM_VIDEO);
-		RTSP_SendRawData(header, RTPHeaderSz);
-		if (extHeader)
-			RTSP_SendRawData(extHeader, extLen);
+		RTSP_SendBinaryHeader(headerLen + len, STREAM_VIDEO);
+		RTSP_SendRawData(header, headerLen);
 		res = RTSP_SendRawData(data, len);
 		UNLOCK_SOCKETING;
 #endif
@@ -212,11 +210,9 @@ int RTSP_H264SendPacket(const void* header, const void* extHeader, const size_t 
 	else
 	{
 #ifdef UDP_SUPPORT
-		memcpy(VideoSendBuffer, header, RTPHeaderSz);
-		if (extHeader)
-			memcpy(VideoSendBuffer + RTPHeaderSz, extHeader, extLen);
-		memcpy(VideoSendBuffer + RTPHeaderSz + extLen, data, len);
-		res = sendto(clientVideo, VideoSendBuffer, RTPHeaderSz + extLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr)) < 0;
+		memcpy(VideoSendBuffer, header, headerLen);
+		memcpy(VideoSendBuffer + headerLen, data, len);
+		res = sendto(clientVideo, VideoSendBuffer, headerLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr)) < 0;
 #endif
 	}
 

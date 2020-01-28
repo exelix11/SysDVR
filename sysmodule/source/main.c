@@ -385,7 +385,7 @@ static void* RTSP_StreamThreadMain(void* _stream)
 				static int SendPPS = 0;
 
 				ReadVideoStream();
-				//Not needed for interleaved RTSP but some players seem to need it for UDP.
+				//Not needed for interleaved RTSP but mpv seems to need it for UDP.
 				if (++SendPPS > 100)
 				{
 					PacketizeH264((char*)SPS, sizeof(SPS), VTimestamp / 1000, RTSP_H264SendPacket);
