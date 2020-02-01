@@ -28,18 +28,11 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.rtspStreamOptControl1 = new UsbStreamGUI.RTSPStreamOptControl();
 			this.label1 = new System.Windows.Forms.Label();
 			this.textBox1 = new System.Windows.Forms.TextBox();
 			this.label2 = new System.Windows.Forms.Label();
+			this.rtspStreamOptControl1 = new UsbStreamGUI.RTSPStreamOptControl();
 			this.SuspendLayout();
-			// 
-			// rtspStreamOptControl1
-			// 
-			this.rtspStreamOptControl1.Location = new System.Drawing.Point(0, 49);
-			this.rtspStreamOptControl1.Name = "rtspStreamOptControl1";
-			this.rtspStreamOptControl1.Size = new System.Drawing.Size(485, 88);
-			this.rtspStreamOptControl1.TabIndex = 0;
 			// 
 			// label1
 			// 
@@ -68,6 +61,15 @@
 			this.label2.Text = "This will realy the video data received from SysDVR over network as an RTSP serve" +
     "r on your pc";
 			// 
+			// rtspStreamOptControl1
+			// 
+			this.rtspStreamOptControl1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.rtspStreamOptControl1.Location = new System.Drawing.Point(0, 49);
+			this.rtspStreamOptControl1.Name = "rtspStreamOptControl1";
+			this.rtspStreamOptControl1.Size = new System.Drawing.Size(485, 113);
+			this.rtspStreamOptControl1.TabIndex = 0;
+			// 
 			// TCPBridgeStreamControl
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -77,7 +79,7 @@
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.rtspStreamOptControl1);
 			this.Name = "TCPBridgeStreamControl";
-			this.Size = new System.Drawing.Size(485, 139);
+			this.Size = new System.Drawing.Size(485, 165);
 			this.Load += new System.EventHandler(this.TCPBridgeStreamControl_Load);
 			this.ResumeLayout(false);
 			this.PerformLayout();

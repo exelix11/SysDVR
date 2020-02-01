@@ -60,7 +60,7 @@
 			// button1
 			// 
 			this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button1.Location = new System.Drawing.Point(551, 485);
+			this.button1.Location = new System.Drawing.Point(551, 523);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 0;
@@ -71,7 +71,7 @@
 			// button2
 			// 
 			this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button2.Location = new System.Drawing.Point(416, 485);
+			this.button2.Location = new System.Drawing.Point(416, 523);
 			this.button2.Name = "button2";
 			this.button2.Size = new System.Drawing.Size(114, 23);
 			this.button2.TabIndex = 1;
@@ -82,7 +82,7 @@
 			// button3
 			// 
 			this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button3.Location = new System.Drawing.Point(530, 485);
+			this.button3.Location = new System.Drawing.Point(530, 523);
 			this.button3.Name = "button3";
 			this.button3.Size = new System.Drawing.Size(19, 23);
 			this.button3.TabIndex = 2;
@@ -97,7 +97,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 275);
 			this.StreamConfigPanel.Name = "StreamConfigPanel";
-			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 121);
+			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 159);
 			this.StreamConfigPanel.TabIndex = 3;
 			// 
 			// groupBox1
@@ -227,7 +227,7 @@
 			this.groupBox3.Controls.Add(this.cbStats);
 			this.groupBox3.Controls.Add(this.cbUsbLog);
 			this.groupBox3.Controls.Add(this.cbUsbWarn);
-			this.groupBox3.Location = new System.Drawing.Point(6, 402);
+			this.groupBox3.Location = new System.Drawing.Point(6, 440);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(620, 71);
 			this.groupBox3.TabIndex = 6;
@@ -294,7 +294,7 @@
 			// button4
 			// 
 			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button4.Location = new System.Drawing.Point(6, 484);
+			this.button4.Location = new System.Drawing.Point(6, 522);
 			this.button4.Name = "button4";
 			this.button4.Size = new System.Drawing.Size(117, 23);
 			this.button4.TabIndex = 9;
@@ -326,7 +326,7 @@
 			// label4
 			// 
 			this.label4.AutoSize = true;
-			this.label4.Location = new System.Drawing.Point(4, 71);
+			this.label4.Location = new System.Drawing.Point(4, 70);
 			this.label4.Name = "label4";
 			this.label4.Size = new System.Drawing.Size(494, 13);
 			this.label4.TabIndex = 5;
@@ -344,12 +344,13 @@
 			this.radioButton8.Tag = "TCPBridge_RTSP";
 			this.radioButton8.Text = "TCP Bridge (Relay network via RTSP)";
 			this.radioButton8.UseVisualStyleBackColor = true;
+			this.radioButton8.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
 			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(630, 512);
+			this.ClientSize = new System.Drawing.Size(630, 550);
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.button4);
 			this.Controls.Add(this.linkLabel1);
@@ -363,7 +364,7 @@
 			this.Controls.Add(this.button1);
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.MinimumSize = new System.Drawing.Size(646, 462);
+			this.MinimumSize = new System.Drawing.Size(646, 589);
 			this.Name = "Form1";
 			this.Text = "<Set in code>";
 			this.Load += new System.EventHandler(this.Form1_Load);

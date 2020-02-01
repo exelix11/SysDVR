@@ -24,7 +24,7 @@ namespace UsbStreamGUI
 		{
 			StringBuilder res = new StringBuilder();
 
-			res.Append("brdige " + textBox1.Text);
+			res.Append("bridge " + textBox1.Text);
 
 			if (TargetKind == StreamKind.Video)
 				res.Append(" --no-audio");

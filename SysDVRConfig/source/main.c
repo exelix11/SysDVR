@@ -152,6 +152,7 @@ bool DefaultMenu(int sock)
 	}
 	printf("\n");
 	printf("If you're not sure which mode should you pick read the readme on GitHub.\n");
+	printf("\n");
 	printf(CONSOLE_YELLOW "Warning:" CONSOLE_WHITE " Changing mode while streaming will hang, if you're streaming currently resume the game, close the client and come back here.");
 
 	if (kDown & KEY_DOWN)
