@@ -49,6 +49,9 @@
 			this.linkLabel1 = new System.Windows.Forms.LinkLabel();
 			this.button4 = new System.Windows.Forms.Button();
 			this.label2 = new System.Windows.Forms.Label();
+			this.label3 = new System.Windows.Forms.Label();
+			this.label4 = new System.Windows.Forms.Label();
+			this.radioButton8 = new System.Windows.Forms.RadioButton();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -57,7 +60,7 @@
 			// button1
 			// 
 			this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button1.Location = new System.Drawing.Point(551, 396);
+			this.button1.Location = new System.Drawing.Point(551, 485);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 0;
@@ -68,7 +71,7 @@
 			// button2
 			// 
 			this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button2.Location = new System.Drawing.Point(416, 396);
+			this.button2.Location = new System.Drawing.Point(416, 485);
 			this.button2.Name = "button2";
 			this.button2.Size = new System.Drawing.Size(114, 23);
 			this.button2.TabIndex = 1;
@@ -79,7 +82,7 @@
 			// button3
 			// 
 			this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button3.Location = new System.Drawing.Point(530, 396);
+			this.button3.Location = new System.Drawing.Point(530, 485);
 			this.button3.Name = "button3";
 			this.button3.Size = new System.Drawing.Size(19, 23);
 			this.button3.TabIndex = 2;
@@ -92,9 +95,9 @@
 			this.StreamConfigPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 202);
+			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 275);
 			this.StreamConfigPanel.Name = "StreamConfigPanel";
-			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 105);
+			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 121);
 			this.StreamConfigPanel.TabIndex = 3;
 			// 
 			// groupBox1
@@ -151,13 +154,16 @@
 			// 
 			this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+			this.groupBox2.Controls.Add(this.radioButton8);
+			this.groupBox2.Controls.Add(this.label4);
+			this.groupBox2.Controls.Add(this.label3);
+			this.groupBox2.Controls.Add(this.radioButton5);
 			this.groupBox2.Controls.Add(this.radioButton7);
 			this.groupBox2.Controls.Add(this.radioButton4);
-			this.groupBox2.Controls.Add(this.radioButton5);
 			this.groupBox2.Controls.Add(this.radioButton6);
 			this.groupBox2.Location = new System.Drawing.Point(6, 151);
 			this.groupBox2.Name = "groupBox2";
-			this.groupBox2.Size = new System.Drawing.Size(620, 45);
+			this.groupBox2.Size = new System.Drawing.Size(620, 118);
 			this.groupBox2.TabIndex = 5;
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Stream method";
@@ -165,7 +171,7 @@
 			// radioButton7
 			// 
 			this.radioButton7.AutoSize = true;
-			this.radioButton7.Location = new System.Drawing.Point(7, 19);
+			this.radioButton7.Location = new System.Drawing.Point(27, 40);
 			this.radioButton7.Name = "radioButton7";
 			this.radioButton7.Size = new System.Drawing.Size(188, 17);
 			this.radioButton7.TabIndex = 3;
@@ -178,7 +184,7 @@
 			// radioButton4
 			// 
 			this.radioButton4.AutoSize = true;
-			this.radioButton4.Location = new System.Drawing.Point(533, 19);
+			this.radioButton4.Location = new System.Drawing.Point(533, 40);
 			this.radioButton4.Name = "radioButton4";
 			this.radioButton4.Size = new System.Drawing.Size(78, 17);
 			this.radioButton4.TabIndex = 2;
@@ -191,7 +197,7 @@
 			// radioButton5
 			// 
 			this.radioButton5.AutoSize = true;
-			this.radioButton5.Location = new System.Drawing.Point(355, 19);
+			this.radioButton5.Location = new System.Drawing.Point(363, 40);
 			this.radioButton5.Name = "radioButton5";
 			this.radioButton5.Size = new System.Drawing.Size(140, 17);
 			this.radioButton5.TabIndex = 1;
@@ -204,7 +210,7 @@
 			// radioButton6
 			// 
 			this.radioButton6.AutoSize = true;
-			this.radioButton6.Location = new System.Drawing.Point(227, 19);
+			this.radioButton6.Location = new System.Drawing.Point(244, 40);
 			this.radioButton6.Name = "radioButton6";
 			this.radioButton6.Size = new System.Drawing.Size(79, 17);
 			this.radioButton6.TabIndex = 0;
@@ -221,12 +227,12 @@
 			this.groupBox3.Controls.Add(this.cbStats);
 			this.groupBox3.Controls.Add(this.cbUsbLog);
 			this.groupBox3.Controls.Add(this.cbUsbWarn);
-			this.groupBox3.Location = new System.Drawing.Point(6, 313);
+			this.groupBox3.Location = new System.Drawing.Point(6, 402);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(620, 71);
 			this.groupBox3.TabIndex = 6;
 			this.groupBox3.TabStop = false;
-			this.groupBox3.Text = "Experimental/Debug options";
+			this.groupBox3.Text = "Experimental/Debug options (USB modes only)";
 			// 
 			// cbStats
 			// 
@@ -288,7 +294,7 @@
 			// button4
 			// 
 			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button4.Location = new System.Drawing.Point(6, 395);
+			this.button4.Location = new System.Drawing.Point(6, 484);
 			this.button4.Name = "button4";
 			this.button4.Size = new System.Drawing.Size(117, 23);
 			this.button4.TabIndex = 9;
@@ -308,11 +314,42 @@
 			this.label2.Text = "If the stream starts lagging open the home menu for a few seconds to force-syncro" +
     "nize it";
 			// 
+			// label3
+			// 
+			this.label3.AutoSize = true;
+			this.label3.Location = new System.Drawing.Point(3, 21);
+			this.label3.Name = "label3";
+			this.label3.Size = new System.Drawing.Size(417, 13);
+			this.label3.TabIndex = 4;
+			this.label3.Text = "USB Streaming methods (Requires SysDVR connected in USB mode and driver setup):";
+			// 
+			// label4
+			// 
+			this.label4.AutoSize = true;
+			this.label4.Location = new System.Drawing.Point(4, 71);
+			this.label4.Name = "label4";
+			this.label4.Size = new System.Drawing.Size(494, 13);
+			this.label4.TabIndex = 5;
+			this.label4.Text = "Network streaming methods (Requires SysDVR set to TCP Bridge mode and in the same" +
+    " local network):";
+			// 
+			// radioButton8
+			// 
+			this.radioButton8.AutoSize = true;
+			this.radioButton8.Location = new System.Drawing.Point(27, 92);
+			this.radioButton8.Name = "radioButton8";
+			this.radioButton8.Size = new System.Drawing.Size(205, 17);
+			this.radioButton8.TabIndex = 6;
+			this.radioButton8.TabStop = true;
+			this.radioButton8.Tag = "TCPBridge_RTSP";
+			this.radioButton8.Text = "TCP Bridge (Relay network via RTSP)";
+			this.radioButton8.UseVisualStyleBackColor = true;
+			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(630, 423);
+			this.ClientSize = new System.Drawing.Size(630, 512);
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.button4);
 			this.Controls.Add(this.linkLabel1);
@@ -363,6 +400,9 @@
 		private System.Windows.Forms.Button button4;
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.RadioButton radioButton7;
+		private System.Windows.Forms.Label label4;
+		private System.Windows.Forms.Label label3;
+		private System.Windows.Forms.RadioButton radioButton8;
 	}
 }
 

@@ -20,7 +20,8 @@ namespace UsbStreamGUI
 		RTSP,
 		Mpv,
 		File,
-		Tcp
+		Tcp,
+		TCPBridge_RTSP
 	}
 
 	interface IStreamTargetControl : IContainerControl

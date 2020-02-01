@@ -18,10 +18,11 @@ namespace UsbStreamGUI
 
 		Dictionary<StreamTarget, IStreamTargetControl> StreamControls = new Dictionary<StreamTarget, IStreamTargetControl>
 		{
-		  { StreamTarget.RTSP, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
-		  { StreamTarget.Mpv , new MpvStreamControl() { Dock = DockStyle.Fill} },
-		  { StreamTarget.File , new FileStreamControl() { Dock = DockStyle.Fill} },
-		  { StreamTarget.Tcp , new TCPStreamControl(){ Dock = DockStyle.Fill} },
+			{StreamTarget.TCPBridge_RTSP, new TCPBridgeStreamControl() { Dock = DockStyle.Fill} },
+			{ StreamTarget.RTSP, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
+			{ StreamTarget.Mpv , new MpvStreamControl() { Dock = DockStyle.Fill} },
+			{ StreamTarget.File , new FileStreamControl() { Dock = DockStyle.Fill} },
+			{ StreamTarget.Tcp , new TCPStreamControl(){ Dock = DockStyle.Fill} },
 		};
 
 		public Form1()
