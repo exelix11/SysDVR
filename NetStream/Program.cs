@@ -152,9 +152,9 @@ namespace UsbStream
 				return;
 			}
 
-			if (args.Length == 0 || args[0] == "rtsp")
+			if (args.Length == 0 || args[0].ToLower() == "rtsp")
 				Streams = new RTSP.SysDvrRTSPServer(!NoVideo, !NoAudio, false);
-			else if (args[0] == "bridge")
+			else if (args[0].ToLower() == "bridge")
 			{
 				IsUsbMode = false;
 				Streams = new TCPBridgeManager(!NoVideo, !NoAudio, args[1]);
