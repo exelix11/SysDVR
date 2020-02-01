@@ -67,11 +67,11 @@ Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 
 				// Send language descriptor
 				rc = usbDsAddUsbLanguageStringDescriptor(NULL, supported_langs, sizeof(supported_langs) / sizeof(u16));
 				// Send manufacturer
-				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iManufacturer, "Nintendo");
+				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iManufacturer, "exelix");
 				// Send product
-				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iProduct, "Nintendo Switch");
+				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iProduct, "SysDVR (Nintendo Switch)");
 				// Send serial number
-				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iSerialNumber, "SerialNumber");
+				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iSerialNumber, "https://github.com/exelix11/SysDVR");
 
 				// Send device descriptors
 				device_descriptor->iManufacturer = iManufacturer;
