@@ -69,8 +69,9 @@ Then if you're on linux you can launch UsbStream from terminal like this: `dotne
 Now to stream via USB you need to setup the custom driver. This step is needed only the first time and won't interfere with other USB homebrews as it uses a custom device ID.
 #### Driver setup on windows
 On windows you may get the `device not found` or `platform not supported` errors or very bad performance on the stream, in this case you may have the wrong driver set up.\
-Plug your switch in the computer **while running SysDVR in USB mode** and launch [zadig](https://zadig.akeo.ie/) install the `libusb-win32` driver for the "Nintendo Switch" device. **Before installing make sure the target device USB ID is `057e 3006`**, if it's different the sysmodule may not be running, try waiting a bit (it should start around 20 seconds after the console boot) or check again your setup.\
-This won't interfere with other applications that communicate with the switch via usb as this sysmodule uses a different product id.
+Plug your switch in the computer **while running SysDVR in USB mode** and launch [zadig](https://zadig.akeo.ie/) install the `libusb-win32` driver for the `SysDVR (Nintendo Switch)` device. **Before installing make sure the target device USB ID is `057e 3006`**, if it's different the sysmodule may not be running, try waiting a bit (it should start around 20 seconds after the console boot) or check again your setup.\
+This won't interfere with other applications that communicate with the switch via usb as this sysmodule uses a different product id.\
+Libusb requires latest Microsoft C++ Redistributable Libs, they're often already installed on windows but in case of issues with UsbStream you can install them from [here](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads), depending on your windows version you may need the x86 or x64 version (or both)
 #### Driver setup on linux 
 On linux you may have errors about loading the `libusb-1.0` library, this happens when the file name is different than the one expected by dotnet, you can make a symlink as described on the [LibUsbDotNet repo](https://github.com/LibUsbDotNet/LibUsbDotNet#linux-users):\
 `sudo find / -name "libusb-1.0*.so*"` and then
