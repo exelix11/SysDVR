@@ -11,7 +11,7 @@ using LibUsbDotNet;
 using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 
-namespace UsbStream
+namespace SysDVRClient
 {
 	class Program
 	{
@@ -85,18 +85,18 @@ namespace UsbStream
 			if (!full) {
 				Console.WriteLine("Basic usage:\r\n" +
 						"Simply launching this exectuable will show this message and launch the RTSP server via USB.\r\n" +
-						"Use 'UsbStream rtsp' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
-						"To stream in TCP Bridge mode launch 'UsbStream bridge <switch ip address>'\r\n" +
-						"Command line options for the previous version are still available, you can view them with 'UsbStream --help'\r\n" +
+						"Use 'SysDVR-Client rtsp' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+						"To stream in TCP Bridge mode launch 'SysDVR-Client bridge <switch ip address>'\r\n" +
+						"Command line options for the previous version are still available, you can view them with 'SysDVR-Client --help'\r\n" +
 						"Press enter to continue.\r\n");
 				Console.ReadLine();
 				return;
 			}
 			Console.WriteLine("Usage: \r\n" +
-					"Stream via RTSP: 'UsbStream rtsp', add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
-					"Stream via TCP Bridge: 'UsbStream bridge <switch ip address>', '--no-audio' or '--no-video' are supported here too" +
+					"Stream via RTSP: 'SysDVR-Client rtsp', add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+					"Stream via TCP Bridge: 'SysDVR-Client bridge <switch ip address>', '--no-audio' or '--no-video' are supported here too" +
 					"Raw streaming options:\r\n" +
-					"'UsbStream video <stream config for video> audio <stream config for audio>'\r\n" +
+					"'SysDVR-Client video <stream config for video> audio <stream config for audio>'\r\n" +
 					"You can omit the stream you don't want\r\n" +
 					"Stream config is one of the following:\r\n" +
 					" - tcp <port> : stream the data over a the network on the specified port.\r\n" +
@@ -107,10 +107,10 @@ namespace UsbStream
 					"Streaming both video and audio at the same time could cause performance issues.\r\n" +
 					"Note that tcp mode will wait until a program connects\r\n\r\n" +
 					"Example commands: \r\n" +
-					"UsbStream audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
-					"UsbStream video mpv ./mpv audio mpv ./mpv : Plays video and audio via mpv (path has to be specified twice)\r\n" +
-					"UsbStream video mpv ./mpv args \"--cache=no --cache-secs=0\" : Plays video in mpv disabling cache, audio is ignored\r\n" +
-					"UsbStream video tcp 1337 audio file C:/audio.raw : Streams video over port 1337 while saving audio to disk\r\n\r\n" +
+					"SysDVR-Client audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
+					"SysDVR-Client video mpv ./mpv audio mpv ./mpv : Plays video and audio via mpv (path has to be specified twice)\r\n" +
+					"SysDVR-Client video mpv ./mpv args \"--cache=no --cache-secs=0\" : Plays video in mpv disabling cache, audio is ignored\r\n" +
+					"SysDVR-Client video tcp 1337 audio file C:/audio.raw : Streams video over port 1337 while saving audio to disk\r\n\r\n" +
 					"Opening raw files in mpv: \r\n" +
 					"mpv videofile.264 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
 					"mpv audiofile.raw --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000\r\n" +
@@ -127,7 +127,7 @@ namespace UsbStream
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("UsbStream - 3.0 BETA by exelix");
+			Console.WriteLine("SysDVR-Client - 3.0 BETA by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 1)
 				PrintGuide(false);

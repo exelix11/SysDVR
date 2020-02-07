@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Le informazioni generali relative a un assembly sono controllate dal seguente 
 // set di attributi. Modificare i valori di questi attributi per modificare le informazioni
 // associate a un assembly.
-[assembly: AssemblyTitle("UsbStreamGUI")]
-[assembly: AssemblyDescription("GUI for launching the UsbStream command line application")]
+[assembly: AssemblyTitle("SysDVR-ClientGUI")]
+[assembly: AssemblyDescription("GUI for launching the SysDVR-Client command line application")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("exelix")]
-[assembly: AssemblyProduct("UsbStreamGUI")]
+[assembly: AssemblyProduct("SysDVR-ClientGUI")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // È possibile specificare tutti i valori oppure impostare valori predefiniti per i numeri relativi alla revisione e alla build
 // usando l'asterisco '*' come illustrato di seguito:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("3.0.0.0")]
-[assembly: AssemblyFileVersion("3.0.0.0")]
+[assembly: AssemblyVersion("3.0.0.1")]
+[assembly: AssemblyFileVersion("3.0.0.1")]

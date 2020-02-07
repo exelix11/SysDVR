@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace UsbStream.RTSP
+namespace SysDVRClient.RTSP
 {
 	public static class H264Packetizer
 	{

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UsbStream.RTSP
+namespace SysDVRClient.RTSP
 {
 	public class SysDvrRTSPServer : IMutliStreamManager
 	{

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace UsbStream.RTSP
+namespace SysDVRClient.RTSP
 { 
 	internal static class RTPPacketUtil
 	{

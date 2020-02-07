@@ -7,7 +7,7 @@ using System.Text;
 using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 
-namespace UsbStream
+namespace SysDVRClient
 {
 	public class UsbDevice 
 	{

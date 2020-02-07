@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace UsbStream.RTSP
+namespace SysDVRClient.RTSP
 {
 	public class RtspServer : IDisposable
 	{

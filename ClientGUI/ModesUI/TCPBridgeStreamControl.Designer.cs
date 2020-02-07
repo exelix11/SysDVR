@@ -1,4 +1,4 @@
-﻿namespace UsbStreamGUI
+﻿namespace SysDVRClientGUI
 {
 	partial class TCPBridgeStreamControl
 	{
@@ -31,7 +31,7 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.textBox1 = new System.Windows.Forms.TextBox();
 			this.label2 = new System.Windows.Forms.Label();
-			this.rtspStreamOptControl1 = new UsbStreamGUI.RTSPStreamOptControl();
+			this.rtspStreamOptControl1 = new SysDVRClientGUI.RTSPStreamOptControl();
 			this.SuspendLayout();
 			// 
 			// label1
