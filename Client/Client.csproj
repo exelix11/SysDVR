@@ -12,6 +12,8 @@
     <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
     <Version>3.0.0</Version>
     <RootNamespace>SysDVRClient</RootNamespace>
+    <AssemblyVersion>3.0.0.1</AssemblyVersion>
+    <FileVersion>3.0.0.1</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

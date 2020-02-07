@@ -127,7 +127,7 @@ namespace SysDVRClient
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("SysDVR-Client - 3.0 BETA by exelix");
+			Console.WriteLine("SysDVR-Client - 3.0 by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 1)
 				PrintGuide(false);

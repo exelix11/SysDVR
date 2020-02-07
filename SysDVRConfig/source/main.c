@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 	consoleInit(NULL);
 
 	printf(
-		"SysDVR 3.0 (BETA) Settings - by exelix\n"
+		"SysDVR 3.0 Settings - by exelix\n"
 		"https://github.com/exelix11/SysDVR\n\n"
 	);
 	consoleUpdate(NULL);
