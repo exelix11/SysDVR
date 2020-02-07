@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{EDF194B2-F484-425F-9BF9-357CF9BF065A}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>UsbStreamGUI</RootNamespace>
-    <AssemblyName>UsbStreamGUI</AssemblyName>
+    <RootNamespace>SysDVRClientGUI</RootNamespace>
+    <AssemblyName>SysDVR-ClientGUI</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\NetStream\bin\Debug\netcoreapp3.0\</OutputPath>
+    <OutputPath>..\Client\bin\Debug\netcoreapp3.0\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -106,6 +106,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <EmbeddedResource Include="ModesUI\RTSPStreamOptControl.resx">
       <DependentUpon>RTSPStreamOptControl.cs</DependentUpon>

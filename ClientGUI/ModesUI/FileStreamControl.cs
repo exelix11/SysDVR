@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 
-namespace UsbStreamGUI
+namespace SysDVRClientGUI
 {
 	public partial class FileStreamControl : UserControl, IStreamTargetControl
 	{

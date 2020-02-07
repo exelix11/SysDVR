@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace UsbStreamGUI
+namespace SysDVRClientGUI
 {
 	public partial class Form1 : Form
 	{
@@ -18,7 +18,7 @@ namespace UsbStreamGUI
 
 		Dictionary<StreamTarget, IStreamTargetControl> StreamControls = new Dictionary<StreamTarget, IStreamTargetControl>
 		{
-			{StreamTarget.TCPBridge_RTSP, new TCPBridgeStreamControl() { Dock = DockStyle.Fill} },
+			{ StreamTarget.TCPBridge_RTSP, new TCPBridgeStreamControl() { Dock = DockStyle.Fill} },
 			{ StreamTarget.RTSP, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
 			{ StreamTarget.Mpv , new MpvStreamControl() { Dock = DockStyle.Fill} },
 			{ StreamTarget.File , new FileStreamControl() { Dock = DockStyle.Fill} },
@@ -30,20 +30,20 @@ namespace UsbStreamGUI
 			InitializeComponent();
 		}
 
-		void SetDefaultText() => this.Text = "UsbStreamGUI 3.0 BETA";
+		void SetDefaultText() => this.Text = "SysDVR-Client GUI 3.0";
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
 			SetDefaultText();
 
-			if (!File.Exists("UsbStream.exe"))
+			if (!File.Exists("SysDVR-Client.exe"))
 			{
-				MessageBox.Show("UsbStream.exe not found, did you extract all the files in the same folder ?");
+				MessageBox.Show("SysDVR-Client.exe not found, did you extract all the files in the same folder ?");
 				this.Close();
 			}
 
 			if (Utils.FindExecutableInPath("dotnet.exe") == null)
-				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for UsbStream, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 					System.Diagnostics.Process.Start("https://dotnet.microsoft.com/download");
 			
 			radioButton7.Checked = true;

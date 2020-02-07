@@ -1,4 +1,4 @@
-﻿namespace UsbStreamGUI
+﻿namespace SysDVRClientGUI
 {
 	partial class Form1
 	{

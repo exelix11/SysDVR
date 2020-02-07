@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace UsbStream
+namespace SysDVRClient
 {
 	public abstract class StreamThread : IDisposable
 	{

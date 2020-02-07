@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace UsbStreamGUI
+namespace SysDVRClientGUI
 {
 	public partial class TCPStreamControl : UserControl, IStreamTargetControl
 	{
