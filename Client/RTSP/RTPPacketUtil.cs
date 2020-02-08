@@ -17,10 +17,12 @@ namespace SysDVRClient.RTSP
 		//nn - Extension header
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void WriteHeader(byte[] rtp_packet, int rtp_version, int rtp_padding, int rtp_extension, int rtp_csrc_count, int rtp_marker, int rtp_payload_type)
+		public static void WriteHeader(byte[] rtp_packet, int rtp_version, int rtp_padding, int rtp_extension, int rtp_csrc_count, bool rtp_marker, int rtp_payload_type)
 		{
 			rtp_packet[0] = (byte)((rtp_version << 6) | (rtp_padding << 5) | (rtp_extension << 4) | rtp_csrc_count);
-			rtp_packet[1] = (byte)((rtp_marker << 7) | (rtp_payload_type & 0x7F));
+			rtp_packet[1] = (byte)(rtp_payload_type & 0x7F);
+			if (rtp_marker) 
+				rtp_packet[1] |= 0x80;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

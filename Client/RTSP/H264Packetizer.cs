@@ -11,15 +11,15 @@ namespace SysDVRClient.RTSP
 		private const int rtp_csrc_count = 0;
 		private const int rtp_payload_type = 96;
 
-		private static byte[] PacketizeSingleNAL(Span<byte> raw_nal, UInt32 rtp_timestamp, bool last_nal)
+		private static byte[] PacketizeSingleNAL(Span<byte> raw_nal, UInt32 rtp_timestamp)
 		{
 			// Put the whole NAL into one RTP packet.
 			// Note some receivers will have maximum buffers and be unable to handle large RTP packets.
 			// Also with RTP over RTSP there is a limit of 65535 bytes for the RTP packet.
 
 			byte[] rtp_packet = new byte[RTPPacketUtil.HeaderLength + raw_nal.Length]; // 12 is header size when there are no CSRCs or extensions
-															   // Create an single RTP fragment
-			int rtp_marker = (last_nal == true ? 1 : 0); // set to 1 if the last NAL in the array
+																					   // Create an single RTP fragment
+			bool rtp_marker = (raw_nal[4] & 0x1F) <= 5;
 
 			RTPPacketUtil.WriteHeader(rtp_packet, rtp_version, rtp_padding, rtp_extension, rtp_csrc_count, rtp_marker, rtp_payload_type);
 
@@ -37,7 +37,7 @@ namespace SysDVRClient.RTSP
 			return rtp_packet;
 		}
 
-		private static void PacketizeNAL_FUA(ref List<byte[]> rtp_packets, Span<byte> raw_nal, UInt32 rtp_timestamp, bool last_nal)
+		private static void PacketizeNAL_FUA(ref List<byte[]> rtp_packets, Span<byte> raw_nal, UInt32 rtp_timestamp)
 		{
 			int start_bit = 1;
 			int end_bit = 0;
@@ -49,11 +49,12 @@ namespace SysDVRClient.RTSP
 			while (raw_nal.Length > 0)
 			{
 				int payload_size = Math.Min(RTPPacketUtil.MaxPayloadSize - 2, raw_nal.Length);
+				
 				if (raw_nal.Length - payload_size == 0) end_bit = 1;
+				//for FU-A the marker is set when this is the last RTP packet
+				bool rtp_marker = end_bit == 1;
 
 				byte[] rtp_packet = new byte[RTPPacketUtil.HeaderLength + 2 + payload_size]; // 2 bytes for FU-A header.
-
-				int rtp_marker = (last_nal == true ? 1 : 0); // Marker set to 1 on last packet
 
 				RTPPacketUtil.WriteHeader(rtp_packet, rtp_version, rtp_padding, rtp_extension, rtp_csrc_count, rtp_marker, rtp_payload_type);
 
@@ -91,18 +92,15 @@ namespace SysDVRClient.RTSP
 
 			UInt32 rtp_timestamp = (UInt32)tsMsec * 90; // 90kHz clock
 
-			//With sysdvr we're receiving a single nal each time
-			const bool last_nal = true;
-
 			// The H264 Payload could be sent as one large RTP packet (assuming the receiver can handle it)
 			// or as a Fragmented Data, split over several RTP packets with the same Timestamp.
 			bool fragmenting = false;
 			if (raw_nal.Length > RTPPacketUtil.MaxPayloadSize) fragmenting = true;
 
 			if (fragmenting == false)
-				rtp_packets.Add(PacketizeSingleNAL(raw_nal, rtp_timestamp, last_nal));
+				rtp_packets.Add(PacketizeSingleNAL(raw_nal, rtp_timestamp));
 			else
-				PacketizeNAL_FUA(ref rtp_packets, raw_nal, rtp_timestamp, last_nal);
+				PacketizeNAL_FUA(ref rtp_packets, raw_nal, rtp_timestamp);
 
 			return rtp_packets;
 		}
