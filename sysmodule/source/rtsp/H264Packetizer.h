@@ -25,7 +25,7 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t tsMs, H264SendPa
 	if (len <= MaxRTPPayload)
 	{
 		//ts is in ms, convert to seconds /1000 and sample at 90khz *90000
-		RTP_PrepareHeader(header, tsMs * 90.0, true, STREAM_VIDEO);
+		RTP_PrepareHeader(header, tsMs * 90.0, (*nal & 0x1F) <= 5, STREAM_VIDEO);
 		return cb(header, RTPHeaderSz, nal, len); //FU-A header not used
 	}
 
