@@ -37,9 +37,12 @@
 			this.radioButton2 = new System.Windows.Forms.RadioButton();
 			this.radioButton1 = new System.Windows.Forms.RadioButton();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
+			this.radioButton8 = new System.Windows.Forms.RadioButton();
+			this.label4 = new System.Windows.Forms.Label();
+			this.label3 = new System.Windows.Forms.Label();
+			this.radioButton5 = new System.Windows.Forms.RadioButton();
 			this.radioButton7 = new System.Windows.Forms.RadioButton();
 			this.radioButton4 = new System.Windows.Forms.RadioButton();
-			this.radioButton5 = new System.Windows.Forms.RadioButton();
 			this.radioButton6 = new System.Windows.Forms.RadioButton();
 			this.groupBox3 = new System.Windows.Forms.GroupBox();
 			this.cbStats = new System.Windows.Forms.CheckBox();
@@ -48,10 +51,6 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.linkLabel1 = new System.Windows.Forms.LinkLabel();
 			this.button4 = new System.Windows.Forms.Button();
-			this.label2 = new System.Windows.Forms.Label();
-			this.label3 = new System.Windows.Forms.Label();
-			this.label4 = new System.Windows.Forms.Label();
-			this.radioButton8 = new System.Windows.Forms.RadioButton();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -95,9 +94,9 @@
 			this.StreamConfigPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 275);
+			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 265);
 			this.StreamConfigPanel.Name = "StreamConfigPanel";
-			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 159);
+			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 169);
 			this.StreamConfigPanel.TabIndex = 3;
 			// 
 			// groupBox1
@@ -107,7 +106,7 @@
 			this.groupBox1.Controls.Add(this.radioButton3);
 			this.groupBox1.Controls.Add(this.radioButton2);
 			this.groupBox1.Controls.Add(this.radioButton1);
-			this.groupBox1.Location = new System.Drawing.Point(6, 100);
+			this.groupBox1.Location = new System.Drawing.Point(6, 83);
 			this.groupBox1.Name = "groupBox1";
 			this.groupBox1.Size = new System.Drawing.Size(620, 45);
 			this.groupBox1.TabIndex = 4;
@@ -161,17 +160,62 @@
 			this.groupBox2.Controls.Add(this.radioButton7);
 			this.groupBox2.Controls.Add(this.radioButton4);
 			this.groupBox2.Controls.Add(this.radioButton6);
-			this.groupBox2.Location = new System.Drawing.Point(6, 151);
+			this.groupBox2.Location = new System.Drawing.Point(6, 134);
 			this.groupBox2.Name = "groupBox2";
-			this.groupBox2.Size = new System.Drawing.Size(620, 118);
+			this.groupBox2.Size = new System.Drawing.Size(620, 124);
 			this.groupBox2.TabIndex = 5;
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Stream method";
 			// 
+			// radioButton8
+			// 
+			this.radioButton8.AutoSize = true;
+			this.radioButton8.Location = new System.Drawing.Point(27, 98);
+			this.radioButton8.Name = "radioButton8";
+			this.radioButton8.Size = new System.Drawing.Size(205, 17);
+			this.radioButton8.TabIndex = 6;
+			this.radioButton8.TabStop = true;
+			this.radioButton8.Tag = "TCPBridge_RTSP";
+			this.radioButton8.Text = "TCP Bridge (Relay network via RTSP)";
+			this.radioButton8.UseVisualStyleBackColor = true;
+			this.radioButton8.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
+			// 
+			// label4
+			// 
+			this.label4.AutoSize = true;
+			this.label4.Location = new System.Drawing.Point(4, 77);
+			this.label4.Name = "label4";
+			this.label4.Size = new System.Drawing.Size(494, 13);
+			this.label4.TabIndex = 5;
+			this.label4.Text = "Network streaming methods (Requires SysDVR set to TCP Bridge mode and in the same" +
+    " local network):";
+			// 
+			// label3
+			// 
+			this.label3.AutoSize = true;
+			this.label3.Location = new System.Drawing.Point(3, 21);
+			this.label3.Name = "label3";
+			this.label3.Size = new System.Drawing.Size(417, 13);
+			this.label3.TabIndex = 4;
+			this.label3.Text = "USB Streaming methods (Requires SysDVR connected in USB mode and driver setup):";
+			// 
+			// radioButton5
+			// 
+			this.radioButton5.AutoSize = true;
+			this.radioButton5.Location = new System.Drawing.Point(363, 40);
+			this.radioButton5.Name = "radioButton5";
+			this.radioButton5.Size = new System.Drawing.Size(140, 17);
+			this.radioButton5.TabIndex = 1;
+			this.radioButton5.TabStop = true;
+			this.radioButton5.Tag = "Tcp";
+			this.radioButton5.Text = "Relay via network (TCP)";
+			this.radioButton5.UseVisualStyleBackColor = true;
+			this.radioButton5.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
+			// 
 			// radioButton7
 			// 
 			this.radioButton7.AutoSize = true;
-			this.radioButton7.Location = new System.Drawing.Point(27, 40);
+			this.radioButton7.Location = new System.Drawing.Point(26, 40);
 			this.radioButton7.Name = "radioButton7";
 			this.radioButton7.Size = new System.Drawing.Size(188, 17);
 			this.radioButton7.TabIndex = 3;
@@ -194,23 +238,10 @@
 			this.radioButton4.UseVisualStyleBackColor = true;
 			this.radioButton4.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
 			// 
-			// radioButton5
-			// 
-			this.radioButton5.AutoSize = true;
-			this.radioButton5.Location = new System.Drawing.Point(363, 40);
-			this.radioButton5.Name = "radioButton5";
-			this.radioButton5.Size = new System.Drawing.Size(140, 17);
-			this.radioButton5.TabIndex = 1;
-			this.radioButton5.TabStop = true;
-			this.radioButton5.Tag = "Tcp";
-			this.radioButton5.Text = "Relay via network (TCP)";
-			this.radioButton5.UseVisualStyleBackColor = true;
-			this.radioButton5.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
-			// 
 			// radioButton6
 			// 
 			this.radioButton6.AutoSize = true;
-			this.radioButton6.Location = new System.Drawing.Point(244, 40);
+			this.radioButton6.Location = new System.Drawing.Point(245, 40);
 			this.radioButton6.Name = "radioButton6";
 			this.radioButton6.Size = new System.Drawing.Size(79, 17);
 			this.radioButton6.TabIndex = 0;
@@ -273,16 +304,16 @@
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(620, 43);
 			this.label1.TabIndex = 7;
-			this.label1.Text = "This utility will configure the UsbStream command line automatically, remember th" +
-    "at for the first time you still need to setup the USB drivers as explained on th" +
-    "e guide";
+			this.label1.Text = "This utility will configure the SysDVR-Client command line automatically, remembe" +
+    "r that for the first time you still need to setup the USB drivers as explained o" +
+    "n the guide";
 			// 
 			// linkLabel1
 			// 
 			this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.linkLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.linkLabel1.Location = new System.Drawing.Point(6, 48);
+			this.linkLabel1.Location = new System.Drawing.Point(6, 51);
 			this.linkLabel1.Name = "linkLabel1";
 			this.linkLabel1.Size = new System.Drawing.Size(620, 20);
 			this.linkLabel1.TabIndex = 8;
@@ -302,56 +333,11 @@
 			this.button4.UseVisualStyleBackColor = true;
 			this.button4.Click += new System.EventHandler(this.button4_Click);
 			// 
-			// label2
-			// 
-			this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.label2.Location = new System.Drawing.Point(6, 73);
-			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(620, 24);
-			this.label2.TabIndex = 10;
-			this.label2.Text = "If the stream starts lagging open the home menu for a few seconds to force-syncro" +
-    "nize it";
-			// 
-			// label3
-			// 
-			this.label3.AutoSize = true;
-			this.label3.Location = new System.Drawing.Point(3, 21);
-			this.label3.Name = "label3";
-			this.label3.Size = new System.Drawing.Size(417, 13);
-			this.label3.TabIndex = 4;
-			this.label3.Text = "USB Streaming methods (Requires SysDVR connected in USB mode and driver setup):";
-			// 
-			// label4
-			// 
-			this.label4.AutoSize = true;
-			this.label4.Location = new System.Drawing.Point(4, 70);
-			this.label4.Name = "label4";
-			this.label4.Size = new System.Drawing.Size(494, 13);
-			this.label4.TabIndex = 5;
-			this.label4.Text = "Network streaming methods (Requires SysDVR set to TCP Bridge mode and in the same" +
-    " local network):";
-			// 
-			// radioButton8
-			// 
-			this.radioButton8.AutoSize = true;
-			this.radioButton8.Location = new System.Drawing.Point(27, 92);
-			this.radioButton8.Name = "radioButton8";
-			this.radioButton8.Size = new System.Drawing.Size(205, 17);
-			this.radioButton8.TabIndex = 6;
-			this.radioButton8.TabStop = true;
-			this.radioButton8.Tag = "TCPBridge_RTSP";
-			this.radioButton8.Text = "TCP Bridge (Relay network via RTSP)";
-			this.radioButton8.UseVisualStyleBackColor = true;
-			this.radioButton8.CheckedChanged += new System.EventHandler(this.StreamTargetSelected);
-			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(630, 550);
-			this.Controls.Add(this.label2);
 			this.Controls.Add(this.button4);
 			this.Controls.Add(this.linkLabel1);
 			this.Controls.Add(this.label1);
@@ -399,7 +385,6 @@
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.LinkLabel linkLabel1;
 		private System.Windows.Forms.Button button4;
-		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.RadioButton radioButton7;
 		private System.Windows.Forms.Label label4;
 		private System.Windows.Forms.Label label3;
