@@ -41,7 +41,7 @@ namespace SysDVRClient.RTSP
 					packetData[i + 1] = smp[i];
 				}
 
-				RTPPacketUtil.WriteHeader(packet, rtp_version, rtp_padding, rtp_extension, rtp_csrc_count, 0, rtp_payload_type);
+				RTPPacketUtil.WriteHeader(packet, rtp_version, rtp_padding, rtp_extension, rtp_csrc_count, false, rtp_payload_type);
 
 				UInt32 empty_sequence_id = 0;
 				RTPPacketUtil.WriteSequenceNumber(packet, empty_sequence_id);
