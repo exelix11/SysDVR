@@ -19,7 +19,7 @@ namespace SysDVRClient.RTSP
 
 			byte[] rtp_packet = new byte[RTPPacketUtil.HeaderLength + raw_nal.Length]; // 12 is header size when there are no CSRCs or extensions
 																					   // Create an single RTP fragment
-			bool rtp_marker = (raw_nal[4] & 0x1F) <= 5;
+			bool rtp_marker = (raw_nal[0] & 0x1F) <= 5;
 
 			RTPPacketUtil.WriteHeader(rtp_packet, rtp_version, rtp_padding, rtp_extension, rtp_csrc_count, rtp_marker, rtp_payload_type);
 
