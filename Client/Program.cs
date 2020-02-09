@@ -171,6 +171,7 @@ namespace SysDVRClient
 
 		static void StartManagedStreaming(IMutliStreamManager Streams, string[] args)
 		{
+			Console.WriteLine("If the stream lags try pausing and unpausing the player.");
 			Streams.Begin();
 
 			Console.ReadLine();
@@ -217,34 +218,39 @@ namespace SysDVRClient
 			if (Streams.Audio != null)
 				Audio = new AudioStreamThread(StopThreads.Token, Streams.Audio, stream.OpenStreamAlt(), PrintStats);
 
-			Streams.Begin();
 			Video?.Start();
 			Audio?.Start();
 
-			Console.WriteLine("If the stream lags press Q to force a resync");
-
-			ConsoleKey c;
-			while ((c = Console.ReadKey().Key) != ConsoleKey.Enter)
+			//If streaming via RTSP use managed streaming, this part should be reworked in the future, maybe using "managed streams" only
+			if (Streams is RTSP.SysDvrRTSPServer || Streams is TCPBridgeManager)
+				StartManagedStreaming(Streams, null);
+			else
 			{
-				if (c == ConsoleKey.Q)
+				Streams.Begin();
+				Console.WriteLine("If the stream lags press Q to force a resync");
+				ConsoleKey c;
+				while ((c = Console.ReadKey().Key) != ConsoleKey.Enter)
 				{
-					Console.WriteLine("Pausing streams for 3 seconds to flush buffer data");
-					Video?.Pause();
-					Audio?.Pause();
-					Thread.Sleep(3000);
-					Video?.Resume();
-					Audio?.Resume();
+					if (c == ConsoleKey.Q)
+					{
+						Console.WriteLine("Pausing streams for 3 seconds to flush buffer data");
+						Video?.Pause();
+						Audio?.Pause();
+						Thread.Sleep(3000);
+						Video?.Resume();
+						Audio?.Resume();
+					}
 				}
+
+				Console.WriteLine("Terminating threads...");
+				Streams.Stop();
+				Streams.Dispose();
 			}
 
-			Console.WriteLine("Terminating threads...");
 			StopThreads.Cancel();
-
-			Streams.Stop();
 			Video?.Join();
 			Audio?.Join();
 
-			Streams.Dispose();
 			Video?.Dispose();
 			Audio?.Dispose();
 
