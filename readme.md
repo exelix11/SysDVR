@@ -47,7 +47,7 @@ To play the stream [mpv player](https://mpv.io/) is recommended as it's the most
 
 **Streaming only works while a compatible game is running, this means that before before you can stream you must launch the game.**
 
-For network streaming modes it's reccomended to use a **LAN adapter** or at least a 5GHz wifi, 2,4GHz is fine too as long ar reception is **very good** for both switch and PC.
+For network streaming modes it's reccomended to use a **LAN adapter** or at least a 5GHz wifi, 2,4GHz is fine too as long as reception is **very good** for both switch and PC.
 ### Network RTSP mode
 This is the simplest to setup, select `Stream over RTSP` in SysDVR Config and you're ready to go. To begin streaming open a terminal/command prompt in the mpv directory and run `mpv rtsp://<SwitchIpAddress>:6666/` , replace `<SwitchIpAddress>` with the ip address of your console (you can find it in the connection settings).
 
