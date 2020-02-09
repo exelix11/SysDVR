@@ -88,6 +88,8 @@
   <ItemGroup>
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\main.c" />
+    <ClCompile Include="source\rtsp\RTSP.c" />
+    <ClCompile Include="source\sockUtil.c" />
     <ClCompile Include="source\UsbSerial.c" />
   </ItemGroup>
   <ItemGroup>
@@ -97,6 +99,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
+    <ClInclude Include="source\rtsp\defines.h" />
+    <ClInclude Include="source\rtsp\H264Packetizer.h" />
+    <ClInclude Include="source\rtsp\LE16Packetizer.h" />
+    <ClInclude Include="source\rtsp\RTP.h" />
+    <ClInclude Include="source\rtsp\RTSP.h" />
+    <ClInclude Include="source\sockUtil.h" />
     <ClInclude Include="source\UsbSerial.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

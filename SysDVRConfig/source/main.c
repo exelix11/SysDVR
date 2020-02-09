@@ -1,9 +1,10 @@
 ﻿#include <switch.h>
 #include "utils.h"
 
-#define SYSDVR_VERSION 1
+#define SYSDVR_VERSION 2
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
+#define TYPE_MODE_RTSP 4
 #define TYPE_MODE_NULL 3
 #define TYPE_MODE_ERROR 999999
 
@@ -11,8 +12,10 @@ void PrintDefaultBootMode()
 {
 	if (FileExists("/config/sysdvr/usb"))
 		printf("On boot SysDVR will stream over USB\n");
+	else if (FileExists("/config/sysdvr/rtsp"))
+		printf("On boot SysDVR will stream via RTSP\n");
 	else if (FileExists("/config/sysdvr/tcp"))
-		printf("On boot SysDVR will stream over NETWORK\n");
+		printf("On boot SysDVR will stream over TCP\n");
 	else
 		printf("On boot SysDVR will not stream\n");
 }
@@ -21,10 +24,13 @@ bool SetDefaultBootMode(u32 mode)
 {
 	unlink("/config/sysdvr/usb");
 	unlink("/config/sysdvr/tcp");
+	unlink("/config/sysdvr/rtsp");
 	if (mode == TYPE_MODE_USB)
 		return CreateDummyFile("/config/sysdvr/usb");
 	else if (mode == TYPE_MODE_TCP)
 		return CreateDummyFile("/config/sysdvr/tcp");
+	else if (mode == TYPE_MODE_RTSP)
+		return CreateDummyFile("/config/sysdvr/rtsp");
 	return true;
 }
 
@@ -66,7 +72,10 @@ void PrintCurrentMode()
 		printf("SysDVR is streaming over USB.\n");
 		break;
 	case TYPE_MODE_TCP:
-		printf("SysDVR is streaming over NETWORK.\n");
+		printf("SysDVR is streaming over TCP.\n");
+		break;
+	case TYPE_MODE_RTSP:
+		printf("SysDVR is streaming over RTSP.\n");
 		break;
 	default:
 		printf(CONSOLE_RED "Couldn't read SysDVR's status.\n" CONSOLE_WHITE);
@@ -100,10 +109,12 @@ bool MenuSetMode(int sock, u32 mode)
 bool DefaultMenu(int sock) 
 {
 	static int Selection = 0;
+	const int MenuOptCount = 5;
 	const char* MenuOptions[] = 
 	{
 		"Stream over USB",
-		"Stream over NETWORK",
+		"Stream over TCP Bridge (direct network mode, requires pc configuration)",
+		"Stream over RTSP (simple network mode, no setup, may have some glitches)",
 		"Stop streaming",
 		"Set current mode as default on boot",
 		"Quit",
@@ -140,12 +151,14 @@ bool DefaultMenu(int sock)
 		printf("%s\n", MenuOptions[i]);
 	}
 	printf("\n");
+	printf("If you're not sure which mode should you pick read the readme on GitHub.\n");
+	printf("\n");
 	printf(CONSOLE_YELLOW "Warning:" CONSOLE_WHITE " Changing mode while streaming will hang, if you're streaming currently resume the game, close the client and come back here.");
 
 	if (kDown & KEY_DOWN)
-		Selection = Selection >= 4 ? 0 : Selection + 1;
+		Selection = Selection >= MenuOptCount ? 0 : Selection + 1;
 	else if (kDown & KEY_UP)
-		Selection = Selection <= 0 ? 4 : Selection - 1;
+		Selection = Selection <= 0 ? MenuOptCount : Selection - 1;
 	else if (kDown & KEY_A)
 		switch(Selection)
 		{
@@ -158,10 +171,14 @@ bool DefaultMenu(int sock)
 				goto FAIL;
 			break;
 		case 2:
-			if (!MenuSetMode(sock, TYPE_MODE_NULL))
+			if (!MenuSetMode(sock, TYPE_MODE_RTSP))
 				goto FAIL;
 			break;
 		case 3:
+			if (!MenuSetMode(sock, TYPE_MODE_NULL))
+				goto FAIL;
+			break;
+		case 4:
 			SetDefaultBootMode(CurrentStreamMode);
 			printf("\x1b[6;0H\x1b[0J");
 			PrintDefaultBootMode();
@@ -181,7 +198,7 @@ void MainLoop(int sock)
 {
 	u32 version = 0;
 	if (!ReadValue(sock, &version))
-		FatalError("Couldn't communicate with SysDVR, are you sure it's running ? Also make sure you're not using the USB-only version.");
+		FatalError("Couldn't communicate with SysDVR, are you sure it's running ?\nAlso make sure you're not using the USB-only version.");
 	else if (version > SYSDVR_VERSION)
 		FatalError("You're running a newer version of SysDVR that is not supported by this application, download latest SysDVR Settings app from GitHub");
 	else if (version < SYSDVR_VERSION)
@@ -215,7 +232,7 @@ int main(int argc, char** argv)
 	consoleInit(NULL);
 
 	printf(
-		"SysDVR 2.0 Settings - by exelix\n"
+		"SysDVR 3.0 Settings - by exelix\n"
 		"https://github.com/exelix11/SysDVR\n\n"
 	);
 	consoleUpdate(NULL);

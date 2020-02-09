@@ -1,0 +1,3 @@
+[submodule "SharpRTSP"]
+	path = SharpRTSP
+	url = https://github.com/ngraziano/SharpRTSP
