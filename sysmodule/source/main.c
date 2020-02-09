@@ -1,4 +1,4 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include <stdio.h>
 #include <switch.h>
 #include <string.h>
@@ -19,13 +19,20 @@
 	Socketing requires a lot more memory
 */
 #if defined(USB_ONLY)
-#define INNER_HEAP_SIZE 500 * 1024
-#pragma message "Building USB-only mode"
+	#define INNER_HEAP_SIZE 500 * 1024
+	#pragma message "Building USB-only mode"
 #else
-#define INNER_HEAP_SIZE 3 * 1024 * 1024
-#if defined(__SWITCH__)
-#include <stdatomic.h>
-#endif
+	//TODO It's probably possible to reduce memory usage by using a custom initialization for libnx sockets
+	#define INNER_HEAP_SIZE 3 * 1024 * 1024
+	
+	#if defined(__SWITCH__)
+		#include <stdatomic.h>
+	#endif
+	
+	#include "sockUtil.h"
+	#include "rtsp/RTSP.h"
+	#include "rtsp/H264Packetizer.h"
+	#include "rtsp/LE16Packetizer.h"
 #endif
 
 //Silence visual studio errors
@@ -99,15 +106,19 @@ void __attribute__((weak)) __appExit(void)
 
 const int VbufSz = 0x32000;
 const int AbufSz = 0x1000;
-const int AudioBatchSz = 12;
+const int AudioBatchSz = 10;
 
-u8* Vbuf = NULL;
-u8* Abuf = NULL;
-u32 VOutSz = 0;
-u32 AOutSz = 0;
+static u8* Vbuf = NULL;
+static u8* Abuf = NULL;
+static u32 VOutSz = 0;
+static u32 AOutSz = 0;
 
-Service grcdVideo;
-Service grcdAudio;
+//Note: timestamps are in usecs
+static u64 VTimestamp = 0;
+static u64 ATimestamp = 0;
+
+static Service grcdVideo;
+static Service grcdAudio;
 
 #if defined(USB_ONLY)
 const bool IsThreadRunning = true;
@@ -117,7 +128,7 @@ const bool IsThreadRunning = true;
 	When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
 	Only in that case this variable should be checked
 */
-atomic_bool IsThreadRunning = false;
+static atomic_bool IsThreadRunning = false;
 #endif
 
 static void AllocateRecordingBuf()
@@ -154,13 +165,12 @@ static Result OpenGrcdForThread(GrcStream stream)
 //Batch sending audio samples to improve speed
 static void ReadAudioStream()
 {
-	u32 unk = 0;
 	u64 timestamp = 0;
 	u32 TmpAudioSz = 0;
 	AOutSz = 0;
 	for (int i = 0, fails = 0; i < AudioBatchSz; i++)
 	{
-		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, &unk, &TmpAudioSz, &timestamp);
+		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, NULL, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
 			if (fails++ > 9 && !IsThreadRunning)
@@ -173,27 +183,27 @@ static void ReadAudioStream()
 		}
 		fails = 0;
 		AOutSz += TmpAudioSz;
+		if (i == 0)
+			ATimestamp = timestamp;
 	}
 }
 
 static void ReadVideoStream()
 {
-	u32 unk = 0;
-	u64 timestamp = 0;
 	int fails = 0;
 
 	while (true) {
-		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, &unk, &VOutSz, &timestamp);
+		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, NULL, &VOutSz, &VTimestamp);
 		if (R_SUCCEEDED(res) && VOutSz > 0) break;
 		VOutSz = 0;
 		if (fails++ > 8 && !IsThreadRunning) break;
 	}
 }
 
-UsbInterface VideoStream;
-UsbInterface AudioStream;
-const u32 REQMAGIC_VID = 0xAAAAAAAA;
-const u32 REQMAGIC_AUD = 0xBBBBBBBB;
+static UsbInterface VideoStream;
+static UsbInterface AudioStream;
+static const u32 REQMAGIC_VID = 0xAAAAAAAA;
+static const u32 REQMAGIC_AUD = 0xBBBBBBBB;
 
 static u32 USB_WaitForInputReq(const UsbInterface* dev)
 {
@@ -209,8 +219,8 @@ static u32 USB_WaitForInputReq(const UsbInterface* dev)
 
 static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
 {
-	u32 *const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
+	u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	const u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
 
 	if (*size <= 0)
 		*size = 0;
@@ -222,7 +232,12 @@ static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
 
 	if (*size)
 	{
+		u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
 		u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+
+		if (UsbSerialWrite(Dev, ts, sizeof(*ts), 1E+8) != sizeof(*ts))
+			return;
+
 		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size)
 			return;
 	}
@@ -242,6 +257,7 @@ static void* USB_StreamThreadMain(void* _stream)
 
 	while (true)
 	{
+		//TODO: try improving performance by not waiting for requests like the new TCP mode
 		u32 cmd = USB_WaitForInputReq(Dev);
 
 		if (cmd == ThreadMagic)
@@ -256,81 +272,27 @@ static void* USB_StreamThreadMain(void* _stream)
 }
 
 #if !defined(USB_ONLY)
-#ifdef __SWITCH__
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <fcntl.h>
-#include <errno.h>
-#else
-//not actually used, just to stop visual studio from complaining.
-//~~i regret nothing~~
-#define F_SETFL 1
-#define O_NONBLOCK 1
-#define F_GETFL 1
-#include <WinSock2.h>
-#endif
+const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
+const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
-static Result CreateSocket(int* OutSock, int port, int baseError, bool LocalOnly)
-{
-	int err = 0, sock = -1;
-	struct sockaddr_in temp;
-
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0)
-		return MAKERESULT(baseError, 1);
-
-	temp.sin_family = AF_INET;
-	temp.sin_addr.s_addr = LocalOnly ? htonl(INADDR_LOOPBACK) : INADDR_ANY;
-	temp.sin_port = htons(port);
-
-	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
-	fcntl(sock, F_SETFL, O_NONBLOCK);
-
-	const int optVal = 1;
-	err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
-	if (err)
-		return MAKERESULT(baseError, 2);
-
-	err = bind(sock, (struct sockaddr*) & temp, sizeof(temp));
-	if (err)
-		return MAKERESULT(baseError, 3);
-
-	err = listen(sock, 1);
-	if (err)
-		return MAKERESULT(baseError, 4);
-
-	*OutSock = sock;
-	return 0;
-}
-
-int VideoSock = -1;
-int AudioSock = -1;
-int AudioCurSock = -1;
-int VideoCurSock = -1;
-
-static Result SocketingInit(GrcStream stream)
+static int VideoSock = -1, AudioSock = -1, VideoCurSock = -1, AudioCurSock = -1;
+static inline Result TCP_InitSockets(GrcStream stream)
 {
 	Result rc;
 	if (stream == GrcStream_Video)
 	{
 		if (VideoSock != -1) close(VideoSock);
-		rc = CreateSocket(&VideoSock, 6666, 2, false);
+		rc = CreateTCPListener(&VideoSock, 6667, 2, false);
 		if (R_FAILED(rc)) return rc;
 	}
 	else
 	{
 		if (AudioSock != -1) close(AudioSock);
-		rc = CreateSocket(&AudioSock, 6667, 3, false);
+		rc = CreateTCPListener(&AudioSock, 6668, 3, false);
 		if (R_FAILED(rc)) return rc;
 	}
 	return 0;
 }
-
-const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
-const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 static void* TCP_StreamThreadMain(void* _stream)
 {
@@ -338,16 +300,17 @@ static void* TCP_StreamThreadMain(void* _stream)
 		fatalSimple(MAKERESULT(1, 14));
 
 	const GrcStream stream = (GrcStream)_stream;
-	void (*const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
+	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
 
-	u32 *const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	const u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
+	const u8* const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
+	const u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
 
-	int *const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
-	int *const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
+	int* const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
+	int* const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
 
 	{
-		Result rc = SocketingInit(stream);
+		Result rc = TCP_InitSockets(stream);
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
@@ -362,7 +325,7 @@ static void* TCP_StreamThreadMain(void* _stream)
 		{
 			if (sockFails++ >= 3 && IsThreadRunning)
 			{
-				Result rc = SocketingInit(stream);
+				Result rc = TCP_InitSockets(stream);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
 			svcSleepThread(1E+9);
@@ -380,14 +343,17 @@ static void* TCP_StreamThreadMain(void* _stream)
 
 		*OutSock = curSock;
 
-		if (stream == GrcStream_Video) {
-			write(curSock, SPS, sizeof(SPS));
-			write(curSock, PPS, sizeof(PPS));
-		}
-
 		while (true)
 		{
 			ReadStreamFn();
+
+			const u32 StreamMagic = 0x11111111;
+			if (write(curSock, &StreamMagic, sizeof(StreamMagic)) <= 0)
+				break;
+			if (write(curSock, ts, sizeof(u64)) <= 0)
+				break;
+			if (write(curSock, size, sizeof(*size)) <= 0)
+				break;
 			if (write(curSock, TargetBuf, *size) <= 0)
 				break;
 		}
@@ -396,6 +362,48 @@ static void* TCP_StreamThreadMain(void* _stream)
 		*OutSock = -1;
 		svcSleepThread(1E+9);
 	}
+	pthread_exit(NULL);
+	return NULL;
+}
+
+static void* RTSP_StreamThreadMain(void* _stream)
+{
+	if (!IsThreadRunning)
+		fatalSimple(MAKERESULT(1, 14));
+
+	const GrcStream stream = (GrcStream)_stream;
+	while (IsThreadRunning)
+	{
+		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
+		if (!IsThreadRunning) break;
+
+		RTP_InitializeSequenceNumbers();
+		while (true)
+		{
+			int error = 0;
+			if (stream == GrcStream_Video)
+			{
+				static int SendPPS = 0;
+
+				ReadVideoStream();
+				//Not needed for interleaved RTSP but mpv seems to need it for UDP.
+				if (++SendPPS > 100)
+				{
+					PacketizeH264((char*)SPS, sizeof(SPS), VTimestamp / 1000, RTSP_H264SendPacket);
+					PacketizeH264((char*)PPS, sizeof(PPS), VTimestamp / 1000, RTSP_H264SendPacket);
+					SendPPS = 0;
+				}
+				error = PacketizeH264((char*)Vbuf, VOutSz, VTimestamp / 1000, RTSP_H264SendPacket);
+			}
+			else
+			{
+				ReadAudioStream();
+				error = PacketizeLE16((char*)Abuf, AOutSz, ATimestamp / 1000, RTSP_LE16SendPacket);
+			}
+			if (error) break;
+		}
+	}
+
 	pthread_exit(NULL);
 	return NULL;
 }
@@ -412,11 +420,11 @@ static void USB_Exit()
 	usbSerialExit();
 }
 
-pthread_t AudioThread;
+static pthread_t AudioThread;
 #if !defined(USB_ONLY)
-pthread_t VideoThread;
+static pthread_t VideoThread;
+static pthread_t RTSPThread;
 
-//Don't need a TCP_Init funciton as each thread will initialize its own socket
 static void TCP_Exit()
 {
 #define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
@@ -427,7 +435,18 @@ static void TCP_Exit()
 #undef CloseSock
 }
 
-typedef struct _streamMode
+static void RTSP_Init()
+{
+	pthread_create(&RTSPThread, NULL, RTSP_ServerThread, NULL);
+}
+
+static void RTSP_Exit()
+{
+	RTSP_StopServer();
+	pthread_join(RTSPThread, NULL);
+}
+
+typedef struct
 {
 	void (*InitFn)();
 	void (*ExitFn)();
@@ -436,6 +455,7 @@ typedef struct _streamMode
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
 StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
+StreamMode RTSP_MODE = { RTSP_Init, RTSP_Exit, RTSP_StreamThreadMain };
 StreamMode* CurrentMode = NULL;
 
 static void SetMode(StreamMode* mode)
@@ -465,17 +485,19 @@ static void SetMode(StreamMode* mode)
 	}
 }
 
-#define SYSDVR_VERSION 1
+//This is a version for the SysDVR Config app protocol, it's not shown annywhere
+#define SYSDVR_VERSION 2
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_NULL 3
+#define TYPE_MODE_RTSP 4
 
 static void ConfigThread()
 {
 	//Maybe hosting our own service is better but it looks harder than this
 	int ConfigSock = -1, sockFails = 0;
 	{
-		Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
+		Result rc = CreateTCPListener(&ConfigSock, 6668, 3, true);
 		if (R_FAILED(rc)) fatalSimple(rc);
 	}
 
@@ -488,7 +510,7 @@ static void ConfigThread()
 			{
 				sockFails = 0;
 				close(ConfigSock);
-				Result rc = CreateSocket(&ConfigSock, 6668, 3, true);
+				Result rc = CreateTCPListener(&ConfigSock, 6668, 3, true);
 				if (R_FAILED(rc)) fatalSimple(rc);
 			}
 			svcSleepThread(1E+9);
@@ -514,6 +536,8 @@ static void ConfigThread()
 			Type = TYPE_MODE_USB;
 		else if (CurrentMode == &TCP_MODE)
 			Type = TYPE_MODE_TCP;
+		else if (CurrentMode == &RTSP_MODE)
+			Type = TYPE_MODE_RTSP;
 		else fatalSimple(MAKERESULT(1, 15));
 
 		write(curSock, &Type, sizeof(u32));
@@ -531,6 +555,9 @@ static void ConfigThread()
 				break;
 			case TYPE_MODE_TCP:
 				SetMode(&TCP_MODE);
+				break;
+			case TYPE_MODE_RTSP:
+				SetMode(&RTSP_MODE);
 				break;
 			case TYPE_MODE_NULL:
 				SetMode(NULL);
@@ -574,6 +601,8 @@ int main(int argc, char* argv[])
 #else
 	if (FileExists("/config/sysdvr/usb"))
 		SetMode(&USB_MODE);
+	else if (FileExists("/config/sysdvr/rtsp"))
+		SetMode(&RTSP_MODE);
 	else if (FileExists("/config/sysdvr/tcp"))
 		SetMode(&TCP_MODE);
 
