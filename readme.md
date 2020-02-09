@@ -5,10 +5,9 @@
 [![](https://img.shields.io/github/downloads/exelix11/SysDVR/total)](https://github.com/exelix11/SysDVR/releases)
 [![Contributing](https://img.shields.io/badge/supporting-patreon-f96854)](https://www.patreon.com/exelix11)
 
-**This is a WIP readme/guide for SysDVR V3 that has not been released yet, if you're looking for latest stable version head to the [readme file of the master branch](https://github.com/exelix11/SysDVR/blob/master/readme.md)**
+This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.
 
-This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.\
-Before opening issues make sure to read the full readme, the tips and commmon issues sections in particular.
+**Make sure to read the full readme, the tips and commmon issues sections in particular. If you need help ask on Discord/Gbatemp, use the issue tracker only for reporting actual bugs.**
 
 ## Features/Limitations
 - **Video quality is fixed to 720p @ 30fps with h264 compression (hardware limit)**
@@ -26,6 +25,8 @@ Clearly with these limitations **this sysmodule doesn't allow "remote play" and 
 If you like my work consider supporting me on [patreon](https://www.patreon.com/exelix11)
 
 # Usage
+This guide is for SysDVR V3 only, if you want to use an older version refer to the [previous version of the guide](https://github.com/exelix11/SysDVR/blob/7497d0961c194af0412e7c4338de8706c93c5fad/readme.md) 
+
 ## Setting up the sysmodule
 Before continuing make sure you're using latest version of atmosphere (other CFWs should work but I won't provide support for them)
 
