@@ -42,7 +42,7 @@ namespace SysDVRClientGUI
 				throw new Exception($"{mpv} does not exist");
 
 			if (!string.IsNullOrEmpty(mpv))
-				return $"{mpv} rtsp://127.0.0.1:6666/";
+				return $"\"{mpv}\" rtsp://127.0.0.1:6666/";
 			return "";
 		}
 
