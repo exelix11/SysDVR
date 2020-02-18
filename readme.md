@@ -7,7 +7,7 @@
 
 This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.
 
-**Make sure to read the full readme, the tips and commmon issues sections in particular. If you need help ask on Discord/Gbatemp, use the issue tracker only for reporting actual bugs.**
+**Make sure to read the full readme, the tips and common issues sections in particular. If you need help ask on Discord/Gbatemp, use the issue tracker only for reporting actual bugs.**
 
 ## Features/Limitations
 - **Video quality is fixed to 720p @ 30fps with h264 compression (hardware limit)**
