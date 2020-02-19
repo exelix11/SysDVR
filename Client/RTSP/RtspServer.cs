@@ -204,7 +204,7 @@ namespace SysDVRClient.RTSP
 				// The packetization-mode defines the H264 over RTP payloads used but is Optional
 				sdp.Append("v=0\n");
 				sdp.Append("o=user 123 0 IN IP4 0.0.0.0\n");
-				sdp.Append("s=Vstream test\n");
+				sdp.Append("s=SysDVR - https://github.com/exelix11/sysdvr\n");
 				if (video_source != null)
 				{
 					sdp.Append("m=video 0 RTP/AVP 96\n");
