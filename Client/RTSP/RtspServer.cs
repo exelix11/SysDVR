@@ -50,6 +50,11 @@ namespace SysDVRClient.RTSP
 			this.video_source = video_source;
 			this.audio_source = audio_source;
 
+			if (video_source != null)
+				video_source.DataAvailable += SysDVR_ReceivedVideoFrame;
+			if (audio_source != null)
+				audio_source.DataAvailable += SysDVR_ReceivedAudioData;
+
 			this.portNumber = portNumber;
 			//RtspUtils.RegisterUri();
 			_RTSPServerListener = new TcpListener(localOnly ? IPAddress.Loopback : IPAddress.Any, portNumber);
@@ -65,11 +70,6 @@ namespace SysDVRClient.RTSP
 			_Stopping = new ManualResetEvent(false);
 			_ListenTread = new Thread(new ThreadStart(AcceptConnection));
 			_ListenTread.Start();
-
-			if (video_source != null)
-				video_source.DataAvailable += SysDVR_ReceivedVideoFrame;
-			if (audio_source != null)
-				audio_source.DataAvailable += SysDVR_ReceivedAudioData;
 		}
 
 		/// <summary>
