@@ -130,7 +130,7 @@ namespace SysDVRClient
 			catch (Exception ex)
 			{
 				if (!Token.IsCancellationRequested)
-					Console.WriteLine($"Terminating {Kind} thread due to {ex.GetType().Name}...");
+					Console.WriteLine($"Terminating {Kind} thread due to exception: {ex.ToString()}");
 				else
 					Console.WriteLine($"Terminating {Kind} thread");
 			}
