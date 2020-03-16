@@ -118,9 +118,6 @@ To get the most out of this sysmodule you will have to do some testing to find c
 - Theoretically the best streaming setup would be having a direct lan connection switch to pc, without going through a router, this is likely not easy for the average user, may consider writing a guide for this but it's currently beyond the scope of SysDVR, in theory you'd need to host a dhcp server or fiddle with the static connection settings on switch and host your own 90dns instance locally.
 
 ## Common issues
-**When using Usbstream Gui on windows launching UsbStream results in a file not found error** \
-Some users had this issue [#20](https://github.com/exelix11/SysDVR/issues/20) , a workaround is to export the batch file from the GUI and edit it in notepad to launch `mpv.com` instead of just `mpv`, will be fixed in the next update. 
-
 **After copying the sysmodule to the sd atmosphere won't boot anymore** \
 This happens if you have too many sysmodules or ones particulary heavy like sysftpd, remove them to launch SysDVR.\
 If you really need other sysmodules at the same time you can try using the USB-Only version as it uses less memory (512K vs 3MB)\
