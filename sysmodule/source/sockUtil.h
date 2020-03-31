@@ -9,13 +9,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #else
-//not actually used, just to stop visual studio from complaining.
-//~~i regret nothing~~
-#define F_SETFL 1
-#define O_NONBLOCK 1
-#define F_GETFL 1
-#define MSG_DONTWAIT 0
 #include <WinSock2.h>
 #endif
 
-Result CreateTCPListener(int* OutSock, int port, int baseError, bool LocalOnly);
+int CreateTCPListener(int port, bool LocalOnly, int DebugFlag);

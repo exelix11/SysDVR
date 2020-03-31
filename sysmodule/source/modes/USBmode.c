@@ -49,7 +49,7 @@ static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
 static void* USB_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 13));
+		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 13));
 
 	const GrcStream stream = (GrcStream)_stream;
 	const UsbInterface* const Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
@@ -69,14 +69,13 @@ static void* USB_StreamThreadMain(void* _stream)
 		}
 		else if (!IsThreadRunning) break;
 	}
-	pthread_exit(NULL);
 	return NULL;
 }
 
 static void USB_Init()
 {
 	Result rc = UsbSerialInitializeDefault(&VideoStream, &AudioStream);
-	if (R_FAILED(rc)) fatalSimple(rc);
+	if (R_FAILED(rc)) fatalThrow(rc);
 }
 
 static void USB_Exit()

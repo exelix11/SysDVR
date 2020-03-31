@@ -1,30 +1,27 @@
 #if !defined(USB_ONLY)
 #include "modes.h"
 #include "../grcd.h"
+#include "../sockUtil.h"
 
 static int VideoSock = -1, AudioSock = -1, VideoCurSock = -1, AudioCurSock = -1;
-static inline Result TCP_InitSockets(GrcStream stream)
+static inline void TCP_InitSockets(GrcStream stream)
 {
-	Result rc;
 	if (stream == GrcStream_Video)
 	{
 		if (VideoSock != -1) close(VideoSock);
-		rc = CreateTCPListener(&VideoSock, 6667, 2, false);
-		if (R_FAILED(rc)) return rc;
+		VideoSock = CreateTCPListener(6667, false, 2);
 	}
 	else
 	{
 		if (AudioSock != -1) close(AudioSock);
-		rc = CreateTCPListener(&AudioSock, 6668, 3, false);
-		if (R_FAILED(rc)) return rc;
+		AudioSock = CreateTCPListener(6668, false, 3);
 	}
-	return 0;
 }
 
 static void* TCP_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 14));
+		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 14));
 
 	const GrcStream stream = (GrcStream)_stream;
 	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
@@ -36,10 +33,7 @@ static void* TCP_StreamThreadMain(void* _stream)
 	int* const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
 	int* const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
 
-	{
-		Result rc = TCP_InitSockets(stream);
-		if (R_FAILED(rc)) fatalSimple(rc);
-	}
+	TCP_InitSockets(stream);
 
 	/*
 		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
@@ -51,10 +45,7 @@ static void* TCP_StreamThreadMain(void* _stream)
 		if (curSock < 0)
 		{
 			if (sockFails++ >= 3 && IsThreadRunning)
-			{
-				Result rc = TCP_InitSockets(stream);
-				if (R_FAILED(rc)) fatalSimple(rc);
-			}
+				TCP_InitSockets(stream);
 			svcSleepThread(1E+9);
 			continue;
 		}
@@ -89,7 +80,6 @@ static void* TCP_StreamThreadMain(void* _stream)
 		*OutSock = -1;
 		svcSleepThread(1E+9);
 	}
-	pthread_exit(NULL);
 	return NULL;
 }
 

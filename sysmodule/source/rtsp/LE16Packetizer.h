@@ -1,7 +1,6 @@
 #pragma once
 
 #include "RTP.h"
-#include "defines.h"
 
 typedef int (*LE16SendPacketFn)(const void* header, const void* data, const size_t len);
 

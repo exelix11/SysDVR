@@ -23,8 +23,9 @@
 	#pragma message "Building USB-only mode"
 #else
 	//TODO It's probably possible to reduce memory usage by using a custom initialization for libnx sockets
-	#define INNER_HEAP_SIZE 500 * 1024
+	#define INNER_HEAP_SIZE 256 * 1024
 	
+	#include "rtsp/RTP.h"
 	#include "sockUtil.h"
 #endif
 
@@ -55,15 +56,33 @@ void __attribute__((weak)) __appInit(void)
 
 	rc = smInitialize();
 	if (R_FAILED(rc))
-		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
 #if !defined(USB_ONLY)
 	rc = fsInitialize();
 	if (R_FAILED(rc))
-		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
-	rc = socketInitializeDefault();
-	if (R_FAILED(rc)) fatalSimple(rc);
+	//rc = socketInitializeDefault();
+	const SocketInitConfig initConfig = {
+		.bsdsockets_version = 1,
+
+		.tcp_tx_buf_size = MaxRTPPacketSize_TCP,
+		.tcp_rx_buf_size = MaxRTPPacketSize_TCP,
+		.tcp_tx_buf_max_size = MaxRTPPacketSize_TCP * 6,
+		.tcp_rx_buf_max_size = MaxRTPPacketSize_TCP * 6,
+
+		.udp_tx_buf_size = MaxRTPPacketSize_UDP * 2,
+		.udp_rx_buf_size = MaxRTPPacketSize_UDP,
+
+		.sb_efficiency = 4,
+
+		.num_bsd_sessions = 3,
+		.bsd_service_type = BsdServiceType_User,
+	};
+	rc = socketInitialize(&initConfig);
+	if (R_FAILED(rc))
+		fatalThrow(rc);
 #endif
 
 	rc = setsysInitialize();
@@ -76,7 +95,7 @@ void __attribute__((weak)) __appInit(void)
 	}
 
 	if (R_FAILED(rc))
-		fatalSimple(MAKERESULT(1, 10));
+		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 10));
 
 	fsdevMountSdmc();
 }
@@ -129,7 +148,7 @@ void ReadAudioStream()
 	AOutSz = 0;
 	for (int i = 0, fails = 0; i < AudioBatchSz; i++)
 	{
-		Result res = grcdServiceRead(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, NULL, &TmpAudioSz, &timestamp);
+		Result res = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, NULL, &TmpAudioSz, &timestamp);
 		if (R_FAILED(res) || TmpAudioSz <= 0)
 		{
 			if (fails++ > 9 && !IsThreadRunning)
@@ -152,7 +171,7 @@ void ReadVideoStream()
 	int fails = 0;
 
 	while (true) {
-		Result res = grcdServiceRead(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, NULL, &VOutSz, &VTimestamp);
+		Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, NULL, &VOutSz, &VTimestamp);
 		if (R_SUCCEEDED(res) && VOutSz > 0) break;
 		VOutSz = 0;
 		if (fails++ > 8 && !IsThreadRunning) break;
@@ -196,10 +215,7 @@ static void ConfigThread()
 {
 	//Maybe hosting our own service is better but it looks harder than this
 	int ConfigSock = -1, sockFails = 0;
-	{
-		Result rc = CreateTCPListener(&ConfigSock, 6668, 3, true);
-		if (R_FAILED(rc)) fatalSimple(rc);
-	}
+	ConfigSock = CreateTCPListener(6668, true, 4);
 
 	while (1)
 	{
@@ -210,8 +226,7 @@ static void ConfigThread()
 			{
 				sockFails = 0;
 				close(ConfigSock);
-				Result rc = CreateTCPListener(&ConfigSock, 6668, 3, true);
-				if (R_FAILED(rc)) fatalSimple(rc);
+				ConfigSock = CreateTCPListener(6668, true, 4);
 			}
 			svcSleepThread(1E+9);
 			continue;
@@ -238,7 +253,7 @@ static void ConfigThread()
 			Type = TYPE_MODE_TCP;
 		else if (CurrentMode == &RTSP_MODE)
 			Type = TYPE_MODE_RTSP;
-		else fatalSimple(MAKERESULT(1, 15));
+		else fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 15));
 
 		write(curSock, &Type, sizeof(u32));
 
@@ -263,7 +278,7 @@ static void ConfigThread()
 				SetMode(NULL);
 				break;
 			default:
-				fatalSimple(MAKERESULT(1, 16));
+				fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 16));
 			}
 
 			//Due to syncronization terminating the threads may require a few seconds, answer with the mode as confirmation
@@ -287,9 +302,9 @@ static bool FileExists(const char* fname)
 int main(int argc, char* argv[])
 {
 	Result rc = OpenGrcdForThread(GrcStream_Audio);
-	if (R_FAILED(rc)) fatalSimple(rc);
+	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = OpenGrcdForThread(GrcStream_Video);
-	if (R_FAILED(rc)) fatalSimple(rc);
+	if (R_FAILED(rc)) fatalThrow(rc);
 
 #if defined(USB_ONLY)
 	USB_MODE.InitFn();

@@ -203,7 +203,7 @@ static Result _usbCommsInterfaceInit(u32 intf_ind, const UsbInterfaceDesc* info)
 	if (hosversionAtLeast(5,0,0)) {
 		return _usbCommsInterfaceInit5x(intf_ind, info);
 	} else {
-		fatalSimple(MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer));
+		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer));
 	}
 }
 
@@ -331,6 +331,9 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 	{
 		if (((u64)bufptr) & 0xfff)//When bufptr isn't page-aligned copy the data into g_usbComms_endpoint_in_buffer and transfer that, otherwise use the bufptr directly.
 		{
+			if (size > 8) 					 
+				*((volatile char*)0) = 0x69; //Crash with stack trace if we're streaming unaligned data
+
 			transfer_buffer = ep->buffer;
 			memset(ep->buffer, 0, 0x1000);
 
@@ -419,9 +422,9 @@ size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, const vo
 		if (R_FAILED(rc) && g_usbCommsErrorHandling)
 		{
 			if (dir == UsbDirection_Write)
-				fatalSimple(MAKERESULT(Module_Libnx, LibnxError_BadUsbCommsWrite));
+				fatalThrow(MAKERESULT(Module_Libnx, LibnxError_BadUsbCommsWrite));
 			else
-				fatalSimple(MAKERESULT(Module_Libnx, LibnxError_BadUsbCommsRead));
+				fatalThrow(MAKERESULT(Module_Libnx, LibnxError_BadUsbCommsRead));
 		}
 	}
 	return transferredSize;

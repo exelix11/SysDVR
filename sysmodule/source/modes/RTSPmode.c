@@ -11,7 +11,7 @@ static pthread_t RTSPThread;
 static void* RTSP_StreamThreadMain(void* _stream)
 {
 	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 14));
+		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 14));
 
 	const GrcStream stream = (GrcStream)_stream;
 	while (IsThreadRunning)
@@ -62,5 +62,4 @@ static void RTSP_Exit()
 }
 
 StreamMode RTSP_MODE = { RTSP_Init, RTSP_Exit, RTSP_StreamThreadMain };
-
 #endif
