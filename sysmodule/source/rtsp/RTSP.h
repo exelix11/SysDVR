@@ -1,9 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#if defined(USB_ONLY)
-#pragma error This should not be included
-#endif
+#include "RTP.h"
 
 #if defined(__SWITCH__)
 #include <stdatomic.h>
@@ -14,7 +12,6 @@ typedef bool atomic_bool;
 
 extern atomic_bool RTSP_ClientStreaming;
 
-//Create and assign RTSPSock before launching the thread
 void* RTSP_ServerThread(void*);
 void RTSP_StopServer();
 

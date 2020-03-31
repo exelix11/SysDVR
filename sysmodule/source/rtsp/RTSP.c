@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include <pthread.h>
 #include <stdarg.h>
 #include <assert.h>
 
 #include "../sockUtil.h"
 #include "RTSP.h"
-#include "defines.h"
 
+//For RTP.h
+uint16_t SequenceNumbers[2];
 int MaxRTPPacket;
 int MaxRTPPayload;
 
@@ -131,7 +131,6 @@ void* RTSP_ServerThread(void* arg)
 		
 		svcSleepThread(1E+9);
 	}
-	pthread_exit(NULL);
 	return NULL;
 }
 

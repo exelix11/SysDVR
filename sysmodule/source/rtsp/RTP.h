@@ -5,10 +5,19 @@
 #pragma error This should not be included
 #endif
 
+#define STREAM_VIDEO 0
+#define STREAM_AUDIO 1
+
+//1KB
+#define MaxRTPPacketSize_UDP 0x400
+//16KB
+#define MaxRTPPacketSize_TCP 0x4000
+#define RTPHeaderSz 12
+
 extern int MaxRTPPacket;
 extern int MaxRTPPayload;
 
-static uint16_t SequenceNumbers[2];
+extern uint16_t SequenceNumbers[2];
 static const char PT[2] = {96, 97};
 
 static inline void RTP_InitializeSequenceNumbers() 
