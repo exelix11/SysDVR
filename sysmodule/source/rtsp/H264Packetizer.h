@@ -1,7 +1,6 @@
 #pragma once
 
 #include "RTP.h"
-#include "defines.h"
 
 typedef int (*H264SendPacketFn)(const void* header, const size_t headerLen, const void* data, const size_t len);
 

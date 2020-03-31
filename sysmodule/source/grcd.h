@@ -13,14 +13,14 @@ void grcdServiceClose(Service* svc);
 Result grcdServiceBegin(Service* svc);
 
 /**
- * @brief Reads a stream, from the video recording being done of the currently running game title.
- * @note This will block until data is available. This will hang if there is no game title running which has video capture enabled.
+ * @brief Retrieves stream data from the continuous recorder in use (from the video recording of the currently running application).
+ * @note This will block until data is available. This will hang if there is no application running which has video capture enabled.
  * @param[in] stream \ref GrcStream
  * @param[out] buffer Output buffer.
  * @param[in] size Max size of the output buffer.
- * @param[out] unk Unknown.
+ * @param[out] num_frames num_frames
  * @param[out] data_size Actual output data size.
- * @param[out] timestamp Timestamp?
+ * @param[out] start_timestamp Start timestamp.
  */
-Result grcdServiceRead(Service* svc, GrcStream stream, void* buffer, size_t size, u32 *unk, u32 *data_size, u64 *timestamp);
+Result grcdServiceTransfer(Service* srv, GrcStream stream, void* buffer, size_t size, u32* num_frames, u32* data_size, u64* start_timestamp);
 
