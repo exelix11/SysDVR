@@ -134,8 +134,6 @@ namespace SysDVRClient
 		protected byte[] Data = null;
 		protected ulong Timestamp = 0;
 
-		readonly private byte[] SizeBuf = new byte[4];
-		readonly private byte[] TsBuf = new byte[8];
 		private ulong firtTs = 0;
 		protected int ReadNextPacket()
 		{	
@@ -149,24 +147,26 @@ namespace SysDVRClient
 			Device.MillisTimeout = 100;
 			while (true)
 			{
-				SizeBuf[0] = SizeBuf[1] = SizeBuf[2] = SizeBuf[3] = 0;
-				if (Device.Read(SizeBuf, 0, 4) != 4)
+				Span<byte> MagicBuf = stackalloc byte[4];
+				if (Device.Read(MagicBuf) != 4)
 					if (Token.IsCancellationRequested)
 						return -3;
 					else
 						continue;
-				if (SizeBuf.SequenceEqual(MagicPacket))
+				if (MagicBuf.SequenceEqual(MagicPacket))
 					break;
 			}
-			
+
 			//read the payload size
-			if (Device.Read(SizeBuf, 0, 4) != 4) return -2;
-			var size = BitConverter.ToUInt32(SizeBuf,0);
+			Span<byte> SizeBuf = stackalloc byte[4];
+			if (Device.Read(SizeBuf) != 4) return -2;
+			var size = BitConverter.ToUInt32(SizeBuf);
 			if (size > MaxBufSize) return -1;
 			if (size == 0) return 0;
 
 			//read the timestamp
-			if (Device.Read(TsBuf, 0, 8) != 8) return -4;
+			Span<byte> TsBuf = stackalloc byte[8];
+			if (Device.Read(TsBuf) != 8) return -4;
 			Timestamp = BitConverter.ToUInt64(TsBuf);
 			if (firtTs == 0)
 				firtTs = Timestamp;
