@@ -15,7 +15,7 @@ namespace SysDVRClient
 		TCPBridgeThread VideoThread, AudioThread;
 		CancellationTokenSource tok;
 
-		public TCPBridgeManager(bool hasVideo, bool hasAudio, string source) : base(hasVideo, hasAudio, false)
+		public TCPBridgeManager(bool hasVideo, bool hasAudio, string source, int port) : base(hasVideo, hasAudio, false, port)
 		{
 			tok = new CancellationTokenSource();
 			var t = tok.Token;

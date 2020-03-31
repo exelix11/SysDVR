@@ -15,7 +15,7 @@ namespace SysDVRClient.RTSP
 
 		RtspServer server;
 
-		public SysDvrRTSPServer(bool videoSupport, bool audioSupport, bool localOnly) 
+		public SysDvrRTSPServer(bool videoSupport, bool audioSupport, bool localOnly, int port) 
 		{
 			SysDVRVideoRTSPTarget v = null;
 			SysDVRAudioRTSPTarget a = null;
@@ -25,7 +25,7 @@ namespace SysDVRClient.RTSP
 
 			Video = v;
 			Audio = a;
-			server = new RtspServer(6666, v, a, localOnly);
+			server = new RtspServer(port, v, a, localOnly);
 		}
 
 		public virtual void Begin() => server.StartListenerThread();

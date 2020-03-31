@@ -140,11 +140,31 @@ namespace SysDVRClient
 			bool IsUsbMode = true;
 			IMutliStreamManager Streams = null;
 			bool NoAudio = false, NoVideo = false;
+			int Port;
 
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
+			string ArgValue(string arg) 
+			{
+				int index = Array.IndexOf(args, arg);
+				if (index == -1) return null;
+				if (args.Length <= index + 1) return null;
+				return args[index + 1];
+			}
+
+			int? ArgValueInt(string arg) 
+			{
+				var a = ArgValue(arg);
+				if (int.TryParse(a, out int res))
+					return res;
+				return null;
+			}
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
+			Port = ArgValueInt("--port") ?? 6666;
+
+			if (Port <= 1024)
+				Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator privileges");
 
 			if (NoVideo && NoAudio)
 			{
@@ -153,11 +173,11 @@ namespace SysDVRClient
 			}
 
 			if (args.Length == 0 || args[0].ToLower() == "rtsp")
-				Streams = new RTSP.SysDvrRTSPServer(!NoVideo, !NoAudio, false);
+				Streams = new RTSP.SysDvrRTSPServer(!NoVideo, !NoAudio, false, Port);
 			else if (args[0].ToLower() == "bridge")
 			{
 				IsUsbMode = false;
-				Streams = new TCPBridgeManager(!NoVideo, !NoAudio, args[1]);
+				Streams = new TCPBridgeManager(!NoVideo, !NoAudio, args[1], Port);
 			}
 			else
 				Streams = ParseLegacyArgs(args);
