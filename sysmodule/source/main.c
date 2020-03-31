@@ -5,7 +5,7 @@
 #include <pthread.h>
 
 #include "grcd.h"
-#include "UsbSerial.h"
+#include "modes/modes.h"
 
 #if defined(RELEASE)
 #pragma message "Building release"
@@ -19,26 +19,13 @@
 	Socketing requires a lot more memory
 */
 #if defined(USB_ONLY)
-	#define INNER_HEAP_SIZE 500 * 1024
+	#define INNER_HEAP_SIZE 1024
 	#pragma message "Building USB-only mode"
 #else
 	//TODO It's probably possible to reduce memory usage by using a custom initialization for libnx sockets
-	#define INNER_HEAP_SIZE 3 * 1024 * 1024
-	
-	#if defined(__SWITCH__)
-		#include <stdatomic.h>
-	#endif
+	#define INNER_HEAP_SIZE 500 * 1024
 	
 	#include "sockUtil.h"
-	#include "rtsp/RTSP.h"
-	#include "rtsp/H264Packetizer.h"
-	#include "rtsp/LE16Packetizer.h"
-#endif
-
-//Silence visual studio errors
-#if !defined(__SWITCH__)
-#define __attribute__(x) 
-typedef bool atomic_bool;
 #endif
 
 extern u32 __start__;
@@ -104,49 +91,21 @@ void __attribute__((weak)) __appExit(void)
 	smExit();
 }
 
-const int VbufSz = 0x32000;
-const int AbufSz = 0x1000;
-const int AudioBatchSz = 10;
-
-static u8* Vbuf = NULL;
-static u8* Abuf = NULL;
-static u32 VOutSz = 0;
-static u32 AOutSz = 0;
+uint8_t alignas(0x1000) Vbuf[VbufSz];
+uint8_t alignas(0x1000) Abuf[AbufSz * AudioBatchSz];
+uint32_t VOutSz = 0;
+uint32_t AOutSz = 0;
 
 //Note: timestamps are in usecs
-static u64 VTimestamp = 0;
-static u64 ATimestamp = 0;
+uint64_t VTimestamp = 0;
+uint64_t ATimestamp = 0;
 
 static Service grcdVideo;
 static Service grcdAudio;
 
-#if defined(USB_ONLY)
-const bool IsThreadRunning = true;
-#else
-/*
-	Accessing this is rather slow, avoid using it in the main flow of execution.
-	When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
-	Only in that case this variable should be checked
-*/
-static atomic_bool IsThreadRunning = false;
+#if !defined(USB_ONLY)
+atomic_bool IsThreadRunning = false;
 #endif
-
-static void AllocateRecordingBuf()
-{
-	Vbuf = aligned_alloc(0x1000, VbufSz);
-	if (!Vbuf)
-		fatalSimple(MAKERESULT(1, 11));
-
-	Abuf = aligned_alloc(0x1000, AbufSz * AudioBatchSz);
-	if (!Abuf)
-		fatalSimple(MAKERESULT(1, 12));
-}
-
-static void FreeRecordingBuf()
-{
-	free(Vbuf);
-	free(Abuf);
-}
 
 static Result OpenGrcdForThread(GrcStream stream)
 {
@@ -163,7 +122,7 @@ static Result OpenGrcdForThread(GrcStream stream)
 }
 
 //Batch sending audio samples to improve speed
-static void ReadAudioStream()
+void ReadAudioStream()
 {
 	u64 timestamp = 0;
 	u32 TmpAudioSz = 0;
@@ -188,7 +147,7 @@ static void ReadAudioStream()
 	}
 }
 
-static void ReadVideoStream()
+void ReadVideoStream()
 {
 	int fails = 0;
 
@@ -200,262 +159,10 @@ static void ReadVideoStream()
 	}
 }
 
-static UsbInterface VideoStream;
-static UsbInterface AudioStream;
-static const u32 REQMAGIC_VID = 0xAAAAAAAA;
-static const u32 REQMAGIC_AUD = 0xBBBBBBBB;
-
-static u32 USB_WaitForInputReq(const UsbInterface* dev)
-{
-	do
-	{
-		u32 initSeq = 0;
-		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), 1E+9) == sizeof(initSeq))
-			return initSeq;
-		svcSleepThread(1E+9);
-	} while (IsThreadRunning);
-	return 0;
-}
-
-static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
-{
-	u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	const u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
-
-	if (*size <= 0)
-		*size = 0;
-
-	if (UsbSerialWrite(Dev, &Magic, sizeof(Magic), 1E+8) != sizeof(Magic))
-		return;
-	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size))
-		return;
-
-	if (*size)
-	{
-		u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
-		u8 *const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-
-		if (UsbSerialWrite(Dev, ts, sizeof(*ts), 1E+8) != sizeof(*ts))
-			return;
-
-		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size)
-			return;
-	}
-	return;
-}
-
-static void* USB_StreamThreadMain(void* _stream)
-{
-	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 13));
-
-	const GrcStream stream = (GrcStream)_stream;
-	const UsbInterface *const Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
-	const u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
-
-	void (*const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
-
-	while (true)
-	{
-		//TODO: try improving performance by not waiting for requests like the new TCP mode
-		u32 cmd = USB_WaitForInputReq(Dev);
-
-		if (cmd == ThreadMagic)
-		{
-			ReadStreamFn();
-			USB_SendStream(stream, Dev);
-		}
-		else if (!IsThreadRunning) break;
-	}
-	pthread_exit(NULL);
-	return NULL;
-}
-
-#if !defined(USB_ONLY)
-const u8 SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
-const u8 PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
-
-static int VideoSock = -1, AudioSock = -1, VideoCurSock = -1, AudioCurSock = -1;
-static inline Result TCP_InitSockets(GrcStream stream)
-{
-	Result rc;
-	if (stream == GrcStream_Video)
-	{
-		if (VideoSock != -1) close(VideoSock);
-		rc = CreateTCPListener(&VideoSock, 6667, 2, false);
-		if (R_FAILED(rc)) return rc;
-	}
-	else
-	{
-		if (AudioSock != -1) close(AudioSock);
-		rc = CreateTCPListener(&AudioSock, 6668, 3, false);
-		if (R_FAILED(rc)) return rc;
-	}
-	return 0;
-}
-
-static void* TCP_StreamThreadMain(void* _stream)
-{
-	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 14));
-
-	const GrcStream stream = (GrcStream)_stream;
-	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
-
-	const u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	const u8* const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-	const u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
-
-	int* const sock = stream == GrcStream_Video ? &VideoSock : &AudioSock;
-	int* const OutSock = stream == GrcStream_Video ? &VideoCurSock : &AudioCurSock;
-
-	{
-		Result rc = TCP_InitSockets(stream);
-		if (R_FAILED(rc)) fatalSimple(rc);
-	}
-
-	/*
-		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
-		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
-	*/
-	int sockFails = 0;
-	while (IsThreadRunning) {
-		int curSock = accept(*sock, 0, 0);
-		if (curSock < 0)
-		{
-			if (sockFails++ >= 3 && IsThreadRunning)
-			{
-				Result rc = TCP_InitSockets(stream);
-				if (R_FAILED(rc)) fatalSimple(rc);
-			}
-			svcSleepThread(1E+9);
-			continue;
-		}
-
-		/*
-			Cooperative multithreading (at least i think that's the issue here) causes some issues with socketing,
-			even if the video and audio listeners are used on different threads calling accept on one of them
-			blocks the others as well, even while a client is connected.
-			The workaround is making the socket non-blocking and then to set the client socket as blocking.
-			By default the socket returned from accept inherits this flag.
-		*/
-		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
-
-		*OutSock = curSock;
-
-		while (true)
-		{
-			ReadStreamFn();
-
-			const u32 StreamMagic = 0x11111111;
-			if (write(curSock, &StreamMagic, sizeof(StreamMagic)) <= 0)
-				break;
-			if (write(curSock, ts, sizeof(u64)) <= 0)
-				break;
-			if (write(curSock, size, sizeof(*size)) <= 0)
-				break;
-			if (write(curSock, TargetBuf, *size) <= 0)
-				break;
-		}
-
-		close(curSock);
-		*OutSock = -1;
-		svcSleepThread(1E+9);
-	}
-	pthread_exit(NULL);
-	return NULL;
-}
-
-static void* RTSP_StreamThreadMain(void* _stream)
-{
-	if (!IsThreadRunning)
-		fatalSimple(MAKERESULT(1, 14));
-
-	const GrcStream stream = (GrcStream)_stream;
-	while (IsThreadRunning)
-	{
-		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
-		if (!IsThreadRunning) break;
-
-		RTP_InitializeSequenceNumbers();
-		while (true)
-		{
-			int error = 0;
-			if (stream == GrcStream_Video)
-			{
-				static int SendPPS = 0;
-
-				ReadVideoStream();
-				//Not needed for interleaved RTSP but mpv seems to need it for UDP.
-				if (++SendPPS > 100)
-				{
-					PacketizeH264((char*)SPS, sizeof(SPS), VTimestamp / 1000, RTSP_H264SendPacket);
-					PacketizeH264((char*)PPS, sizeof(PPS), VTimestamp / 1000, RTSP_H264SendPacket);
-					SendPPS = 0;
-				}
-				error = PacketizeH264((char*)Vbuf, VOutSz, VTimestamp / 1000, RTSP_H264SendPacket);
-			}
-			else
-			{
-				ReadAudioStream();
-				error = PacketizeLE16((char*)Abuf, AOutSz, ATimestamp / 1000, RTSP_LE16SendPacket);
-			}
-			if (error) break;
-		}
-	}
-
-	pthread_exit(NULL);
-	return NULL;
-}
-#endif
-
-static void USB_Init()
-{
-	Result rc = UsbSerialInitializeDefault(&VideoStream, &AudioStream);
-	if (R_FAILED(rc)) fatalSimple(rc);
-}
-
-static void USB_Exit()
-{
-	usbSerialExit();
-}
-
 static pthread_t AudioThread;
 #if !defined(USB_ONLY)
 static pthread_t VideoThread;
-static pthread_t RTSPThread;
 
-static void TCP_Exit()
-{
-#define CloseSock(x) do if (x != -1) {close(x); x = -1;} while(0)
-	CloseSock(VideoSock);
-	CloseSock(AudioSock);
-	CloseSock(AudioCurSock);
-	CloseSock(VideoCurSock);
-#undef CloseSock
-}
-
-static void RTSP_Init()
-{
-	pthread_create(&RTSPThread, NULL, RTSP_ServerThread, NULL);
-}
-
-static void RTSP_Exit()
-{
-	RTSP_StopServer();
-	pthread_join(RTSPThread, NULL);
-}
-
-typedef struct
-{
-	void (*InitFn)();
-	void (*ExitFn)();
-	void* (*MainThread)(void*);
-} StreamMode;
-
-StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
-StreamMode TCP_MODE = { NULL, TCP_Exit, TCP_StreamThreadMain };
-StreamMode RTSP_MODE = { RTSP_Init, RTSP_Exit, RTSP_StreamThreadMain };
 StreamMode* CurrentMode = NULL;
 
 static void SetMode(StreamMode* mode)
@@ -484,13 +191,6 @@ static void SetMode(StreamMode* mode)
 		pthread_create(&AudioThread, NULL, mode->MainThread, (void*)GrcStream_Audio);
 	}
 }
-
-//This is a version for the SysDVR Config app protocol, it's not shown annywhere
-#define SYSDVR_VERSION 2
-#define TYPE_MODE_USB 1
-#define TYPE_MODE_TCP 2
-#define TYPE_MODE_NULL 3
-#define TYPE_MODE_RTSP 4
 
 static void ConfigThread()
 {
@@ -586,18 +286,16 @@ static bool FileExists(const char* fname)
 
 int main(int argc, char* argv[])
 {
-	AllocateRecordingBuf();
-
 	Result rc = OpenGrcdForThread(GrcStream_Audio);
 	if (R_FAILED(rc)) fatalSimple(rc);
 	rc = OpenGrcdForThread(GrcStream_Video);
 	if (R_FAILED(rc)) fatalSimple(rc);
 
 #if defined(USB_ONLY)
-	USB_Init();
-	pthread_create(&AudioThread, NULL, USB_StreamThreadMain, (void*)GrcStream_Audio);
-	USB_StreamThreadMain((void*)GrcStream_Video);
-	USB_Exit();
+	USB_MODE.InitFn();
+	pthread_create(&AudioThread, NULL, USB_MODE.MainThread, (void*)GrcStream_Audio);
+	USB_MODE.MainThread((void*)GrcStream_Video);
+	USB_MODE.ExitFn();
 #else
 	if (FileExists("/config/sysdvr/usb"))
 		SetMode(&USB_MODE);
@@ -612,7 +310,6 @@ int main(int argc, char* argv[])
 
 	grcdServiceClose(&grcdVideo);
 	grcdServiceClose(&grcdAudio);
-	FreeRecordingBuf();
 
 	return 0;
 }

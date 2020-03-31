@@ -1,0 +1,18 @@
+﻿#define PACKED 
+#define __attribute__(x) 
+#define NX_INLINE static inline
+#define NX_CONSTEXPR contexpr
+#define u32 uint32_t
+#define size_t uint32_t
+#define u8 uint8_t
+#deinfe serviceDispatchIn(...)
+#define serviceDispatch(...)
+#define _Static_assert(x,y)
+#define atomic_bool int
+#define alignas(...)
+
+#define O_NONBLOCK 0
+#define F_SETFL 0
+#define F_GETFL 0
+
+#define pthread_t void*
