@@ -1,5 +1,6 @@
 #pragma once
 #include <switch.h>
+#include "modes/defines.h"
 #ifdef __SWITCH__
 #include <unistd.h>
 #include <arpa/inet.h>

@@ -1,7 +1,7 @@
 ﻿#include <switch.h>
 #include "utils.h"
 
-#include "../../sysmodule/source/modes/modeDefines.h"
+#include "../../sysmodule/source/modes/defines.h"
 
 void PrintDefaultBootMode() 
 {

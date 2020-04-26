@@ -15,26 +15,6 @@ namespace SysDVRClient
 {
 	class Program
 	{
-		public static UsbContext LibUsbCtx = null;
-
-		static UsbDevice GetDevice(LibUsbDotNet.LogLevel level) 
-		{
-			if (LibUsbCtx != null)
-				throw new Exception("Libusb has already been initialized");
-
-			LibUsbCtx = new UsbContext();
-			LibUsbCtx.SetDebugLevel(level);
-			var usbDeviceCollection = LibUsbCtx.List();
-			var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
-
-			if (selectedDevice == null)
-				return null;
-
-			selectedDevice.Open();
-
-			return new UsbDevice(selectedDevice);
-		}
-
 		static IMutliStreamManager ParseLegacyArgs(string[] args)
 		{
 			IOutTarget VTarget = null, ATarget = null;
@@ -77,7 +57,7 @@ namespace SysDVRClient
 			index = Array.IndexOf(args, "audio");
 			if (index >= 0) ParseTargetArgs(index, ref ATarget);
 
-			return new SimpleStreamManager(VTarget, ATarget);
+			return new LegacyUsbStreamManager(VTarget, ATarget);
 		}
 
 		static void PrintGuide(bool full)
@@ -162,6 +142,7 @@ namespace SysDVRClient
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
 			Port = ArgValueInt("--port") ?? 6666;
+			StreamingThread.Logging = HasArg("--print-stats");
 
 			if (Port <= 1024)
 				Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator privileges");
@@ -173,7 +154,7 @@ namespace SysDVRClient
 			}
 
 			if (args.Length == 0 || args[0].ToLower() == "rtsp")
-				Streams = new RTSP.SysDvrRTSPServer(!NoVideo, !NoAudio, false, Port);
+				Streams = new UsbStreamManager(!NoVideo, !NoAudio, Port);
 			else if (args[0].ToLower() == "bridge")
 			{
 				IsUsbMode = false;
@@ -182,15 +163,18 @@ namespace SysDVRClient
 			else
 				Streams = ParseLegacyArgs(args);
 
-			Console.WriteLine("Starting stream, press return to stop");
 			if (IsUsbMode)
-				StartUsbStreaming(Streams, args);
-			else
-				StartManagedStreaming(Streams, args);
+			{
+				if (HasArg("--usb-warn")) UsbHelper.LogLevel = LogLevel.Info;
+				if (HasArg("--usb-debug")) UsbHelper.LogLevel = LogLevel.Debug;
+			}
+
+			StartStreaming(Streams, args);
 		}
 
-		static void StartManagedStreaming(IMutliStreamManager Streams, string[] args)
+		static void StartStreaming(IMutliStreamManager Streams, string[] args)
 		{
+			Console.WriteLine("Starting stream, press return to stop");
 			Console.WriteLine("If the stream lags try pausing and unpausing the player.");
 			Streams.Begin();
 
@@ -198,83 +182,6 @@ namespace SysDVRClient
 			Console.WriteLine("Terminating threads...");
 
 			Streams.Stop();
-			Streams.Dispose();
-		}
-
-		static void StartUsbStreaming(IMutliStreamManager Streams, string[] args)
-		{
-			bool PrintStats = false;
-			LogLevel UsbLogLevel = LogLevel.Error;
-
-			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
-
-			if (HasArg("--desync-fix"))
-				Console.WriteLine("Warning: the --desync-fix fix option has been deprecated and will be ignored");
-
-			PrintStats = HasArg("--print-stats");
-			if (HasArg("--usb-warn")) UsbLogLevel = LogLevel.Info;
-			if (HasArg("--usb-debug")) UsbLogLevel = LogLevel.Debug;
-
-			if (Streams == null || !Streams.HasAStream)
-			{
-				Console.WriteLine("Specify at least a video or audio target");
-				return;
-			}
-
-			var stream = GetDevice(UsbLogLevel);
-			if (stream == null)
-			{
-				Console.WriteLine("Device not found, did you configure the drivers properly ?");
-				return;
-			}
-
-			CancellationTokenSource StopThreads = new CancellationTokenSource();
-
-			VideoStreamThread Video = null;
-			if (Streams.Video != null)
-				Video = new VideoStreamThread(StopThreads.Token, Streams.Video, stream.OpenStreamDefault(), PrintStats);
-
-			AudioStreamThread Audio = null;
-			if (Streams.Audio != null)
-				Audio = new AudioStreamThread(StopThreads.Token, Streams.Audio, stream.OpenStreamAlt(), PrintStats);
-
-			Video?.Start();
-			Audio?.Start();
-
-			//If streaming via RTSP use managed streaming, this part should be reworked in the future, maybe using "managed streams" only
-			if (Streams is RTSP.SysDvrRTSPServer || Streams is TCPBridgeManager)
-				StartManagedStreaming(Streams, null);
-			else
-			{
-				Streams.Begin();
-				Console.WriteLine("If the stream lags press Q to force a resync");
-				ConsoleKey c;
-				while ((c = Console.ReadKey().Key) != ConsoleKey.Enter)
-				{
-					if (c == ConsoleKey.Q)
-					{
-						Console.WriteLine("Pausing streams for 3 seconds to flush buffer data");
-						Video?.Pause();
-						Audio?.Pause();
-						Thread.Sleep(3000);
-						Video?.Resume();
-						Audio?.Resume();
-					}
-				}
-
-				Console.WriteLine("Terminating threads...");
-				Streams.Stop();
-				Streams.Dispose();
-			}
-
-			StopThreads.Cancel();
-			Video?.Join();
-			Audio?.Join();
-
-			Video?.Dispose();
-			Audio?.Dispose();
-
-			LibUsbCtx.Dispose();
 		}
 	}
 }

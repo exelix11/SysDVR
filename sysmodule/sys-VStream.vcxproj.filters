@@ -9,7 +9,6 @@
   <ItemGroup>
     <ClCompile Include="source\main.c" />
     <ClCompile Include="source\grcd.c" />
-    <ClCompile Include="source\UsbSerial.c" />
     <ClCompile Include="source\rtsp\RTSP.c">
       <Filter>rtsp</Filter>
     </ClCompile>
@@ -23,10 +22,15 @@
     <ClCompile Include="source\modes\USBmode.c">
       <Filter>modes</Filter>
     </ClCompile>
+    <ClCompile Include="source\USB\UsbComms.c">
+      <Filter>USB</Filter>
+    </ClCompile>
+    <ClCompile Include="source\USB\Serial.c">
+      <Filter>USB</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
-    <ClInclude Include="source\UsbSerial.h" />
     <ClInclude Include="source\rtsp\RTP.h">
       <Filter>rtsp</Filter>
     </ClInclude>
@@ -40,10 +44,16 @@
       <Filter>rtsp</Filter>
     </ClInclude>
     <ClInclude Include="source\sockUtil.h" />
-    <ClInclude Include="source\modes\modeDefines.h">
+    <ClInclude Include="source\modes\modes.h">
       <Filter>modes</Filter>
     </ClInclude>
-    <ClInclude Include="source\modes\modes.h">
+    <ClInclude Include="source\USB\UsbComms.h">
+      <Filter>USB</Filter>
+    </ClInclude>
+    <ClInclude Include="source\USB\Serial.h">
+      <Filter>USB</Filter>
+    </ClInclude>
+    <ClInclude Include="source\modes\defines.h">
       <Filter>modes</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,6 +63,9 @@
     </Filter>
     <Filter Include="modes">
       <UniqueIdentifier>{3bfd27c8-b990-4608-aab1-f0a243e14711}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="USB">
+      <UniqueIdentifier>{12be9152-ad50-474d-86b6-f96b11d7b4e4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
