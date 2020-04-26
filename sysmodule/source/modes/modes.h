@@ -23,6 +23,7 @@ extern atomic_bool IsThreadRunning;
 
 #define VbufSz 0x32000
 #define AbufSz 0x1000
+#define AMaxBatch 4
 
 typedef struct {
 	u32 Magic;
@@ -41,17 +42,17 @@ _Static_assert(sizeof(VideoPacket) == sizeof(PacketHeader) + VbufSz);
 
 typedef struct {
 	PacketHeader Header;
-	u8 Data[AbufSz];
+	u8 Data[AbufSz * AMaxBatch];
 } AudioPacket;
 
-_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz);
+_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * AMaxBatch);
 
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
 
+void SetAudioBatching(int count);
 bool ReadAudioStream();
 bool ReadVideoStream();
-bool ReadVideoStreamRaw();
 
 void LaunchThread(Thread* t, ThreadFunc f);
 void JoinThread(Thread* t);

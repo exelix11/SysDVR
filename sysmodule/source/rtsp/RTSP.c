@@ -11,6 +11,7 @@
 #include "RTSP.h"
 
 //For RTP.h
+uint16_t SequenceNumbers[2];
 int MaxRTPPacket;
 int MaxRTPPayload;
 
@@ -75,6 +76,7 @@ static bool RTSP_Transfer_interleaved = false;
 #endif
 
 #define printl(...) 
+//#define printl(...) do {printf(__VA_ARGS__); fflush(stdout);} while(0)
 
 static atomic_bool RTSP_Running = false;
 atomic_bool RTSP_ClientStreaming = false;
@@ -220,6 +222,8 @@ char AudioSendBuffer[MaxRTPPacketSize_UDP];
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
 	int res = 0;
+
+	printl("RTSP_LE16SendPacket %llx %llx %x\n", header, data, len);
 
 	if (RTSP_Transfer_interleaved)
 	{
@@ -434,6 +438,8 @@ static inline void RTSP_MainLoop()
 
 					ports[targetStream].data = portSettings[0] - '0';
 					ports[targetStream].control = portSettings[2] - '0';
+
+					printl("Setting %d ports: %d %d\n", targetStream, ports[targetStream].data, ports[targetStream].control);
 
 #ifndef INTERLEAVED_FLAG_CONST
 					RTSP_Transfer_interleaved = true;
