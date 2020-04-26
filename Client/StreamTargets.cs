@@ -7,23 +7,19 @@ using System.Text;
 
 namespace SysDVRClient
 {
-	public enum StreamKind
+	enum StreamKind
 	{
 		Video,
 		Audio
 	};
 
-	public interface IOutTarget : IDisposable
+	interface IOutTarget
 	{
-		public delegate void ClientConnectedDelegate();
-		public event ClientConnectedDelegate ClientConnected;
-
-		public void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
+		void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
 		void SendData(byte[] data, int offset, int size, UInt64 ts);
-		void InitializeStreaming();
 	}
 
-	public interface IMutliStreamManager : IDisposable 
+	interface IMutliStreamManager 
 	{
 		IOutTarget Video { get; }
 		IOutTarget Audio { get; }
@@ -34,32 +30,9 @@ namespace SysDVRClient
 		void Stop();
 	}
 
-	class SimpleStreamManager : IMutliStreamManager
-	{
-		public IOutTarget Video { get; set; }
-		public IOutTarget Audio { get; set; }
-
-		public SimpleStreamManager(IOutTarget v, IOutTarget a)
-		{
-			Video = v;
-			Audio = a;
-		}
-
-		public void Begin() { }
-		public void Stop() { }
-
-		public void Dispose()
-		{
-			Video?.Dispose();
-			Audio?.Dispose();
-		}
-	}
-
 	class OutFileTarget : IOutTarget
 	{
 		FileStream Vfs;
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public OutFileTarget(string fname)
 		{
@@ -76,9 +49,7 @@ namespace SysDVRClient
 		{
 			Vfs.Write(data, offset, size);
 		}
-
-		public void InitializeStreaming() { ClientConnected(); }
-	}
+}
 
 	class TCPTarget : IOutTarget
 	{
@@ -86,8 +57,6 @@ namespace SysDVRClient
 
 		System.Net.IPAddress HostAddr;
 		int HostPort;
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public TCPTarget(System.Net.IPAddress addr, int port)
 		{
@@ -102,13 +71,6 @@ namespace SysDVRClient
 			Console.WriteLine($"Waiting for connection on port {HostPort}...");
 			Sock = v.AcceptSocket();
 			v.Stop();
-			ClientConnected();
-		}
-
-		public void Dispose()
-		{
-			Sock.Close();
-			Sock.Dispose();
 		}
 
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
@@ -124,15 +86,11 @@ namespace SysDVRClient
 				ReceiveConnection();
 			}
 		}
-
-		public void InitializeStreaming() => ReceiveConnection();
 	}
 
 	class StdInTarget : IOutTarget
 	{
 		Process proc;
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public StdInTarget(string path, string args)
 		{
@@ -146,18 +104,11 @@ namespace SysDVRClient
 			proc = Process.Start(p);
 		}
 
-		public void Dispose()
-		{
-			if (!proc.HasExited)
-				proc.Kill();
-		}
-
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
 
-		public void InitializeStreaming() { ClientConnected(); }
 	}
 
 #if DEBUG
@@ -173,14 +124,12 @@ namespace SysDVRClient
 			bin = new BinaryWriter(mem);
 		}
 
-		public void Dispose()
+		~LoggingTarget()
 		{
 			File.WriteAllBytes(filename, mem.ToArray());
 		}
 
 		Stopwatch sw = new Stopwatch();
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
@@ -189,11 +138,6 @@ namespace SysDVRClient
 			bin.Write(ts);
 			bin.Write(data, offset, size);
 			sw.Restart();
-		}
-
-		public void InitializeStreaming()
-		{
-
 		}
 	}
 #endif

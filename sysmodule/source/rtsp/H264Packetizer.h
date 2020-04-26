@@ -19,6 +19,13 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t tsMs, H264SendPa
 			break;
 		}
 
+#if !defined(RELEASE)
+	//This only assumes one NAL per packet, is this not the case ?
+	for (int i = 2; i < len; i++)
+		if (nal[i - 2] == 0 && nal[i - 1] == 0 && nal[i] == 1)
+			fatalThrow(ERR_RTSP_MULTI_NAL);
+#endif
+
 	char header[RTPHeaderSz + 2]; // 2 extra bytes for the FU-A header, not really part of the RTP header but saves us a syscall on tcp and a memcopy on udp
 
 	if (len <= MaxRTPPayload)

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SysDVRClient.RTSP
 {
-	public class SysDvrRTSPServer : IMutliStreamManager
+	class SysDvrRTSPServer : IMutliStreamManager
 	{
 		public IOutTarget Video { get; protected set; }
 		public IOutTarget Audio { get; protected set; }
@@ -30,52 +30,19 @@ namespace SysDVRClient.RTSP
 
 		public virtual void Begin() => server.StartListenerThread();
 		public virtual void Stop() => server.StopListen();
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual void Dispose(bool Managed)
-		{
-			if (!Managed) return;
-			server?.Dispose();
-			Video?.Dispose();
-			Audio?.Dispose();
-		}
 	}
 
-	public abstract class SysDvrRTSPTarget : IOutTarget
+	abstract class SysDvrRTSPTarget : IOutTarget
 	{
 		public delegate void DataAvailableFn(Memory<byte> Data, ulong tsMsec);
 		public event DataAvailableFn DataAvailable;
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
-
+		
 		protected void InvokeEvent(Memory<byte> Data, ulong tsMsec) => DataAvailable(Data, tsMsec);
 
 		public abstract void SendData(byte[] data, int offset, int size, ulong ts);
-		
-		public void InitializeStreaming()
-		{
-			ClientConnected?.Invoke();
-		}
-
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual void Dispose(bool managed)
-		{
-
-		}
-
-		~SysDvrRTSPTarget() { Dispose(false); }
 	}
 
-	public class SysDVRAudioRTSPTarget : SysDvrRTSPTarget
+	class SysDVRAudioRTSPTarget : SysDvrRTSPTarget
 	{
 		public override void SendData(byte[] data, int offset, int size, ulong ts)
 		{
@@ -83,7 +50,7 @@ namespace SysDVRClient.RTSP
 		}
 	}
 
-	public class SysDVRVideoRTSPTarget : SysDvrRTSPTarget
+	class SysDVRVideoRTSPTarget : SysDvrRTSPTarget
 	{
 		public static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 		public static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
@@ -113,13 +80,7 @@ namespace SysDVRClient.RTSP
 			return data.Slice(nalOffset, nextOffset - nalOffset);
 		}
 
-		//public override void InitializeStreaming()
-		//{
-		//	 SendData(SPS, 0, SPS.Length, 0);
-		//	 SendData(PPS, 0, PPS.Length, 0);
-		//}
-
-		public override void SendData(byte[] indata, int offset, int size, ulong ts)
+		override public void SendData(byte[] indata, int offset, int size, ulong ts)
 		{
 			Memory<byte> data = new Memory<byte>(indata, offset, size);
 			var nal = FindNalOffset(data);

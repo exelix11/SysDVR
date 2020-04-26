@@ -134,7 +134,8 @@
     <ClCompile Include="source\modes\USBmode.c" />
     <ClCompile Include="source\rtsp\RTSP.c" />
     <ClCompile Include="source\sockUtil.c" />
-    <ClCompile Include="source\UsbSerial.c" />
+    <ClCompile Include="source\USB\Serial.c" />
+    <ClCompile Include="source\USB\UsbComms.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.nx.hint" />
@@ -144,14 +145,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
-    <ClInclude Include="source\modes\modeDefines.h" />
+    <ClInclude Include="source\modes\defines.h" />
     <ClInclude Include="source\modes\modes.h" />
     <ClInclude Include="source\rtsp\H264Packetizer.h" />
     <ClInclude Include="source\rtsp\LE16Packetizer.h" />
     <ClInclude Include="source\rtsp\RTP.h" />
     <ClInclude Include="source\rtsp\RTSP.h" />
     <ClInclude Include="source\sockUtil.h" />
-    <ClInclude Include="source\UsbSerial.h" />
+    <ClInclude Include="source\USB\Serial.h" />
+    <ClInclude Include="source\USB\UsbComms.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

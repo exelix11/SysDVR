@@ -32,11 +32,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="3.0.48-alpha" />
+    <PackageReference Include="LibUsbDotNet" Version="3.0.75-alpha" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpRTSP\RTSP\RTSP.csproj" />
+    <ProjectReference Include="..\SharpRTSP\RTSP\SharpRTSP.csproj" />
   </ItemGroup>
 
 </Project>

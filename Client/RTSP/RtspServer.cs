@@ -11,7 +11,7 @@ using System.IO;
 
 namespace SysDVRClient.RTSP
 {
-	public class RtspServer : IDisposable
+	class RtspServer : IDisposable
 	{
 		const uint global_ssrc = 0; // 8 hex digits
 
@@ -371,9 +371,6 @@ namespace SysDVRClient.RTSP
 							play_response.AddHeader("Range: " + range);
 							play_response.AddHeader("RTP-Info: " + rtp_info);
 							listener.SendMessage(play_response);
-
-							video_source?.InitializeStreaming();
-							audio_source?.InitializeStreaming();
 
 							break;
 						}

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <switch.h>
 #include <string.h>
-#include <pthread.h>
 
 #include "grcd.h"
 #include "modes/modes.h"
@@ -23,7 +22,7 @@
 	#pragma message "Building USB-only mode"
 #else
 	//TODO It's probably possible to reduce memory usage by using a custom initialization for libnx sockets
-	#define INNER_HEAP_SIZE 256 * 1024
+	#define INNER_HEAP_SIZE 1024 * 1024
 	
 	#include "rtsp/RTP.h"
 	#include "sockUtil.h"
@@ -110,14 +109,8 @@ void __attribute__((weak)) __appExit(void)
 	smExit();
 }
 
-uint8_t alignas(0x1000) Vbuf[VbufSz];
-uint8_t alignas(0x1000) Abuf[AbufSz * AudioBatchSz];
-uint32_t VOutSz = 0;
-uint32_t AOutSz = 0;
-
-//Note: timestamps are in usecs
-uint64_t VTimestamp = 0;
-uint64_t ATimestamp = 0;
+VideoPacket alignas(0x1000) VPkt;
+AudioPacket alignas(0x1000) APkt;
 
 static Service grcdVideo;
 static Service grcdAudio;
@@ -141,46 +134,54 @@ static Result OpenGrcdForThread(GrcStream stream)
 }
 
 //Batch sending audio samples to improve speed
-void ReadAudioStream()
+bool ReadAudioStream()
 {
-	u64 timestamp = 0;
-	u32 TmpAudioSz = 0;
-	AOutSz = 0;
-	for (int i = 0, fails = 0; i < AudioBatchSz; i++)
+	Result rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data, AbufSz, NULL, &APkt.Header.DataSize, &APkt.Header.Timestamp);
+	return R_SUCCEEDED(rc) && APkt.Header.DataSize > 0;
+}
+inline bool ReadVideoStreamRaw() 
+{
+	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
+	return R_SUCCEEDED(res) && VPkt.Header.DataSize > 0;
+}
+
+bool ReadVideoStream()
+{		
+	static int SPSCount = 0;
+	
+	bool result = ReadVideoStreamRaw();
+
+	//If there's space append SPS and PPS every once in a while
+	if (++SPSCount > 500 && result && VbufSz - VPkt.Header.DataSize >= sizeof(PPS) + sizeof(SPS))
 	{
-		Result res = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, Abuf + AOutSz, AbufSz, NULL, &TmpAudioSz, &timestamp);
-		if (R_FAILED(res) || TmpAudioSz <= 0)
-		{
-			if (fails++ > 9 && !IsThreadRunning)
-			{
-				AOutSz = 0;
-				break;
-			}
-			--i;
-			continue;
-		}
-		fails = 0;
-		AOutSz += TmpAudioSz;
-		if (i == 0)
-			ATimestamp = timestamp;
+		SPSCount = 0;
+		memcpy(VPkt.Data + VPkt.Header.DataSize, SPS, sizeof(SPS));
+		memcpy(VPkt.Data + VPkt.Header.DataSize + sizeof(SPS), PPS, sizeof(PPS));
+		VPkt.Header.DataSize += sizeof(SPS) + sizeof(PPS);
 	}
+
+	return result;
 }
 
-void ReadVideoStream()
+void LaunchThread(Thread* t, ThreadFunc f) 
 {
-	int fails = 0;
-
-	while (true) {
-		Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, Vbuf, VbufSz, NULL, &VOutSz, &VTimestamp);
-		if (R_SUCCEEDED(res) && VOutSz > 0) break;
-		VOutSz = 0;
-		if (fails++ > 8 && !IsThreadRunning) break;
-	}
+	Result rc = threadCreate(t, f, NULL, NULL, 0x2000, 0x3B, -2);
+	if (R_FAILED(rc)) fatalThrow(rc);
+	rc = threadStart(t);
+	if (R_FAILED(rc)) fatalThrow(rc);
 }
 
-static pthread_t AudioThread;
+void JoinThread(Thread* t)
+{
+	Result rc = threadWaitForExit(t);
+	if (R_FAILED(rc)) fatalThrow(rc);
+	rc = threadClose(t);
+	if (R_FAILED(rc)) fatalThrow(rc);
+}
+
+static Thread AudioThread;
 #if !defined(USB_ONLY)
-static pthread_t VideoThread;
+static Thread VideoThread;
 
 StreamMode* CurrentMode = NULL;
 
@@ -196,8 +197,10 @@ static void SetMode(StreamMode* mode)
 			If a client is connected this will hang as GrcdServiceRead will block till it acquires a new buffer,
 			to resume you need to go back in the game and disconnect the client
 		*/
-		pthread_join(VideoThread, NULL);
-		pthread_join(AudioThread, NULL);
+		if (CurrentMode->VThread)
+			JoinThread(&VideoThread);
+		if (CurrentMode->AThread)
+			JoinThread(&AudioThread);
 	}
 	CurrentMode = mode;
 	if (mode)
@@ -206,8 +209,10 @@ static void SetMode(StreamMode* mode)
 		svcSleepThread(5E+8);
 		if (mode->InitFn)
 			mode->InitFn();
-		pthread_create(&VideoThread, NULL, mode->MainThread, (void*)GrcStream_Video);
-		pthread_create(&AudioThread, NULL, mode->MainThread, (void*)GrcStream_Audio);
+		if (mode->VThread)
+			LaunchThread(&VideoThread, mode->VThread);
+		if (mode->AThread)
+			LaunchThread(&AudioThread, mode->AThread);
 	}
 }
 
@@ -215,7 +220,7 @@ static void ConfigThread()
 {
 	//Maybe hosting our own service is better but it looks harder than this
 	int ConfigSock = -1, sockFails = 0;
-	ConfigSock = CreateTCPListener(6668, true, 4);
+	ConfigSock = CreateTCPListener(6668, true, ERR_SOCK_CONFIG_1);
 
 	while (1)
 	{
@@ -226,7 +231,7 @@ static void ConfigThread()
 			{
 				sockFails = 0;
 				close(ConfigSock);
-				ConfigSock = CreateTCPListener(6668, true, 4);
+				ConfigSock = CreateTCPListener(6668, true, ERR_SOCK_CONFIG_2);
 			}
 			svcSleepThread(1E+9);
 			continue;
@@ -308,8 +313,8 @@ int main(int argc, char* argv[])
 
 #if defined(USB_ONLY)
 	USB_MODE.InitFn();
-	pthread_create(&AudioThread, NULL, USB_MODE.MainThread, (void*)GrcStream_Audio);
-	USB_MODE.MainThread((void*)GrcStream_Video);
+	LaunchThread(&AudioThread, USB_MODE.AThread);
+	USB_MODE.VThread(NULL);
 	USB_MODE.ExitFn();
 #else
 	if (FileExists("/config/sysdvr/usb"))

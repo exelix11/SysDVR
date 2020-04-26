@@ -1,86 +1,60 @@
 #include "modes.h"
-#include "../UsbSerial.h"
+#include "../USB/Serial.h"
 #include "../grcd.h"
 
-static UsbInterface VideoStream;
-static UsbInterface AudioStream;
-static const u32 REQMAGIC_VID = 0xAAAAAAAA;
-static const u32 REQMAGIC_AUD = 0xBBBBBBBB;
+static UsbInterface VFace;
+static UsbInterface AFace;
 
-static u32 USB_WaitForInputReq(const UsbInterface* dev)
+static inline bool SerialWrite(UsbInterface * interface, const void* data, u32 len)
 {
-	do
-	{
-		u32 initSeq = 0;
-		if (UsbSerialRead(dev, &initSeq, sizeof(initSeq), 1E+9) == sizeof(initSeq))
-			return initSeq;
-		svcSleepThread(1E+9);
-	} while (IsThreadRunning);
-	return 0;
+	u32 sz = UsbSerialWrite(interface, data, len, 1E+9);
+	return sz == len;
 }
 
-static void USB_SendStream(GrcStream stream, const UsbInterface* Dev)
-{
-	u32* const size = stream == GrcStream_Video ? &VOutSz : &AOutSz;
-	const u32 Magic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
-
-	if (*size <= 0)
-		*size = 0;
-
-	if (UsbSerialWrite(Dev, &Magic, sizeof(Magic), 1E+8) != sizeof(Magic))
-		return;
-	if (UsbSerialWrite(Dev, size, sizeof(*size), 1E+8) != sizeof(*size))
-		return;
-
-	if (*size)
-	{
-		u64* const ts = stream == GrcStream_Video ? &VTimestamp : &ATimestamp;
-		u8* const TargetBuf = stream == GrcStream_Video ? Vbuf : Abuf;
-
-		if (UsbSerialWrite(Dev, ts, sizeof(*ts), 1E+8) != sizeof(*ts))
-			return;
-
-		if (UsbSerialWrite(Dev, TargetBuf, *size, 2E+8) != *size)
-			return;
-	}
-	return;
-}
-
-static void* USB_StreamThreadMain(void* _stream)
+static void USB_StreamVideo(void* _)
 {
 	if (!IsThreadRunning)
-		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 13));
-
-	const GrcStream stream = (GrcStream)_stream;
-	const UsbInterface* const Dev = stream == GrcStream_Video ? &VideoStream : &AudioStream;
-	const u32 ThreadMagic = stream == GrcStream_Video ? REQMAGIC_VID : REQMAGIC_AUD;
-
-	void (* const ReadStreamFn)() = stream == GrcStream_Video ? ReadVideoStream : ReadAudioStream;
+		fatalThrow(ERR_USB_VIDEO);
 
 	while (true)
 	{
-		//TODO: try improving performance by not waiting for requests like the new TCP mode
-		u32 cmd = USB_WaitForInputReq(Dev);
+		if (!ReadVideoStream())
+			TerminateOrContinue
 
-		if (cmd == ThreadMagic)
-		{
-			ReadStreamFn();
-			USB_SendStream(stream, Dev);
-		}
-		else if (!IsThreadRunning) break;
+		const u32 size = sizeof(PacketHeader) + VPkt.Header.DataSize;
+		if (!SerialWrite(&VFace, &VPkt, size))
+			TerminateOrContinue
 	}
-	return NULL;
+}
+
+static void USB_StreamAudio(void* _)
+{
+	if (!IsThreadRunning)
+		fatalThrow(ERR_USB_AUDIO);
+
+	while (true)
+	{
+		if (!ReadAudioStream())
+			TerminateOrContinue
+
+		const u32 size = sizeof(PacketHeader) + APkt.Header.DataSize;
+		if (!SerialWrite(&AFace,&APkt, size))
+			TerminateOrContinue
+	}
 }
 
 static void USB_Init()
 {
-	Result rc = UsbSerialInitializeDefault(&VideoStream, &AudioStream);
-	if (R_FAILED(rc)) fatalThrow(rc);
+	VPkt.Header.Magic = 0xAAAAAAAA;
+	APkt.Header.Magic = 0xAAAAAAAA;
+	Result rc = UsbSerialInitialize(&VFace, &AFace);
+	if (R_FAILED(rc)) 
+		fatalThrow(rc);
 }
 
 static void USB_Exit()
 {
-	usbSerialExit();
+	UsbCommsExit();
 }
 
-StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamThreadMain };
+StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamVideo, USB_StreamAudio };

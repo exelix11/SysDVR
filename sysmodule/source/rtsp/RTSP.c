@@ -11,7 +11,6 @@
 #include "RTSP.h"
 
 //For RTP.h
-uint16_t SequenceNumbers[2];
 int MaxRTPPacket;
 int MaxRTPPayload;
 
@@ -90,9 +89,9 @@ static inline void CloseSocket(int* sptr)
 
 static inline void RTSP_MainLoop();
 
-void* RTSP_ServerThread(void* arg)
+void RTSP_ServerThread(void* _)
 {
-	RTSPSock = CreateTCPListener(6666, false, 1);
+	RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_1);
 
 #ifdef INTERLEAVED_SUPPORT
 	mutexInit(&RTSP_operation_lock);
@@ -108,7 +107,7 @@ void* RTSP_ServerThread(void* arg)
 			if (sockFails++ >= 3 && RTSP_Running)
 			{
 				CloseSocket(&RTSPSock);
-				RTSPSock = CreateTCPListener(6666, false, 1);
+				RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_2);
 			}
 			svcSleepThread(1E+9);
 			continue;
@@ -129,7 +128,6 @@ void* RTSP_ServerThread(void* arg)
 		
 		svcSleepThread(1E+9);
 	}
-	return NULL;
 }
 
 void RTSP_StopServer()
