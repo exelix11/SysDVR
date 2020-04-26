@@ -17,7 +17,7 @@
 extern int MaxRTPPacket;
 extern int MaxRTPPayload;
 
-static uint16_t SequenceNumbers[2];
+extern uint16_t SequenceNumbers[2];
 static const char PT[2] = {96, 97};
 
 static inline void RTP_InitializeSequenceNumbers() 

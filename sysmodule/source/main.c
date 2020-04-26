@@ -65,17 +65,17 @@ void __attribute__((weak)) __appInit(void)
 	//rc = socketInitializeDefault();
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
-
+	
 		.tcp_tx_buf_size = MaxRTPPacketSize_TCP,
 		.tcp_rx_buf_size = MaxRTPPacketSize_TCP,
 		.tcp_tx_buf_max_size = MaxRTPPacketSize_TCP * 6,
 		.tcp_rx_buf_max_size = MaxRTPPacketSize_TCP * 6,
-
+	
 		.udp_tx_buf_size = MaxRTPPacketSize_UDP * 2,
 		.udp_rx_buf_size = MaxRTPPacketSize_UDP,
-
+	
 		.sb_efficiency = 4,
-
+	
 		.num_bsd_sessions = 3,
 		.bsd_service_type = BsdServiceType_User,
 	};
@@ -133,26 +133,43 @@ static Result OpenGrcdForThread(GrcStream stream)
 	return rc;
 }
 
-//Batch sending audio samples to improve speed
+static int AudioBatching = 1;
+void SetAudioBatching(int count)
+{
+	if (count <= 0 || count > AMaxBatch)
+		fatalThrow(ERR_AUDIO_BATCH_SIZE);
+
+	AudioBatching = count;
+}
+
 bool ReadAudioStream()
 {
 	Result rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data, AbufSz, NULL, &APkt.Header.DataSize, &APkt.Header.Timestamp);
-	return R_SUCCEEDED(rc) && APkt.Header.DataSize > 0;
-}
-inline bool ReadVideoStreamRaw() 
-{
-	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
-	return R_SUCCEEDED(res) && VPkt.Header.DataSize > 0;
+	if (R_FAILED(rc) || APkt.Header.DataSize <= 0)
+		return false;
+
+	for (int i = 1; i < AudioBatching; i++)
+	{
+		u32 tmpSize = 0;
+	
+		rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data + APkt.Header.DataSize, AbufSz, NULL, &tmpSize, NULL);
+		if (R_FAILED(rc) || APkt.Header.DataSize <= 0)
+			break;
+	
+		APkt.Header.DataSize += tmpSize;
+	}
+	return true;
 }
 
 bool ReadVideoStream()
 {		
 	static int SPSCount = 0;
 	
-	bool result = ReadVideoStreamRaw();
+	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
+	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 0;
 
 	//If there's space append SPS and PPS every once in a while
-	if (++SPSCount > 500 && result && VbufSz - VPkt.Header.DataSize >= sizeof(PPS) + sizeof(SPS))
+	if (++SPSCount > 500 && result && (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
 	{
 		SPSCount = 0;
 		memcpy(VPkt.Data + VPkt.Header.DataSize, SPS, sizeof(SPS));
@@ -165,7 +182,7 @@ bool ReadVideoStream()
 
 void LaunchThread(Thread* t, ThreadFunc f) 
 {
-	Result rc = threadCreate(t, f, NULL, NULL, 0x2000, 0x3B, -2);
+	Result rc = threadCreate(t, f, NULL, NULL, 0x2000, 0x3F, 3);
 	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = threadStart(t);
 	if (R_FAILED(rc)) fatalThrow(rc);
@@ -306,6 +323,8 @@ static bool FileExists(const char* fname)
 
 int main(int argc, char* argv[])
 {
+	//freopen("/file.txt", "w", stdout);
+
 	Result rc = OpenGrcdForThread(GrcStream_Audio);
 	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = OpenGrcdForThread(GrcStream_Video);

@@ -45,6 +45,7 @@ static void USB_StreamAudio(void* _)
 
 static void USB_Init()
 {
+	SetAudioBatching(2);
 	VPkt.Header.Magic = 0xAAAAAAAA;
 	APkt.Header.Magic = 0xAAAAAAAA;
 	Result rc = UsbSerialInitialize(&VFace, &AFace);

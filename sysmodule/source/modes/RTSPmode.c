@@ -18,23 +18,11 @@ static void RTSP_StreamVideo(void* _)
 		if (!IsThreadRunning) break;
 		
 		while (true)
-		{
-			static int SendPPS = 0;
-			int error = 0;
-			
-			if (!ReadVideoStreamRaw()) 
+		{			
+			if (!ReadVideoStream()) 
 				TerminateOrContinue
-
-			//Due to packetization in this mode we must send these manually, for other modes these are automatically appended by ReadVideoStream()
-			if (++SendPPS > 300)
-			{
-				PacketizeH264((char*)SPS, sizeof(SPS), VPkt.Header.Timestamp / 1000, RTSP_H264SendPacket);
-				PacketizeH264((char*)PPS, sizeof(PPS), VPkt.Header.Timestamp / 1000, RTSP_H264SendPacket);
-				SendPPS = 0;
-			}
 			
-			error = PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, VPkt.Header.Timestamp / 1000, RTSP_H264SendPacket);
-			
+			int error = PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, VPkt.Header.Timestamp / 1000, RTSP_H264SendPacket);			
 			if (error) break;
 		}
 	}
@@ -52,7 +40,7 @@ static void RTSP_StreamAudio(void* _)
 
 		while (true)
 		{			
-			if (ReadAudioStream()) 
+			if (!ReadAudioStream()) 
 				TerminateOrContinue
 
 			int error = PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, APkt.Header.Timestamp / 1000, RTSP_LE16SendPacket);
@@ -63,6 +51,7 @@ static void RTSP_StreamAudio(void* _)
 
 static void RTSP_Init()
 {
+	SetAudioBatching(3);
 	RTP_InitializeSequenceNumbers();
 	LaunchThread(&RTSPThread, RTSP_ServerThread);
 }

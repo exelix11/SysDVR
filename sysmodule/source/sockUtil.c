@@ -23,7 +23,7 @@ static inline int AttemptOpenTCPListener(int port, bool LocalOnly, int DebugFlag
 	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
 	fcntl(sock, F_SETFL, O_NONBLOCK);
 
-	int optVal = 1;
+	const int optVal = 1;
 	err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal));
 	if (err)
 		ReturnFail(2);
