@@ -117,7 +117,6 @@ namespace SysDVRClient
 				return;
 			}
 
-			bool IsUsbMode = true;
 			IMutliStreamManager Streams = null;
 			bool NoAudio = false, NoVideo = false;
 			int Port;
@@ -139,6 +138,9 @@ namespace SysDVRClient
 				return null;
 			}
 
+			if (HasArg("--usb-warn")) UsbHelper.LogLevel = LogLevel.Info;
+			if (HasArg("--usb-debug")) UsbHelper.LogLevel = LogLevel.Debug;
+
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
 			Port = ArgValueInt("--port") ?? 6666;
@@ -156,18 +158,9 @@ namespace SysDVRClient
 			if (args.Length == 0 || args[0].ToLower() == "rtsp")
 				Streams = new UsbStreamManager(!NoVideo, !NoAudio, Port);
 			else if (args[0].ToLower() == "bridge")
-			{
-				IsUsbMode = false;
 				Streams = new TCPBridgeManager(!NoVideo, !NoAudio, args[1], Port);
-			}
 			else
 				Streams = ParseLegacyArgs(args);
-
-			if (IsUsbMode)
-			{
-				if (HasArg("--usb-warn")) UsbHelper.LogLevel = LogLevel.Info;
-				if (HasArg("--usb-debug")) UsbHelper.LogLevel = LogLevel.Debug;
-			}
 
 			StartStreaming(Streams, args);
 		}
