@@ -14,15 +14,10 @@
     <RootNamespace>SysDVRClient</RootNamespace>
     <AssemblyVersion>3.0.0.1</AssemblyVersion>
     <FileVersion>3.0.0.1</FileVersion>
-    <Configurations>Debug;Release;Debug USB_ONLY</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <Optimize>false</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug USB_ONLY|AnyCPU'">
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Optimize>false</Optimize>
   </PropertyGroup>
