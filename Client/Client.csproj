@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpRTSP\RTSP\SharpRTSP.csproj" />
+    <ProjectReference Include="..\SharpRTSP\RTSP\RTSP.csproj" />
   </ItemGroup>
 
 </Project>
