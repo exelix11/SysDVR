@@ -91,7 +91,7 @@ Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
 	StreamingInterface = (struct usb_interface_descriptor) {
 		.bLength = USB_DT_INTERFACE_SIZE,
 		.bDescriptorType = USB_DT_INTERFACE,
-		.bNumEndpoints = 2,
+		.bNumEndpoints = 4,
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC,
@@ -105,13 +105,13 @@ Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
 		.wMaxPacketSize = 0x200,
 	};
 
-	//VideoEndpoints[1] = (struct usb_endpoint_descriptor){
-	//	.bLength = USB_DT_ENDPOINT_SIZE,
-	//	.bDescriptorType = USB_DT_ENDPOINT,
-	//	.bEndpointAddress = USB_ENDPOINT_OUT | 1,
-	//	.bmAttributes = USB_TRANSFER_TYPE_BULK,
-	//	.wMaxPacketSize = 0x200,
-	//};
+	VideoEndpoints[1] = (struct usb_endpoint_descriptor){
+		.bLength = USB_DT_ENDPOINT_SIZE,
+		.bDescriptorType = USB_DT_ENDPOINT,
+		.bEndpointAddress = USB_ENDPOINT_OUT | 1,
+		.bmAttributes = USB_TRANSFER_TYPE_BULK,
+		.wMaxPacketSize = 0x200,
+	};
 
 	AudioEndpoints[0] = (struct usb_endpoint_descriptor){
 		.bLength = USB_DT_ENDPOINT_SIZE,
@@ -121,29 +121,29 @@ Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
 		.wMaxPacketSize = 0x200,
 	};
 
-	//AudioEndpoints[1] = (struct usb_endpoint_descriptor){
-	//	.bLength = USB_DT_ENDPOINT_SIZE,
-	//	.bDescriptorType = USB_DT_ENDPOINT,
-	//	.bEndpointAddress = USB_ENDPOINT_OUT | 2,
-	//	.bmAttributes = USB_TRANSFER_TYPE_BULK,
-	//	.wMaxPacketSize = 0x200,
-	//};
+	AudioEndpoints[1] = (struct usb_endpoint_descriptor){
+		.bLength = USB_DT_ENDPOINT_SIZE,
+		.bDescriptorType = USB_DT_ENDPOINT,
+		.bEndpointAddress = USB_ENDPOINT_OUT | 2,
+		.bmAttributes = USB_TRANSFER_TYPE_BULK,
+		.wMaxPacketSize = 0x200,
+	};
 
 	UsbInterfaceDesc info = {0};
 
 	VideoStream->interface = 0;
 	VideoStream->WriteEP = 0;
-	//VideoStream->ReadEP = 1;
+	VideoStream->ReadEP = 1;
 
 	AudioStream->interface = 0;
-	AudioStream->WriteEP = 1;
-	//AudioStream->ReadEP = 3;
+	AudioStream->WriteEP = 2;
+	AudioStream->ReadEP = 3;
 
 	info.interface_desc = &StreamingInterface;
 	info.endpoint_desc[VideoStream->WriteEP] = &VideoEndpoints[0];
 	info.endpoint_desc[AudioStream->WriteEP] = &AudioEndpoints[0];
-	//info.endpoint_desc[VideoStream->ReadEP] = &VideoEndpoints[1];
-	//info.endpoint_desc[AudioStream->ReadEP] = &AudioEndpoints[1];
+	info.endpoint_desc[VideoStream->ReadEP] = &VideoEndpoints[1];
+	info.endpoint_desc[AudioStream->ReadEP] = &AudioEndpoints[1];
 
 	return UsbCommsInitialize(&device_descriptor, 1, &info);
 }

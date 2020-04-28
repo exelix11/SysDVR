@@ -18,6 +18,7 @@
 #include <malloc.h>
 
 #include "UsbComms.h"
+#include "../modes/defines.h"
 
 #define TOTAL_INTERFACES 4
 #define TOTAL_ENDPOINTS 4
@@ -331,8 +332,6 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 	{
 		if (((u64)bufptr) & 0xfff)//When bufptr isn't page-aligned copy the data into g_usbComms_endpoint_in_buffer and transfer that, otherwise use the bufptr directly.
 		{
-			fatalThrow(MAKERESULT(0x69,0x69));
-
 			transfer_buffer = ep->buffer;
 			memset(ep->buffer, 0, 0x1000);
 
