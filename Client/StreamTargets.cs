@@ -96,7 +96,7 @@ namespace SysDVRClient
 		{
 			ProcessStartInfo p = new ProcessStartInfo()
 			{
-				Arguments = " - " + args,
+				Arguments = args,
 				FileName = path,
 				RedirectStandardInput = true,
 				RedirectStandardOutput = true

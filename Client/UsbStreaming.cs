@@ -2,6 +2,7 @@
 using LibUsbDotNet.Main;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -23,15 +24,15 @@ namespace SysDVRClient
 			LibUsbCtx = new UsbContext();
 			LibUsbCtx.SetDebugLevel(LogLevel);
 			var usbDeviceCollection = LibUsbCtx.List();
-			var selectedDevice = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
-		
-			if (selectedDevice == null)
-				return null;
-		
-			selectedDevice.Open();
-			selectedDevice.ClaimInterface(0);
+			var dev = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
 
-			return selectedDevice;
+			if (dev == null)
+				throw new Exception("Device not found");
+
+			dev.Open();
+			dev.ClaimInterface(dev.Configs[0].Interfaces[0].Number);
+
+			return dev;
 		}
 	}
 
@@ -39,22 +40,19 @@ namespace SysDVRClient
 	{
 		IUsbDevice device;
 		UsbEndpointReader reader;
+		UsbEndpointWriter writer;
+		CancellationToken Token;
 
 		public UsbStreamingSource(IUsbDevice device, StreamKind kind)
 		{
 			this.device = device;
 			reader = device.OpenEndpointReader(kind == StreamKind.Video ? ReadEndpointID.Ep01 : ReadEndpointID.Ep02);
-		}
-
-		public int ReadBytes(byte[] buffer, int offset, int length)
-		{			
-			reader.Read(buffer, offset, length, 1000, out int transferLen).ThrowOnError();
-			return transferLen;
+			writer = device.OpenEndpointWriter(kind == StreamKind.Video ? WriteEndpointID.Ep01 : WriteEndpointID.Ep02);
 		}
 
 		public void WaitForConnection()
 		{
-			// If reader opened successfully we're connected
+			
 		}
 
 		public void StopStreaming()
@@ -64,7 +62,35 @@ namespace SysDVRClient
 
 		public void UseCancellationToken(CancellationToken tok)
 		{
-			//Usb operations have timeouts so this is not needed
+			Token = tok;
+		}
+
+		public void Flush()
+		{
+			reader.ReadFlush();
+		}
+
+		static readonly byte[] magic = { 0xAA, 0xAA, 0xAA, 0xAA };
+		public void ReadHeader(byte[] buffer)
+		{
+			int received = 0;
+			do
+			{
+				writer.Write(magic, 100, out int _).ThrowOnError();
+				reader.Read(buffer, 0, PacketHeader.StructLength, 100, out received).ThrowOnError();
+			} while (received != PacketHeader.StructLength && !Token.IsCancellationRequested);
+		}
+
+		public bool ReadPayload(byte[] buffer, int length) 
+		{
+			int received = 0;
+			do {	
+				reader.Read(buffer, 0, length, 100, out int sz);
+				if (sz == 0)
+					return false;
+				received += sz;
+			} while (received < length && !Token.IsCancellationRequested);
+			return true;
 		}
 	}
 

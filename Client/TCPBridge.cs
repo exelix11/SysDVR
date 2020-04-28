@@ -24,11 +24,6 @@ namespace SysDVRClient
 		}
 
 		NetworkStream Stream;
-		public int ReadBytes(byte[] buffer, int offset, int length)
-		{
-			return Stream.ReadAsync(buffer, offset, length, token).GetAwaiter().GetResult();
-		}
-
 		public void WaitForConnection()
 		{
 			Client = new TcpClient();
@@ -46,6 +41,42 @@ namespace SysDVRClient
 		public void UseCancellationToken(CancellationToken tok)
 		{
 			token = tok;
+		}
+
+		public void Flush()
+		{
+			Stream.Flush();
+			InSync = false;
+		}
+
+		bool InSync = false;
+		public void ReadHeader(byte[] buffer)
+		{
+			if (InSync)
+			{
+				Stream.Read(buffer, 0, PacketHeader.StructLength);
+			}
+			else 
+			{
+				//TCPBridge is a raw stream of data, search for an header
+				for (int i = 0; i < 4 && !token.IsCancellationRequested; i++)
+				{
+					buffer[i] = (byte)Stream.ReadByte();
+					if (buffer[i] != 0xAA)
+						i = 0;
+				}
+				Stream.Read(buffer, 4, PacketHeader.StructLength - 4);
+				InSync = true;
+			}
+		}
+
+		public bool ReadPayload(byte[] buffer, int length)
+		{
+			int received = 0;
+			do
+				received += Stream.Read(buffer, received, length - received);
+			while (received < length);
+			return true;
 		}
 	}
 

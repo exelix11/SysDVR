@@ -5,10 +5,20 @@
 static UsbInterface VFace;
 static UsbInterface AFace;
 
-static inline bool SerialWrite(UsbInterface * interface, const void* data, u32 len)
+static inline bool SerialWrite(UsbInterface * interface, const PacketHeader* header, const void* data)
 {
-	u32 sz = UsbSerialWrite(interface, data, len, 1E+9);
-	return sz == len;
+	//Must do different transfers because libusb breaks otherwise
+	u32 req = 0;
+	u32 sz = UsbSerialRead(interface, &req, sizeof(req), 1E+9);
+	if (sz != sizeof(req) || req != 0xAAAAAAAA)
+		return 0;
+
+	sz = UsbSerialWrite(interface, header, sizeof(PacketHeader), 1E+9);
+	if (sz != sizeof(PacketHeader))
+		return 0;
+
+	sz = UsbSerialWrite(interface, data, header->DataSize, 1E+9);
+	return sz == header->DataSize;
 }
 
 static void USB_StreamVideo(void* _)
@@ -21,8 +31,7 @@ static void USB_StreamVideo(void* _)
 		if (!ReadVideoStream())
 			TerminateOrContinue
 
-		const u32 size = sizeof(PacketHeader) + VPkt.Header.DataSize;
-		if (!SerialWrite(&VFace, &VPkt, size))
+		if (!SerialWrite(&VFace, &VPkt.Header, VPkt.Data))
 			TerminateOrContinue
 	}
 }
@@ -37,8 +46,7 @@ static void USB_StreamAudio(void* _)
 		if (!ReadAudioStream())
 			TerminateOrContinue
 
-		const u32 size = sizeof(PacketHeader) + APkt.Header.DataSize;
-		if (!SerialWrite(&AFace,&APkt, size))
+		if (!SerialWrite(&AFace, &APkt.Header, APkt.Data))
 			TerminateOrContinue
 	}
 }

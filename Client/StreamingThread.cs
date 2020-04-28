@@ -19,6 +19,11 @@ namespace SysDVRClient
 		public const int StructLength = 16;
 		public const UInt32 DefaultMagic = 0xAAAAAAAA;
 
+		public const int APayloadMax = 0x1000;
+		public const int ABatchingMax = 4;
+		public const int VPayloadMax = 0x32000;
+		public const int MaxTransferSize = VPayloadMax + StructLength;
+
 		static PacketHeader()
 		{
 			if (Marshal.SizeOf<PacketHeader>() != StructLength)
@@ -28,21 +33,14 @@ namespace SysDVRClient
 
 	interface StreamingSource
 	{
-		public void UseCancellationToken(CancellationToken tok);
+		void UseCancellationToken(CancellationToken tok);
 		
-		public void WaitForConnection();
-		public void StopStreaming();
+		void WaitForConnection();
+		void StopStreaming();
+		void Flush();
 
-		public int ReadBytes(byte[] buffer, int offset, int length);
-
-		public void ReadExact(byte[] buffer, int offset, int length)
-		{
-			int Read = 0;
-			do
-			{
-				Read += ReadBytes(buffer, offset + Read, length - Read);
-			} while (Read < length);
-		}
+		void ReadHeader(byte[] buffer);
+		bool ReadPayload(byte[] buffer, int length);
 	}
 
 	abstract class RTSPStreamManager : RTSP.SysDvrRTSPServer
@@ -121,47 +119,36 @@ namespace SysDVRClient
 			try
 			{
 #endif
-				Source.WaitForConnection();
-				
-				var HeaderData = new byte[PacketHeader.StructLength];
-				ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
+			Source.WaitForConnection();
+
+			var HeaderData = new byte[PacketHeader.StructLength];
+			ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
+
+			while (!token.IsCancellationRequested)
+			{
+				Source.ReadHeader(HeaderData);				
 
 				if (log)
-					Console.WriteLine($"[{Kind}] Searching first packet header...");
+					Console.WriteLine($"[{Kind}] {Header}");
 
-				//Find packet head, stream may not be aligned, look for the packet magic
-				for (int i = 0; i < 4 && !token.IsCancellationRequested; i++)
+				if (Header.Magic != PacketHeader.DefaultMagic)
 				{
-					Source.ReadBytes(HeaderData, i, 1);
-					if (HeaderData[i] != 0xAA)
-						i = 0;
-				}
-
-				if (log)
-					Console.WriteLine($"[{Kind}] Header found !");
-
-				if (token.IsCancellationRequested)
-					return;
-
-				Source.ReadExact(HeaderData, 4, 12);
-
-				while (!token.IsCancellationRequested)
-				{
-					var Data = pool.Rent(Header.DataSize);
-
-					Source.ReadExact(Data, 0, Header.DataSize);
-
 					if (log)
-						Console.WriteLine($"[{Kind}] {Header}");
-
-					if (Header.Magic == PacketHeader.DefaultMagic)
-						Target.SendData(Data, Header.Timestamp);
-					else throw new Exception($"Unknown magic {Header.Magic}");
-
-					pool.Return(Data);
-
-					Source.ReadExact(HeaderData, 0, PacketHeader.StructLength);
+						Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
+					Source.Flush();
+					continue;
 				}
+
+				var Data = pool.Rent(Header.DataSize);
+				if (!Source.ReadPayload(Data, Header.DataSize))
+				{
+					if (log)
+						Console.WriteLine($"[{Kind}] Couldn't receive payload");
+					continue;
+				}
+				Target.SendData(Data, Header.Timestamp);
+				pool.Return(Data);
+			}
 #if RELEASE
 			}
 			catch (Exception ex)
