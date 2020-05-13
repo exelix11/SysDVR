@@ -13,14 +13,16 @@ namespace SysDVRClient
 	static class UsbHelper 
 	{
 		static UsbContext LibUsbCtx = null;
-		
-		public static LibUsbDotNet.LogLevel LogLevel = LibUsbDotNet.LogLevel.Error;
-		
-		public static IUsbDevice GetSysDVRDevice()
+		static IUsbDevice device = null;
+		static int refCount = 0;
+
+		public static LibUsbDotNet.LogLevel LogLevel = LibUsbDotNet.LogLevel.Warning;
+
+		static IUsbDevice GetSysDVRDevice()
 		{
-			if (LibUsbCtx != null)
-				throw new Exception("Libusb has already been initialized");
-		
+			if (device != null)
+				return device;
+
 			LibUsbCtx = new UsbContext();
 			LibUsbCtx.SetDebugLevel(LogLevel);
 			var usbDeviceCollection = LibUsbCtx.List();
@@ -30,24 +32,50 @@ namespace SysDVRClient
 				throw new Exception("Device not found");
 
 			dev.Open();
-			dev.ClaimInterface(dev.Configs[0].Interfaces[0].Number);
 
+			device = dev;
 			return dev;
+		}
+
+		public static (UsbEndpointReader, UsbEndpointWriter) GetForInterface(int iface)
+		{
+			var dev = GetSysDVRDevice();
+
+			lock (device)
+			{
+				device.ClaimInterface(iface);
+				// This works but depends on the interface order in SysDVR.
+				var reader = dev.OpenEndpointReader((ReadEndpointID)((int)ReadEndpointID.Ep01 + iface), PacketHeader.MaxTransferSize, EndpointType.Bulk);
+				var writer = dev.OpenEndpointWriter((WriteEndpointID)((int)WriteEndpointID.Ep01 + iface), EndpointType.Interrupt);
+				refCount++;
+
+				return (reader, writer);
+			}
+		}
+
+		public static void MarkInterfaceClosed()
+		{
+			lock (device)
+			{
+				refCount--;
+				if (refCount == 0)
+					device.Close();
+				else if (refCount < 0)
+					throw new Exception("interface refCount out of range");
+			}
 		}
 	}
 
 	class UsbStreamingSource : StreamingSource
 	{
-		IUsbDevice device;
+		public bool Logging { get; set; }
+
 		UsbEndpointReader reader;
 		UsbEndpointWriter writer;
-		CancellationToken Token;
 
-		public UsbStreamingSource(IUsbDevice device, StreamKind kind)
+		public UsbStreamingSource(StreamKind kind)
 		{
-			this.device = device;
-			reader = device.OpenEndpointReader(kind == StreamKind.Video ? ReadEndpointID.Ep01 : ReadEndpointID.Ep02);
-			writer = device.OpenEndpointWriter(kind == StreamKind.Video ? WriteEndpointID.Ep01 : WriteEndpointID.Ep02);
+			(reader, writer) = UsbHelper.GetForInterface(kind == StreamKind.Video ? 0 : 1);
 		}
 
 		public void WaitForConnection()
@@ -57,12 +85,12 @@ namespace SysDVRClient
 
 		public void StopStreaming()
 		{
-			//Reader can't be disposed (?)
+			UsbHelper.MarkInterfaceClosed();
 		}
 
 		public void UseCancellationToken(CancellationToken tok)
 		{
-			Token = tok;
+			
 		}
 
 		public void Flush()
@@ -71,39 +99,49 @@ namespace SysDVRClient
 		}
 
 		static readonly byte[] magic = { 0xAA, 0xAA, 0xAA, 0xAA };
-		public void ReadHeader(byte[] buffer)
+		public bool ReadHeader(byte[] buffer)
 		{
-			int received = 0;
-			do
+			var err = writer.Write(magic, 100, out int _);
+			if (err != LibUsbDotNet.Error.Success)
 			{
-				writer.Write(magic, 100, out int _).ThrowOnError();
-				reader.Read(buffer, 0, PacketHeader.StructLength, 100, out received).ThrowOnError();
-			} while (received != PacketHeader.StructLength && !Token.IsCancellationRequested);
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while requesting data");
+				return false;
+			}
+
+			err = reader.Read(buffer, 0, PacketHeader.StructLength, 100, out int _);
+			if (err != LibUsbDotNet.Error.Success)
+			{
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while reading header");
+				return false;
+			}
+
+			return true;
 		}
 
 		public bool ReadPayload(byte[] buffer, int length) 
 		{
-			int received = 0;
-			do {	
-				reader.Read(buffer, 0, length, 100, out int sz);
-				if (sz == 0)
-					return false;
-				received += sz;
-			} while (received < length && !Token.IsCancellationRequested);
-			return true;
+			var err = reader.Read(buffer, 0, length, 500, out int sz);
+			if (err != LibUsbDotNet.Error.Success)
+			{
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while reading payload. ({sz} read)");
+				return false;
+			}
+
+			return sz == length;
 		}
 	}
 
 	class UsbStreamManager : RTSPStreamManager
 	{ 
 		public UsbStreamManager(bool hasVideo, bool hasAudio, int port) : base(hasVideo, hasAudio, false, port)
-		{
-			var device = UsbHelper.GetSysDVRDevice();
-
+		{			
 			if (hasVideo)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(device, StreamKind.Video));
+				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(StreamKind.Video));
 			if (hasAudio)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new UsbStreamingSource(device, StreamKind.Audio));
+				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new UsbStreamingSource(StreamKind.Audio));
 		}
 	}
 
@@ -116,15 +154,13 @@ namespace SysDVRClient
 
 		public LegacyUsbStreamManager(IOutTarget video, IOutTarget audio)
 		{
-			var device = UsbHelper.GetSysDVRDevice();
-
 			Video = video;
 			Audio = audio;
 
 			if (Video != null)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(device, StreamKind.Video));
+				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(StreamKind.Video));
 			if (Audio != null)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new UsbStreamingSource(device, StreamKind.Audio));
+				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new UsbStreamingSource(StreamKind.Audio));
 		}
 
 		public void Begin()

@@ -12,6 +12,8 @@ namespace SysDVRClient
 {
 	class TCPBridgeSource : StreamingSource
 	{
+		public bool Logging { get; set; }
+
 		CancellationToken token;
 		TcpClient Client;
 		string IpAddress;
@@ -50,7 +52,7 @@ namespace SysDVRClient
 		}
 
 		bool InSync = false;
-		public void ReadHeader(byte[] buffer)
+		public bool ReadHeader(byte[] buffer)
 		{
 			if (InSync)
 			{
@@ -68,6 +70,8 @@ namespace SysDVRClient
 				Stream.Read(buffer, 4, PacketHeader.StructLength - 4);
 				InSync = true;
 			}
+
+			return true;
 		}
 
 		public bool ReadPayload(byte[] buffer, int length)

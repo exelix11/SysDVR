@@ -1,30 +1,44 @@
-#include "Serial.h"
 #include <string.h>
+#include "Serial.h"
 
-static struct usb_interface_descriptor StreamingInterface;
-static struct usb_endpoint_descriptor VideoEndpoints[2];
-static struct usb_endpoint_descriptor AudioEndpoints[2];
+static struct usb_interface_descriptor Viface;
+static struct usb_interface_descriptor Aiface;
 
-static void ClearDescriptors()
+static struct usb_endpoint_descriptor VInt;
+static struct usb_endpoint_descriptor VBulk;
+
+static struct usb_endpoint_descriptor AInt;
+static struct usb_endpoint_descriptor ABulk;
+
+void ClearState()
 {
 #define clearVal(x) memset(&x, 0, sizeof(x))
-	clearVal(StreamingInterface);
-	clearVal(VideoEndpoints);
-	clearVal(AudioEndpoints);
+	clearVal(Viface);
+	clearVal(Aiface);
+	clearVal(VInt);
+	clearVal(VBulk);
+	clearVal(AInt);
+	clearVal(ABulk);
 #undef clearVal
 }
 
-Result UsbSerialInitializeSingle(UsbInterface* Interface) 
+void UsbSerialExit()
 {
-	ClearDescriptors();
+	UsbCommsExit();
+	ClearState();
+}
+
+Result UsbSerialInitializeForStreaming(UsbPipe* video, UsbPipe* audio)
+{
+	ClearState();
 
 	struct usb_device_descriptor device_descriptor = {
 		.bLength = USB_DT_DEVICE_SIZE,
 		.bDescriptorType = USB_DT_DEVICE,
-		.bcdUSB = 0x0110,
-		.bDeviceClass = 0x00,
-		.bDeviceSubClass = 0x00,
-		.bDeviceProtocol = 0x00,
+		.bcdUSB = 0x0200,
+		.bDeviceClass = 0,
+		.bDeviceSubClass = 0,
+		.bDeviceProtocol = 0,
 		.bMaxPacketSize0 = 0x40,
 		.idVendor = 0x057e,
 		.idProduct = 0x3006,
@@ -32,118 +46,65 @@ Result UsbSerialInitializeSingle(UsbInterface* Interface)
 		.bNumConfigurations = 0x01
 	};
 
-	StreamingInterface = (struct usb_interface_descriptor){
+	Aiface = Viface = (struct usb_interface_descriptor){
 		.bLength = USB_DT_INTERFACE_SIZE,
 		.bDescriptorType = USB_DT_INTERFACE,
+		.bInterfaceNumber = 0,
 		.bNumEndpoints = 2,
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC,
+		.iInterface = 0,
 	};
 
-	VideoEndpoints[0] = (struct usb_endpoint_descriptor){
+	Aiface.bInterfaceNumber = 1;
+
+	AInt = VInt = (struct usb_endpoint_descriptor){
 		.bLength = USB_DT_ENDPOINT_SIZE,
 		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_IN | 1,
-		.bmAttributes = USB_TRANSFER_TYPE_BULK,
-		.wMaxPacketSize = 0x200,
+		.bEndpointAddress = USB_ENDPOINT_OUT,
+		.bmAttributes = USB_TRANSFER_TYPE_INTERRUPT,
+		.wMaxPacketSize = 4,
+		.bInterval = 1
 	};
 
-	VideoEndpoints[1] = (struct usb_endpoint_descriptor){
+	ABulk = VBulk = (struct usb_endpoint_descriptor){
 		.bLength = USB_DT_ENDPOINT_SIZE,
 		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_OUT | 1,
+		.bEndpointAddress = USB_ENDPOINT_IN,
 		.bmAttributes = USB_TRANSFER_TYPE_BULK,
 		.wMaxPacketSize = 0x200,
+		.bInterval = 1 //Max nak rate
 	};
 
-	UsbInterfaceDesc info = {0};
-
-	Interface->interface = 0;
-	Interface->WriteEP = 0;
-	Interface->ReadEP = 1;
-
-	info.interface_desc = &StreamingInterface;
-	info.endpoint_desc[Interface->WriteEP] = &VideoEndpoints[0];
-	info.endpoint_desc[Interface->ReadEP] = &VideoEndpoints[1];
-	
-	return UsbCommsInitialize(&device_descriptor, 1, &info);
-}
-
-Result UsbSerialInitialize(UsbInterface* VideoStream, UsbInterface* AudioStream)
-{
-	ClearDescriptors();
-
-	struct usb_device_descriptor device_descriptor = {
-		.bLength = USB_DT_DEVICE_SIZE,
-		.bDescriptorType = USB_DT_DEVICE,
-		.bcdUSB = 0x0110,
-		.bDeviceClass = 0x00,
-		.bDeviceSubClass = 0x00,
-		.bDeviceProtocol = 0x00,
-		.bMaxPacketSize0 = 0x40,
-		.idVendor = 0x057e,
-		.idProduct = 0x3006,
-		.bcdDevice = 0x0100,
-		.bNumConfigurations = 0x01
+	UsbInterfaceDesc iface[2] = {
+		{
+			.interface_desc = &Viface,
+			.endpoint_desc = {&VInt, &VBulk},
+			.string_descriptor = "SysDVR - Video"
+		},
+		{
+			.interface_desc = &Aiface,
+			.endpoint_desc = {&AInt, &ABulk},
+			.string_descriptor = "SysDVR - Audio"
+		}
 	};
 
-	StreamingInterface = (struct usb_interface_descriptor) {
-		.bLength = USB_DT_INTERFACE_SIZE,
-		.bDescriptorType = USB_DT_INTERFACE,
-		.bNumEndpoints = 4,
-		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
-		.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC,
-		.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC,
+	Result rc = UsbCommsInitialize(&device_descriptor, 2, iface);
+	if (R_FAILED(rc))
+		return rc;
+
+	*video = (UsbPipe){
+		.interface = Viface.bInterfaceNumber,
+		.WriteEP = 1,
+		.ReadEP = 0
 	};
 
-	VideoEndpoints[0] = (struct usb_endpoint_descriptor){
-		.bLength = USB_DT_ENDPOINT_SIZE,
-		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_IN | 1,
-		.bmAttributes = USB_TRANSFER_TYPE_BULK,
-		.wMaxPacketSize = 0x200,
+	*audio = (UsbPipe){
+		.interface = Aiface.bInterfaceNumber,
+		.WriteEP = 1,
+		.ReadEP = 0
 	};
 
-	VideoEndpoints[1] = (struct usb_endpoint_descriptor){
-		.bLength = USB_DT_ENDPOINT_SIZE,
-		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_OUT | 1,
-		.bmAttributes = USB_TRANSFER_TYPE_BULK,
-		.wMaxPacketSize = 0x200,
-	};
-
-	AudioEndpoints[0] = (struct usb_endpoint_descriptor){
-		.bLength = USB_DT_ENDPOINT_SIZE,
-		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_IN | 2,
-		.bmAttributes = USB_TRANSFER_TYPE_BULK,
-		.wMaxPacketSize = 0x200,
-	};
-
-	AudioEndpoints[1] = (struct usb_endpoint_descriptor){
-		.bLength = USB_DT_ENDPOINT_SIZE,
-		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_OUT | 2,
-		.bmAttributes = USB_TRANSFER_TYPE_BULK,
-		.wMaxPacketSize = 0x200,
-	};
-
-	UsbInterfaceDesc info = {0};
-
-	VideoStream->interface = 0;
-	VideoStream->WriteEP = 0;
-	VideoStream->ReadEP = 1;
-
-	AudioStream->interface = 0;
-	AudioStream->WriteEP = 2;
-	AudioStream->ReadEP = 3;
-
-	info.interface_desc = &StreamingInterface;
-	info.endpoint_desc[VideoStream->WriteEP] = &VideoEndpoints[0];
-	info.endpoint_desc[AudioStream->WriteEP] = &AudioEndpoints[0];
-	info.endpoint_desc[VideoStream->ReadEP] = &VideoEndpoints[1];
-	info.endpoint_desc[AudioStream->ReadEP] = &AudioEndpoints[1];
-
-	return UsbCommsInitialize(&device_descriptor, 1, &info);
+	return 0;
 }

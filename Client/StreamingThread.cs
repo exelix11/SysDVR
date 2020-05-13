@@ -33,13 +33,14 @@ namespace SysDVRClient
 
 	interface StreamingSource
 	{
+		bool Logging { get; set; }
 		void UseCancellationToken(CancellationToken tok);
 		
 		void WaitForConnection();
 		void StopStreaming();
 		void Flush();
 
-		void ReadHeader(byte[] buffer);
+		bool ReadHeader(byte[] buffer);
 		bool ReadPayload(byte[] buffer, int length);
 	}
 
@@ -114,7 +115,7 @@ namespace SysDVRClient
 			ArrayPool<byte> pool = ArrayPool<byte>.Create();
 
 			Source.UseCancellationToken(token);
-
+			
 #if RELEASE
 			try
 			{
@@ -126,7 +127,11 @@ namespace SysDVRClient
 
 			while (!token.IsCancellationRequested)
 			{
-				Source.ReadHeader(HeaderData);				
+				while (!Source.ReadHeader(HeaderData))
+				{
+					System.Threading.Thread.Sleep(10);
+					continue;
+				}
 
 				if (log)
 					Console.WriteLine($"[{Kind}] {Header}");
@@ -136,14 +141,15 @@ namespace SysDVRClient
 					if (log)
 						Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
 					Source.Flush();
+					System.Threading.Thread.Sleep(10);
 					continue;
 				}
 
 				var Data = pool.Rent(Header.DataSize);
 				if (!Source.ReadPayload(Data, Header.DataSize))
 				{
-					if (log)
-						Console.WriteLine($"[{Kind}] Couldn't receive payload");
+					Source.Flush();
+					System.Threading.Thread.Sleep(10);
 					continue;
 				}
 				Target.SendData(Data, Header.Timestamp);
