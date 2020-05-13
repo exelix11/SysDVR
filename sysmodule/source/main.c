@@ -132,32 +132,10 @@ static Result OpenGrcdForThread(GrcStream stream)
 	return rc;
 }
 
-static int AudioBatching = 1;
-void SetAudioBatching(int count)
-{
-	if (count <= 0 || count > AMaxBatch)
-		fatalThrow(ERR_AUDIO_BATCH_SIZE);
-
-	AudioBatching = count;
-}
-
 bool ReadAudioStream()
 {
 	Result rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data, AbufSz, NULL, &APkt.Header.DataSize, &APkt.Header.Timestamp);
-	if (R_FAILED(rc) || APkt.Header.DataSize <= 0)
-		return false;
-
-	for (int i = 1; i < AudioBatching; i++)
-	{
-		u32 tmpSize = 0;
-	
-		rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data + APkt.Header.DataSize, AbufSz, NULL, &tmpSize, NULL);
-		if (R_FAILED(rc) || APkt.Header.DataSize <= 0)
-			break;
-	
-		APkt.Header.DataSize += tmpSize;
-	}
-	return true;
+	return !R_FAILED(rc) && APkt.Header.DataSize > 0;
 }
 
 static const uint8_t SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };

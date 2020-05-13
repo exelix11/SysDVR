@@ -20,7 +20,6 @@ namespace SysDVRClient
 		public const UInt32 DefaultMagic = 0xAAAAAAAA;
 
 		public const int APayloadMax = 0x1000;
-		public const int ABatchingMax = 4;
 		public const int VPayloadMax = 0x32000;
 		public const int MaxTransferSize = VPayloadMax + StructLength;
 
@@ -114,6 +113,7 @@ namespace SysDVRClient
 			CancellationToken token = Cancel.Token;
 			ArrayPool<byte> pool = ArrayPool<byte>.Create();
 
+			Source.Logging = log;
 			Source.UseCancellationToken(token);
 			
 #if RELEASE
