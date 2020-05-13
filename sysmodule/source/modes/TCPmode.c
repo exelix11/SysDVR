@@ -110,7 +110,6 @@ static void TCP_StreamAudio(void* _)
 
 static void TCP_Init() 
 {
-	SetAudioBatching(1);
 	VPkt.Header.Magic = 0xAAAAAAAA;
 	APkt.Header.Magic = 0xAAAAAAAA;
 	TCP_InitSockets(GrcStream_Video);

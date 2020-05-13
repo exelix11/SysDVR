@@ -51,7 +51,6 @@ static void RTSP_StreamAudio(void* _)
 
 static void RTSP_Init()
 {
-	SetAudioBatching(3);
 	RTP_InitializeSequenceNumbers();
 	LaunchThread(&RTSPThread, RTSP_ServerThread);
 }
