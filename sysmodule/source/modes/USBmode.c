@@ -2,23 +2,18 @@
 #include "../USB/Serial.h"
 #include "../grcd.h"
 
-static UsbInterface VFace;
-static UsbInterface AFace;
+static UsbPipe VPipe, APipe;
 
-static inline bool SerialWrite(UsbInterface * interface, const PacketHeader* header, const void* data)
+static inline bool SerialWrite(UsbPipe* interface, const VLAPacket* packet)
 {
-	//Must do different transfers because libusb breaks otherwise
-	u32 req = 0;
-	u32 sz = UsbSerialRead(interface, &req, sizeof(req), 1E+9);
-	if (sz != sizeof(req) || req != 0xAAAAAAAA)
-		return 0;
+	const u32 size = packet->Header.DataSize + sizeof(PacketHeader);
+	return UsbSerialWrite(interface, packet, size, 1E+9) == size;
+}
 
-	sz = UsbSerialWrite(interface, header, sizeof(PacketHeader), 1E+9);
-	if (sz != sizeof(PacketHeader))
-		return 0;
-
-	sz = UsbSerialWrite(interface, data, header->DataSize, 1E+9);
-	return sz == header->DataSize;
+static inline bool WaitRequest(UsbPipe* interface) 
+{
+	u32 data = 0;
+	return UsbSerialRead(interface, &data, sizeof(data), 3e+9) == sizeof(data) && data == 0xAAAAAAAA;
 }
 
 static void USB_StreamVideo(void* _)
@@ -28,10 +23,13 @@ static void USB_StreamVideo(void* _)
 
 	while (true)
 	{
+		if (!WaitRequest(&VPipe))
+			TerminateOrContinue
+
 		if (!ReadVideoStream())
 			TerminateOrContinue
 
-		if (!SerialWrite(&VFace, &VPkt.Header, VPkt.Data))
+		if (!SerialWrite(&VPipe, (VLAPacket*)&VPkt))
 			TerminateOrContinue
 	}
 }
@@ -43,10 +41,13 @@ static void USB_StreamAudio(void* _)
 
 	while (true)
 	{
+		if (!WaitRequest(&APipe))
+			TerminateOrContinue
+
 		if (!ReadAudioStream())
 			TerminateOrContinue
 
-		if (!SerialWrite(&AFace, &APkt.Header, APkt.Data))
+		if (!SerialWrite(&APipe, (VLAPacket*)&APkt))
 			TerminateOrContinue
 	}
 }
@@ -56,14 +57,14 @@ static void USB_Init()
 	SetAudioBatching(4);
 	VPkt.Header.Magic = 0xAAAAAAAA;
 	APkt.Header.Magic = 0xAAAAAAAA;
-	Result rc = UsbSerialInitialize(&VFace, &AFace);
+	Result rc = UsbSerialInitializeForStreaming(&VPipe, &APipe);
 	if (R_FAILED(rc)) 
 		fatalThrow(rc);
 }
 
 static void USB_Exit()
 {
-	UsbCommsExit();
+	UsbSerialExit();
 }
 
 StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamVideo, USB_StreamAudio };

@@ -21,7 +21,6 @@
 	#define INNER_HEAP_SIZE 1024
 	#pragma message "Building USB-only mode"
 #else
-	//TODO It's probably possible to reduce memory usage by using a custom initialization for libnx sockets
 	#define INNER_HEAP_SIZE 1024 * 1024
 	
 	#include "rtsp/RTP.h"

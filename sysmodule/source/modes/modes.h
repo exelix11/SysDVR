@@ -47,6 +47,11 @@ typedef struct {
 
 _Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * AMaxBatch);
 
+typedef struct {
+	PacketHeader Header;
+	u8 Data[];
+} VLAPacket;
+
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
 
