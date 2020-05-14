@@ -28,7 +28,7 @@ namespace SysDVRClient
 						{
 							string fargs = "";
 							if (args[baseIndex + 1] == "mpv")
-								fargs = args[baseIndex] == "video" ? "- --no-correct-pts --fps=30 " : "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 ";
+								fargs = args[baseIndex] == "video" ? "- --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts --fps=30" : "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 ";
 
 							if (args.Length > baseIndex + 4 && args[baseIndex + 3] == "args")
 								fargs += args[baseIndex + 4];
