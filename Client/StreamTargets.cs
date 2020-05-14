@@ -104,8 +104,16 @@ namespace SysDVRClient
 			proc = Process.Start(p);
 		}
 
+		private bool FirstTime = true;
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
+			if (FirstTime)
+			{
+				proc.StandardInput.BaseStream.Write(StreamInfo.SPS);
+				proc.StandardInput.BaseStream.Write(StreamInfo.PPS);
+				FirstTime = false;
+			}
+				
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
 

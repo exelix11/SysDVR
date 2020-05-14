@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysDVRClient
 {
@@ -28,6 +29,12 @@ namespace SysDVRClient
 			if (Marshal.SizeOf<PacketHeader>() != StructLength)
 				throw new Exception("PacketHeader struct binary size is wrong");
 		}
+	}
+
+	public static class StreamInfo 
+	{
+		public static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
+		public static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 	}
 
 	interface StreamingSource
@@ -125,8 +132,10 @@ namespace SysDVRClient
 			var HeaderData = new byte[PacketHeader.StructLength];
 			ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
 
+			Task sendingData = null; 
+
 			while (!token.IsCancellationRequested)
-			{
+			{				
 				while (!Source.ReadHeader(HeaderData))
 				{
 					System.Threading.Thread.Sleep(10);
@@ -152,8 +161,15 @@ namespace SysDVRClient
 					System.Threading.Thread.Sleep(10);
 					continue;
 				}
-				Target.SendData(Data, Header.Timestamp);
-				pool.Return(Data);
+
+				//Send data and start requesting the next piece of data
+				Task SendPayload(byte[] data, ulong ts) => Task.Run(() => { 
+					Target.SendData(data, ts);
+					pool.Return(data);
+				});
+				
+				sendingData?.GetAwaiter().GetResult();
+				sendingData = SendPayload(Data, Header.Timestamp);
 			}
 #if RELEASE
 			}
@@ -163,6 +179,7 @@ namespace SysDVRClient
 			}
 #endif
 
+			sendingData?.GetAwaiter().GetResult();
 			Source.StopStreaming();
 		}		
 	}
