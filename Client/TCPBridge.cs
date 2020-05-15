@@ -56,11 +56,11 @@ namespace SysDVRClient
 		{
 			if (InSync)
 			{
-				Stream.Read(buffer, 0, PacketHeader.StructLength);
+				return ReadPayload(buffer, PacketHeader.StructLength);
 			}
 			else 
 			{
-				//TCPBridge is a raw stream of data, search for an header
+				// TCPBridge is a raw stream of data, search for an header
 				for (int i = 0; i < 4 && !token.IsCancellationRequested; i++)
 				{
 					buffer[i] = (byte)Stream.ReadByte();
