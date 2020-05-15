@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -50,31 +51,6 @@ namespace SysDVRClient
 		bool ReadPayload(byte[] buffer, int length);
 	}
 
-	abstract class RTSPStreamManager : RTSP.SysDvrRTSPServer
-	{
-		protected StreamingThread VideoThread, AudioThread;
-
-		public RTSPStreamManager(bool videoSupport, bool audioSupport, bool localOnly, int port) : base(videoSupport, audioSupport, localOnly, port) 
-		{
-
-		}
-
-		public override void Begin()
-		{
-			VideoThread?.Start();
-			AudioThread?.Start();
-			base.Begin();
-		}
-
-		public override void Stop()
-		{
-			VideoThread?.Stop();
-			AudioThread?.Stop();
-			base.Stop();
-		}
-	}
-
-
 	class StreamingThread
 	{
 		public static bool Logging;
@@ -119,6 +95,7 @@ namespace SysDVRClient
 
 			CancellationToken token = Cancel.Token;
 			ArrayPool<byte> pool = ArrayPool<byte>.Create();
+			BlockingCollection<(ulong, byte[])> queue = new BlockingCollection<(ulong, byte[])>();
 
 			Source.Logging = log;
 			Source.UseCancellationToken(token);
@@ -129,48 +106,56 @@ namespace SysDVRClient
 #endif
 			Source.WaitForConnection();
 
-			var HeaderData = new byte[PacketHeader.StructLength];
-			ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
+			void ReceiveFromDevice() 
+			{
+				var HeaderData = new byte[PacketHeader.StructLength];
+				ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
 
-			Task sendingData = null; 
-
-			while (!token.IsCancellationRequested)
-			{				
-				while (!Source.ReadHeader(HeaderData))
+				while (!token.IsCancellationRequested)
 				{
-					System.Threading.Thread.Sleep(10);
-					continue;
-				}
+					while (!Source.ReadHeader(HeaderData))
+					{
+						System.Threading.Thread.Sleep(10);
+						continue;
+					}
 
-				if (log)
-					Console.WriteLine($"[{Kind}] {Header}");
-
-				if (Header.Magic != PacketHeader.DefaultMagic)
-				{
 					if (log)
-						Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
-					Source.Flush();
-					System.Threading.Thread.Sleep(10);
-					continue;
-				}
+						Console.WriteLine($"[{Kind}] {Header}");
 
-				var Data = pool.Rent(Header.DataSize);
-				if (!Source.ReadPayload(Data, Header.DataSize))
+					if (Header.Magic != PacketHeader.DefaultMagic)
+					{
+						if (log)
+							Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
+						Source.Flush();
+						System.Threading.Thread.Sleep(10);
+						continue;
+					}
+
+					var Data = pool.Rent(Header.DataSize);
+					if (!Source.ReadPayload(Data, Header.DataSize))
+					{
+						Source.Flush();
+						System.Threading.Thread.Sleep(10);
+						continue;
+					}
+
+					queue.Add((Header.Timestamp, Data));
+				}
+				queue.CompleteAdding();
+			}
+
+			void SendToClient() 
+			{
+				foreach (var o in queue.GetConsumingEnumerable())
 				{
-					Source.Flush();
-					System.Threading.Thread.Sleep(10);
-					continue;
-				}
+					var (ts, data) = o;
 
-				//Send data and start requesting the next piece of data
-				Task SendPayload(byte[] data, ulong ts) => Task.Run(() => { 
 					Target.SendData(data, ts);
 					pool.Return(data);
-				});
-				
-				sendingData?.GetAwaiter().GetResult();
-				sendingData = SendPayload(Data, Header.Timestamp);
+				}
 			}
+
+			Parallel.Invoke(ReceiveFromDevice, SendToClient);
 #if RELEASE
 			}
 			catch (Exception ex)
@@ -178,8 +163,6 @@ namespace SysDVRClient
 				Console.WriteLine($"Terminating {Kind} thread due to {ex}");
 			}
 #endif
-
-			sendingData?.GetAwaiter().GetResult();
 			Source.StopStreaming();
 		}		
 	}

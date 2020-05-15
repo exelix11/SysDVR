@@ -134,7 +134,7 @@ namespace SysDVRClient
 		}
 	}
 
-	class UsbStreamManager : RTSPStreamManager
+	class UsbStreamManager : RTSP.RTSPStreamManager
 	{ 
 		public UsbStreamManager(bool hasVideo, bool hasAudio, int port) : base(hasVideo, hasAudio, false, port)
 		{			

@@ -84,7 +84,7 @@ namespace SysDVRClient
 		}
 	}
 
-	internal class TCPBridgeManager : RTSPStreamManager
+	internal class TCPBridgeManager : RTSP.RTSPStreamManager
 	{
 		public TCPBridgeManager(bool hasVideo, bool hasAudio, string source, int port) : base(hasVideo, hasAudio, false, port)
 		{
