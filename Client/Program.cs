@@ -15,51 +15,6 @@ namespace SysDVRClient
 {
 	class Program
 	{
-		static IMutliStreamManager ParseLegacyArgs(string[] args)
-		{
-			IOutTarget VTarget = null, ATarget = null;
-
-			void ParseTargetArgs(int baseIndex, ref IOutTarget t)
-			{
-				switch (args[baseIndex + 1])
-				{
-					case "mpv":
-					case "stdin":
-						{
-							string fargs = "";
-							if (args[baseIndex + 1] == "mpv")
-								fargs = args[baseIndex] == "video" ? "- --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts --fps=30" : "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 ";
-
-							if (args.Length > baseIndex + 4 && args[baseIndex + 3] == "args")
-								fargs += args[baseIndex + 4];
-
-							t = new StdInTarget(args[baseIndex + 2], fargs);
-
-							break;
-						}
-					case "tcp":
-						{
-							int port = int.Parse(args[baseIndex + 2]);
-							Console.WriteLine($"Waiting for a client to connect on {port} ...");
-							t = new TCPTarget(System.Net.IPAddress.Any, port);
-							break;
-						}
-					case "file":
-						t = new OutFileTarget(args[baseIndex + 2]);
-						break;
-					default:
-						throw new Exception($"{args[baseIndex + 1]} is not a valid video mode");
-				}
-			}
-
-			int index = Array.IndexOf(args, "video");
-			if (index >= 0) ParseTargetArgs(index, ref VTarget);
-			index = Array.IndexOf(args, "audio");
-			if (index >= 0) ParseTargetArgs(index, ref ATarget);
-
-			return new LegacyUsbStreamManager(VTarget, ATarget);
-		}
-
 		static void PrintGuide(bool full)
 		{
 			if (!full) {
@@ -118,9 +73,8 @@ namespace SysDVRClient
 				return;
 			}
 
-			IMutliStreamManager Streams = null;
+			BaseStreamManager StreamManager;
 			bool NoAudio = false, NoVideo = false;
-			int Port;
 
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 			string ArgValue(string arg) 
@@ -144,12 +98,8 @@ namespace SysDVRClient
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
-			Port = ArgValueInt("--port") ?? 6666;
 			StreamingThread.Logging = HasArg("--print-stats");
 			UsbHelper.ForceLibUsb = HasArg("--no-winusb");
-
-			if (Port <= 1024)
-				Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
 
 			if (NoVideo && NoAudio)
 			{
@@ -157,17 +107,68 @@ namespace SysDVRClient
 				return;
 			}
 
-			if (args.Length == 0 || args[0].ToLower() == "rtsp")
-				Streams = new UsbStreamManager(!NoVideo, !NoAudio, Port);
-			else if (args[0].ToLower() == "bridge")
-				Streams = new TCPBridgeManager(!NoVideo, !NoAudio, args[1], Port);
-			else
-				Streams = ParseLegacyArgs(args);
+			if (HasArg("--mpv"))
+			{
+				string mpvPath = ArgValue("--mpv");
+				if (mpvPath == null || !File.Exists(mpvPath))
+				{
+					Console.WriteLine("The specified mpv path is not valid");
+					return;
+				}
+				if (!NoVideo && !NoAudio)
+					NoAudio = true;
+				StreamManager = new MpvStdinManager(NoAudio ? StreamKind.Video : StreamKind.Audio, mpvPath);
+			}
+			else if (HasArg("--file"))
+			{
+				string diskPath = ArgValue("--file");
+				if (diskPath == null || !Directory.Exists(diskPath))
+				{
+					Console.WriteLine("The specified directory is not valid");
+					return;
+				}
+				StreamManager = new SaveToDiskManager(!NoVideo, !NoAudio, diskPath);
+			}
+			else // use RTSP by default
+			{
+				int port = ArgValueInt("--port") ?? 6666;
+				if (port <= 1024)
+					Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
+				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, true, port);
+			}
 
-			StartStreaming(Streams, args);
+			if (args[0].ToLower() == "usb")
+			{
+				if (!NoVideo)
+					StreamManager.VideoSource = UsbHelper.MakeStreamingSource(StreamKind.Video);
+				if (!NoAudio)
+					StreamManager.AudioSource = UsbHelper.MakeStreamingSource(StreamKind.Audio);
+			}
+			else if (args[0].ToLower() == "bridge")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("Specify an ip address for bridge mode");
+					return;
+				}
+
+				string ip = args[1];
+
+				if (!NoVideo)
+					StreamManager.VideoSource = new TCPBridgeSource(ip, StreamKind.Video);
+				if (!NoAudio)
+					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
+			}
+			else
+			{
+				Console.WriteLine("Invalid source");
+				return;
+			}
+
+			StartStreaming(StreamManager);
 		}
 
-		static void StartStreaming(IMutliStreamManager Streams, string[] args)
+		static void StartStreaming(BaseStreamManager Streams)
 		{
 			Console.WriteLine("Starting stream, press return to stop");
 			Console.WriteLine("If the stream lags try pausing and unpausing the player.");

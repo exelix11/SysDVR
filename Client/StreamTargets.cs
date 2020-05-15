@@ -19,104 +19,35 @@ namespace SysDVRClient
 		void SendData(byte[] data, int offset, int size, UInt64 ts);
 	}
 
-	interface IMutliStreamManager 
+	abstract class BaseStreamManager
 	{
-		IOutTarget Video { get; }
-		IOutTarget Audio { get; }
+		protected StreamingThread VideoThread, AudioThread;
 
-		bool HasAStream => Video != null || Audio != null;
+		public StreamingSource VideoSource { get => VideoThread?.Source; set { if (VideoThread != null) VideoThread.Source = value; } }
+		public StreamingSource AudioSource { get => AudioThread?.Source; set { if (AudioThread != null) AudioThread.Source = value; } }
 
-		void Begin();
-		void Stop();
-	}
+		public IOutTarget VideoTarget => VideoThread?.Target;
+		public IOutTarget AudioTarget => AudioThread?.Target;
 
-	class OutFileTarget : IOutTarget
-	{
-		FileStream Vfs;
-
-		public OutFileTarget(string fname)
+		public BaseStreamManager(IOutTarget VideoTarget, IOutTarget AudioTarget)
 		{
-			Vfs = File.Open(fname, FileMode.Create);
+			if (VideoTarget != null)
+				VideoThread = new StreamingThread(StreamKind.Video, VideoTarget);
+			if (AudioTarget != null)
+				AudioThread = new StreamingThread(StreamKind.Audio, AudioTarget);
 		}
 
-		public void Dispose()
+		public virtual void Begin()
 		{
-			Vfs.Close();
-			Vfs.Dispose();
+			VideoThread?.Start();
+			AudioThread?.Start();
 		}
 
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
+		public virtual void Stop()
 		{
-			Vfs.Write(data, offset, size);
+			VideoThread?.Stop();
+			AudioThread?.Stop();
 		}
-}
-
-	class TCPTarget : IOutTarget
-	{
-		Socket Sock;
-
-		System.Net.IPAddress HostAddr;
-		int HostPort;
-
-		public TCPTarget(System.Net.IPAddress addr, int port)
-		{
-			HostAddr = addr;
-			HostPort = port;
-		}
-
-		private void ReceiveConnection() 
-		{
-			var v = new TcpListener(HostAddr, HostPort);
-			v.Start();
-			Console.WriteLine($"Waiting for connection on port {HostPort}...");
-			Sock = v.AcceptSocket();
-			v.Stop();
-		}
-
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
-		{
-			try
-			{
-				Sock.Send(data, offset, size, SocketFlags.None);
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"WARNING - Closing socket on port {HostPort} : {ex.Message}");
-				Sock.Close();
-				ReceiveConnection();
-			}
-		}
-	}
-
-	class StdInTarget : IOutTarget
-	{
-		Process proc;
-
-		public StdInTarget(string path, string args)
-		{
-			ProcessStartInfo p = new ProcessStartInfo()
-			{
-				Arguments = args,
-				FileName = path,
-				RedirectStandardInput = true,
-				RedirectStandardOutput = true
-			};
-			proc = Process.Start(p);
-		}
-
-		private bool FirstTime = true;
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
-		{
-			if (FirstTime)
-			{
-				proc.StandardInput.BaseStream.Write(StreamInfo.SPS);
-				proc.StandardInput.BaseStream.Write(StreamInfo.PPS);
-				FirstTime = false;
-			}
-				
-			proc.StandardInput.BaseStream.Write(data, offset, size);
-		}
-
 	}
 
 #if DEBUG

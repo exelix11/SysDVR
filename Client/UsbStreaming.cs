@@ -206,46 +206,4 @@ namespace SysDVRClient
 			return true;
 		}
 	}
-
-	class UsbStreamManager : RTSP.RTSPStreamManager
-	{
-		public UsbStreamManager(bool hasVideo, bool hasAudio, int port) : base(hasVideo, hasAudio, false, port)
-		{
-			if (hasVideo)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, UsbHelper.MakeStreamingSource(StreamKind.Video));
-			if (hasAudio)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, UsbHelper.MakeStreamingSource(StreamKind.Audio));
-		}
-	}
-
-	class LegacyUsbStreamManager : IMutliStreamManager
-	{
-		public IOutTarget Video { get; set; }
-		public IOutTarget Audio { get; set; }
-
-		protected StreamingThread VideoThread, AudioThread;
-
-		public LegacyUsbStreamManager(IOutTarget video, IOutTarget audio)
-		{
-			Video = video;
-			Audio = audio;
-
-			if (Video != null)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, UsbHelper.MakeStreamingSource(StreamKind.Video));
-			if (Audio != null)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, UsbHelper.MakeStreamingSource(StreamKind.Audio));
-		}
-
-		public void Begin()
-		{
-			VideoThread?.Start();
-			AudioThread?.Start();
-		}
-
-		public void Stop()
-		{
-			VideoThread?.Stop();
-			AudioThread?.Stop();
-		}
-	}
 }

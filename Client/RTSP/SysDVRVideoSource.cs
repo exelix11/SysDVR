@@ -8,52 +8,26 @@ using System.Threading.Tasks;
 
 namespace SysDVRClient.RTSP
 {
-	abstract class RTSPStreamManager : RTSP.SysDvrRTSPServer
+	class SysDvrRTSPManager : BaseStreamManager
 	{
-		protected StreamingThread VideoThread, AudioThread;
+		RtspServer server;
 
-		public RTSPStreamManager(bool videoSupport, bool audioSupport, bool localOnly, int port) : base(videoSupport, audioSupport, localOnly, port)
+		public SysDvrRTSPManager(bool video, bool audio, bool localOnly, int port) :
+			base(video ? new SysDVRVideoRTSPTarget() : null, audio ? new SysDVRAudioRTSPTarget() : null)
 		{
-
+			server = new RtspServer(port, VideoTarget as SysDVRVideoRTSPTarget, AudioTarget as SysDVRAudioRTSPTarget, localOnly);
 		}
 
 		public override void Begin()
 		{
-			VideoThread?.Start();
-			AudioThread?.Start();
+			server.StartListenerThread();
 			base.Begin();
 		}
 
-		public override void Stop()
-		{
-			VideoThread?.Stop();
-			AudioThread?.Stop();
+		public override void Stop() {
+			server.StopListen();
 			base.Stop();
 		}
-	}
-
-	class SysDvrRTSPServer : IMutliStreamManager
-	{
-		public IOutTarget Video { get; protected set; }
-		public IOutTarget Audio { get; protected set; }
-
-		RtspServer server;
-
-		public SysDvrRTSPServer(bool videoSupport, bool audioSupport, bool localOnly, int port) 
-		{
-			SysDVRVideoRTSPTarget v = null;
-			SysDVRAudioRTSPTarget a = null;
-
-			if (videoSupport) v = new SysDVRVideoRTSPTarget();
-			if (audioSupport) a = new SysDVRAudioRTSPTarget();
-
-			Video = v;
-			Audio = a;
-			server = new RtspServer(port, v, a, localOnly);
-		}
-
-		public virtual void Begin() => server.StartListenerThread();
-		public virtual void Stop() => server.StopListen();
 	}
 
 	abstract class SysDvrRTSPTarget : IOutTarget

@@ -84,17 +84,6 @@ namespace SysDVRClient
 		}
 	}
 
-	internal class TCPBridgeManager : RTSP.RTSPStreamManager
-	{
-		public TCPBridgeManager(bool hasVideo, bool hasAudio, string source, int port) : base(hasVideo, hasAudio, false, port)
-		{
-			if (hasVideo)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, new TCPBridgeSource(source, StreamKind.Video));
-			if (hasAudio)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new TCPBridgeSource(source, StreamKind.Audio));
-		}
-	}
-
 	static internal partial class Exten 
 	{
 		public static async Task ConnectAsync(this TcpClient tcpClient, string host, int port, CancellationToken cancellationToken)
