@@ -17,7 +17,7 @@ namespace SysDVRClient
 		static IUsbDevice device = null;
 		static int refCount = 0;
 
-		public static LibUsbDotNet.LogLevel LogLevel = LibUsbDotNet.LogLevel.Warning;
+		public static LibUsbDotNet.LogLevel LogLevel = LibUsbDotNet.LogLevel.Error;
 
 		static IUsbDevice GetSysDVRDevice()
 		{
