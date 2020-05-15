@@ -21,11 +21,9 @@ namespace SysDVRClient.RTSP
 
 		//TODO: reimplement these using Memory and Span<byte> 
 
-		public static List<byte[]> PacketizeSamples(Memory<byte> samples, ulong tsMs)
+		public static List<byte[]> PacketizeSamples(Span<byte> smp, ulong tsMs)
 		{
 			List<byte[]> rtp_packets = new List<byte[]>();
-
-			Span<byte> smp = samples.Span;
 			double diffTs = 0;
 
 			while (smp.Length > 0)

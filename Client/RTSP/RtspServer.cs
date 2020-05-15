@@ -439,14 +439,14 @@ namespace SysDVRClient.RTSP
 			return current_rtp_play_count;
 		}
 
-		void SysDVR_ReceivedVideoFrame(Memory<byte> data, ulong tsMsec)
+		void SysDVR_ReceivedVideoFrame(Span<byte> Data, ulong tsMsec)
 		{
 			if (GetPlayCountPerStream(StreamKind.Video) == 0) return;
-			var rtp_packets = H264Packetizer.PacketizeNALArray(data.Span, tsMsec);
+			var rtp_packets = H264Packetizer.PacketizeNALArray(Data, tsMsec);
 			PushRtspData(StreamKind.Video, rtp_packets, tsMsec);
 		}
 
-		private void SysDVR_ReceivedAudioData(Memory<byte> Data, ulong tsMsec)
+		private void SysDVR_ReceivedAudioData(Span<byte> Data, ulong tsMsec)
 		{
 			if (GetPlayCountPerStream(StreamKind.Audio) == 0) return;
 			var samples = LE16Packetizer.PacketizeSamples(Data, tsMsec);
