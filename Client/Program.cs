@@ -72,6 +72,7 @@ namespace SysDVRClient
 				Console.ReadLine();
 				return;
 			}
+			//TODO: completely rewrite this
 			Console.WriteLine("Usage: \r\n" +
 					"Stream via RTSP: 'SysDVR-Client rtsp', add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
 					"Stream via TCP Bridge: 'SysDVR-Client bridge <switch ip address>', '--no-audio' or '--no-video' are supported here too" +
@@ -145,9 +146,10 @@ namespace SysDVRClient
 			NoVideo = HasArg("--no-video");
 			Port = ArgValueInt("--port") ?? 6666;
 			StreamingThread.Logging = HasArg("--print-stats");
+			UsbHelper.ForceLibUsb = HasArg("--no-winusb");
 
 			if (Port <= 1024)
-				Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator privileges");
+				Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
 
 			if (NoVideo && NoAudio)
 			{

@@ -170,9 +170,10 @@ namespace SysDVRClient
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Terminating {Kind} thread due to {ex}");
+				if (!token.IsCancellationRequested)
+					Console.WriteLine($"Terminating {Kind} thread due to {ex}");
 			}
 #endif
-		}		
+		}
 	}
 }
