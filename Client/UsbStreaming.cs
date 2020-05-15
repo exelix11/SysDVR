@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -13,13 +14,15 @@ namespace SysDVRClient
 {
 	static class UsbHelper
 	{
+		public static bool ForceLibUsb { get; set; } = false;
+
 		static UsbContext LibUsbCtx = null;
 		static IUsbDevice device = null;
 		static int refCount = 0;
 
 		public static LibUsbDotNet.LogLevel LogLevel = LibUsbDotNet.LogLevel.Error;
 
-		static IUsbDevice GetSysDVRDevice()
+		private static IUsbDevice GetSysDVRDevice()
 		{
 			if (device != null)
 				return device;
@@ -68,16 +71,26 @@ namespace SysDVRClient
 					throw new Exception("interface refCount out of range");
 			}
 		}
+
+		public static UsbStreamingSourceBase MakeStreamingSource(StreamKind stream)
+		{
+			// LibUsb backend on linux and windows doesn't seem to buffer reads from the pipe, this causes issues and requires manually receiving everything and copying data
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !ForceLibUsb)
+				return new UsbStreamingSourceWinUsb(stream);
+			else 
+				return new UsbStreamingSourceLibUsb(stream);
+		}
 	}
 
-	class UsbStreamingSource : StreamingSource
+	abstract class UsbStreamingSourceBase : StreamingSource
 	{
+		protected static readonly byte[] USBMagic = { 0xAA, 0xAA, 0xAA, 0xAA };
 		public bool Logging { get; set; }
 
-		UsbEndpointReader reader;
-		UsbEndpointWriter writer;
+		protected UsbEndpointReader reader;
+		protected UsbEndpointWriter writer;
 
-		public UsbStreamingSource(StreamKind kind)
+		public UsbStreamingSourceBase(StreamKind kind)
 		{
 			(reader, writer) = UsbHelper.GetForInterface(kind);
 		}
@@ -97,20 +110,72 @@ namespace SysDVRClient
 
 		}
 
-		public void Flush()
+		public abstract void Flush();
+		public abstract bool ReadHeader(byte[] buffer);
+		public abstract bool ReadPayload(byte[] buffer, int length);
+	}
+
+	class UsbStreamingSourceWinUsb : UsbStreamingSourceBase
+	{
+
+		public UsbStreamingSourceWinUsb(StreamKind kind) : base(kind) { }
+
+		public override void Flush()
+		{
+			reader.ReadFlush();
+		}
+
+		public override bool ReadHeader(byte[] buffer)
+		{
+			var err = writer.Write(USBMagic, 100, out int _);
+			if (err != LibUsbDotNet.Error.Success)
+			{
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while requesting data");
+				return false;
+			}
+
+			err = reader.Read(buffer, 0, PacketHeader.StructLength, 100, out int _);
+			if (err != LibUsbDotNet.Error.Success)
+			{
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while reading header");
+				return false;
+			}
+
+			return true;
+		}
+
+		public override bool ReadPayload(byte[] buffer, int length)
+		{
+			var err = reader.Read(buffer, 0, length, 500, out int sz);
+			if (err != LibUsbDotNet.Error.Success)
+			{
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while reading payload. ({sz} read)");
+				return false;
+			}
+
+			return sz == length;
+		}
+	}
+
+	class UsbStreamingSourceLibUsb : UsbStreamingSourceBase
+	{
+		public UsbStreamingSourceLibUsb(StreamKind kind) : base(kind) { }
+
+		public override void Flush()
 		{
 			reader.ReadFlush();
 			ReadSize = 0;
 		}
-
-		static readonly byte[] magic = { 0xAA, 0xAA, 0xAA, 0xAA };
-
+		
 		//Incredibly dumb libusb workaround
 		private byte[] ReadBuffer = new byte[PacketHeader.MaxTransferSize];
 		private int ReadSize = 0;
-		public bool ReadHeader(byte[] buffer)
+		public override bool ReadHeader(byte[] buffer)
 		{
-			var err = writer.Write(magic, 500, out int _);
+			var err = writer.Write(USBMagic, 500, out int _);
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (Logging)
@@ -131,7 +196,7 @@ namespace SysDVRClient
 			return true;
 		}
 
-		public bool ReadPayload(byte[] buffer, int length)
+		public override bool ReadPayload(byte[] buffer, int length)
 		{
 			if (length > ReadSize - PacketHeader.StructLength)
 				return false;
@@ -147,9 +212,9 @@ namespace SysDVRClient
 		public UsbStreamManager(bool hasVideo, bool hasAudio, int port) : base(hasVideo, hasAudio, false, port)
 		{
 			if (hasVideo)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(StreamKind.Video));
+				VideoThread = new StreamingThread(Video, StreamKind.Video, UsbHelper.MakeStreamingSource(StreamKind.Video));
 			if (hasAudio)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new UsbStreamingSource(StreamKind.Audio));
+				AudioThread = new StreamingThread(Audio, StreamKind.Audio, UsbHelper.MakeStreamingSource(StreamKind.Audio));
 		}
 	}
 
@@ -166,9 +231,9 @@ namespace SysDVRClient
 			Audio = audio;
 
 			if (Video != null)
-				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(StreamKind.Video));
+				VideoThread = new StreamingThread(Video, StreamKind.Video, UsbHelper.MakeStreamingSource(StreamKind.Video));
 			if (Audio != null)
-				AudioThread = new StreamingThread(Audio, StreamKind.Audio, new UsbStreamingSource(StreamKind.Audio));
+				AudioThread = new StreamingThread(Audio, StreamKind.Audio, UsbHelper.MakeStreamingSource(StreamKind.Audio));
 		}
 
 		public void Begin()
