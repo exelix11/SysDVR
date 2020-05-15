@@ -86,6 +86,7 @@ namespace SysDVRClient
 		public void Stop()
 		{
 			Cancel.Cancel();
+			Source.StopStreaming();
 			StreamThread.Join();
 		}
 
@@ -163,7 +164,6 @@ namespace SysDVRClient
 				Console.WriteLine($"Terminating {Kind} thread due to {ex}");
 			}
 #endif
-			Source.StopStreaming();
 		}		
 	}
 }
