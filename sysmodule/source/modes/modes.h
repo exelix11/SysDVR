@@ -22,6 +22,13 @@ extern atomic_bool IsThreadRunning;
 #define TerminateOrContinue {if (IsThreadRunning) continue; else break;}
 
 #define VbufSz 0x32000
+
+/*
+	Audio is 16bit pcm at 48000hz stereo. In official software it's read in 0x1000 chunks
+	that's 1024 samples per chunk (2 bytes per sample and stereo so divided by 4)
+	(1 / 48000) * 1024 is 0,02133333 seconds per chunk.
+	Smaller buffer sizes don't seem to work, only tested 0x400 and grc fails with 2212-0006
+*/
 #define AbufSz 0x1000
 
 typedef struct {
