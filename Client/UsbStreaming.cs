@@ -2,6 +2,7 @@
 using LibUsbDotNet.Main;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -10,7 +11,7 @@ using System.Threading;
 
 namespace SysDVRClient
 {
-	static class UsbHelper 
+	static class UsbHelper
 	{
 		static UsbContext LibUsbCtx = null;
 		static IUsbDevice device = null;
@@ -37,16 +38,19 @@ namespace SysDVRClient
 			return dev;
 		}
 
-		public static (UsbEndpointReader, UsbEndpointWriter) GetForInterface(int iface)
+		public static (UsbEndpointReader, UsbEndpointWriter) GetForInterface(StreamKind iface)
 		{
 			var dev = GetSysDVRDevice();
 
 			lock (device)
 			{
-				device.ClaimInterface(iface);
-				// This works but depends on the interface order in SysDVR.
-				var reader = dev.OpenEndpointReader((ReadEndpointID)((int)ReadEndpointID.Ep01 + iface), PacketHeader.MaxTransferSize, EndpointType.Bulk);
-				var writer = dev.OpenEndpointWriter((WriteEndpointID)((int)WriteEndpointID.Ep01 + iface), EndpointType.Interrupt);
+				if (!dev.ClaimInterface(iface == StreamKind.Video ? 0 : 1))
+					throw new Exception($"Couldn't claim interface for {iface}");
+
+				var (epIn, epOut) = iface == StreamKind.Video ? (ReadEndpointID.Ep01, WriteEndpointID.Ep01) : (ReadEndpointID.Ep02, WriteEndpointID.Ep02);
+
+				var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
+				var writer = dev.OpenEndpointWriter(epOut, EndpointType.Interrupt);
 				refCount++;
 
 				return (reader, writer);
@@ -75,12 +79,12 @@ namespace SysDVRClient
 
 		public UsbStreamingSource(StreamKind kind)
 		{
-			(reader, writer) = UsbHelper.GetForInterface(kind == StreamKind.Video ? 0 : 1);
+			(reader, writer) = UsbHelper.GetForInterface(kind);
 		}
 
 		public void WaitForConnection()
 		{
-			
+
 		}
 
 		public void StopStreaming()
@@ -90,18 +94,23 @@ namespace SysDVRClient
 
 		public void UseCancellationToken(CancellationToken tok)
 		{
-			
+
 		}
 
 		public void Flush()
 		{
 			reader.ReadFlush();
+			ReadSize = 0;
 		}
 
 		static readonly byte[] magic = { 0xAA, 0xAA, 0xAA, 0xAA };
+
+		//Incredibly dumb libusb workaround
+		private byte[] ReadBuffer = new byte[PacketHeader.MaxTransferSize];
+		private int ReadSize = 0;
 		public bool ReadHeader(byte[] buffer)
 		{
-			var err = writer.Write(magic, 100, out int _);
+			var err = writer.Write(magic, 500, out int _);
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (Logging)
@@ -109,7 +118,7 @@ namespace SysDVRClient
 				return false;
 			}
 
-			err = reader.Read(buffer, 0, PacketHeader.StructLength, 100, out int _);
+			err = reader.Read(ReadBuffer, 0, PacketHeader.MaxTransferSize, 600, out ReadSize);
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (Logging)
@@ -117,27 +126,26 @@ namespace SysDVRClient
 				return false;
 			}
 
+			Buffer.BlockCopy(ReadBuffer, 0, buffer, 0, PacketHeader.StructLength);
+
 			return true;
 		}
 
-		public bool ReadPayload(byte[] buffer, int length) 
+		public bool ReadPayload(byte[] buffer, int length)
 		{
-			var err = reader.Read(buffer, 0, length, 500, out int sz);
-			if (err != LibUsbDotNet.Error.Success)
-			{
-				if (Logging)
-					Console.WriteLine($"Warning: libusb error {err} while reading payload. ({sz} read)");
+			if (length > ReadSize - PacketHeader.StructLength)
 				return false;
-			}
 
-			return sz == length;
+			Buffer.BlockCopy(ReadBuffer, PacketHeader.StructLength, buffer, 0, length);
+
+			return true;
 		}
 	}
 
 	class UsbStreamManager : RTSP.RTSPStreamManager
-	{ 
+	{
 		public UsbStreamManager(bool hasVideo, bool hasAudio, int port) : base(hasVideo, hasAudio, false, port)
-		{			
+		{
 			if (hasVideo)
 				VideoThread = new StreamingThread(Video, StreamKind.Video, new UsbStreamingSource(StreamKind.Video));
 			if (hasAudio)
