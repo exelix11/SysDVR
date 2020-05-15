@@ -32,12 +32,12 @@ namespace SysDVRClient
 		}
 	}
 
-	public static class StreamInfo 
+	public static class StreamInfo
 	{
 		public static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 		public static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 	}
-
+	
 	interface StreamingSource
 	{
 		bool Logging { get; set; }
@@ -58,15 +58,15 @@ namespace SysDVRClient
 		Thread StreamThread;
 		CancellationTokenSource Cancel;
 
-		IOutTarget Target;
-		StreamKind Kind;
-		StreamingSource Source;
+		public IOutTarget Target { get; set; }
+		public StreamingSource Source { get; set; }
 
-		public StreamingThread(IOutTarget target, StreamKind kind, StreamingSource source)
+		public StreamKind Kind { get; private set; }
+
+		public StreamingThread(StreamKind kind, IOutTarget target)
 		{
-			Target = target;
 			Kind = kind;
-			Source = source;
+			Target = target;
 		}
 
 		~StreamingThread() 
