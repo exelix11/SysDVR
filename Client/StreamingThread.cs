@@ -96,7 +96,7 @@ namespace SysDVRClient
 
 			CancellationToken token = Cancel.Token;
 			ArrayPool<byte> pool = ArrayPool<byte>.Create();
-			BlockingCollection<(ulong, byte[])> queue = new BlockingCollection<(ulong, byte[])>();
+			BlockingCollection<(ulong, byte[])> queue = new BlockingCollection<(ulong, byte[])>(5);
 
 			Source.Logging = log;
 			Source.UseCancellationToken(token);
@@ -127,6 +127,15 @@ namespace SysDVRClient
 					{
 						if (log)
 							Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
+						Source.Flush();
+						System.Threading.Thread.Sleep(10);
+						continue;
+					}
+
+					if (Header.DataSize > PacketHeader.VPayloadMax)
+					{
+						if (log)
+							Console.WriteLine($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
 						Source.Flush();
 						System.Threading.Thread.Sleep(10);
 						continue;
