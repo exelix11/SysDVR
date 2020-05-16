@@ -125,7 +125,7 @@ Command examples:
 			}
 			else if (HasArg("--file"))
 			{
-				string diskPath = ArgValue("--file");
+				string diskPath = ArgValue("--file").Replace("\"", "");
 				if (diskPath == null || !Directory.Exists(diskPath))
 				{
 					Console.WriteLine("The specified directory is not valid");
