@@ -87,8 +87,10 @@ namespace SysDVRClient
 		{
 			Cancel.Cancel();
 			Source.StopStreaming();
-			StreamThread.Join();
 		}
+
+		public void Join() =>
+			StreamThread.Join();
 
 		private void ThreadMain()
 		{
@@ -96,7 +98,7 @@ namespace SysDVRClient
 
 			CancellationToken token = Cancel.Token;
 			ArrayPool<byte> pool = ArrayPool<byte>.Create();
-			BlockingCollection<(ulong, byte[])> queue = new BlockingCollection<(ulong, byte[])>(5);
+			using BlockingCollection<(ulong, byte[])> queue = new BlockingCollection<(ulong, byte[])>(5);
 
 			Source.Logging = log;
 			Source.UseCancellationToken(token);
@@ -151,12 +153,13 @@ namespace SysDVRClient
 
 					queue.Add((Header.Timestamp, Data));
 				}
+
 				queue.CompleteAdding();
 			}
 
 			void SendToClient() 
 			{
-				foreach (var o in queue.GetConsumingEnumerable())
+				foreach (var o in queue.GetConsumingEnumerable(token))
 				{
 					var (ts, data) = o;
 

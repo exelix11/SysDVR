@@ -47,6 +47,8 @@ namespace SysDVRClient
 		{
 			VideoThread?.Stop();
 			AudioThread?.Stop();
+			VideoThread?.Join();
+			AudioThread?.Join();
 		}
 	}
 

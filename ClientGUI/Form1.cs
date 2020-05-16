@@ -129,8 +129,8 @@ namespace SysDVRClientGUI
 
 				if (!string.IsNullOrWhiteSpace(extra))
 				{
-					str.AppendLine("\ntimeout 2 > NUL");
-					str.AppendLine(extra);
+					str.Append("\ntimeout 2 > NUL && ");
+					str.Append(extra);
 				}
 
 				return str.ToString();
