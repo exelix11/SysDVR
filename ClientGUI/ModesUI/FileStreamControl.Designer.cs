@@ -29,12 +29,9 @@
 		private void InitializeComponent()
 		{
 			this.label2 = new System.Windows.Forms.Label();
-			this.tbAudioFile = new System.Windows.Forms.TextBox();
 			this.tbVideoFile = new System.Windows.Forms.TextBox();
 			this.btnVideo = new System.Windows.Forms.Button();
-			this.btnAudio = new System.Windows.Forms.Button();
 			this.label1 = new System.Windows.Forms.Label();
-			this.label3 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// label2
@@ -45,18 +42,9 @@
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(512, 32);
 			this.label2.TabIndex = 4;
-			this.label2.Text = "This will save the raw data to a file, video data is h264 NAL units, you can conv" +
-    "ert it to mp4 via ffmpeg, audio data is composed of uncompressed 16-bit little-e" +
-    "ndian stero samples at 48kHz";
-			// 
-			// tbAudioFile
-			// 
-			this.tbAudioFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.tbAudioFile.Location = new System.Drawing.Point(87, 73);
-			this.tbAudioFile.Name = "tbAudioFile";
-			this.tbAudioFile.Size = new System.Drawing.Size(391, 20);
-			this.tbAudioFile.TabIndex = 5;
+			this.label2.Text = "This will save the raw data to a pair of files, video data is raw h264 NAL units," +
+    " you can convert it to mp4 via ffmpeg, audio data is uncompressed 16-bit little-" +
+    "endian stero samples at 48kHz";
 			// 
 			// tbVideoFile
 			// 
@@ -78,17 +66,6 @@
 			this.btnVideo.UseVisualStyleBackColor = true;
 			this.btnVideo.Click += new System.EventHandler(this.btnVideo_Click);
 			// 
-			// btnAudio
-			// 
-			this.btnAudio.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.btnAudio.Location = new System.Drawing.Point(484, 71);
-			this.btnAudio.Name = "btnAudio";
-			this.btnAudio.Size = new System.Drawing.Size(31, 23);
-			this.btnAudio.TabIndex = 8;
-			this.btnAudio.Text = "...";
-			this.btnAudio.UseVisualStyleBackColor = true;
-			this.btnAudio.Click += new System.EventHandler(this.btnAudio_Click);
-			// 
 			// label1
 			// 
 			this.label1.AutoSize = true;
@@ -96,30 +73,18 @@
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(78, 13);
 			this.label1.TabIndex = 9;
-			this.label1.Text = "Save video as:";
-			// 
-			// label3
-			// 
-			this.label3.AutoSize = true;
-			this.label3.Location = new System.Drawing.Point(3, 76);
-			this.label3.Name = "label3";
-			this.label3.Size = new System.Drawing.Size(78, 13);
-			this.label3.TabIndex = 10;
-			this.label3.Text = "Save audio as:";
+			this.label1.Text = "Save directory:";
 			// 
 			// FileStreamControl
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.Controls.Add(this.label3);
 			this.Controls.Add(this.label1);
-			this.Controls.Add(this.btnAudio);
 			this.Controls.Add(this.btnVideo);
 			this.Controls.Add(this.tbVideoFile);
-			this.Controls.Add(this.tbAudioFile);
 			this.Controls.Add(this.label2);
 			this.Name = "FileStreamControl";
-			this.Size = new System.Drawing.Size(518, 105);
+			this.Size = new System.Drawing.Size(518, 96);
 			this.Load += new System.EventHandler(this.FileStreamControl_Load);
 			this.ResumeLayout(false);
 			this.PerformLayout();
@@ -129,11 +94,8 @@
 		#endregion
 
 		private System.Windows.Forms.Label label2;
-		private System.Windows.Forms.TextBox tbAudioFile;
 		private System.Windows.Forms.TextBox tbVideoFile;
 		private System.Windows.Forms.Button btnVideo;
-		private System.Windows.Forms.Button btnAudio;
 		private System.Windows.Forms.Label label1;
-		private System.Windows.Forms.Label label3;
 	}
 }

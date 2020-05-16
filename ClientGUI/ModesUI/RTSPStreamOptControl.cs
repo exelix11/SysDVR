@@ -20,19 +20,7 @@ namespace SysDVRClientGUI
 
 		public StreamKind TargetKind { get; set; }
 
-		public string GetCommandLine()
-		{
-			StringBuilder res = new StringBuilder();
-
-			res.Append("rtsp");
-
-			if (TargetKind == StreamKind.Video)
-				res.Append(" --no-audio");
-			else if (TargetKind == StreamKind.Audio)
-				res.Append(" --no-video");
-
-			return res.ToString();
-		}
+		public string GetCommandLine() => "";
 
 		public string GetExtraCmd()
 		{
