@@ -15,18 +15,8 @@ namespace SysDVRClientGUI
 		Both = Video | Audio
 	}
 
-	public enum StreamTarget 
-	{
-		RTSP,
-		Mpv,
-		File,
-		Tcp,
-		TCPBridge_RTSP
-	}
-
 	interface IStreamTargetControl : IContainerControl
 	{
-		StreamKind TargetKind { get; set; }
 		string GetCommandLine();
 		string GetExtraCmd();
 	}

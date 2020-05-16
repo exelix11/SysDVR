@@ -20,50 +20,54 @@ namespace SysDVRClient
 			if (!full) {
 				Console.WriteLine("Basic usage:\r\n" +
 						"Simply launching this exectuable will show this message and launch the RTSP server via USB.\r\n" +
-						"Use 'SysDVR-Client rtsp' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+						"Use 'SysDVR-Client usb' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
 						"To stream in TCP Bridge mode launch 'SysDVR-Client bridge <switch ip address>'\r\n" +
-						"Command line options for the previous version are still available, you can view them with 'SysDVR-Client --help'\r\n" +
+						"There are more advanced options, you can see them with 'SysDVR-Client --help'\r\n" +
 						"Press enter to continue.\r\n");
 				Console.ReadLine();
 				return;
 			}
-			//TODO: completely rewrite this
-			Console.WriteLine("Usage: \r\n" +
-					"Stream via RTSP: 'SysDVR-Client rtsp', add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
-					"Stream via TCP Bridge: 'SysDVR-Client bridge <switch ip address>', '--no-audio' or '--no-video' are supported here too" +
-					"Raw streaming options:\r\n" +
-					"'SysDVR-Client video <stream config for video> audio <stream config for audio>'\r\n" +
-					"You can omit the stream you don't want\r\n" +
-					"Stream config is one of the following:\r\n" +
-					" - tcp <port> : stream the data over a the network on the specified port.\r\n" +
-					" - file <file name> : stores the received data to a file\r\n" +
-					"   The format is raw h264 data for video and uncompressed s16le stereo 48kHz samples for sound\r\n" +
-					" - stdin <executable path> args <program arguments> : Pipes the received data to another program, <executable path> is the other program's path and <program arguments> are the args to pass to the target program, you can omit args if the program doesn't need any configuration\r\n" +
-					" - mpv <mpv player path> : same as stdin but automatically configures args for mpv. On windows use mpv.com instead of mpv.exe, omitting the extension will automatically use the right one\r\n" +
-					"Streaming both video and audio at the same time could cause performance issues.\r\n" +
-					"Note that tcp mode will wait until a program connects\r\n\r\n" +
-					"Example commands: \r\n" +
-					"SysDVR-Client audio mpv C:/programs/mpv/mpv : Plays audio via mpv located at C:/programs/mpv/mpv, video is ignored\r\n" +
-					"SysDVR-Client video mpv ./mpv audio mpv ./mpv : Plays video and audio via mpv (path has to be specified twice)\r\n" +
-					"SysDVR-Client video mpv ./mpv args \"--cache=no --cache-secs=0\" : Plays video in mpv disabling cache, audio is ignored\r\n" +
-					"SysDVR-Client video tcp 1337 audio file C:/audio.raw : Streams video over port 1337 while saving audio to disk\r\n\r\n" +
-					"Opening raw files in mpv: \r\n" +
-					"mpv videofile.264 --no-correct-pts --fps=30 --cache=no --cache-secs=0\r\n" +
-					"mpv audiofile.raw --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000\r\n" +
-					"(you can also use tcp://localhost:<port> instead of the file name to open the tcp stream)\r\n\r\n" +
-					"Info to keep in mind:\r\n" +
-					"Streaming works only with games that have game recording enabled.\r\n" +
-					"If the video is very delayed or lagging try going to the home menu for a few seconds to force it to re-synchronize.\r\n" +
-					"After disconnecting and reconnecting the usb wire the stream may not start right back, go to the home menu for a few seconds to let the sysmodule drop the last usb packets.\r\n\r\n" +
-					"Experimental/Debug options:\r\n" +
-					"--print-stats : print the average transfer speed and loop count for each thread every second\r\n" +
-					"--usb-warn : print warnings from libusb\r\n" +
-					"--usb-debug : print verbose output from libusb");
+
+			Console.WriteLine(
+@"Usage:
+SysDVR-Client.exe <Stream source> [Source options] [Stream options] [Output options]
+
+Stream sources:
+	`usb` : Connects to SysDVR via USB, used if no source is specified. Remember to setup the driver as explained on the guide
+	`bridge <IP address>` : Connects to SysDVR via network at the specified IP address, requires a strong connection between the PC and switch (LAN or full signal wireless)
+
+Source options:
+	`--print-stats` : Logs received data size and errors
+	`--no-winusb` : Forces the LibUsb backend on windows, you must use this option in case you installed LibUsb-win32 as the SysDVR driver (it's recommended to use WinUsb)
+	`--usb-warn` : Enables printing warnings from the usb stack, use it to debug USB issues
+	`--usb-debug` : Same as `--usb-warn` but more detailed
+
+Stream options:
+	`--no-video` : Disable video streaming, only streams audio
+	`--no-audio` : Disable audio streaming, only streams video
+
+Output options:
+	`--mpv <mpv path>` : Streams the specified channel to mpv via stdin, only works with one channel, if no stream option is specified `--no-audio` will be used. Use this for low-latency streaming
+	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.
+	If you don't specify neither of these SysDVR-Client will stream via RTSP, the following are RTSP options
+	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
+	`--rtsp-any-addr` : The RTSP socket will be open for INADDR_ANY, this means other devices in your local network can connect to your pc by IP and watch the stream
+
+Command examples:
+	SysDVR-Client.exe usb
+		Connects to switch via USB and streams video and audio over rtsp at rtsp://127.0.0.1:6666/
+		
+	SysDVR-Client.exe bridge 192.168.1.20 --no-video --rtsp-port 9090
+		Connects to switch via network at 192.168.1.20 and streams the audio over rtsp at rtsp://127.0.0.1:9090/
+
+	SysDVR-Client.exe usb --mpv `C:\Program Files\mpv\mpv.com`
+		Connects to switch via USB and streams the video in low-latency mode via mpv
+");
 		}
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("SysDVR-Client - 3.0 by exelix");
+			Console.WriteLine($"SysDVR-Client - {typeof(Program).Assembly.GetName().Version} by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 1)
 				PrintGuide(false);
@@ -74,7 +78,7 @@ namespace SysDVRClient
 			}
 
 			BaseStreamManager StreamManager;
-			bool NoAudio = false, NoVideo = false;
+			bool NoAudio, NoVideo;
 
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 			string ArgValue(string arg) 
@@ -131,13 +135,13 @@ namespace SysDVRClient
 			}
 			else // use RTSP by default
 			{
-				int port = ArgValueInt("--port") ?? 6666;
+				int port = ArgValueInt("--rtsp-port") ?? 6666;
 				if (port <= 1024)
 					Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
-				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, true, port);
+				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, !HasArg("--rtsp-any-addr"), port);
 			}
 
-			if (args[0].ToLower() == "usb")
+			if (args.Length == 0 || args[0].ToLower() == "usb")
 			{
 				if (!NoVideo)
 					StreamManager.VideoSource = UsbHelper.MakeStreamingSource(StreamKind.Video);

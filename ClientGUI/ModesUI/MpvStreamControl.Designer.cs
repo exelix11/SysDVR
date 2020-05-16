@@ -72,8 +72,8 @@
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(479, 23);
 			this.label2.TabIndex = 3;
-			this.label2.Text = "To stream via mpv you must provide the path of it\'s main executable (called mpv.c" +
-    "om for windows)";
+			this.label2.Text = "To stream via mpv you must provide the path of its main executable (called mpv.co" +
+    "m for windows)";
 			this.label2.Click += new System.EventHandler(this.label2_Click);
 			// 
 			// linkLabel1
