@@ -27,9 +27,9 @@ namespace SysDVRClientGUI
 		{
 			SetDefaultText();
 
-			if (!File.Exists("SysDVR-Client.exe"))
+			if (!File.Exists("SysDVR-Client.dll"))
 			{
-				MessageBox.Show("SysDVR-Client.exe not found, did you extract all the files in the same folder ?");
+				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
 				this.Close();
 			}
 
@@ -109,7 +109,7 @@ namespace SysDVRClientGUI
 				if (!string.IsNullOrWhiteSpace(extra))
 					str.Append("start ");
 
-				str.Append("SysDVR-Client.exe ");
+				str.Append("dotnet SysDVR-Client.dll ");
 
 				if (rbSrcUsb.Checked)
 					str.Append("usb ");
@@ -177,8 +177,8 @@ namespace SysDVRClientGUI
 				"SysDVR-Client requires .NET core 3.0 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
 				"Make sure to properly setup the drivers following the GitHub guide before attempting to stream\r\n" +
 				"If SysDVR-Client can't connect to SysDVR make sure it's running and that it's in the correct streaming mode (you can set that from the settings homebrew)\r\n\r\n" + 
-				"If the stream is laggy open the home menu for a few seconds to let SysDVR-Client flush the data, for RTSP try pausing and unpausing the playback.\r\n\r\n" +
-				"In case of issues check SysDVR-Client output for errors and search in the github issues or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
+				"If the stream is laggy try pausing and unpausing the playback.\r\n\r\n" +
+				"In case of issues check SysDVR-Client output for errors and search in the github issues, discord channel or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
 
 		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");
 
