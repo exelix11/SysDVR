@@ -160,9 +160,13 @@ namespace SysDVRClientGUI
 			string cmd = GetFinalCommand();
 			if (cmd == null) return;
 
-			SaveFileDialog sav = new SaveFileDialog() { Filter = "batch file|*.bat" };
+			SaveFileDialog sav = new SaveFileDialog() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
 			if (sav.ShowDialog() != DialogResult.OK)
 				return;
+
+			if (!File.Exists(Path.Combine(Path.GetPathRoot(sav.FileName), "SysDVR-Client.dll")))
+				if (MessageBox.Show("You're saving the bat file in a different path than the one containing SysDVR-client, the bat script won't work unless you place it there !\r\n\r\nDo you want to continue anyway ?", "Warning", MessageBoxButtons.YesNo) != DialogResult.Yes)
+					return;
 
 			File.WriteAllText(sav.FileName, cmd);
 			
@@ -182,18 +186,22 @@ namespace SysDVRClientGUI
 
 		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");
 
-		private void textBox1_Enter(object sender, EventArgs e)
+		private void tbTcpIP_Enter(object sender, EventArgs e)
 		{
 			if (tbTcpIP.Text == "IP address")
 				tbTcpIP.Text = "";
-
-			rbSrcTcp.Checked = true;
 		}
 
 		private void tbTcpIP_Leave(object sender, EventArgs e)
 		{
 			if (string.IsNullOrWhiteSpace(tbTcpIP.Text))
 				tbTcpIP.Text = "IP address";
+		}
+
+		private void tbTcpIP_TextChanged(object sender, EventArgs e)
+		{
+			if (!rbSrcTcp.Checked)
+				rbSrcTcp.Checked = true;
 		}
 	}
 
