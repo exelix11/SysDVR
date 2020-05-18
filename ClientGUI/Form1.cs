@@ -200,7 +200,7 @@ namespace SysDVRClientGUI
 
 		private void tbTcpIP_TextChanged(object sender, EventArgs e)
 		{
-			if (!rbSrcTcp.Checked)
+			if (tbTcpIP.Text != "IP address" && tbTcpIP.Text != "" && !rbSrcTcp.Checked)
 				rbSrcTcp.Checked = true;
 		}
 	}
