@@ -53,7 +53,7 @@
 			this.tbVideoFile.Location = new System.Drawing.Point(87, 46);
 			this.tbVideoFile.Name = "tbVideoFile";
 			this.tbVideoFile.Size = new System.Drawing.Size(391, 20);
-			this.tbVideoFile.TabIndex = 6;
+			this.tbVideoFile.TabIndex = 0;
 			// 
 			// btnVideo
 			// 
@@ -61,7 +61,7 @@
 			this.btnVideo.Location = new System.Drawing.Point(484, 45);
 			this.btnVideo.Name = "btnVideo";
 			this.btnVideo.Size = new System.Drawing.Size(31, 23);
-			this.btnVideo.TabIndex = 7;
+			this.btnVideo.TabIndex = 1;
 			this.btnVideo.Text = "...";
 			this.btnVideo.UseVisualStyleBackColor = true;
 			this.btnVideo.Click += new System.EventHandler(this.btnVideo_Click);

@@ -64,7 +64,7 @@
 			this.button1.Location = new System.Drawing.Point(551, 427);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
-			this.button1.TabIndex = 0;
+			this.button1.TabIndex = 9;
 			this.button1.Text = "Launch";
 			this.button1.UseVisualStyleBackColor = true;
 			this.button1.Click += new System.EventHandler(this.Launch);
@@ -75,7 +75,7 @@
 			this.button2.Location = new System.Drawing.Point(416, 427);
 			this.button2.Name = "button2";
 			this.button2.Size = new System.Drawing.Size(114, 23);
-			this.button2.TabIndex = 1;
+			this.button2.TabIndex = 7;
 			this.button2.Text = "Export batch file";
 			this.button2.UseVisualStyleBackColor = true;
 			this.button2.Click += new System.EventHandler(this.ExportBatch);
@@ -86,7 +86,7 @@
 			this.button3.Location = new System.Drawing.Point(530, 427);
 			this.button3.Name = "button3";
 			this.button3.Size = new System.Drawing.Size(19, 23);
-			this.button3.TabIndex = 2;
+			this.button3.TabIndex = 8;
 			this.button3.Text = "?";
 			this.button3.UseVisualStyleBackColor = true;
 			this.button3.Click += new System.EventHandler(this.BatchInfo);
@@ -99,7 +99,7 @@
 			this.StreamConfigPanel.Location = new System.Drawing.Point(6, 238);
 			this.StreamConfigPanel.Name = "StreamConfigPanel";
 			this.StreamConfigPanel.Size = new System.Drawing.Size(620, 105);
-			this.StreamConfigPanel.TabIndex = 3;
+			this.StreamConfigPanel.TabIndex = 4;
 			// 
 			// groupBox1
 			// 
@@ -111,7 +111,7 @@
 			this.groupBox1.Location = new System.Drawing.Point(6, 83);
 			this.groupBox1.Name = "groupBox1";
 			this.groupBox1.Size = new System.Drawing.Size(620, 45);
-			this.groupBox1.TabIndex = 4;
+			this.groupBox1.TabIndex = 1;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Channels to stream";
 			// 
@@ -161,7 +161,7 @@
 			this.groupBox2.Location = new System.Drawing.Point(6, 134);
 			this.groupBox2.Name = "groupBox2";
 			this.groupBox2.Size = new System.Drawing.Size(620, 48);
-			this.groupBox2.TabIndex = 5;
+			this.groupBox2.TabIndex = 2;
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Stream source";
 			// 
@@ -171,9 +171,10 @@
 			this.tbTcpIP.MaxLength = 15;
 			this.tbTcpIP.Name = "tbTcpIP";
 			this.tbTcpIP.Size = new System.Drawing.Size(100, 20);
-			this.tbTcpIP.TabIndex = 8;
+			this.tbTcpIP.TabIndex = 2;
 			this.tbTcpIP.Text = "IP address";
-			this.tbTcpIP.Enter += new System.EventHandler(this.textBox1_Enter);
+			this.tbTcpIP.TextChanged += new System.EventHandler(this.tbTcpIP_TextChanged);
+			this.tbTcpIP.Enter += new System.EventHandler(this.tbTcpIP_Enter);
 			this.tbTcpIP.Leave += new System.EventHandler(this.tbTcpIP_Leave);
 			// 
 			// rbSrcUsb
@@ -182,7 +183,7 @@
 			this.rbSrcUsb.Location = new System.Drawing.Point(7, 19);
 			this.rbSrcUsb.Name = "rbSrcUsb";
 			this.rbSrcUsb.Size = new System.Drawing.Size(201, 17);
-			this.rbSrcUsb.TabIndex = 7;
+			this.rbSrcUsb.TabIndex = 0;
 			this.rbSrcUsb.TabStop = true;
 			this.rbSrcUsb.Tag = "";
 			this.rbSrcUsb.Text = "USB (requires setting up USB drivers)";
@@ -194,7 +195,7 @@
 			this.rbSrcTcp.Location = new System.Drawing.Point(228, 19);
 			this.rbSrcTcp.Name = "rbSrcTcp";
 			this.rbSrcTcp.Size = new System.Drawing.Size(155, 17);
-			this.rbSrcTcp.TabIndex = 6;
+			this.rbSrcTcp.TabIndex = 1;
 			this.rbSrcTcp.TabStop = true;
 			this.rbSrcTcp.Tag = "";
 			this.rbSrcTcp.Text = "TCP Bridge (network mode)";
@@ -206,7 +207,7 @@
 			this.rbStreamRtsp.Location = new System.Drawing.Point(6, 19);
 			this.rbStreamRtsp.Name = "rbStreamRtsp";
 			this.rbStreamRtsp.Size = new System.Drawing.Size(188, 17);
-			this.rbStreamRtsp.TabIndex = 3;
+			this.rbStreamRtsp.TabIndex = 0;
 			this.rbStreamRtsp.TabStop = true;
 			this.rbStreamRtsp.Tag = "RTSP";
 			this.rbStreamRtsp.Text = "Stream via RTSP (Recommended)";
@@ -232,7 +233,7 @@
 			this.rbPlayMpv.Location = new System.Drawing.Point(225, 19);
 			this.rbPlayMpv.Name = "rbPlayMpv";
 			this.rbPlayMpv.Size = new System.Drawing.Size(237, 17);
-			this.rbPlayMpv.TabIndex = 0;
+			this.rbPlayMpv.TabIndex = 1;
 			this.rbPlayMpv.TabStop = true;
 			this.rbPlayMpv.Tag = "Mpv";
 			this.rbPlayMpv.Text = "Play in mpv (low latency, single channel only)";
@@ -250,7 +251,7 @@
 			this.groupBox3.Location = new System.Drawing.Point(6, 349);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(620, 71);
-			this.groupBox3.TabIndex = 6;
+			this.groupBox3.TabIndex = 5;
 			this.groupBox3.TabStop = false;
 			this.groupBox3.Text = "Experimental/Debug options";
 			// 
@@ -260,7 +261,7 @@
 			this.cbForceLibusb.Location = new System.Drawing.Point(140, 21);
 			this.cbForceLibusb.Name = "cbForceLibusb";
 			this.cbForceLibusb.Size = new System.Drawing.Size(134, 17);
-			this.cbForceLibusb.TabIndex = 4;
+			this.cbForceLibusb.TabIndex = 1;
 			this.cbForceLibusb.Text = "Force LibUsb backend";
 			this.cbForceLibusb.UseVisualStyleBackColor = true;
 			// 
@@ -270,7 +271,7 @@
 			this.cbStats.Location = new System.Drawing.Point(6, 21);
 			this.cbStats.Name = "cbStats";
 			this.cbStats.Size = new System.Drawing.Size(102, 17);
-			this.cbStats.TabIndex = 3;
+			this.cbStats.TabIndex = 0;
 			this.cbStats.Text = "Log transfer info";
 			this.cbStats.UseVisualStyleBackColor = true;
 			// 
@@ -280,7 +281,7 @@
 			this.cbUsbLog.Location = new System.Drawing.Point(140, 44);
 			this.cbUsbLog.Name = "cbUsbLog";
 			this.cbUsbLog.Size = new System.Drawing.Size(325, 17);
-			this.cbUsbLog.TabIndex = 2;
+			this.cbUsbLog.TabIndex = 3;
 			this.cbUsbLog.Text = "Print LibUsb debug info (not recommended for actual streaming)";
 			this.cbUsbLog.UseVisualStyleBackColor = true;
 			// 
@@ -290,7 +291,7 @@
 			this.cbUsbWarn.Location = new System.Drawing.Point(7, 45);
 			this.cbUsbWarn.Name = "cbUsbWarn";
 			this.cbUsbWarn.Size = new System.Drawing.Size(128, 17);
-			this.cbUsbWarn.TabIndex = 1;
+			this.cbUsbWarn.TabIndex = 2;
 			this.cbUsbWarn.Text = "Print LibUsb warnings";
 			this.cbUsbWarn.UseVisualStyleBackColor = true;
 			// 
@@ -302,7 +303,7 @@
 			this.label1.Location = new System.Drawing.Point(6, 6);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(620, 43);
-			this.label1.TabIndex = 7;
+			this.label1.TabIndex = 2;
 			this.label1.Text = "This utility will configure the SysDVR-Client command line automatically, remembe" +
     "r that for the first time you still need to setup the USB drivers as explained o" +
     "n the guide";
@@ -315,7 +316,7 @@
 			this.linkLabel1.Location = new System.Drawing.Point(6, 51);
 			this.linkLabel1.Name = "linkLabel1";
 			this.linkLabel1.Size = new System.Drawing.Size(620, 20);
-			this.linkLabel1.TabIndex = 8;
+			this.linkLabel1.TabIndex = 0;
 			this.linkLabel1.TabStop = true;
 			this.linkLabel1.Text = "Open the guide";
 			this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -327,7 +328,7 @@
 			this.button4.Location = new System.Drawing.Point(6, 426);
 			this.button4.Name = "button4";
 			this.button4.Size = new System.Drawing.Size(117, 23);
-			this.button4.TabIndex = 9;
+			this.button4.TabIndex = 6;
 			this.button4.Text = "Common issues";
 			this.button4.UseVisualStyleBackColor = true;
 			this.button4.Click += new System.EventHandler(this.button4_Click);
@@ -340,7 +341,7 @@
 			this.groupBox4.Location = new System.Drawing.Point(9, 188);
 			this.groupBox4.Name = "groupBox4";
 			this.groupBox4.Size = new System.Drawing.Size(617, 44);
-			this.groupBox4.TabIndex = 10;
+			this.groupBox4.TabIndex = 3;
 			this.groupBox4.TabStop = false;
 			this.groupBox4.Text = "Stream mode";
 			// 
