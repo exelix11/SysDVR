@@ -21,9 +21,6 @@ This is an experimental sysmodule that allows capturing the running game output 
 
 Clearly with these limitations **this sysmodule doesn't allow "remote play" and does not fully replace a capture card**.
 
-## Supporting the project
-If you like my work consider supporting me on [patreon](https://www.patreon.com/exelix11)
-
 # Usage
 This guide is for SysDVR V3 only, if you want to use an older version refer to the [previous version of the guide](https://github.com/exelix11/SysDVR/blob/7497d0961c194af0412e7c4338de8706c93c5fad/readme.md) 
 
