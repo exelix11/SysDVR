@@ -2,8 +2,7 @@
 [![Discord](https://img.shields.io/discord/643436008452521984.svg?logo=discord&logoColor=white&label=Discord&color=7289DA
 )](https://discord.gg/rqU5Tf8)
 [![Latest release](https://img.shields.io/github/v/release/exelix11/SysDVR)](https://github.com/exelix11/SysDVR/releases)
-[![](https://img.shields.io/github/downloads/exelix11/SysDVR/total)](https://github.com/exelix11/SysDVR/releases)
-[![Contributing](https://img.shields.io/badge/supporting-patreon-f96854)](https://www.patreon.com/exelix11)
+[![Download](https://img.shields.io/github/downloads/exelix11/SysDVR/total)](https://github.com/exelix11/SysDVR/releases)
 
 This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.
 
