@@ -16,12 +16,30 @@ namespace SysDVRClientGUI
 		StreamKind CurKind = StreamKind.Audio;
 		IStreamTargetControl CurrentControl = null;
 
+		static string VersionString()
+		{
+			var Version = typeof(Program).Assembly.GetName().Version;
+			if (Version == null) return "<unknown version>";
+			StringBuilder str = new StringBuilder();
+			str.Append(Version.Major);
+			str.Append(".");
+			str.Append(Version.Minor);
+
+			if (Version.Revision != 0)
+			{
+				str.Append(".");
+				str.Append(Version.Revision);
+			}
+
+			return str.ToString();
+		}
+
 		public Form1()
 		{
 			InitializeComponent();
 		}
 
-		void SetDefaultText() => this.Text = "SysDVR-Client GUI 3.0";
+		void SetDefaultText() => this.Text = "SysDVR-Client GUI " + VersionString();
 
 		private void Form1_Load(object sender, EventArgs e)
 		{

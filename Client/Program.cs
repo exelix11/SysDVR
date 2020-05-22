@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LibUsbDotNet;
@@ -15,6 +16,24 @@ namespace SysDVRClient
 {
 	class Program
 	{
+		static string VersionString() 
+		{
+			var Version = typeof(Program).Assembly.GetName().Version;
+			if (Version == null) return "<unknown version>";
+			StringBuilder str = new StringBuilder();
+			str.Append(Version.Major);
+			str.Append(".");
+			str.Append(Version.Minor);
+
+			if (Version.Revision != 0)
+			{
+				str.Append(".");
+				str.Append(Version.Revision);
+			}
+
+			return str.ToString();
+		}
+
 		static void PrintGuide(bool full)
 		{
 			if (!full) {
@@ -67,7 +86,7 @@ Command examples:
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine($"SysDVR-Client - {typeof(Program).Assembly.GetName().Version} by exelix");
+			Console.WriteLine($"SysDVR-Client - {VersionString()} by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 1)
 				PrintGuide(false);
