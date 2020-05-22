@@ -164,7 +164,7 @@ namespace SysDVRClientGUI
 			if (sav.ShowDialog() != DialogResult.OK)
 				return;
 
-			if (!File.Exists(Path.Combine(Path.GetPathRoot(sav.FileName), "SysDVR-Client.dll")))
+			if (!File.Exists(Path.Combine(Directory.GetParent(sav.FileName).FullName, "SysDVR-Client.dll")))
 				if (MessageBox.Show("You're saving the bat file in a different path than the one containing SysDVR-client, the bat script won't work unless you place it there !\r\n\r\nDo you want to continue anyway ?", "Warning", MessageBoxButtons.YesNo) != DialogResult.Yes)
 					return;
 
