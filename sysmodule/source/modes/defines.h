@@ -24,9 +24,8 @@ Debugging socket crash:
 #define ERR_SOCK_CONFIG_1 5
 #define ERR_SOCK_CONFIG_2 6
 
-//This is a version for the SysDVR Config app protocol, it's not shown anywhere
-//This is a standalone header so it can be included in SysDVR-conf as well
-#define SYSDVR_VERSION 2
+//This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
+#define SYSDVR_VERSION 3
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_RTSP 4
