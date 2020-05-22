@@ -358,3 +358,5 @@ NetStream/Properties/launchSettings.json
 *.nro
 sysmodule/00FF0000A53BB665.lnk
 *.lnk
+Client.7z
+SysmoduleRelease/
