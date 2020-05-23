@@ -303,18 +303,18 @@
 			this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.label1.Location = new System.Drawing.Point(6, 6);
 			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(620, 43);
+			this.label1.Size = new System.Drawing.Size(620, 70);
 			this.label1.TabIndex = 2;
-			this.label1.Text = "This utility will configure the SysDVR-Client command line automatically, remembe" +
-    "r that for the first time you still need to setup the USB drivers as explained o" +
-    "n the guide";
+			this.label1.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nFor st" +
+    "reaming via USB you need to setup drivers as explained in the guide.";
+			this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
 			// 
 			// linkLabel1
 			// 
 			this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.linkLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.linkLabel1.Location = new System.Drawing.Point(6, 51);
+			this.linkLabel1.Location = new System.Drawing.Point(6, 49);
 			this.linkLabel1.Name = "linkLabel1";
 			this.linkLabel1.Size = new System.Drawing.Size(620, 20);
 			this.linkLabel1.TabIndex = 0;
