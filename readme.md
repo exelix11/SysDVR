@@ -3,7 +3,7 @@
 )](https://discord.gg/rqU5Tf8)
 [![Latest release](https://img.shields.io/github/v/release/exelix11/SysDVR)](https://github.com/exelix11/SysDVR/releases)
 [![Downloads](https://img.shields.io/github/downloads/exelix11/SysDVR/total)](https://github.com/exelix11/SysDVR/releases)
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/K3K11QRUS)
+[![ko-fi](https://img.shields.io/badge/supporting-ko--fi-f96854)](https://ko-fi.com/exelix11)
 
 This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.
 
@@ -21,7 +21,7 @@ This is an experimental sysmodule that allows capturing the running game output 
 
 Clearly with these limitations **this sysmodule doesn't fully replace a capture card**.
 
-### Donation
+### Donations
 If you like my work and wish to support me you can donate on [ko-fi](https://ko-fi.com/exelix11)
 
 # Usage
@@ -161,4 +161,4 @@ At some point I tried to implement a usb video class device via software, this w
 - [mtp-server-nx](https://github.com/retronx-team/mtp-server-nx) for their usb implementation
 - [RTSPSharp](https://github.com/ngraziano/SharpRTSP) for the C# RTSP library
 - Bonta on discord for a lot of help implementing a custom RTSP server
-- @xerpi for a lot of help while working on the UVC branch
+- [Xerpi](https://github.com/xerpi) for a lot of help while working on the UVC branch
