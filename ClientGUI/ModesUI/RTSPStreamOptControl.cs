@@ -44,5 +44,8 @@ namespace SysDVRClientGUI
 			if (opn.ShowDialog() == DialogResult.OK)
 				textBox1.Text = opn.FileName;
 		}
+
+		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
+			System.Diagnostics.Process.Start("https://mpv.io/installation/");
 	}
 }
