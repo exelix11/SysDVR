@@ -18,7 +18,7 @@
 	Socketing requires a lot more memory
 */
 #if defined(USB_ONLY)
-	#define INNER_HEAP_SIZE 1024
+	#define INNER_HEAP_SIZE 100 * 1024
 	#pragma message "Building USB-only mode"
 #else
 	#define INNER_HEAP_SIZE 1024 * 1024
@@ -61,7 +61,6 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
-	//rc = socketInitializeDefault();
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
 	
@@ -95,13 +94,15 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 10));
 
+#if !defined(USB_ONLY)
 	fsdevMountSdmc();
+#endif
 }
 
 void __attribute__((weak)) __appExit(void)
 {
-	fsdevUnmountAll();
 #if !defined(USB_ONLY)
+	fsdevUnmountAll();
 	socketExit();
 	fsExit();
 #endif
