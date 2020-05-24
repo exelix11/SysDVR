@@ -163,9 +163,9 @@ namespace SysDVRClientGUI
 		private void Launch(object sender, EventArgs e)
 		{
 			var cmds = GetFinalCommand()?.Split('\n');
-			string cmdArg = cmds.Length > 1 ? "/C" : "/K";
 			if (cmds != null)
 			{
+				string cmdArg = cmds.Length > 1 ? "/C" : "/K";
 				foreach (var cmd in cmds)
 					System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
 				this.Close();
