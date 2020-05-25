@@ -66,9 +66,12 @@ Stream options:
 	`--no-audio` : Disable audio streaming, only streams video
 
 Output options:
-	`--mpv <mpv path>` : Streams the specified channel to mpv via stdin, only works with one channel, if no stream option is specified `--no-audio` will be used. Use this for low-latency streaming
+	Low-latency streaming options
+	`--mpv <mpv path>` : Streams the specified channel to mpv via stdin, only works with one channel, if no stream option is specified `--no-audio` will be used.
+	`--stdout` : Streams the specified channel to stdout, only works with one channel, if no stream option is specified `--no-audio` will be used.
+	Storage options
 	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.
-	If you don't specify neither of these SysDVR-Client will stream via RTSP, the following are RTSP options
+	If you don't specify any of these SysDVR-Client will stream via RTSP, the following are RTSP options
 	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
 	`--rtsp-any-addr` : The RTSP socket will be open for INADDR_ANY, this means other devices in your local network can connect to your pc by IP and watch the stream
 
@@ -86,6 +89,12 @@ Command examples:
 
 		static void Main(string[] args)
 		{
+			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
+			bool StreamStdout = HasArg("--stdout");
+
+			if (StreamStdout)
+				Console.SetOut(Console.Error);
+
 			Console.WriteLine($"SysDVR-Client - {VersionString()} by exelix");
 			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 			if (args.Length < 1)
@@ -99,7 +108,6 @@ Command examples:
 			BaseStreamManager StreamManager;
 			bool NoAudio, NoVideo;
 
-			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 			string ArgValue(string arg) 
 			{
 				int index = Array.IndexOf(args, arg);
@@ -141,6 +149,12 @@ Command examples:
 				if (!NoVideo && !NoAudio)
 					NoAudio = true;
 				StreamManager = new MpvStdinManager(NoAudio ? StreamKind.Video : StreamKind.Audio, mpvPath);
+			}
+			else if (StreamStdout)
+			{
+				if (!NoVideo && !NoAudio)
+					NoAudio = true;
+				StreamManager = new StdOutManager(NoAudio ? StreamKind.Video : StreamKind.Audio);
 			}
 			else if (HasArg("--file"))
 			{

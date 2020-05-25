@@ -24,6 +24,22 @@ namespace SysDVRClient
 		}
 	}
 
+	class StdOutManager : BaseStreamManager
+	{
+		private static IOutTarget GetVTarget(StreamKind kind) =>
+			kind == StreamKind.Video ? new StdOutTarget() : null;
+
+		private static IOutTarget GetATarget(StreamKind kind) =>
+			kind == StreamKind.Audio ? new StdOutTarget() : null;
+
+		// This can only handle one stream
+		public StdOutManager(StreamKind kind) :
+			base(GetVTarget(kind), GetATarget(kind))
+		{
+
+		}
+	}
+
 	class SaveToDiskManager : BaseStreamManager
 	{
 		private static IOutTarget GetTarget(bool enable, string path, string name) =>
@@ -85,6 +101,28 @@ namespace SysDVRClient
 
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 		}
+	}
 
+	class StdOutTarget : IOutTarget
+	{
+		Stream stdout;
+
+		public StdOutTarget()
+		{
+			stdout = Console.OpenStandardOutput();
+		}
+
+		private bool FirstTime = true;
+		public void SendData(byte[] data, int offset, int size, UInt64 ts)
+		{
+			if (FirstTime)
+			{
+				stdout.Write(StreamInfo.SPS);
+				stdout.Write(StreamInfo.PPS);
+				FirstTime = false;
+			}
+
+			stdout.Write(data, offset, size);
+		}
 	}
 }
