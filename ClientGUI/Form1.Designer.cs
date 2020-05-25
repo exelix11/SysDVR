@@ -53,6 +53,8 @@
 			this.linkLabel1 = new System.Windows.Forms.LinkLabel();
 			this.button4 = new System.Windows.Forms.Button();
 			this.groupBox4 = new System.Windows.Forms.GroupBox();
+			this.cbMpvLowLat = new System.Windows.Forms.CheckBox();
+			this.cbMpvUntimed = new System.Windows.Forms.CheckBox();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -245,6 +247,8 @@
 			// 
 			this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+			this.groupBox3.Controls.Add(this.cbMpvUntimed);
+			this.groupBox3.Controls.Add(this.cbMpvLowLat);
 			this.groupBox3.Controls.Add(this.cbForceLibusb);
 			this.groupBox3.Controls.Add(this.cbStats);
 			this.groupBox3.Controls.Add(this.cbUsbLog);
@@ -254,7 +258,7 @@
 			this.groupBox3.Size = new System.Drawing.Size(620, 71);
 			this.groupBox3.TabIndex = 5;
 			this.groupBox3.TabStop = false;
-			this.groupBox3.Text = "Experimental/Debug options";
+			this.groupBox3.Text = "Advancedl/Debug options";
 			// 
 			// cbForceLibusb
 			// 
@@ -281,9 +285,9 @@
 			this.cbUsbLog.AutoSize = true;
 			this.cbUsbLog.Location = new System.Drawing.Point(140, 44);
 			this.cbUsbLog.Name = "cbUsbLog";
-			this.cbUsbLog.Size = new System.Drawing.Size(325, 17);
-			this.cbUsbLog.TabIndex = 3;
-			this.cbUsbLog.Text = "Print LibUsb debug info (not recommended for actual streaming)";
+			this.cbUsbLog.Size = new System.Drawing.Size(136, 17);
+			this.cbUsbLog.TabIndex = 4;
+			this.cbUsbLog.Text = "Print LibUsb debug info";
 			this.cbUsbLog.UseVisualStyleBackColor = true;
 			// 
 			// cbUsbWarn
@@ -292,7 +296,7 @@
 			this.cbUsbWarn.Location = new System.Drawing.Point(7, 45);
 			this.cbUsbWarn.Name = "cbUsbWarn";
 			this.cbUsbWarn.Size = new System.Drawing.Size(128, 17);
-			this.cbUsbWarn.TabIndex = 2;
+			this.cbUsbWarn.TabIndex = 3;
 			this.cbUsbWarn.Text = "Print LibUsb warnings";
 			this.cbUsbWarn.UseVisualStyleBackColor = true;
 			// 
@@ -345,6 +349,26 @@
 			this.groupBox4.TabIndex = 3;
 			this.groupBox4.TabStop = false;
 			this.groupBox4.Text = "Stream mode";
+			// 
+			// cbMpvLowLat
+			// 
+			this.cbMpvLowLat.AutoSize = true;
+			this.cbMpvLowLat.Location = new System.Drawing.Point(289, 21);
+			this.cbMpvLowLat.Name = "cbMpvLowLat";
+			this.cbMpvLowLat.Size = new System.Drawing.Size(191, 17);
+			this.cbMpvLowLat.TabIndex = 2;
+			this.cbMpvLowLat.Text = "mpv low-latency mode (RTSP only)";
+			this.cbMpvLowLat.UseVisualStyleBackColor = true;
+			// 
+			// cbMpvUntimed
+			// 
+			this.cbMpvUntimed.AutoSize = true;
+			this.cbMpvUntimed.Location = new System.Drawing.Point(289, 43);
+			this.cbMpvUntimed.Name = "cbMpvUntimed";
+			this.cbMpvUntimed.Size = new System.Drawing.Size(146, 17);
+			this.cbMpvUntimed.TabIndex = 5;
+			this.cbMpvUntimed.Text = "mpv untimed (RTSP only)";
+			this.cbMpvUntimed.UseVisualStyleBackColor = true;
 			// 
 			// Form1
 			// 
@@ -408,6 +432,8 @@
 		private System.Windows.Forms.GroupBox groupBox4;
 		private System.Windows.Forms.TextBox tbTcpIP;
 		private System.Windows.Forms.CheckBox cbForceLibusb;
+		private System.Windows.Forms.CheckBox cbMpvUntimed;
+		private System.Windows.Forms.CheckBox cbMpvLowLat;
 	}
 }
 

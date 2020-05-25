@@ -140,7 +140,7 @@ If you're using the full version SysDVR launches ~20 seconds after console boot,
 SysDVR USB-Only version doesn't support the settings app.
 
 **Streaming doesn't work, the GUI launches a single black window, if I double click SysDVR-Client.exe nothing happens**\
-You didn't install the correct version of .NET core, try installing [this version](https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.3-windows-x64-installer), if it still doesn't work you can launch the client manually using `dotnet SysDVR-Client.dll`
+You didn't install the correct version of .NET core, try installing [this version](https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.3-windows-x64-installer), if it still doesn't work check out [.NET core requirements](https://docs.microsoft.com/en-us/dotnet/core/install/dependencies?pivots=os-windows&tabs=netcore31) on microsoft's website. You may need to install [VC++ 2015 libs](https://www.microsoft.com/download/details.aspx?id=52685). If that still doesn't solve your issue you can try launching the client manually using `dotnet SysDVR-Client.dll` from the command propmt
 
 # Extra
 ## Live streaming with OBS
@@ -149,8 +149,8 @@ Add a new media source and untick local file, then just type `rtsp://<ip addr>:6
 
 ## Advanced tips
 - Quality also depends on the cpu utilization of the game you're running, OC could improve performances.
-- For direct RTSP mode the SysDVR server supports two modes: TCP and UDP, this usually doesn't matter but i've found different programs will connect using different modes, eg. mpv will always use TCP while obs will try UDP first and then TCP. Depending on your network environment you can find one to perform worse than the other so you'll have to test which one works best for you. In mpv you can force udp mode by running `mpv rtsp://<SwitchIpAddress>:6666/ --rtsp-transport=udp`.
-- It's possible to stream RTSP in low latency mode as well from mpv using the following command line options: `--profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts` this will disable streams synchronization
+- For direct RTSP mode the SysDVR server supports two modes: TCP and UDP, this usually doesn't matter but I've found different programs will connect using different modes, eg. mpv will always use TCP while obs will try UDP first and then TCP. Depending on your network environment you can find one to perform worse than the other so you'll have to test which one works best for you. In mpv you can force udp mode by running `mpv rtsp://<SwitchIpAddress>:6666/ --rtsp-transport=udp`.
+- It's possible to stream RTSP in low latency mode as well from mpv using the following command line options: `--profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no`, adding `--untimed` will disable synchronization to play the video feed as fast as possible but could break audio, `--no-correct-pts` will use fixed timesteps and seems to break audio. Mpv docs can be found [here](https://mpv.io/manual/stable/#low-latency-playback)
 - Theoretically the best streaming setup would be having a direct lan connection switch to pc, without going through a router, this is likely not easy for the average user, may consider writing a guide for this but it's currently beyond the scope of SysDVR, in theory you'd need to host a dhcp server or fiddle with the static connection settings on switch and host your own 90dns instance locally.
 
 ## Unfinished stuff

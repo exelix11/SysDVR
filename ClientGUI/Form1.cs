@@ -149,6 +149,11 @@ namespace SysDVRClientGUI
 				{
 					str.Append("\ntimeout 2 > NUL && ");
 					str.Append(extra);
+					if (CurrentControl is RTSPStreamOptControl)
+					{
+						if (cbMpvLowLat.Checked) str.Append(" --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no");
+						if (cbMpvUntimed.Checked) str.Append(" --untimed");
+					}
 				}
 
 				return str.ToString();
