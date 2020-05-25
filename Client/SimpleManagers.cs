@@ -100,6 +100,7 @@ namespace SysDVRClient
 			}
 
 			proc.StandardInput.BaseStream.Write(data, offset, size);
+			proc.StandardInput.BaseStream.Flush();
 		}
 	}
 
@@ -123,6 +124,7 @@ namespace SysDVRClient
 			}
 
 			stdout.Write(data, offset, size);
+			stdout.Flush();
 		}
 	}
 }
