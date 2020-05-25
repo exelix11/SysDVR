@@ -11,6 +11,21 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -25,7 +40,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\Client\bin\Release\netcoreapp3.0\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -33,16 +48,8 @@
     <WarningLevel>4</WarningLevel>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug USB_ONLY|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug USB_ONLY\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <LangVersion>8.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
+  <PropertyGroup>
+    <ApplicationIcon>ClientGUI1.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -77,12 +84,6 @@
     <Compile Include="ModesUI\MpvStreamControl.Designer.cs">
       <DependentUpon>MpvStreamControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="ModesUI\TCPBridgeStreamControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="ModesUI\TCPBridgeStreamControl.Designer.cs">
-      <DependentUpon>TCPBridgeStreamControl.cs</DependentUpon>
-    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModesUI\RTSPStreamOptControl.cs">
@@ -90,12 +91,6 @@
     </Compile>
     <Compile Include="ModesUI\RTSPStreamOptControl.Designer.cs">
       <DependentUpon>RTSPStreamOptControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="ModesUI\TCPStreamControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="ModesUI\TCPStreamControl.Designer.cs">
-      <DependentUpon>TCPStreamControl.cs</DependentUpon>
     </Compile>
     <EmbeddedResource Include="ModesUI\FileStreamControl.resx">
       <DependentUpon>FileStreamControl.cs</DependentUpon>
@@ -105,9 +100,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ModesUI\MpvStreamControl.resx">
       <DependentUpon>MpvStreamControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ModesUI\TCPBridgeStreamControl.resx">
-      <DependentUpon>TCPBridgeStreamControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -122,9 +114,6 @@
     <EmbeddedResource Include="ModesUI\RTSPStreamOptControl.resx">
       <DependentUpon>RTSPStreamOptControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ModesUI\TCPStreamControl.resx">
-      <DependentUpon>TCPStreamControl.cs</DependentUpon>
-    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -137,6 +126,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ClientGUI1.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

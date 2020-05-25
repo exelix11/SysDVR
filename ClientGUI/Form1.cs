@@ -13,32 +13,41 @@ namespace SysDVRClientGUI
 {
 	public partial class Form1 : Form
 	{
-		StreamTarget CurTarget = StreamTarget.File;
 		StreamKind CurKind = StreamKind.Audio;
+		IStreamTargetControl CurrentControl = null;
 
-		Dictionary<StreamTarget, IStreamTargetControl> StreamControls = new Dictionary<StreamTarget, IStreamTargetControl>
+		static string VersionString()
 		{
-			{ StreamTarget.TCPBridge_RTSP, new TCPBridgeStreamControl() { Dock = DockStyle.Fill} },
-			{ StreamTarget.RTSP, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
-			{ StreamTarget.Mpv , new MpvStreamControl() { Dock = DockStyle.Fill} },
-			{ StreamTarget.File , new FileStreamControl() { Dock = DockStyle.Fill} },
-			{ StreamTarget.Tcp , new TCPStreamControl(){ Dock = DockStyle.Fill} },
-		};
+			var Version = typeof(Program).Assembly.GetName().Version;
+			if (Version == null) return "<unknown version>";
+			StringBuilder str = new StringBuilder();
+			str.Append(Version.Major);
+			str.Append(".");
+			str.Append(Version.Minor);
+
+			if (Version.Revision != 0)
+			{
+				str.Append(".");
+				str.Append(Version.Revision);
+			}
+
+			return str.ToString();
+		}
 
 		public Form1()
 		{
 			InitializeComponent();
 		}
 
-		void SetDefaultText() => this.Text = "SysDVR-Client GUI 3.0";
+		void SetDefaultText() => this.Text = "SysDVR-Client GUI " + VersionString();
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
 			SetDefaultText();
 
-			if (!File.Exists("SysDVR-Client.exe"))
+			if (!File.Exists("SysDVR-Client.dll"))
 			{
-				MessageBox.Show("SysDVR-Client.exe not found, did you extract all the files in the same folder ?");
+				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
 				this.Close();
 			}
 
@@ -46,38 +55,60 @@ namespace SysDVRClientGUI
 				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 					System.Diagnostics.Process.Start("https://dotnet.microsoft.com/download");
 			
-			radioButton7.Checked = true;
-			radioButton3.Checked = true;
+			rbStreamRtsp.Checked = true;
+			rbChannelsBoth.Checked = true;
 		}
 
 		private void StreamTargetSelected(object sender, EventArgs e)
 		{
-			if (!((RadioButton)sender).Checked) return;
+			if (!((RadioButton)sender).Checked)
+				return;
 
-			CurTarget = (StreamTarget)Enum.Parse(typeof(StreamTarget), ((RadioButton)sender).Tag as string);
+			Dictionary<object, IStreamTargetControl> StreamControls = new Dictionary<object, IStreamTargetControl>
+			{	
+				{ rbStreamRtsp, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
+				{ rbPlayMpv, new MpvStreamControl() { Dock = DockStyle.Fill} },
+				{ rbSaveToFile , new FileStreamControl() { Dock = DockStyle.Fill} }
+			};
+
+			CurrentControl = StreamControls[sender];
 			StreamConfigPanel.Controls.Clear();
-			StreamConfigPanel.Controls.Add((Control)StreamControls[CurTarget]);
+			StreamConfigPanel.Controls.Add((Control)CurrentControl);
 		}
 
 		private void StreamKindSelected(object sender, EventArgs e)
 		{
-			if (!((RadioButton)sender).Checked) return;
+			if (!((RadioButton)sender).Checked)
+				return;
 
-			CurKind = (StreamKind)Enum.Parse(typeof(StreamKind), ((RadioButton)sender).Text);
+			var cbToChannel = new Dictionary<object, StreamKind>
+			{
+				{ rbChannelsBoth, StreamKind.Both},
+				{ rbChannelsVideo, StreamKind.Video},
+				{ rbChannelsAudio, StreamKind.Audio},
+			};
 
-			foreach (IStreamTargetControl c in StreamControls.Values)
-				c.TargetKind = CurKind;
+			CurKind = cbToChannel[sender];
+
+			if (CurKind == StreamKind.Both && rbPlayMpv.Checked)
+			{
+				rbPlayMpv.Checked = false;
+				rbStreamRtsp.Checked = true;
+			}
+
+			rbPlayMpv.Enabled = CurKind != StreamKind.Both;
 		}
 
 		string GetExtraArgs() 
 		{
 			StringBuilder str = new StringBuilder();
 
-			void append(string s) { if (str.Length != 0) str.Append(" "); str.Append(s); }
+			void append(string s) { str.Append(" "); str.Append(s); }
 
 			if (cbStats.Checked) append("--print-stats");
 			if (cbUsbLog.Checked) append("--usb-debug");
 			if (cbUsbWarn.Checked) append("--usb-warn");
+			if (cbForceLibusb.Checked) append("--no-winusb");
 			return str.ToString();
 		}
 
@@ -85,9 +116,47 @@ namespace SysDVRClientGUI
 		{
 			try
 			{
-				string extra = StreamControls[CurTarget].GetExtraCmd();
-				string prefix = (string.IsNullOrWhiteSpace(extra) ? "" : "start ");
-				return $"{prefix}SysDVR-Client.exe {StreamControls[CurTarget].GetCommandLine()} {GetExtraArgs()}\n{extra}";
+				if (CurrentControl == null)
+					throw new Exception("Select all the options first");
+
+				string extra = CurrentControl.GetExtraCmd();
+				string commandLine = CurrentControl.GetCommandLine();
+
+				StringBuilder str = new StringBuilder();
+
+				if (!string.IsNullOrWhiteSpace(extra))
+					str.Append("start ");
+
+				str.Append("dotnet SysDVR-Client.dll ");
+
+				if (rbSrcUsb.Checked)
+					str.Append("usb ");
+				else if (rbSrcTcp.Checked)
+					str.AppendFormat("bridge {0} ", tbTcpIP.Text);
+				else 
+					throw new Exception("Invalid source");
+
+				if (CurKind == StreamKind.Audio)
+					str.Append("--no-video ");
+				else if (CurKind == StreamKind.Video)
+					str.Append("--no-audio ");
+
+				str.Append(commandLine);
+
+				str.Append(GetExtraArgs());
+
+				if (!string.IsNullOrWhiteSpace(extra))
+				{
+					str.Append("\ntimeout 2 > NUL && ");
+					str.Append(extra);
+					if (CurrentControl is RTSPStreamOptControl)
+					{
+						if (cbMpvLowLat.Checked) str.Append(" --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no");
+						if (cbMpvUntimed.Checked) str.Append(" --untimed");
+					}
+				}
+
+				return str.ToString();
 			}
 			catch (Exception ex)
 			{
@@ -99,9 +168,9 @@ namespace SysDVRClientGUI
 		private void Launch(object sender, EventArgs e)
 		{
 			var cmds = GetFinalCommand()?.Split('\n');
-			string cmdArg = cmds.Length > 1 ? "/C" : "/K";
 			if (cmds != null)
 			{
+				string cmdArg = cmds.Length > 1 ? "/C" : "/K";
 				foreach (var cmd in cmds)
 					System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
 				this.Close();
@@ -113,7 +182,17 @@ namespace SysDVRClientGUI
 		{
 			string cmd = GetFinalCommand();
 			if (cmd == null) return;
-			File.WriteAllText($"Launch_{CurTarget}_{CurKind}.bat", cmd);
+
+			SaveFileDialog sav = new SaveFileDialog() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
+			if (sav.ShowDialog() != DialogResult.OK)
+				return;
+
+			if (!File.Exists(Path.Combine(Directory.GetParent(sav.FileName).FullName, "SysDVR-Client.dll")))
+				if (MessageBox.Show("You're saving the bat file in a different path than the one containing SysDVR-client, the bat script won't work unless you place it there !\r\n\r\nDo you want to continue anyway ?", "Warning", MessageBoxButtons.YesNo) != DialogResult.Yes)
+					return;
+
+			File.WriteAllText(sav.FileName, cmd);
+			
 			if (MessageBox.Show("Done, launch SysDVR-Client now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 				Launch(sender,e);
 		}
@@ -125,10 +204,28 @@ namespace SysDVRClientGUI
 				"SysDVR-Client requires .NET core 3.0 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
 				"Make sure to properly setup the drivers following the GitHub guide before attempting to stream\r\n" +
 				"If SysDVR-Client can't connect to SysDVR make sure it's running and that it's in the correct streaming mode (you can set that from the settings homebrew)\r\n\r\n" + 
-				"If the stream is laggy open the home menu for a few seconds to let SysDVR-Client flush the data, for RTSP try pausing and unpausing the playback.\r\n\r\n" +
-				"In case of issues check SysDVR-Client output for errors and search in the github issues or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
+				"If the stream is laggy try pausing and unpausing the playback.\r\n\r\n" +
+				"In case of issues check SysDVR-Client output for errors and search in the github issues, discord channel or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
 
 		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");
+
+		private void tbTcpIP_Enter(object sender, EventArgs e)
+		{
+			if (tbTcpIP.Text == "IP address")
+				tbTcpIP.Text = "";
+		}
+
+		private void tbTcpIP_Leave(object sender, EventArgs e)
+		{
+			if (string.IsNullOrWhiteSpace(tbTcpIP.Text))
+				tbTcpIP.Text = "IP address";
+		}
+
+		private void tbTcpIP_TextChanged(object sender, EventArgs e)
+		{
+			if (tbTcpIP.Text != "IP address" && tbTcpIP.Text != "" && !rbSrcTcp.Checked)
+				rbSrcTcp.Checked = true;
+		}
 	}
 
 	static class Utils 

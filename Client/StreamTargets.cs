@@ -7,157 +7,49 @@ using System.Text;
 
 namespace SysDVRClient
 {
-	public enum StreamKind
+	enum StreamKind
 	{
 		Video,
 		Audio
 	};
 
-	public interface IOutTarget : IDisposable
+	interface IOutTarget
 	{
-		public delegate void ClientConnectedDelegate();
-		public event ClientConnectedDelegate ClientConnected;
-
-		public void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
+		void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
 		void SendData(byte[] data, int offset, int size, UInt64 ts);
-		void InitializeStreaming();
 	}
 
-	public interface IMutliStreamManager : IDisposable 
+	abstract class BaseStreamManager
 	{
-		IOutTarget Video { get; }
-		IOutTarget Audio { get; }
+		protected StreamingThread VideoThread, AudioThread;
 
-		bool HasAStream => Video != null || Audio != null;
+		public StreamingSource VideoSource { get => VideoThread?.Source; set { if (VideoThread != null) VideoThread.Source = value; } }
+		public StreamingSource AudioSource { get => AudioThread?.Source; set { if (AudioThread != null) AudioThread.Source = value; } }
 
-		void Begin();
-		void Stop();
-	}
+		public IOutTarget VideoTarget => VideoThread?.Target;
+		public IOutTarget AudioTarget => AudioThread?.Target;
 
-	class SimpleStreamManager : IMutliStreamManager
-	{
-		public IOutTarget Video { get; set; }
-		public IOutTarget Audio { get; set; }
-
-		public SimpleStreamManager(IOutTarget v, IOutTarget a)
+		public BaseStreamManager(IOutTarget VideoTarget, IOutTarget AudioTarget)
 		{
-			Video = v;
-			Audio = a;
+			if (VideoTarget != null)
+				VideoThread = new StreamingThread(StreamKind.Video, VideoTarget);
+			if (AudioTarget != null)
+				AudioThread = new StreamingThread(StreamKind.Audio, AudioTarget);
 		}
 
-		public void Begin() { }
-		public void Stop() { }
-
-		public void Dispose()
+		public virtual void Begin()
 		{
-			Video?.Dispose();
-			Audio?.Dispose();
-		}
-	}
-
-	class OutFileTarget : IOutTarget
-	{
-		FileStream Vfs;
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
-
-		public OutFileTarget(string fname)
-		{
-			Vfs = File.Open(fname, FileMode.Create);
+			VideoThread?.Start();
+			AudioThread?.Start();
 		}
 
-		public void Dispose()
+		public virtual void Stop()
 		{
-			Vfs.Close();
-			Vfs.Dispose();
+			VideoThread?.Stop();
+			AudioThread?.Stop();
+			VideoThread?.Join();
+			AudioThread?.Join();
 		}
-
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
-		{
-			Vfs.Write(data, offset, size);
-		}
-
-		public void InitializeStreaming() { ClientConnected(); }
-	}
-
-	class TCPTarget : IOutTarget
-	{
-		Socket Sock;
-
-		System.Net.IPAddress HostAddr;
-		int HostPort;
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
-
-		public TCPTarget(System.Net.IPAddress addr, int port)
-		{
-			HostAddr = addr;
-			HostPort = port;
-		}
-
-		private void ReceiveConnection() 
-		{
-			var v = new TcpListener(HostAddr, HostPort);
-			v.Start();
-			Console.WriteLine($"Waiting for connection on port {HostPort}...");
-			Sock = v.AcceptSocket();
-			v.Stop();
-			ClientConnected();
-		}
-
-		public void Dispose()
-		{
-			Sock.Close();
-			Sock.Dispose();
-		}
-
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
-		{
-			try
-			{
-				Sock.Send(data, offset, size, SocketFlags.None);
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"WARNING - Closing socket on port {HostPort} : {ex.Message}");
-				Sock.Close();
-				ReceiveConnection();
-			}
-		}
-
-		public void InitializeStreaming() => ReceiveConnection();
-	}
-
-	class StdInTarget : IOutTarget
-	{
-		Process proc;
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
-
-		public StdInTarget(string path, string args)
-		{
-			ProcessStartInfo p = new ProcessStartInfo()
-			{
-				Arguments = " - " + args,
-				FileName = path,
-				RedirectStandardInput = true,
-				RedirectStandardOutput = true
-			};
-			proc = Process.Start(p);
-		}
-
-		public void Dispose()
-		{
-			if (!proc.HasExited)
-				proc.Kill();
-		}
-
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
-		{
-			proc.StandardInput.BaseStream.Write(data, offset, size);
-		}
-
-		public void InitializeStreaming() { ClientConnected(); }
 	}
 
 #if DEBUG
@@ -173,14 +65,12 @@ namespace SysDVRClient
 			bin = new BinaryWriter(mem);
 		}
 
-		public void Dispose()
+		~LoggingTarget()
 		{
 			File.WriteAllBytes(filename, mem.ToArray());
 		}
 
 		Stopwatch sw = new Stopwatch();
-
-		public event IOutTarget.ClientConnectedDelegate ClientConnected;
 
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
@@ -189,11 +79,6 @@ namespace SysDVRClient
 			bin.Write(ts);
 			bin.Write(data, offset, size);
 			sw.Restart();
-		}
-
-		public void InitializeStreaming()
-		{
-
 		}
 	}
 #endif

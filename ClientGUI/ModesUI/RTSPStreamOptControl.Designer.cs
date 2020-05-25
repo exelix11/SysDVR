@@ -42,7 +42,7 @@
 			this.button1.Location = new System.Drawing.Point(441, 58);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(41, 23);
-			this.button1.TabIndex = 0;
+			this.button1.TabIndex = 1;
 			this.button1.Text = "...";
 			this.button1.UseVisualStyleBackColor = true;
 			this.button1.Click += new System.EventHandler(this.button1_Click);
@@ -63,7 +63,7 @@
 			this.textBox1.Location = new System.Drawing.Point(64, 60);
 			this.textBox1.Name = "textBox1";
 			this.textBox1.Size = new System.Drawing.Size(371, 20);
-			this.textBox1.TabIndex = 2;
+			this.textBox1.TabIndex = 0;
 			// 
 			// label2
 			// 
@@ -82,10 +82,11 @@
 			this.linkLabel1.Location = new System.Drawing.Point(3, 83);
 			this.linkLabel1.Name = "linkLabel1";
 			this.linkLabel1.Size = new System.Drawing.Size(479, 17);
-			this.linkLabel1.TabIndex = 4;
+			this.linkLabel1.TabIndex = 2;
 			this.linkLabel1.TabStop = true;
 			this.linkLabel1.Text = "Download mpv from the official site";
 			this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+			this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
 			// 
 			// label3
 			// 

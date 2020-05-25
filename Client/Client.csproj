@@ -10,11 +10,12 @@
     <Company />
     <PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
     <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-    <Version>3.0.0</Version>
+    <Version>4.0.0</Version>
     <RootNamespace>SysDVRClient</RootNamespace>
-    <AssemblyVersion>3.0.0.1</AssemblyVersion>
-    <FileVersion>3.0.0.1</FileVersion>
-    <Configurations>Debug;Release;Debug USB_ONLY</Configurations>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <FileVersion>4.0.0.0</FileVersion>
+    <Configurations>Debug;Release</Configurations>
+    <ApplicationIcon>Client.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -22,17 +23,14 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug USB_ONLY|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <Optimize>false</Optimize>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="3.0.48-alpha" />
+    <PackageReference Include="LibUsbDotNet" Version="3.0.81-alpha" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,7 +12,7 @@ typedef bool atomic_bool;
 
 extern atomic_bool RTSP_ClientStreaming;
 
-void* RTSP_ServerThread(void*);
+void RTSP_ServerThread(void*);
 void RTSP_StopServer();
 
 //Packetizer callbacks

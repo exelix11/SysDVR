@@ -25,22 +25,7 @@ namespace SysDVRClientGUI
 			if (!File.Exists(textBox1.Text))
 				throw new Exception($"{textBox1.Text} does not exist");
 
-			StringBuilder res = new StringBuilder();
-
-			string mpv = textBox1.Text;
-
-			if ((TargetKind & StreamKind.Video) != 0)
-			{
-				res.AppendFormat("video mpv \"{0}\"", mpv);
-			}
-
-			if ((TargetKind & StreamKind.Audio) != 0)
-			{
-				if (res.Length != 0) res.Append(" ");
-				res.AppendFormat("audio mpv \"{0}\"", mpv);
-			}
-
-			return res.ToString();
+			return $"--mpv \"{textBox1.Text}\"";
 		}
 
 		public string GetExtraCmd() => "";
@@ -61,7 +46,8 @@ namespace SysDVRClientGUI
 
 		}
 
-		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://mpv.io/installation/");
+		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
+			System.Diagnostics.Process.Start("https://mpv.io/installation/");
 
 		private void MpvStreamControl_Load(object sender, EventArgs e)
 		{

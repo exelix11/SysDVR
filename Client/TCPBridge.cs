@@ -10,151 +10,81 @@ using System.Threading.Tasks;
 
 namespace SysDVRClient
 {
-	internal class TCPBridgeManager : RTSP.SysDvrRTSPServer 
+	class TCPBridgeSource : StreamingSource
 	{
-		TCPBridgeThread VideoThread, AudioThread;
-		CancellationTokenSource tok;
+		public bool Logging { get; set; }
 
-		public TCPBridgeManager(bool hasVideo, bool hasAudio, string source, int port) : base(hasVideo, hasAudio, false, port)
+		CancellationToken token;
+		TcpClient Client;
+		string IpAddress;
+		int Port;
+
+		public TCPBridgeSource(string ip, StreamKind kind)
 		{
-			tok = new CancellationTokenSource();
-			var t = tok.Token;
-			if (hasVideo)
-				VideoThread = new TCPBridgeThread(StreamKind.Video, Video, source, 6667, t);
-			if (hasAudio)
-				AudioThread = new TCPBridgeThread(StreamKind.Audio, Audio, source, 6668, t);
+			IpAddress = ip;
+			Port = kind == StreamKind.Video ? 9911 : 9922;
 		}
 
-		public override void Begin()
+		NetworkStream Stream;
+		public void WaitForConnection()
 		{
-			VideoThread?.Begin();
-			AudioThread?.Begin();
-			base.Begin();
+			Client = new TcpClient();
+			Client.ConnectAsync(IpAddress, Port, token).GetAwaiter().GetResult();
+			if (Client.Connected)
+				Stream = Client.GetStream();
 		}
 
-		public override void Stop()
+		public void StopStreaming()
 		{
-			tok.Cancel();
-			VideoThread?.CloseSocket();
-			AudioThread?.CloseSocket();
-			VideoThread?.Join();
-			AudioThread?.Join();
-			base.Stop();
+			Stream?.Close();
+			Client?.Close();
 		}
 
-		protected override void Dispose(bool Managed)
+		public void UseCancellationToken(CancellationToken tok)
 		{
-			if (!Managed) return;
-			VideoThread?.Dispose();
-			AudioThread?.Dispose();
-			base.Dispose(Managed);
-		}
-	}
-
-	class TCPBridgeThread : IDisposable
-	{
-		public readonly StreamKind Kind;
-		protected readonly CancellationToken Token;
-		protected Thread thread;
-
-		protected IOutTarget Target;
-
-		protected string Ip;
-		protected int Port;
-		protected TcpClient cli;
-		public TCPBridgeThread(StreamKind kind, IOutTarget target, string ip, int port, CancellationToken Token)
-		{
-			this.Kind = kind;
-			this.Token = Token;
-			Ip = ip;
-			Port = port;
-			Target = target;
+			token = tok;
 		}
 
-		public void Begin()
+		public void Flush()
 		{
-			thread = new Thread(MainLoop);
-			thread.Start();
+			Stream.Flush();
+			InSync = false;
 		}
 
-		public void CloseSocket() 
+		bool InSync = false;
+		public bool ReadHeader(byte[] buffer)
 		{
-			cli?.Close();
-		}
-
-		readonly ArrayPool<byte> pool = ArrayPool<byte>.Create();
-		readonly byte[] tempBuffer = new byte[8];
-		const byte magic = 0x11;
-		const int magicLen = 4;
-		private async void MainLoop()
-		{
-			cli = new TcpClient();
-			try
+			if (InSync)
 			{
-				await cli.ConnectAsync(Ip, Port, Token);
-
-				var stream = cli.GetStream();
-				Target.InitializeStreaming();
-
-				var bin = new BinaryReader(stream);
-				while (!Token.IsCancellationRequested)
+				return ReadPayload(buffer, PacketHeader.StructLength);
+			}
+			else 
+			{
+				// TCPBridge is a raw stream of data, search for an header
+				for (int i = 0; i < 4 && !token.IsCancellationRequested; i++)
 				{
-					int read = 0;
-
-					{
-						int magicCount = 0;
-						while (magicCount != magicLen && !Token.IsCancellationRequested)
-						{
-							read = await stream.ReadAsync(tempBuffer, 0, 1, Token);
-							if (read <= 0)
-								return;
-							if (tempBuffer[0] == magic) magicCount++;
-						}
-						if (Token.IsCancellationRequested)
-							return;
-					}
-
-					UInt64 ts = bin.ReadUInt64();
-					Int32 sz = bin.ReadInt32();
-					if (sz < 0)
-						continue;
-
-					byte[] data = bin.ReadBytes(sz);
-
-					Target.SendData(data, 0, sz, ts);
-#if DEBUG && LOG
-					Console.WriteLine($"[{Kind}] received {sz} ts {ts}");
-#endif
+					buffer[i] = (byte)Stream.ReadByte();
+					if (buffer[i] != 0xAA)
+						i = 0;
 				}
+				Stream.Read(buffer, 4, PacketHeader.StructLength - 4);
+				InSync = true;
 			}
-			catch (Exception ex)
-			{
-				if (!Token.IsCancellationRequested)
-					Console.WriteLine($"Terminating {Kind} thread due to exception: {ex.ToString()}");
-				else
-					Console.WriteLine($"Terminating {Kind} thread");
-			}
+
+			return true;
 		}
 
-		public void Join() => thread.Join();
-
-		public void Dispose()
+		public bool ReadPayload(byte[] buffer, int length)
 		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
+			int received = 0;
+			do
+				received += Stream.Read(buffer, received, length - received);
+			while (received < length);
+			return true;
 		}
-
-		protected virtual void Dispose(bool Managed)
-		{
-			if (!Managed) return;
-			
-			if (thread.IsAlive)
-				thread.Abort();
-		}
-
 	}
 
-	static internal class Exten 
+	static internal partial class Exten 
 	{
 		public static async Task ConnectAsync(this TcpClient tcpClient, string host, int port, CancellationToken cancellationToken)
 		{

@@ -15,5 +15,3 @@
 #define F_SETFL 0
 #define F_GETFL 0
 #define MSG_DONTWAIT 0
-
-#define pthread_t void*

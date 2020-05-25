@@ -17,7 +17,8 @@
 #include <string.h>
 #include <malloc.h>
 
-#include "UsbSerial.h"
+#include "UsbComms.h"
+#include "../modes/defines.h"
 
 #define TOTAL_INTERFACES 4
 #define TOTAL_ENDPOINTS 4
@@ -46,7 +47,7 @@ static int ep_out = 1;
 static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbInterfaceDesc* info);
 static Result _usbCommsInterfaceInit(u32 intf_ind, const UsbInterfaceDesc* info);
 
-Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos)
+Result UsbCommsInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos)
 {
 	Result rc = 0;
 	rwlockWriteLock(&g_usbCommsLock);
@@ -71,7 +72,7 @@ Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 
 				// Send product
 				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iProduct, "SysDVR (Nintendo Switch)");
 				// Send serial number
-				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iSerialNumber, "https://github.com/exelix11/SysDVR");
+				if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iSerialNumber, " https://github.com/exelix11/SysDVR ");
 
 				// Send device descriptors
 				device_descriptor->iManufacturer = iManufacturer;
@@ -141,7 +142,7 @@ Result usbSerialInitialize(struct usb_device_descriptor* device_descriptor, u32 
 		}
 
 		if (R_FAILED(rc)) {
-			usbSerialExit();
+			UsbCommsExit();
 		}
 	}
 
@@ -177,7 +178,7 @@ static void _usbCommsInterfaceFree(usbCommsInterface* interface)
 	rwlockWriteUnlock(&interface->lock);
 }
 
-void usbSerialExit(void)
+void UsbCommsExit(void)
 {
 	u32 i;
 
@@ -324,16 +325,13 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 	UsbDsReportData reportdata;
 
 	//Makes sure endpoints are ready for data-transfer / wait for init if needed.
-	rc = usbDsWaitReady(U64_MAX);
+	rc = usbDsWaitReady(UINT64_MAX);
 	if (R_FAILED(rc)) return rc;
 
 	while (size)
 	{
 		if (((u64)bufptr) & 0xfff)//When bufptr isn't page-aligned copy the data into g_usbComms_endpoint_in_buffer and transfer that, otherwise use the bufptr directly.
 		{
-			if (size > 8) 					 
-				*((volatile char*)0) = 0x69; //Crash with stack trace if we're streaming unaligned data
-
 			transfer_buffer = ep->buffer;
 			memset(ep->buffer, 0, 0x1000);
 
@@ -363,7 +361,7 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 		if (R_FAILED(rc))
 		{
 			usbDsEndpoint_Cancel(ep->endpoint);
-			eventWait(&ep->endpoint->CompletionEvent, U64_MAX);
+			eventWait(&ep->endpoint->CompletionEvent, UINT64_MAX);
 			eventClear(&ep->endpoint->CompletionEvent);
 			return rc;
 		}
@@ -393,7 +391,7 @@ static Result _usbCommsTransfer(usbCommsEndpoint* ep, UsbDirection dir, const vo
 	return rc;
 }
 
-size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, const void* buffer, size_t size, u64 timeout)
+size_t UsbCommsTransfer(u32 interface, u32 endpoint, UsbDirection dir, const void* buffer, size_t size, u64 timeout)
 {
 	size_t transferredSize = -1;
 	u32 state = 0;
@@ -428,86 +426,4 @@ size_t usbSerialTransfer(u32 interface, u32 endpoint, UsbDirection dir, const vo
 		}
 	}
 	return transferredSize;
-}
-
-struct usb_interface_descriptor serial_interface_descriptor;
-struct usb_endpoint_descriptor video_serial_endpoint_descriptor_in;
-struct usb_endpoint_descriptor video_serial_endpoint_descriptor_out;
-struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_in;
-struct usb_endpoint_descriptor audio_serial_endpoint_descriptor_out;
-
-Result UsbSerialInitializeDefault(UsbInterface* VideoStream, UsbInterface* AudioStream)
-{
-	//reset the global descriptors as they get modified by the usb code
-#define clearVal(x) memset(&x, 0, sizeof(x))
-	clearVal(serial_interface_descriptor);
-	clearVal(video_serial_endpoint_descriptor_in);
-	clearVal(video_serial_endpoint_descriptor_out);
-	clearVal(audio_serial_endpoint_descriptor_in);
-	clearVal(audio_serial_endpoint_descriptor_out);
-#undef clearVal
-
-	serial_interface_descriptor.bLength = USB_DT_INTERFACE_SIZE;
-	serial_interface_descriptor.bDescriptorType = USB_DT_INTERFACE;
-	serial_interface_descriptor.bNumEndpoints = 4;
-	serial_interface_descriptor.bInterfaceClass = USB_CLASS_VENDOR_SPEC;
-	serial_interface_descriptor.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC;
-	serial_interface_descriptor.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC;
-
-	video_serial_endpoint_descriptor_in.bLength = USB_DT_ENDPOINT_SIZE;
-	video_serial_endpoint_descriptor_in.bDescriptorType = USB_DT_ENDPOINT;
-	video_serial_endpoint_descriptor_in.bEndpointAddress = USB_ENDPOINT_IN | 1;
-	video_serial_endpoint_descriptor_in.bmAttributes = USB_TRANSFER_TYPE_BULK;
-	video_serial_endpoint_descriptor_in.wMaxPacketSize = 0x200;
-	
-	video_serial_endpoint_descriptor_out.bLength = USB_DT_ENDPOINT_SIZE;
-	video_serial_endpoint_descriptor_out.bDescriptorType = USB_DT_ENDPOINT;
-	video_serial_endpoint_descriptor_out.bEndpointAddress = USB_ENDPOINT_OUT | 1;
-	video_serial_endpoint_descriptor_out.bmAttributes = USB_TRANSFER_TYPE_BULK;
-	video_serial_endpoint_descriptor_out.wMaxPacketSize = 0x200;
-
-	audio_serial_endpoint_descriptor_in.bLength = USB_DT_ENDPOINT_SIZE;
-	audio_serial_endpoint_descriptor_in.bDescriptorType = USB_DT_ENDPOINT;
-	audio_serial_endpoint_descriptor_in.bEndpointAddress = USB_ENDPOINT_IN | 2;
-	audio_serial_endpoint_descriptor_in.bmAttributes = USB_TRANSFER_TYPE_BULK;
-	audio_serial_endpoint_descriptor_in.wMaxPacketSize = 0x200;
-
-	audio_serial_endpoint_descriptor_out.bLength = USB_DT_ENDPOINT_SIZE;
-	audio_serial_endpoint_descriptor_out.bDescriptorType = USB_DT_ENDPOINT;
-	audio_serial_endpoint_descriptor_out.bEndpointAddress = USB_ENDPOINT_OUT | 2;
-	audio_serial_endpoint_descriptor_out.bmAttributes = USB_TRANSFER_TYPE_BULK;
-	audio_serial_endpoint_descriptor_out.wMaxPacketSize = 0x200;
-
-	struct usb_device_descriptor device_descriptor = {
-		.bLength = USB_DT_DEVICE_SIZE,
-		.bDescriptorType = USB_DT_DEVICE,
-		.bcdUSB = 0x0110,
-		.bDeviceClass = 0x00,
-		.bDeviceSubClass = 0x00,
-		.bDeviceProtocol = 0x00,
-		.bMaxPacketSize0 = 0x40,
-		.idVendor = 0x057e,
-		.idProduct = 0x3006,
-		.bcdDevice = 0x0100,
-		.bNumConfigurations = 0x01
-	};
-
-	UsbInterfaceDesc info;
-
-	VideoStream->interface = 0;
-	VideoStream->WriteEP = 0;
-	VideoStream->ReadEP = 1;
-
-	AudioStream->interface = 0;
-	AudioStream->WriteEP = 2;
-	AudioStream->ReadEP = 3;
-
-	info.interface_desc = &serial_interface_descriptor;
-	info.endpoint_desc[VideoStream->WriteEP] = &video_serial_endpoint_descriptor_in;
-	info.endpoint_desc[AudioStream->WriteEP] = &audio_serial_endpoint_descriptor_in;
-	info.endpoint_desc[VideoStream->ReadEP] = &video_serial_endpoint_descriptor_out;
-	info.endpoint_desc[AudioStream->ReadEP] = &audio_serial_endpoint_descriptor_out;
-	info.string_descriptor = NULL;
-
-	return usbSerialInitialize(&device_descriptor, 1, &info);
 }
