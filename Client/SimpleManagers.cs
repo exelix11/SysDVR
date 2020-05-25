@@ -8,11 +8,13 @@ namespace SysDVRClient
 {
 	class MpvStdinManager : BaseStreamManager
 	{
+		private const string BaseArgs = "--profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts";
+
 		private static IOutTarget GetVTarget(StreamKind kind, string path) =>
-			kind == StreamKind.Video ? new StdInTarget(path, "- --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts --fps=30") : null;
+			kind == StreamKind.Video ? new StdInTarget(path, "- --fps=30 " + BaseArgs) : null;
 
 		private static IOutTarget GetATarget(StreamKind kind, string path) =>
-			kind == StreamKind.Audio ? new StdInTarget(path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 ") : null;
+			kind == StreamKind.Audio ? new StdInTarget(path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
 
 		// This can only handle one stream
 		public MpvStdinManager(StreamKind kind, string path) :
