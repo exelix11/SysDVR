@@ -15,7 +15,6 @@
 /*
 	Build with USB_ONLY to have a smaller impact on memory,
 	it will only stream via USB and won't support the config app.
-	Socketing requires a lot more memory
 */
 #if defined(USB_ONLY)
 	#define INNER_HEAP_SIZE 100 * 1024
@@ -136,7 +135,15 @@ static Result OpenGrcdForThread(GrcStream stream)
 bool ReadAudioStream()
 {
 	Result rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data, AbufSz, NULL, &APkt.Header.DataSize, &APkt.Header.Timestamp);
-	return !R_FAILED(rc) && APkt.Header.DataSize > 0;
+	
+	for (int i = 1; i < ABatching && R_SUCCEEDED(rc); i++)
+	{
+		u32 tmpSize = 0;
+		rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data + APkt.Header.DataSize, AbufSz, NULL, &tmpSize, NULL);
+		APkt.Header.DataSize += tmpSize;
+	}
+
+	return R_SUCCEEDED(rc);
 }
 
 static const uint8_t SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };

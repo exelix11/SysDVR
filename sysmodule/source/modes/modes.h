@@ -13,8 +13,7 @@ static const bool IsThreadRunning = true;
 #else
 /*
 	Accessing this is rather slow, avoid using it in the main flow of execution.
-	When stopping the main thread will close the sockets or dispose the usb interfaces, causing the others to fail
-	Only in that case this variable should be checked
+	Check this only when the settings thread closes the sockets or disposes the usb interfaces, causing the others to fail.
 */
 extern atomic_bool IsThreadRunning;
 #endif
@@ -30,6 +29,15 @@ extern atomic_bool IsThreadRunning;
 	Smaller buffer sizes don't seem to work, only tested 0x400 and grc fails with 2212-0006
 */
 #define AbufSz 0x1000
+
+/*
+	Audio batching adds some delay to the audio streaming in excange for less pressure on
+	the USB and network protocols. A batching of 2 halves the number of audio transfers while
+	adding about a frame of delay.
+	This is acceptable as grc:d already doesn't provide real time audio.
+	To remove set the following to 1
+*/
+#define ABatching 2
 
 typedef struct {
 	u32 Magic;
@@ -48,10 +56,10 @@ _Static_assert(sizeof(VideoPacket) == sizeof(PacketHeader) + VbufSz);
 
 typedef struct {
 	PacketHeader Header;
-	u8 Data[AbufSz];
+	u8 Data[AbufSz * ABatching];
 } AudioPacket;
 
-_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz);
+_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * ABatching);
 
 typedef struct {
 	PacketHeader Header;

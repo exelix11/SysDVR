@@ -106,6 +106,7 @@ void RTSP_ServerThread(void* _)
 		client = accept(RTSPSock, (struct sockaddr*)&clientAddress, &clientAddRlen);
 		if (client < 0)
 		{
+			// Workaround for a libnx issue explained in TCPMode.c
 			if (sockFails++ >= 3 && RTSP_Running)
 			{
 				CloseSocket(&RTSPSock);
