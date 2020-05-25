@@ -8,17 +8,8 @@ typedef int (*H264SendPacketFn)(const void* header, const size_t headerLen, cons
 #define FU_END 0x40
 #define FU_HEADER_SZ 2
 
-static inline int PacketizeH264(char* nal, size_t len, uint32_t tsMs, H264SendPacketFn cb)
+static inline int PacketizeH264Single(const char* nal, size_t len, uint32_t tsMs, H264SendPacketFn cb)
 {
-	//Strip nal header
-	for (int i = 2; i < len; i++)
-		if (nal[i - 2] == 0 && nal[i - 1] == 0 && nal[i] == 1)
-		{
-			nal += i + 1;
-			len -= i + 1;
-			break;
-		}
-
 	char header[RTPHeaderSz + 2]; // 2 extra bytes for the FU-A header, not really part of the RTP header but saves us a syscall on tcp and a memcopy on udp
 
 	if (len <= MaxRTPPayload)
@@ -57,4 +48,34 @@ static inline int PacketizeH264(char* nal, size_t len, uint32_t tsMs, H264SendPa
 	return 0;
 #undef fu_indicator
 #undef fu_header
+}
+
+static inline s32 FindNextNalHeaderOffset(const char* data, size_t len)
+{
+	for (int i = 2; i < len; i++)
+		if (data[i - 2] == 0 && data[i - 1] == 0 && data[i] == 1)
+			return i + 1;
+
+	return -1;
+}
+
+static inline int PacketizeH264(const char* data, size_t len, uint32_t tsMs, H264SendPacketFn cb)
+{
+	s32 CurrentOffset = FindNextNalHeaderOffset(data, len);
+	while (CurrentOffset >= 0)
+	{	
+		s32 nextOffset = FindNextNalHeaderOffset(data + CurrentOffset, len - CurrentOffset);
+		if (nextOffset < 0)
+			return PacketizeH264Single(data + CurrentOffset, len - CurrentOffset, tsMs, cb);
+
+		nextOffset += CurrentOffset;
+		s32 startNext = nextOffset - 3;
+		s32 curSize = startNext - CurrentOffset;
+
+		if (PacketizeH264Single(data + CurrentOffset, curSize, tsMs, cb))
+			return 1;
+
+		CurrentOffset = nextOffset;
+	}
+	return 0;
 }

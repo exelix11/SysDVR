@@ -20,19 +20,7 @@ namespace SysDVRClientGUI
 
 		public StreamKind TargetKind { get; set; }
 
-		public string GetCommandLine()
-		{
-			StringBuilder res = new StringBuilder();
-
-			res.Append("rtsp");
-
-			if (TargetKind == StreamKind.Video)
-				res.Append(" --no-audio");
-			else if (TargetKind == StreamKind.Audio)
-				res.Append(" --no-video");
-
-			return res.ToString();
-		}
+		public string GetCommandLine() => "";
 
 		public string GetExtraCmd()
 		{
@@ -56,5 +44,8 @@ namespace SysDVRClientGUI
 			if (opn.ShowDialog() == DialogResult.OK)
 				textBox1.Text = opn.FileName;
 		}
+
+		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
+			System.Diagnostics.Process.Start("https://mpv.io/installation/");
 	}
 }

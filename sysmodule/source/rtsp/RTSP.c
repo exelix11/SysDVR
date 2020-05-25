@@ -76,6 +76,7 @@ static bool RTSP_Transfer_interleaved = false;
 #endif
 
 #define printl(...) 
+//#define printl(...) do {printf(__VA_ARGS__); fflush(stdout);} while(0)
 
 static atomic_bool RTSP_Running = false;
 atomic_bool RTSP_ClientStreaming = false;
@@ -90,9 +91,9 @@ static inline void CloseSocket(int* sptr)
 
 static inline void RTSP_MainLoop();
 
-void* RTSP_ServerThread(void* arg)
+void RTSP_ServerThread(void* _)
 {
-	RTSPSock = CreateTCPListener(6666, false, 1);
+	RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_1);
 
 #ifdef INTERLEAVED_SUPPORT
 	mutexInit(&RTSP_operation_lock);
@@ -105,10 +106,11 @@ void* RTSP_ServerThread(void* arg)
 		client = accept(RTSPSock, (struct sockaddr*)&clientAddress, &clientAddRlen);
 		if (client < 0)
 		{
+			// Workaround for a libnx issue explained in TCPMode.c
 			if (sockFails++ >= 3 && RTSP_Running)
 			{
 				CloseSocket(&RTSPSock);
-				RTSPSock = CreateTCPListener(6666, false, 1);
+				RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_2);
 			}
 			svcSleepThread(1E+9);
 			continue;
@@ -129,7 +131,6 @@ void* RTSP_ServerThread(void* arg)
 		
 		svcSleepThread(1E+9);
 	}
-	return NULL;
 }
 
 void RTSP_StopServer()
@@ -222,6 +223,8 @@ char AudioSendBuffer[MaxRTPPacketSize_UDP];
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
 	int res = 0;
+
+	printl("RTSP_LE16SendPacket %llx %llx %x\n", header, data, len);
 
 	if (RTSP_Transfer_interleaved)
 	{
@@ -436,6 +439,8 @@ static inline void RTSP_MainLoop()
 
 					ports[targetStream].data = portSettings[0] - '0';
 					ports[targetStream].control = portSettings[2] - '0';
+
+					printl("Setting %d ports: %d %d\n", targetStream, ports[targetStream].data, ports[targetStream].control);
 
 #ifndef INTERLEAVED_FLAG_CONST
 					RTSP_Transfer_interleaved = true;
