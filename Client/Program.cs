@@ -174,14 +174,14 @@ Command examples:
 				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, !HasArg("--rtsp-any-addr"), port);
 			}
 
-			if (args.Length == 0 || args[0].ToLower() == "usb")
+			if (args.Length == 0 || args[0] == "usb")
 			{
 				if (!NoVideo)
 					StreamManager.VideoSource = UsbHelper.MakeStreamingSource(StreamKind.Video);
 				if (!NoAudio)
 					StreamManager.AudioSource = UsbHelper.MakeStreamingSource(StreamKind.Audio);
 			}
-			else if (args[0].ToLower() == "bridge")
+			else if (args[0] == "bridge")
 			{
 				if (args.Length < 2)
 				{
