@@ -147,6 +147,7 @@ namespace SysDVRClient
 					if (!Source.ReadPayload(Data, Header.DataSize))
 					{
 						Source.Flush();
+						pool.Return(Data);
 						System.Threading.Thread.Sleep(10);
 						continue;
 					}
