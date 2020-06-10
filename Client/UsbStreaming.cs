@@ -131,7 +131,7 @@ namespace SysDVRClient
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (Logging)
-					Console.WriteLine($"Warning: libusb error {err} while requesting data");
+					Console.WriteLine($"Warning: winusb error {err} while requesting data");
 				return false;
 			}
 
@@ -139,7 +139,7 @@ namespace SysDVRClient
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (Logging)
-					Console.WriteLine($"Warning: libusb error {err} while reading header");
+					Console.WriteLine($"Warning: winusb error {err} while reading header");
 				return false;
 			}
 
@@ -152,7 +152,7 @@ namespace SysDVRClient
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (Logging)
-					Console.WriteLine($"Warning: libusb error {err} while reading payload. ({sz} read)");
+					Console.WriteLine($"Warning: winusb error {err} while reading payload. ({sz} read)");
 				return false;
 			}
 
