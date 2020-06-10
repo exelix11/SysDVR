@@ -385,7 +385,7 @@ static inline void RTSP_MainLoop()
 			*arg1End = '\0';
 
 			char contBase[80];
-			snprintf(contBase, sizeof(contBase), "Content-Base: %s\r\n", arg1);
+			snprintf(contBase, sizeof(contBase), "Content-Base: %.63s\r\n", arg1);
 			*arg1End = original;
 
 			RTSP_AnswerTextContent(rtspBuf, contBase, SDP);
