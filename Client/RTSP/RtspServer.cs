@@ -8,6 +8,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 namespace SysDVRClient.RTSP
 {
@@ -204,7 +205,7 @@ namespace SysDVRClient.RTSP
 				// The packetization-mode defines the H264 over RTP payloads used but is Optional
 				sdp.Append("v=0\n");
 				sdp.Append("o=user 123 0 IN IP4 0.0.0.0\n");
-				sdp.Append("s=SysDVR - https://github.com/exelix11/sysdvr\n");
+				sdp.Append($"s=SysDVR - https://github.com/exelix11/sysdvr - [PID {Process.GetCurrentProcess().Id}]\n");
 				if (video_source != null)
 				{
 					sdp.Append("m=video 0 RTP/AVP 96\n");
