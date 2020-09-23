@@ -138,7 +138,13 @@ Command examples:
 				return;
 			}
 
-			if (HasArg("--mpv"))
+			if (StreamStdout)
+			{
+				if (!NoVideo && !NoAudio)
+					NoAudio = true;
+				StreamManager = new StdOutManager(NoAudio ? StreamKind.Video : StreamKind.Audio);
+			}
+			else if (HasArg("--mpv"))
 			{
 				string mpvPath = ArgValue("--mpv");
 				if (mpvPath == null || !File.Exists(mpvPath))
@@ -150,12 +156,6 @@ Command examples:
 					NoAudio = true;
 				StreamManager = new MpvStdinManager(NoAudio ? StreamKind.Video : StreamKind.Audio, mpvPath);
 			}
-			else if (StreamStdout)
-			{
-				if (!NoVideo && !NoAudio)
-					NoAudio = true;
-				StreamManager = new StdOutManager(NoAudio ? StreamKind.Video : StreamKind.Audio);
-			}
 			else if (HasArg("--file"))
 			{
 				string diskPath = ArgValue("--file").Replace("\"", "");
@@ -166,6 +166,13 @@ Command examples:
 				}
 				StreamManager = new SaveToDiskManager(!NoVideo, !NoAudio, diskPath);
 			}
+#if DEBUG
+			else if (HasArg("--debug"))
+			{
+				string path = ArgValue("--debug");
+				StreamManager = new LoggingManager(NoVideo ? null : Path.Combine(path, "video.h264"), NoAudio ? null : Path.Combine(path, "audio.raw"));
+			}
+#endif
 			else // use RTSP by default
 			{
 				int port = ArgValueInt("--rtsp-port") ?? 6666;
