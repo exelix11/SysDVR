@@ -65,7 +65,7 @@ namespace SysDVRClient
 			bin = new BinaryWriter(mem);
 		}
 
-		~LoggingTarget()
+		public void WriteToDisk() 
 		{
 			File.WriteAllBytes(filename, mem.ToArray());
 		}
@@ -75,10 +75,29 @@ namespace SysDVRClient
 		public void SendData(byte[] data, int offset, int size, UInt64 ts)
 		{
 			Console.WriteLine($"{filename} - ts: {ts}");
+			bin.Write(0xAAAAAAAA);
 			bin.Write(sw.ElapsedMilliseconds);
 			bin.Write(ts);
+			bin.Write(size);
 			bin.Write(data, offset, size);
 			sw.Restart();
+		}
+	}
+
+	class LoggingManager : BaseStreamManager
+	{
+		public LoggingManager(string VPath, string APath) : base(
+			VPath != null ? new LoggingTarget(VPath) : null,
+			APath != null ? new LoggingTarget(APath) : null)
+		{
+
+		}
+
+		public override void Stop()
+		{
+			base.Stop();
+			(VideoTarget as LoggingTarget)?.WriteToDisk();
+			(AudioTarget as LoggingTarget)?.WriteToDisk();
 		}
 	}
 #endif
