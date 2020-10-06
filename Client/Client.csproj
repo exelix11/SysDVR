@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="3.0.82-alpha-ge75b50ad43" />
+    <PackageReference Include="LibUsbDotNet" Version="3.0.83-alpha-g94397fba28" />
     <PackageReference Include="SharpRTSP" Version="0.0.1" />
   </ItemGroup>
 
