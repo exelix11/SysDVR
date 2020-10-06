@@ -1,3 +1,6 @@
-[submodule "SharpRTSP"]
-	path = SharpRTSP
-	url = https://github.com/ngraziano/SharpRTSP
+[submodule "Libs/LibUsbDotNet"]
+	path = Libs/LibUsbDotNet
+	url = https://github.com/exelix11/LibUsbDotNet.git
+[submodule "Libs/SharpRTSP"]
+	path = Libs/SharpRTSP
+	url = https://github.com/exelix11/SharpRTSP.git
