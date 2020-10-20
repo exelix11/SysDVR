@@ -8,14 +8,11 @@
 #define STREAM_VIDEO 0
 #define STREAM_AUDIO 1
 
-//1KB
-#define MaxRTPPacketSize_UDP 0x400
-//16KB
-#define MaxRTPPacketSize_TCP 0x4000
+//8KB
+#define MaxRTPPacket 0x2000
 #define RTPHeaderSz 12
 
-extern int MaxRTPPacket;
-extern int MaxRTPPayload;
+#define MaxRTPPayload (MaxRTPPacket - RTPHeaderSz)
 
 extern uint16_t SequenceNumbers[2];
 static const char PT[2] = {96, 97};

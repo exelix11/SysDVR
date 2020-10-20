@@ -64,15 +64,15 @@ void __attribute__((weak)) __appInit(void)
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
 	
-		.tcp_tx_buf_size = MaxRTPPacketSize_TCP,
-		.tcp_rx_buf_size = MaxRTPPacketSize_TCP,
-		.tcp_tx_buf_max_size = MaxRTPPacketSize_TCP * 6,
-		.tcp_rx_buf_max_size = MaxRTPPacketSize_TCP * 6,
+		.tcp_tx_buf_size = MaxRTPPacket,
+		.tcp_rx_buf_size = MaxRTPPacket,
+		.tcp_tx_buf_max_size = sizeof(VideoPacket) + sizeof(AudioPacket),
+		.tcp_rx_buf_max_size = 0,
 	
-		.udp_tx_buf_size = MaxRTPPacketSize_UDP * 2,
-		.udp_rx_buf_size = MaxRTPPacketSize_UDP,
+		.udp_tx_buf_size = MaxRTPPacket * 2,
+		.udp_rx_buf_size = MaxRTPPacket,
 	
-		.sb_efficiency = 4,
+		.sb_efficiency = 2,
 	
 		.num_bsd_sessions = 3,
 		.bsd_service_type = BsdServiceType_User,

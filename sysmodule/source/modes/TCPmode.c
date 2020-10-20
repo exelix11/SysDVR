@@ -18,12 +18,27 @@ static inline void TCP_InitSockets(GrcStream stream)
 	}
 }
 
-static inline bool SendData(int sock, PacketHeader header, const void* FullPacket)
+static inline bool SendData(int sock, PacketHeader header, const char* FullPacket)
 {
-	const u32 size = sizeof(PacketHeader) + header.DataSize; 
+	u32 toSend = sizeof(PacketHeader) + header.DataSize; 
 
-	if (write(sock, FullPacket, size) <= 0)
-		return false;
+	while (toSend)
+	{
+		int res = send(sock, FullPacket, toSend, 0);
+
+		if (res < 0)
+		{
+			if (errno == EWOULDBLOCK || errno == EAGAIN)
+			{
+				svcSleepThread(2);
+				continue;
+			}
+			else return false;
+		}
+		
+		toSend -= res;
+		FullPacket += res;
+	}
 
 	return true;
 }
@@ -48,13 +63,7 @@ static inline bool GetClient(int *client, int *sock, GrcStream stream)
 			}
 			continue;
 		}
-		/*
-			Even if the video and audio listeners are used on different threads calling accept on one of them
-			blocks the others as well, even while a client is connected.
-			The workaround is making the socket non-blocking and then to set the client socket as blocking.
-			By default the socket returned from accept inherits this flag.
-		*/
-		fcntl(*client, F_SETFL, fcntl(*client, F_GETFL, 0) & ~O_NONBLOCK);
+
 		return true;
 	}
 	return false;
@@ -74,7 +83,7 @@ static void TCP_StreamVideo(void* _)
 			if (!ReadVideoStream())
 				TerminateOrContinue
 
-			if (!SendData(VideoCurSock, VPkt.Header, &VPkt)) 
+			if (!SendData(VideoCurSock, VPkt.Header, (const char*)&VPkt)) 
 				break;			
 		}
 
@@ -98,7 +107,7 @@ static void TCP_StreamAudio(void* _)
 			if (!ReadAudioStream())
 				TerminateOrContinue
 
-			if (!SendData(AudioCurSock, APkt.Header, &APkt))
+			if (!SendData(AudioCurSock, APkt.Header, (const char*)&APkt))
 				break;
 		}
 
