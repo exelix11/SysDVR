@@ -12,8 +12,6 @@
 
 //For RTP.h
 uint16_t SequenceNumbers[2];
-int MaxRTPPacket;
-int MaxRTPPayload;
 
 #define INTERLEAVED_SUPPORT
 #define UDP_SUPPORT
@@ -21,8 +19,6 @@ int MaxRTPPayload;
 #if !(defined(UDP_SUPPORT) || defined(INTERLEAVED_SUPPORT))
 #pragma error no streaming mode is supported
 #endif
-
-static const char RTSPHeader[] = "RTSP/1.0 200 OK\r\n";
 
 static const char SDP[] =	"s=SysDVR - https://github.com/exelix11/sysdvr \r\n"
 							"m=video 0 RTP/AVP 96\r\n"
@@ -95,7 +91,7 @@ void RTSP_ServerThread(void* _)
 {
 	RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_1);
 
-#ifdef INTERLEAVED_SUPPORT
+#ifdef USE_LOCKS
 	mutexInit(&RTSP_operation_lock);
 #endif
 	int sockFails = 0;
@@ -116,7 +112,6 @@ void RTSP_ServerThread(void* _)
 			continue;
 		}
 		
-		fcntl(client, F_SETFL, fcntl(client, F_GETFL, 0) & ~O_NONBLOCK);
 		RTSP_MainLoop();
 
 		//MainLoop returns on TEARDOWN or error, wait for all the socketing operation to finish
@@ -155,25 +150,46 @@ static RtspPorts ports[2];
 static inline int RTSP_SendInternal(const char* data, size_t len)
 {
 	if (client < 0) return 1;
-	if (send(client, data, len, 0) <= 0)
+	
+	LOCK_SOCKETING;
+	while (len)
 	{
-		printl("RTSP_Send error %s %d \n", strerror(errno), errno);
-		CloseSocket(&client);
-		RTSP_ClientStreaming = false;
-		return 1;
+		int res = send(client, data, len, 0);
+
+		if (res < 0)
+		{
+			if (errno == EWOULDBLOCK || errno == EAGAIN)
+			{
+				svcSleepThread(2);
+				continue;
+			}
+			else
+			{
+				printl("RTSP_Send error %s %d \n", strerror(errno), errno);
+				CloseSocket(&client);
+				RTSP_ClientStreaming = false;
+				UNLOCK_SOCKETING;
+				return 1;
+			}
+		}
+
+		data += res;
+		len -= res;
 	}
+	UNLOCK_SOCKETING;
+
 	return 0;
 }
 
+#define RTSPBinHeaderSize 4
+
 //Send data over the data channel, RTCP is not used currently
-static inline int RTSP_SendBinaryHeader(const size_t totalLen, unsigned int stream)
+static inline void RTSP_PrepareBinaryheader(char header[4], const size_t totalLen, unsigned int stream)
 {
-	char header[4];
 	header[0] = '$';
 	header[1] = ports[stream].data;
 	header[2] = (totalLen & 0xFF00) >> 8;
 	header[3] = totalLen & 0x00FF;
-	return RTSP_SendInternal(header, 4);
 }
 
 static inline int RTSP_SendRawData(const void* const data, const size_t len)
@@ -181,28 +197,17 @@ static inline int RTSP_SendRawData(const void* const data, const size_t len)
 	return RTSP_SendInternal(data, len);
 }
 
-//Not optimal but if the the first send fails the last is going to fail as well
-static inline int RTSP_SendData(const void* const data, const size_t len, unsigned char stream)
-{
-	RTSP_SendBinaryHeader(len, stream);
-	return RTSP_SendRawData(data, len);
-}
-
-#ifdef UDP_SUPPORT
-//For streaming via TCP it would be better to increase the max packet
-char VideoSendBuffer[MaxRTPPacketSize_UDP];
-#endif
+static char VideoSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 int RTSP_H264SendPacket(const void* header, const size_t headerLen, const void* data, const size_t len)
 {
 	int res = 0;
 
 	if (RTSP_Transfer_interleaved) {
 #ifdef INTERLEAVED_SUPPORT
-		LOCK_SOCKETING;
-		RTSP_SendBinaryHeader(headerLen + len, STREAM_VIDEO);
-		RTSP_SendRawData(header, headerLen);
-		res = RTSP_SendRawData(data, len);
-		UNLOCK_SOCKETING;
+		RTSP_PrepareBinaryheader(VideoSendBuffer, headerLen + len, STREAM_VIDEO);
+		memcpy(VideoSendBuffer + RTSPBinHeaderSize, header, headerLen);
+		memcpy(VideoSendBuffer + RTSPBinHeaderSize + headerLen, data, len);
+		res = RTSP_SendRawData(VideoSendBuffer, RTSPBinHeaderSize + headerLen + len);
 #endif
 	}
 	else
@@ -217,9 +222,8 @@ int RTSP_H264SendPacket(const void* header, const size_t headerLen, const void* 
 	return res;
 }
 
-#ifdef UDP_SUPPORT
-char AudioSendBuffer[MaxRTPPacketSize_UDP];
-#endif
+
+static char AudioSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
 	int res = 0;
@@ -229,11 +233,10 @@ int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 	if (RTSP_Transfer_interleaved)
 	{
 #ifdef INTERLEAVED_SUPPORT
-		LOCK_SOCKETING;
-		RTSP_SendBinaryHeader(RTPHeaderSz + len, STREAM_AUDIO);
-		RTSP_SendRawData(header, RTPHeaderSz);
-		res = RTSP_SendRawData(data, len);
-		UNLOCK_SOCKETING;
+		RTSP_PrepareBinaryheader(AudioSendBuffer, RTPHeaderSz + len, STREAM_AUDIO);
+		memcpy(AudioSendBuffer + RTSPBinHeaderSize, header, RTPHeaderSz);
+		memcpy(AudioSendBuffer + RTSPBinHeaderSize + RTPHeaderSz, data, len);
+		res = RTSP_SendRawData(AudioSendBuffer, RTSPBinHeaderSize + RTPHeaderSz + len);
 #endif
 	}
 	else
@@ -250,20 +253,7 @@ int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 
 static inline void RTSP_StartPlayback()
 {
-	MaxRTPPacket = RTSP_Transfer_interleaved ? MaxRTPPacketSize_TCP : MaxRTPPacketSize_UDP;
-	MaxRTPPayload = MaxRTPPacket - RTPHeaderSz;
 	RTSP_ClientStreaming = true;
-}
-
-static inline void RTSP_SendHeader()
-{
-	printl("> %s", RTSPHeader);
-	RTSP_SendInternal(RTSPHeader, sizeof(RTSPHeader) - 1);
-}
-
-static inline void RTSP_SendTerminator()
-{
-	RTSP_SendInternal("\r\n", 2);
 }
 
 static inline void RTSP_SendText(const char* source)
@@ -292,52 +282,61 @@ static inline void RTSP_SendFormat(int buf, const char* format, ...)
 #endif
 }
 
-static inline void RTSP_SendCseq(const char* source)
+#define FMT_HEADER_OK "RTSP/1.0 200 OK\r\n"
+#define FMT_HEADER_S "RTSP/1.0 %s\r\n"
+#define FMT_CSEQ_D "CSeq: %d\r\n"
+#define FMT_CNTSDP "Content-Type: application/sdp\r\n"
+#define FMT_CNTLEN_D "Content-Length: %d\r\n"
+#define FMT_TERMINATOR "\r\n"
+
+static inline int RTSP_ParseCseq(const char* source)
 {
 	const char* cseq = strstr(source, "CSeq:");
-	if (!cseq) return;
+	if (!cseq) 
+		return 0;
 
-	RTSP_SendFormat(30, "CSeq: %d\r\n", atoi(cseq + sizeof("CSeq:")));
+	return atoi(cseq + sizeof("CSeq:"));
 }
 
 static inline void RTSP_AnswerError(const char* error)
 {
-	LOCK_SOCKETING;
-	RTSP_SendFormat(80, "RTSP/1.0 %s\r\n", error);
-	RTSP_SendTerminator();
-	UNLOCK_SOCKETING;
+	RTSP_SendFormat(85,
+		FMT_HEADER_S 
+		FMT_TERMINATOR, error);
 }
 
 static inline void RTSP_AnswerEmpty(char* source)
 {
-	LOCK_SOCKETING;
-	RTSP_SendHeader();
-	RTSP_SendCseq(source);
-	RTSP_SendTerminator();
-	UNLOCK_SOCKETING;
+	int Cseq = RTSP_ParseCseq(source);
+	RTSP_SendFormat(200, 
+		FMT_HEADER_OK 
+		FMT_CSEQ_D
+		FMT_TERMINATOR, Cseq);
 }
 
 static inline void RTSP_AnswerText(char* source, const char* text)
 {
-	LOCK_SOCKETING;
-	RTSP_SendHeader();
-	RTSP_SendCseq(source);
-	RTSP_SendText(text);
-	RTSP_SendTerminator();
-	UNLOCK_SOCKETING;
+	int Cseq = RTSP_ParseCseq(source);
+
+	RTSP_SendFormat(200, 
+		FMT_HEADER_OK 
+		FMT_CSEQ_D
+		"%s"
+		FMT_TERMINATOR, Cseq, text);
 }
 
-static inline void RTSP_AnswerTextContent(char* source, char* text, const char* content)
+static inline void RTSP_AnswerTextSDPContent(char* source, char* text, const char* content)
 {
-	LOCK_SOCKETING;
-	RTSP_SendHeader();
-	RTSP_SendCseq(source);
-	RTSP_SendText("Content-Type: application/sdp\r\n");
-	RTSP_SendFormat(30, "Content-Length: %d\r\n", strlen(content));
-	RTSP_SendText(text);
-	RTSP_SendTerminator();
-	RTSP_SendText(content);
-	UNLOCK_SOCKETING;
+	int Cseq = RTSP_ParseCseq(source);
+
+	RTSP_SendFormat(800,
+		FMT_HEADER_OK
+		FMT_CSEQ_D
+		FMT_CNTSDP
+		FMT_CNTLEN_D
+		"%s"
+		FMT_TERMINATOR
+		"%s", Cseq, strlen(content), text, content);
 }
 
 
@@ -388,7 +387,7 @@ static inline void RTSP_MainLoop()
 			snprintf(contBase, sizeof(contBase), "Content-Base: %.63s\r\n", arg1);
 			*arg1End = original;
 
-			RTSP_AnswerTextContent(rtspBuf, contBase, SDP);
+			RTSP_AnswerTextSDPContent(rtspBuf, contBase, SDP);
 		}
 		else if (ISCOMMAND("SETUP"))
 		{
