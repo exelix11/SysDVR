@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #include "../../sysmodule/source/modes/defines.h"
+#include "ipc.h"
 
 void PrintDefaultBootMode() 
 {
@@ -45,16 +46,6 @@ void FatalErrorLoop()
 	}
 }
 
-bool SendValue(int sock, u32 value)
-{
-	return write(sock, &value, sizeof(value)) == sizeof(value);
-}
-
-bool ReadValue(int sock, u32 *out)
-{
-	return read(sock, out, sizeof(*out)) == sizeof(*out);
-}
-
 u32 CurrentStreamMode;
 void PrintCurrentMode()
 {
@@ -78,30 +69,14 @@ void PrintCurrentMode()
 	printf("\n");
 }
 
-void ReadCurrentMode(int sock)
+void ReadCurrentMode()
 {
 	u32 mode = 0;
-	CurrentStreamMode = ReadValue(sock, &mode) ? mode : TYPE_MODE_ERROR;
+	CurrentStreamMode = R_SUCCEEDED(SysDvrGetMode(&mode)) ? mode : TYPE_MODE_ERROR;
 	PrintCurrentMode();
 }
 
-bool MenuSetMode(int sock, u32 mode)
-{
-	printf("\x1b[6;0H\x1b[0J");
-	printf("Loading...\n");
-	consoleUpdate(NULL);
-	printf("\x1b[6;0H\x1b[0J");
-	if (!SendValue(sock, mode))
-	{
-		FatalError("Couldn't communicate with the sysmodule");
-		return false;
-	}
-	PrintDefaultBootMode();
-	ReadCurrentMode(sock);
-	return true;
-}
-
-bool DefaultMenu(int sock) 
+bool DefaultMenu() 
 {
 	static int Selection = 0;
 	const int MenuOptCount = 5;
@@ -129,16 +104,6 @@ bool DefaultMenu(int sock)
 		return !(kDown & KEY_A);
 	}
 
-#if !defined(RELEASE)
-	if (KhlpIndex < KhlpMax && kDown) {
-		if (kDown == kHelper[KhlpIndex]) {
-			if (KhlpIndex++ == KhlpMax - 1)
-				return PrintBuffer(H264_testBuf), true;
-		}
-		else KhlpIndex = 0;
-	}
-#endif
-
 	printf("Select an option: \n");
 	for (int i = 0; MenuOptions[i] != NULL; i++)
 	{
@@ -158,19 +123,19 @@ bool DefaultMenu(int sock)
 		switch(Selection)
 		{
 		case 0:
-			if (!MenuSetMode(sock, TYPE_MODE_USB))
+			if (R_FAILED(SysDvrSetUSB()))
 				goto FAIL;
 			break;
 		case 1:
-			if (!MenuSetMode(sock, TYPE_MODE_TCP))
+			if (R_FAILED(SysDvrSetTCP()))
 				goto FAIL;
 			break;
 		case 2:
-			if (!MenuSetMode(sock, TYPE_MODE_RTSP))
+			if (R_FAILED(SysDvrSetRTSP()))
 				goto FAIL;
 			break;
 		case 3:
-			if (!MenuSetMode(sock, TYPE_MODE_NULL))
+			if (R_FAILED(SysDvrSetOFF()))
 				goto FAIL;
 			break;
 		case 4:
@@ -189,10 +154,10 @@ FAIL:
 	return false;
 }
 
-void MainLoop(int sock)
+void MainLoop()
 {
 	u32 version = 0;
-	if (!ReadValue(sock, &version))
+	if (R_FAILED(SysDvrGetVersion(&version)))
 		FatalError("Couldn't communicate with SysDVR, are you sure it's running ?\nAlso make sure you're not using the USB-only version.");
 	else if (version > SYSDVR_VERSION)
 		FatalError("You're running a newer version of SysDVR that is not supported by this application, download latest SysDVR Settings app from GitHub");
@@ -201,7 +166,6 @@ void MainLoop(int sock)
 
 	if (version != SYSDVR_VERSION)
 	{
-		close(sock);
 		FatalErrorLoop();
 		return;
 	}
@@ -210,20 +174,17 @@ void MainLoop(int sock)
 
 	printf("\x1b[6;0H\x1b[0J");
 	PrintDefaultBootMode();
-	ReadCurrentMode(sock);
+	ReadCurrentMode();
 
-	while (DefaultMenu(sock))
+	while (DefaultMenu())
 	{
 		hidScanInput();
 		consoleUpdate(NULL);
 	}
-
-	close(sock);
 }
 
 int main(int argc, char** argv)
 {
-	socketInitializeDefault();
 	consoleInit(NULL);
 
 	printf(
@@ -232,19 +193,17 @@ int main(int argc, char** argv)
 	);
 	consoleUpdate(NULL);
 
-	int sock = ConnectToSysmodule();
+	Result rc = SysDvrConnect();
 
-	if (sock == ERR_CONNECT)
-		FatalError("Failed to connect to SysDVR, is the module set up properly ?");
-	else if (sock == ERR_SOCK)
-		FatalError("Failed to create a socket");
-
-	if (sock >= 0)
-		MainLoop(sock);
-	else
+	if (R_SUCCEEDED(rc))
+		MainLoop();
+	else 
+	{
+		printf("err %u\n", rc);
 		FatalErrorLoop();
+	}
 
+	SysDvrClose();
 	consoleExit(NULL);
-	socketExit();
 	return 0;
 }

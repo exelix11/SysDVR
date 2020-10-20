@@ -45,7 +45,7 @@
     <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>make clean &amp;&amp; make</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <IncludePath>C:\devkitPro\libnx\nx\include;C:\devkitPro\libnx\nx\external\bsd\include;$(IncludePath)</IncludePath>
+    <IncludePath>F:\include;C:\devkitPro\libnx\nx\external\bsd\include;$(IncludePath)</IncludePath>
     <NMakeForcedIncludes>$(ProjectDir)cpp.nx.hint;$(NMakeForcedIncludes)</NMakeForcedIncludes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug USB_ONLY|Win32'">
@@ -58,6 +58,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="source\grcd.c" />
+    <ClCompile Include="source\ipc\ipc.c" />
     <ClCompile Include="source\main.c" />
     <ClCompile Include="source\modes\RTSPmode.c" />
     <ClCompile Include="source\modes\TCPmode.c" />
@@ -75,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
+    <ClInclude Include="source\ipc\ipc.h" />
     <ClInclude Include="source\modes\defines.h" />
     <ClInclude Include="source\modes\modes.h" />
     <ClInclude Include="source\rtsp\H264Packetizer.h" />

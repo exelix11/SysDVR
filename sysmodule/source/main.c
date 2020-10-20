@@ -23,7 +23,7 @@
 	#define INNER_HEAP_SIZE 1024 * 1024
 	
 	#include "rtsp/RTP.h"
-	#include "sockUtil.h"
+	#include "ipc/ipc.h"
 #endif
 
 u32 __nx_applet_type = AppletType_None;
@@ -169,9 +169,9 @@ bool ReadVideoStream()
 	return result;
 }
 
-void LaunchThread(Thread* t, ThreadFunc f) 
+void LaunchThread(Thread* t, ThreadFunc f, void* arg)
 {
-	Result rc = threadCreate(t, f, NULL, NULL, 0x2000, 0x3F, 3);
+	Result rc = threadCreate(t, f, arg, NULL, 0x2000, 0x3F, 3);
 	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = threadStart(t);
 	if (R_FAILED(rc)) fatalThrow(rc);
@@ -190,9 +190,13 @@ static Thread AudioThread;
 static Thread VideoThread;
 
 StreamMode* CurrentMode = NULL;
+static atomic_bool IsSwitchingModes = false;
 
-static void SetMode(StreamMode* mode)
-{
+static void SetModeInternal(void* argmode)
+{ 
+	IsSwitchingModes = true;
+	StreamMode* mode = argmode;
+
 	if (CurrentMode)
 	{
 		IsThreadRunning = false;
@@ -216,88 +220,64 @@ static void SetMode(StreamMode* mode)
 		if (mode->InitFn)
 			mode->InitFn();
 		if (mode->VThread)
-			LaunchThread(&VideoThread, mode->VThread);
+			LaunchThread(&VideoThread, mode->VThread, NULL);
 		if (mode->AThread)
-			LaunchThread(&AudioThread, mode->AThread);
+			LaunchThread(&AudioThread, mode->AThread, NULL);
 	}
+	IsSwitchingModes = false;
 }
 
-static void ConfigThread()
+static Thread SwitchingThread;
+static void BeginSetMode(StreamMode* mode)
 {
-	//Maybe hosting our own service is better but it looks harder than this
-	int ConfigSock = -1, sockFails = 0;
-	ConfigSock = CreateTCPListener(6668, true, ERR_SOCK_CONFIG_1);
+	if (IsSwitchingModes)
+		fatalThrow(ERR_MAIN_SWITCHING);
 
-	while (1)
+	if (SwitchingThread.handle)
+		JoinThread(&SwitchingThread);
+
+	LaunchThread(&SwitchingThread, SetModeInternal, mode);
+}
+
+u32 GetCurrentMode()
+{
+	if (IsSwitchingModes)
+		return TYPE_MODE_SWITCHING;
+
+	if (CurrentMode == NULL)
+		return TYPE_MODE_NULL;
+	else if (CurrentMode == &USB_MODE)
+		return TYPE_MODE_USB;
+	else if (CurrentMode == &TCP_MODE)
+		return TYPE_MODE_TCP;
+	else if (CurrentMode == &RTSP_MODE)
+		return TYPE_MODE_RTSP;
+	else fatalThrow(ERR_MAIN_UNKMODE);
+}
+
+bool CanChangeMode()
+{
+	return !IsSwitchingModes;
+}
+
+void SetModeID(u32 mode)
+{
+	switch (mode)
 	{
-		int curSock = accept(ConfigSock, 0, 0);
-		if (curSock < 0)
-		{
-			if (sockFails++ >= 3)
-			{
-				sockFails = 0;
-				close(ConfigSock);
-				ConfigSock = CreateTCPListener(6668, true, ERR_SOCK_CONFIG_2);
-			}
-			svcSleepThread(1E+9);
-			continue;
-		}
-		sockFails = 0;
-		fcntl(curSock, F_SETFL, fcntl(curSock, F_GETFL, 0) & ~O_NONBLOCK);
-
-		/*
-			Very simple protocol, only consists of u32 excanges :
-			Sysmodule sends version and current mode
-			While client is connected:
-				Client sends mode to set
-				Sysmodule confirms
-		*/
-		u32 ver = SYSDVR_VERSION;
-		write(curSock, &ver, sizeof(u32));
-
-		u32 Type = 0;
-		if (CurrentMode == NULL)
-			Type = TYPE_MODE_NULL;
-		else if (CurrentMode == &USB_MODE)
-			Type = TYPE_MODE_USB;
-		else if (CurrentMode == &TCP_MODE)
-			Type = TYPE_MODE_TCP;
-		else if (CurrentMode == &RTSP_MODE)
-			Type = TYPE_MODE_RTSP;
-		else fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 15));
-
-		write(curSock, &Type, sizeof(u32));
-
-		while (1)
-		{
-			u32 cmd = 0;
-			if (read(curSock, &cmd, sizeof(cmd)) != sizeof(cmd))
-				break;
-
-			switch (cmd)
-			{
-			case TYPE_MODE_USB:
-				SetMode(&USB_MODE);
-				break;
-			case TYPE_MODE_TCP:
-				SetMode(&TCP_MODE);
-				break;
-			case TYPE_MODE_RTSP:
-				SetMode(&RTSP_MODE);
-				break;
-			case TYPE_MODE_NULL:
-				SetMode(NULL);
-				break;
-			default:
-				fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 16));
-			}
-
-			//Due to syncronization terminating the threads may require a few seconds, answer with the mode as confirmation
-			write(curSock, &cmd, sizeof(u32));
-		}
-
-		svcSleepThread(1E+9);
-		close(curSock);
+	case TYPE_MODE_USB:
+		BeginSetMode(&USB_MODE);
+		break;
+	case TYPE_MODE_TCP:
+		BeginSetMode(&TCP_MODE);
+		break;
+	case TYPE_MODE_RTSP:
+		BeginSetMode(&RTSP_MODE);
+		break;
+	case TYPE_MODE_NULL:
+		BeginSetMode(NULL);
+		break;
+	default:
+		fatalThrow(ERR_MAIN_UNKMODESET);
 	}
 }
 
@@ -326,14 +306,14 @@ int main(int argc, char* argv[])
 	USB_MODE.ExitFn();
 #else
 	if (FileExists("/config/sysdvr/usb"))
-		SetMode(&USB_MODE);
+		SetModeInternal(&USB_MODE);
 	else if (FileExists("/config/sysdvr/rtsp"))
-		SetMode(&RTSP_MODE);
+		SetModeInternal(&RTSP_MODE);
 	else if (FileExists("/config/sysdvr/tcp"))
-		SetMode(&TCP_MODE);
+		SetModeInternal(&TCP_MODE);
 
-	ConfigThread();
-	SetMode(NULL);
+	IpcThread();
+	SetModeInternal(NULL);
 #endif
 
 	grcdServiceClose(&grcdVideo);

@@ -72,7 +72,7 @@ extern AudioPacket APkt;
 bool ReadAudioStream();
 bool ReadVideoStream();
 
-void LaunchThread(Thread* t, ThreadFunc f);
+void LaunchThread(Thread* t, ThreadFunc f, void* arg);
 void JoinThread(Thread* t);
 
 typedef struct
