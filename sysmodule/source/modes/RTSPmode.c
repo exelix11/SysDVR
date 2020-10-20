@@ -52,7 +52,7 @@ static void RTSP_StreamAudio(void* _)
 static void RTSP_Init()
 {
 	RTP_InitializeSequenceNumbers();
-	LaunchThread(&RTSPThread, RTSP_ServerThread);
+	LaunchThread(&RTSPThread, RTSP_ServerThread, NULL);
 }
 
 static void RTSP_Exit()

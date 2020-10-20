@@ -28,6 +28,9 @@
     <ClCompile Include="source\USB\Serial.c">
       <Filter>USB</Filter>
     </ClCompile>
+    <ClCompile Include="source\ipc\ipc.c">
+      <Filter>ipc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -56,6 +59,9 @@
     <ClInclude Include="source\modes\defines.h">
       <Filter>modes</Filter>
     </ClInclude>
+    <ClInclude Include="source\ipc\ipc.h">
+      <Filter>ipc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">
@@ -66,6 +72,9 @@
     </Filter>
     <Filter Include="USB">
       <UniqueIdentifier>{12be9152-ad50-474d-86b6-f96b11d7b4e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ipc">
+      <UniqueIdentifier>{6e251262-6ebd-49a8-a634-a317bc8d7640}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -3,11 +3,13 @@
   <ItemGroup>
     <ClCompile Include="source\main.c" />
     <ClCompile Include="source\utils.c" />
+    <ClCompile Include="source\ipc.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\utils.h" />
+    <ClInclude Include="source\ipc.h" />
   </ItemGroup>
 </Project>
