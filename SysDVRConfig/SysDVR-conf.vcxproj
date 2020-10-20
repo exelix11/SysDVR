@@ -31,11 +31,12 @@
     <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>make clean &amp;&amp; make</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <IncludePath>C:\devkitPro\libnx\nx\include;C:\devkitPro\libnx\nx\external\bsd\include;$(IncludePath)</IncludePath>
+    <IncludePath>F:\include;C:\devkitPro\libnx\nx\include;C:\devkitPro\libnx\nx\external\bsd\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\ipc.c" />
     <ClCompile Include="source\main.c" />
     <ClCompile Include="source\utils.c" />
   </ItemGroup>
@@ -43,6 +44,7 @@
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\ipc.h" />
     <ClInclude Include="source\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
