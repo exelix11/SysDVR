@@ -1,16 +1,11 @@
 ﻿using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
 	static class UsbHelper
 	{
@@ -82,7 +77,7 @@ namespace SysDVRClient
 		}
 	}
 
-	abstract class UsbStreamingSourceBase : StreamingSource
+	abstract class UsbStreamingSourceBase : IStreamingSource
 	{
 		protected static readonly byte[] USBMagic = { 0xAA, 0xAA, 0xAA, 0xAA };
 		public bool Logging { get; set; }

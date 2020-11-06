@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <Platforms>AnyCPU;x86</Platforms>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Platforms>AnyCPU</Platforms>
     <AssemblyName>SysDVR-Client</AssemblyName>
     <Description>https://github.com/exelix11/SysDVR</Description>
     <Authors>exelix</Authors>
@@ -11,7 +11,7 @@
     <PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
     <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
     <Version>4.0.2</Version>
-    <RootNamespace>SysDVRClient</RootNamespace>
+    <RootNamespace>SysDVR.Client</RootNamespace>
     <AssemblyVersion>4.0.0.2</AssemblyVersion>
     <FileVersion>4.0.0.2</FileVersion>
     <Configurations>Debug;Release</Configurations>
@@ -19,12 +19,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>false</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
@@ -32,6 +32,7 @@
   <ItemGroup>
     <PackageReference Include="LibUsbDotNet" Version="3.0.83-alpha-g94397fba28" />
     <PackageReference Include="SharpRTSP" Version="0.0.1" />
+    <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
   </ItemGroup>
 
 </Project>

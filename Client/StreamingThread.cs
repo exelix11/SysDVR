@@ -1,4 +1,4 @@
-﻿// #define EXCEPTION_DEBUG
+﻿//#define EXCEPTION_DEBUG
 
 using System;
 using System.Buffers;
@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
 	[StructLayout(LayoutKind.Sequential)]
 	struct PacketHeader
@@ -23,9 +23,7 @@ namespace SysDVRClient
 		public const int StructLength = 16;
 		public const UInt32 DefaultMagic = 0xAAAAAAAA;
 
-		public const int APayloadMax = 0x1000;
-		public const int VPayloadMax = 0x32000;
-		public const int MaxTransferSize = VPayloadMax + StructLength;
+		public const int MaxTransferSize = StreamInfo.VideoPayloadSize + StructLength;
 
 		static PacketHeader()
 		{
@@ -34,13 +32,7 @@ namespace SysDVRClient
 		}
 	}
 
-	public static class StreamInfo
-	{
-		public static readonly byte[] SPS = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
-		public static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
-	}
-	
-	interface StreamingSource
+	interface IStreamingSource
 	{
 		bool Logging { get; set; }
 		void UseCancellationToken(CancellationToken tok);
@@ -53,15 +45,16 @@ namespace SysDVRClient
 		bool ReadPayload(byte[] buffer, int length);
 	}
 
-	class StreamingThread
+	class StreamingThread : IDisposable
 	{
 		public static bool Logging;
-		
-		Thread StreamThread;
+
+		Thread DeviceThread;
+		Thread TargetThread;
 		CancellationTokenSource Cancel;
 
 		public IOutTarget Target { get; set; }
-		public StreamingSource Source { get; set; }
+		public IStreamingSource Source { get; set; }
 
 		public StreamKind Kind { get; private set; }
 
@@ -73,7 +66,7 @@ namespace SysDVRClient
 
 		~StreamingThread() 
 		{
-			if (StreamThread.IsAlive)
+			if (DeviceThread.IsAlive || TargetThread.IsAlive)
 				throw new Exception($"{Kind} Thread is still running");
 		}
 
@@ -81,8 +74,11 @@ namespace SysDVRClient
 		{
 			Cancel = new CancellationTokenSource();
 
-			StreamThread = new Thread(ThreadMain);
-			StreamThread.Start();
+			DeviceThread = new Thread(() => TargetThreadMain(Cancel.Token));
+			TargetThread = new Thread(() => DeviceThreadMain(Cancel.Token));
+
+			DeviceThread.Start();
+			TargetThread.Start();
 		}
 
 		public void Stop()
@@ -91,36 +87,55 @@ namespace SysDVRClient
 			Source.StopStreaming();
 		}
 
-		public void Join() =>
-			StreamThread.Join();
+		public void Join()
+		{
+			TargetThread.Join();
+			DeviceThread.Join();
+		}
 
-		private void ThreadMain()
+		BlockingCollection<(ulong, PoolBuffer)> queue = new BlockingCollection<(ulong, PoolBuffer)>(5);
+		void DeviceThreadMain(CancellationToken token)
+		{
+			try
+			{
+				foreach (var o in queue.GetConsumingEnumerable(token))
+				{
+					var (ts, data) = o;
+
+					Target.SendData(data, ts);
+					// The target is expected to free data
+				}
+			}
+			catch (OperationCanceledException)
+			{
+				return;
+			}
+#if !EXCEPTION_DEBUG || RELEASE
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Terminating SendToTargetThread for {Kind} due to {ex}");
+			}
+#endif
+		}
+
+		void TargetThreadMain(CancellationToken token)
 		{
 			var log = Logging;
 
-			CancellationToken token = Cancel.Token;
-			ArrayPool<byte> pool = ArrayPool<byte>.Create();
-			using BlockingCollection<(ulong, byte[])> queue = new BlockingCollection<(ulong, byte[])>(5);
-
 			Source.Logging = log;
 			Source.UseCancellationToken(token);
+			Target.UseCancellationToken(token);
 
-#if !EXCEPTION_DEBUG || RELEASE
+			var HeaderData = new byte[PacketHeader.StructLength];
+			ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
 			try
 			{
-#endif
-			Source.WaitForConnection();
-
-			void ReceiveFromDevice() 
-			{
-				var HeaderData = new byte[PacketHeader.StructLength];
-				ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
-
+				Source.WaitForConnection();
 				while (!token.IsCancellationRequested)
 				{
 					while (!Source.ReadHeader(HeaderData))
 					{
-						System.Threading.Thread.Sleep(10);
+						Thread.Sleep(10);
 						continue;
 					}
 
@@ -132,54 +147,50 @@ namespace SysDVRClient
 						if (log)
 							Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
 						Source.Flush();
-						System.Threading.Thread.Sleep(10);
+						Thread.Sleep(10);
 						continue;
 					}
 
-					if (Header.DataSize > PacketHeader.VPayloadMax)
+					if (Header.DataSize > StreamInfo.VideoPayloadSize)
 					{
 						if (log)
 							Console.WriteLine($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
 						Source.Flush();
-						System.Threading.Thread.Sleep(10);
+						Thread.Sleep(10);
 						continue;
 					}
 
-					var Data = pool.Rent(Header.DataSize);
-					if (!Source.ReadPayload(Data, Header.DataSize))
+					var Data = PoolBuffer.Rent(Header.DataSize);
+					if (!Source.ReadPayload(Data.Buffer, Header.DataSize))
 					{
 						Source.Flush();
-						pool.Return(Data);
-						System.Threading.Thread.Sleep(10);
+						Data.Free();
+						Thread.Sleep(10);
 						continue;
 					}
 
-					queue.Add((Header.Timestamp, Data));
+					queue.Add((Header.Timestamp, Data), token);
 				}
 
 				queue.CompleteAdding();
 			}
-
-			void SendToClient() 
+			catch (OperationCanceledException)
 			{
-				foreach (var o  in queue.GetConsumingEnumerable(token))
-				{
-					var (ts, data) = o;
-
-					Target.SendData(data, ts);
-					pool.Return(data);
-				}
+				return;
 			}
-
-			Parallel.Invoke(new ParallelOptions() { CancellationToken = token, MaxDegreeOfParallelism = 2 }, ReceiveFromDevice, SendToClient);
 #if !EXCEPTION_DEBUG || RELEASE
-			}
 			catch (Exception ex)
 			{
 				if (!token.IsCancellationRequested)
-					Console.WriteLine($"Terminating {Kind} thread due to {ex}");
+					Console.WriteLine($"Terminating ReceiveFromDeviceThread for {Kind} due to {ex}");
 			}
 #endif
+		}
+
+		public void Dispose()
+		{
+			Cancel.Dispose();
+			queue.Dispose();
 		}
 	}
 }

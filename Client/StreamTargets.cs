@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
 	enum StreamKind
 	{
@@ -13,21 +15,67 @@ namespace SysDVRClient
 		Audio
 	};
 
-	interface IOutTarget
+	interface IUnmanagedMemory
 	{
-		void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
-		void SendData(byte[] data, int offset, int size, UInt64 ts);
+		byte[] Buffer { get; }
+		int Length { get; }
+
+		void Free();
 	}
 
-	abstract class BaseStreamManager
+	struct PoolBuffer : IUnmanagedMemory
+	{
+		private readonly static ArrayPool<byte> pool = ArrayPool<byte>.Shared;
+
+		bool freed;
+		readonly byte[] buffer;
+		public byte[] Buffer => !freed ? buffer : throw new Exception("The buffer has been freed");
+		public int Length { get; private set; }
+
+		public void Free() 
+		{
+			freed = true;
+			pool.Return(buffer);
+		}
+
+		public static PoolBuffer Rent(int len) =>
+			new PoolBuffer(pool.Rent(len), len);
+
+		private PoolBuffer(byte[] buf, int len)
+		{
+			freed = false;
+			Length = len;
+			buffer = buf;
+		}
+	}
+
+	interface IOutTarget
+	{
+		void UseCancellationToken(CancellationToken tok);
+
+		void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
+		void SendData(byte[] data, int offset, int size, UInt64 ts);
+
+		void SendData(PoolBuffer block, UInt64 ts)
+		{
+			SendData(block.Buffer, 0, block.Length, ts);
+			block.Free();
+		}
+	}
+
+	abstract class BaseStreamManager : IDisposable
 	{
 		protected StreamingThread VideoThread, AudioThread;
+		private bool disposedValue;
 
-		public StreamingSource VideoSource { get => VideoThread?.Source; set { if (VideoThread != null) VideoThread.Source = value; } }
-		public StreamingSource AudioSource { get => AudioThread?.Source; set { if (AudioThread != null) AudioThread.Source = value; } }
+		public IStreamingSource VideoSource { get => VideoThread?.Source; set { if (VideoThread != null) VideoThread.Source = value; } }
+		public IStreamingSource AudioSource { get => AudioThread?.Source; set { if (AudioThread != null) AudioThread.Source = value; } }
 
 		public IOutTarget VideoTarget => VideoThread?.Target;
 		public IOutTarget AudioTarget => AudioThread?.Target;
+
+		public bool HasVideo => VideoThread != null;
+		public bool HasAudio => AudioThread != null;
 
 		public BaseStreamManager(IOutTarget VideoTarget, IOutTarget AudioTarget)
 		{
@@ -49,6 +97,26 @@ namespace SysDVRClient
 			AudioThread?.Stop();
 			VideoThread?.Join();
 			AudioThread?.Join();
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposedValue)
+			{
+				if (disposing)
+				{
+					VideoThread?.Dispose();
+					AudioThread?.Dispose();
+				}
+
+				disposedValue = true;
+			}
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
 		}
 	}
 
@@ -82,6 +150,8 @@ namespace SysDVRClient
 			bin.Write(data, offset, size);
 			sw.Restart();
 		}
+
+		public void UseCancellationToken(CancellationToken tok) {}
 	}
 
 	class LoggingManager : BaseStreamManager
