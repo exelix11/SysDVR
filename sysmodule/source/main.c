@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
 
 #if defined(USB_ONLY)
 	USB_MODE.InitFn();
-	LaunchThread(&AudioThread, USB_MODE.AThread);
+	LaunchThread(&AudioThread, USB_MODE.AThread, NULL);
 	USB_MODE.VThread(NULL);
 	USB_MODE.ExitFn();
 #else
