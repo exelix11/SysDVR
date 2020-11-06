@@ -1,18 +1,9 @@
 ﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using LibUsbDotNet;
-using LibUsbDotNet.LibUsb;
-using LibUsbDotNet.Main;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
 	class Program
 	{
@@ -173,12 +164,16 @@ Command examples:
 				StreamManager = new LoggingManager(NoVideo ? null : Path.Combine(path, "video.h264"), NoAudio ? null : Path.Combine(path, "audio.raw"));
 			}
 #endif
-			else // use RTSP by default
+			else if (HasArg("--rtsp"))
 			{
 				int port = ArgValueInt("--rtsp-port") ?? 6666;
 				if (port <= 1024)
 					Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
 				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, !HasArg("--rtsp-any-addr"), port);
+			}
+			else // Stream to the built-in player by default
+			{
+				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio);
 			}
 
 			if (args.Length == 0 || args[0] == "usb")
@@ -215,7 +210,6 @@ Command examples:
 		static void StartStreaming(BaseStreamManager Streams)
 		{
 			Console.WriteLine("Starting stream, press return to stop");
-			Console.WriteLine("If the stream lags try pausing and unpausing the player.");
 			Streams.Begin();
 
 			Console.ReadLine();

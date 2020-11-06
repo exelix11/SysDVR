@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SysDVRClient.RTSP
+namespace SysDVR.Client.RTSP
 {
 	public static class LE16Packetizer
 	{
