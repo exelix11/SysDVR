@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace SysDVRClient.RTSP
+namespace SysDVR.Client.RTSP
 { 
 	internal static class RTPPacketUtil
 	{

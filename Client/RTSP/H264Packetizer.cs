@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SysDVRClient.RTSP
+namespace SysDVR.Client.RTSP
 {
 	public static class H264Packetizer
 	{

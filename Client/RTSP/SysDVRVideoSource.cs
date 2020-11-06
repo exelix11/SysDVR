@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace SysDVRClient.RTSP
+namespace SysDVR.Client.RTSP
 {
 	class SysDvrRTSPManager : BaseStreamManager
 	{
@@ -38,6 +39,8 @@ namespace SysDVRClient.RTSP
 		protected void InvokeEvent(Span<byte> Data, ulong tsMsec) => DataAvailable(Data, tsMsec);
 
 		public abstract void SendData(byte[] data, int offset, int size, ulong ts);
+
+		public void UseCancellationToken(CancellationToken tok) { }
 	}
 
 	class SysDVRAudioRTSPTarget : SysDvrRTSPTarget
