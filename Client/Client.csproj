@@ -31,8 +31,12 @@
 
   <ItemGroup>
     <PackageReference Include="LibUsbDotNet" Version="3.0.83-alpha-g94397fba28" />
-    <PackageReference Include="SharpRTSP" Version="*" />
     <PackageReference Include="SysDVR.Client.Native" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Libs\FFmpeg.AutoGen\FFmpeg.AutoGen\FFmpeg.AutoGen.csproj" />
+    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
   </ItemGroup>
 
 </Project>
