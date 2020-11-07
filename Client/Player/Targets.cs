@@ -72,7 +72,7 @@ namespace SysDVR.Client.Player
 
 				fixed (byte* outbuf = outData.Buffer)
 				fixed (byte* inbuf = block.Buffer)
-					swr_convert(AudioCtx.ConverterCtx, &outbuf, outSamples, &inbuf, inSamples).Assert(outSamples);
+					swr_convert(AudioCtx.ConverterCtx, &outbuf, outSamples, &inbuf, inSamples).AssertEqual(outSamples);
 
 				block.Free();
 				samples.Add(outData, tok);

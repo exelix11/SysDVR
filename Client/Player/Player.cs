@@ -89,20 +89,20 @@ namespace SysDVR.Client.Player
 
 		SDLContext InitSDL()
 		{
-			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).Assert();
+			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).Assert(SDL_GetError);
 
 			var win = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
-				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert();
+				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
 
 			var render = SDL_CreateRenderer(win, -1,
 				SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
 				SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC |
 				SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE)
-				.Assert();
+				.Assert(SDL_GetError);
 
 			var tex = SDL_CreateTexture(render, SDL_PIXELFORMAT_YV12,
 				(int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-				StreamInfo.VideoWidth, StreamInfo.VideoHeight).Assert();
+				StreamInfo.VideoWidth, StreamInfo.VideoHeight).Assert(SDL_GetError);
 
 			return new SDLContext()
 			{
@@ -130,7 +130,7 @@ namespace SysDVR.Client.Player
 				userdata = GCHandle.ToIntPtr(handle)
 			};
 
-			SDL_OpenAudio(ref wantedSpec, out SDL_AudioSpec spec).Assert();
+			SDL_OpenAudio(ref wantedSpec, out SDL_AudioSpec spec).Assert(SDL_GetError);
 
 			SwrContext* swrctx = null;
 
@@ -197,11 +197,6 @@ namespace SysDVR.Client.Player
 			codectx->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
 
 			avcodec_open2(codectx, codec, null).Assert();
-
-			if (codectx->hwaccel != null)
-				Console.WriteLine($"Using hardware acceleration: {Marshal.PtrToStringBSTR((IntPtr)codectx->hwaccel->name)}");
-			else
-				Console.WriteLine($"No HW accel");
 
 			var pic = av_frame_alloc();
 			if (pic == null)
@@ -422,22 +417,22 @@ namespace SysDVR.Client.Player
 
 	static class Exten
 	{
-		public static void Assert(this int code, int expectedValue)
+		public static void AssertEqual(this int code, int expectedValue, Func<string> MessageFun = null)
 		{
 			if (code != expectedValue)
-				throw new Exception($"Asserition failed {code} != {expectedValue}");
+				throw new Exception($"Asserition failed {code} != {expectedValue} : {(MessageFun?.Invoke() ?? "Unknown error:")}");
 		}
 
-		public static void Assert(this int code)
+		public static void Assert(this int code, Func<string> MessageFun = null)
 		{
 			if (code != 0)
-				throw new Exception("Asserition failed");
+				throw new Exception($"Asserition failed: {code} {(MessageFun?.Invoke() ?? "Unknown error")}");
 		}
 
-		public static IntPtr Assert(this IntPtr val)
+		public static IntPtr Assert(this IntPtr val, Func<string> MessageFun = null)
 		{
 			if (val == IntPtr.Zero)
-				throw new Exception("Asserition failed");
+				throw new Exception($"Asserition failed: pointer is null {(MessageFun?.Invoke() ?? "Unknown error")}");
 			return val;
 		}
 	}
