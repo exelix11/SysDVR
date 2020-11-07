@@ -64,12 +64,6 @@ namespace SysDVR.Client
 			Target = target;
 		}
 
-		~StreamingThread() 
-		{
-			if (DeviceThread.IsAlive || TargetThread.IsAlive)
-				throw new Exception($"{Kind} Thread is still running");
-		}
-
 		public void Start() 
 		{
 			Cancel = new CancellationTokenSource();
@@ -189,6 +183,9 @@ namespace SysDVR.Client
 
 		public void Dispose()
 		{
+			if (DeviceThread.IsAlive || TargetThread.IsAlive)
+				throw new Exception($"{Kind} Thread is still running");
+
 			Cancel.Dispose();
 			queue.Dispose();
 		}
