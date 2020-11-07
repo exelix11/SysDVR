@@ -2,7 +2,7 @@
 
 set PATH=C:\Program Files\7zip;C:\Program Files\7-Zip\;C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\;%PATH%
 
-cd ..\..\LibUsbDotNet\src\LibUsbDotNet\
+cd Libs\LibUsbDotNet\src\LibUsbDotNet\
 dotnet pack || goto error
 move bin\Debug\LibUsbDotNet.*.nupkg ..\..\..\Built\
 
