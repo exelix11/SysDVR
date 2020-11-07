@@ -31,8 +31,8 @@
 
   <ItemGroup>
     <PackageReference Include="LibUsbDotNet" Version="3.0.83-alpha-g94397fba28" />
-    <PackageReference Include="SharpRTSP" Version="0.0.1" />
-    <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
+    <PackageReference Include="SharpRTSP" Version="*" />
+    <PackageReference Include="SysDVR.Client.Native" Version="*" />
   </ItemGroup>
 
 </Project>
