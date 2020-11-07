@@ -47,7 +47,6 @@ namespace SysDVR.Client.Player
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
-			Helper.WindowsDllWorkadround();
 			player = new Player(this);
 		}
 

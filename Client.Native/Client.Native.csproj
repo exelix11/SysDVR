@@ -22,8 +22,4 @@
 	  <None Include="ffmpeg/win64/swresample-3.dll" Pack="true" PackagePath="runtimes/win-x64/native/swresample-3.dll" />
 	  <None Include="ffmpeg/win64/swscale-5.dll" Pack="true" PackagePath="runtimes/win-x64/native/swscale-5.dll" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="4.3.1" />
-  </ItemGroup>
 </Project>
