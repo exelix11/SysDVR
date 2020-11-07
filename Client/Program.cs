@@ -28,7 +28,7 @@ namespace SysDVR.Client
 		{
 			if (!full) {
 				Console.WriteLine("Basic usage:\r\n" +
-						"Simply launching this exectuable will show this message and launch the RTSP server via USB.\r\n" +
+						"Simply launching this exectuable will show this message and launch the video player via USB.\r\n" +
 						"Use 'SysDVR-Client usb' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
 						"To stream in TCP Bridge mode launch 'SysDVR-Client bridge <switch ip address>'\r\n" +
 						"There are more advanced options, you can see them with 'SysDVR-Client --help'\r\n" +
@@ -42,8 +42,10 @@ namespace SysDVR.Client
 SysDVR-Client.exe <Stream source> [Source options] [Stream options] [Output options]
 
 Stream sources:
+	The source mode is how the client connects to SysDVR running on the console. Make sure to set the correct mode with SysDVR-Settings.
 	`usb` : Connects to SysDVR via USB, used if no source is specified. Remember to setup the driver as explained on the guide
 	`bridge <IP address>` : Connects to SysDVR via network at the specified IP address, requires a strong connection between the PC and switch (LAN or full signal wireless)
+	Note that the `Stream over RTSP (simple network mode)` option in SysDVR-Settings does not require the client, you must open it directly in a video player.
 
 Source options:
 	`--print-stats` : Logs received data size and errors
@@ -56,18 +58,26 @@ Stream options:
 	`--no-audio` : Disable audio streaming, only streams video
 
 Output options:
-	Low-latency streaming options
+	If you don't specify any option the built-in video player will be used.
+	
+	RTSP Options:
+	`--rtsp` : Relay the video feed via RTSP. SysDVR-Client will act as an RTSP server, you can connect to it with RTSP with any compatible video player like mpv or vlc
+	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
+	`--rtsp-any-addr` : By default only the pc running SysDVR-Client can connect to the RTSP stream, enable this to allow connections from other devices in your local network
+
+	Low-latency streaming options:
 	`--mpv <mpv path>` : Streams the specified channel to mpv via stdin, only works with one channel, if no stream option is specified `--no-audio` will be used.
 	`--stdout` : Streams the specified channel to stdout, only works with one channel, if no stream option is specified `--no-audio` will be used.
+	
 	Storage options
-	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.
-	If you don't specify any of these SysDVR-Client will stream via RTSP, the following are RTSP options
-	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
-	`--rtsp-any-addr` : The RTSP socket will be open for INADDR_ANY, this means other devices in your local network can connect to your pc by IP and watch the stream
+	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.	
 
 Command examples:
 	SysDVR-Client.exe usb
-		Connects to switch via USB and streams video and audio over rtsp at rtsp://127.0.0.1:6666/
+		Connects to switch via USB and streams video and audio in the built-in player
+
+	SysDVR-Client.exe usb --rtsp
+		Connects to switch via USB and streams video and audio via rtsp at rtsp://127.0.0.1:6666/
 		
 	SysDVR-Client.exe bridge 192.168.1.20 --no-video --rtsp-port 9090
 		Connects to switch via network at 192.168.1.20 and streams the audio over rtsp at rtsp://127.0.0.1:9090/
@@ -103,7 +113,12 @@ Command examples:
 				int index = Array.IndexOf(args, arg);
 				if (index == -1) return null;
 				if (args.Length <= index + 1) return null;
-				return args[index + 1];
+
+				string value = args[index + 1];
+				if (!value.Contains(' ') && value.StartsWith('"') && value.EndsWith('"'))
+					value = value.Substring(1, value.Length - 2);
+
+				return value;
 			}
 
 			int? ArgValueInt(string arg) 
@@ -148,7 +163,7 @@ Command examples:
 			}
 			else if (HasArg("--file"))
 			{
-				string diskPath = ArgValue("--file").Replace("\"", "");
+				string diskPath = ArgValue("--file");
 				if (diskPath == null || !Directory.Exists(diskPath))
 				{
 					Console.WriteLine("The specified directory is not valid");
