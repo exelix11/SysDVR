@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using LibUsbDotNet;
 
 namespace SysDVR.Client
 {
@@ -115,13 +114,13 @@ Command examples:
 				return null;
 			}
 
-			if (HasArg("--usb-warn")) UsbHelper.LogLevel = LogLevel.Info;
-			if (HasArg("--usb-debug")) UsbHelper.LogLevel = LogLevel.Debug;
+			if (HasArg("--usb-warn")) UsbContext.Logging = UsbContext.LogLevel.Warning;
+			if (HasArg("--usb-debug")) UsbContext.Logging = UsbContext.LogLevel.Debug;
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
 			StreamingThread.Logging = HasArg("--print-stats");
-			UsbHelper.ForceLibUsb = HasArg("--no-winusb");
+			UsbContext.ForceLibUsb = HasArg("--no-winusb");
 
 			if (NoVideo && NoAudio)
 			{
@@ -178,10 +177,12 @@ Command examples:
 
 			if (args.Length == 0 || args[0] == "usb")
 			{
+				var ctx = UsbContext.GetInstance();
+
 				if (!NoVideo)
-					StreamManager.VideoSource = UsbHelper.MakeStreamingSource(StreamKind.Video);
+					StreamManager.VideoSource = ctx.MakeStreamingSource(StreamKind.Video);
 				if (!NoAudio)
-					StreamManager.AudioSource = UsbHelper.MakeStreamingSource(StreamKind.Audio);
+					StreamManager.AudioSource = ctx.MakeStreamingSource(StreamKind.Audio);
 			}
 			else if (args[0] == "bridge")
 			{
