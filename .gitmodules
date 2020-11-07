@@ -4,3 +4,6 @@
 [submodule "Libs/SharpRTSP"]
 	path = Libs/SharpRTSP
 	url = https://github.com/exelix11/SharpRTSP.git
+[submodule "Libs/FFmpeg.AutoGen"]
+	path = Libs/FFmpeg.AutoGen
+	url = https://github.com/exelix11/FFmpeg.AutoGen.git
