@@ -101,7 +101,7 @@ namespace SysDVR.Client.Player
 			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).Assert(SDL_GetError);
 
 			var win = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
-				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
+				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
 
 			var render = SDL_CreateRenderer(win, -1,
 				SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
@@ -227,9 +227,15 @@ namespace SysDVR.Client.Player
 
 			void CalculateDisplayRect()
 			{
-				SDL_GetWindowSize(SDL.Window, out int w, out int h);
 				const double Ratio = (double)StreamInfo.VideoWidth / StreamInfo.VideoHeight;
+				SDL_GetWindowSize(SDL.Window, out int w, out int h);
 
+				// Scaling workaround for OSX, SDL_WINDOW_ALLOW_HIGHDPI doesn't seem to work
+				SDL_GetRendererOutputSize(SDL.Renderer, out int pixelWidth, out int pixelHeight);
+				float scaleX = pixelWidth / (float)w;
+				float scaleY = pixelHeight / (float)h;
+				SDL_RenderSetScale(SDL.Renderer, scaleX, scaleY);				
+				
 				if (w > h)
 				{
 					DisplayRect.w = (int)(h * Ratio);
@@ -260,7 +266,7 @@ namespace SysDVR.Client.Player
 				{
 					for (int i = 0; i < 10 && TextureConsumed; i++)
 						SDL_Delay(10);
-					if (TextureConsumed)
+					if (!TextureConsumed)
 						continue;
 				}
 
