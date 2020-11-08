@@ -14,7 +14,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientGUI", "ClientGUI\Clie
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SysDVR-conf", "SysDVRConfig\SysDVR-conf.vcxproj", "{C1F4E078-6C37-42FA-AC47-07128598B1BE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client.Native", "Client.Native\Client.Native.csproj", "{F20BF7C9-251B-41D3-850C-636DC2F1CC55}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client.Native", "Libs\Client.Native\Client.Native.csproj", "{F20BF7C9-251B-41D3-850C-636DC2F1CC55}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RTSP", "Libs\SharpRTSP\RTSP\RTSP.csproj", "{4426CF39-BBED-42D0-B7CD-EB3AFD2212F6}"
 EndProject
