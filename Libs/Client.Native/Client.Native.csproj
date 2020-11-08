@@ -6,7 +6,7 @@
     <AssemblyName>SysDVR.Client.Native</AssemblyName>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<Version>1.0.1</Version>
-	<OutputPath>../Libs/Built</OutputPath>
+	<OutputPath>../Built</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
