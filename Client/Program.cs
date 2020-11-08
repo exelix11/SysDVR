@@ -214,6 +214,13 @@ Command examples:
 				if (!NoAudio)
 					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
 			}
+#if DEBUG
+			else if (args[0] == "stub")
+			{
+				StreamManager.VideoSource = new StubSource();
+				StreamManager.AudioSource = new StubSource();
+			}
+#endif
 			else
 			{
 				Console.WriteLine("Invalid source");
