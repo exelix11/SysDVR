@@ -225,10 +225,10 @@ Command examples:
 
 		static void StartStreaming(BaseStreamManager Streams)
 		{
-			Console.WriteLine("Starting stream, press return to stop");
 			Streams.Begin();
 
-			Console.ReadLine();
+			Streams.MainThread();
+
 			Console.WriteLine("Terminating threads...");
 
 			Streams.Stop();
