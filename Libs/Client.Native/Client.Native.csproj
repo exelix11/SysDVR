@@ -8,6 +8,7 @@
 	<Version>1.0.1</Version>
 	<OutputPath>../Built</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
