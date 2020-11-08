@@ -99,6 +99,16 @@ namespace SysDVR.Client
 			AudioThread?.Join();
 		}
 
+		/*
+			The default implementation just waits for a return on stdin, it is overridden by the video player.
+			OSX requres SDL to run on the main thread
+		*/
+		public virtual void MainThread() 
+		{
+			Console.WriteLine("Starting stream, press return to stop.");
+			Console.ReadLine();
+		}
+
 		protected virtual void Dispose(bool disposing)
 		{
 			if (!disposedValue)
