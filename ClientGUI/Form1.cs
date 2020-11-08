@@ -45,11 +45,13 @@ namespace SysDVRClientGUI
 		{
 			SetDefaultText();
 
+#if RELEASE
 			if (!File.Exists("SysDVR-Client.dll"))
 			{
 				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
 				this.Close();
 			}
+#endif
 
 			if (Utils.FindExecutableInPath("dotnet.exe") == null)
 				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -57,6 +59,8 @@ namespace SysDVRClientGUI
 			
 			rbStreamRtsp.Checked = true;
 			rbChannelsBoth.Checked = true;
+			rbPlay.Checked = true;
+			cbAdvOpt.Checked = false;
 		}
 
 		private void StreamTargetSelected(object sender, EventArgs e)
@@ -68,7 +72,8 @@ namespace SysDVRClientGUI
 			{	
 				{ rbStreamRtsp, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
 				{ rbPlayMpv, new MpvStreamControl() { Dock = DockStyle.Fill} },
-				{ rbSaveToFile , new FileStreamControl() { Dock = DockStyle.Fill} }
+				{ rbSaveToFile , new FileStreamControl() { Dock = DockStyle.Fill} },
+				{ rbPlay, new PlayStreamControl() { Dock = DockStyle.Fill} }
 			};
 
 			CurrentControl = StreamControls[sender];
@@ -149,11 +154,6 @@ namespace SysDVRClientGUI
 				{
 					str.Append("\ntimeout 2 > NUL && ");
 					str.Append(extra);
-					if (CurrentControl is RTSPStreamOptControl)
-					{
-						if (cbMpvLowLat.Checked) str.Append(" --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no");
-						if (cbMpvUntimed.Checked) str.Append(" --untimed");
-					}
 				}
 
 				return str.ToString();
@@ -175,7 +175,6 @@ namespace SysDVRClientGUI
 					System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
 				this.Close();
 			}
-
 		}
 
 		private void ExportBatch(object sender, EventArgs e)
@@ -225,6 +224,12 @@ namespace SysDVRClientGUI
 		{
 			if (tbTcpIP.Text != "IP address" && tbTcpIP.Text != "" && !rbSrcTcp.Checked)
 				rbSrcTcp.Checked = true;
+		}
+
+		private void cbAdvOpt_CheckedChanged(object sender, EventArgs e)
+		{
+			pAdvOptions.Visible = cbAdvOpt.Checked;
+			this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
 		}
 	}
 
