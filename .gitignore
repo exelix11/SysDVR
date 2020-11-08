@@ -358,3 +358,7 @@ sysmodule/00FF0000A53BB665.lnk
 *.lnk
 Client.7z
 SysmoduleRelease/
+*.d
+*.o
+*.lst
+*.map
