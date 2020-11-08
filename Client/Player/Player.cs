@@ -62,6 +62,16 @@ namespace SysDVR.Client.Player
 			player.Stop();
 		}
 
+		public override void MainThread()
+		{
+			if (HasVideo)
+			{
+				Console.WriteLine("Starting stream, close the player window to stop.");
+				player.UiThreadMain();
+			}
+			else base.MainThread();
+		}
+
 		protected override void Dispose(bool disposing)
 		{
 			base.Dispose(disposing);
@@ -209,7 +219,7 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		void RenderingThreadMain()
+		public void UiThreadMain()
 		{
 			SDL = InitSDL();
 
@@ -335,7 +345,6 @@ namespace SysDVR.Client.Player
 
 		public bool IsRunning => ReceiveThread != null;
 		Thread ReceiveThread;
-		Thread UIThread;
 		public void Start() 
 		{
 			if (!ShouldQuit)
@@ -349,9 +358,7 @@ namespace SysDVR.Client.Player
 			if (HasVideo)
 			{
 				ReceiveThread = new Thread(DecodeReceiverThreadMain);
-				UIThread = new Thread(RenderingThreadMain);
 				ReceiveThread.Start();
-				UIThread.Start();
 			}
 		}
 
@@ -364,8 +371,6 @@ namespace SysDVR.Client.Player
 
 			if (HasVideo)
 			{
-				UIThread.Join();
-				UIThread = null;
 				ReceiveThread.Join();
 				ReceiveThread = null;
 			}
