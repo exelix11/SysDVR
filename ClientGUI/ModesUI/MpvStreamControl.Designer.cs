@@ -99,7 +99,7 @@
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.button1);
 			this.Name = "MpvStreamControl";
-			this.Size = new System.Drawing.Size(485, 88);
+			this.Size = new System.Drawing.Size(485, 89);
 			this.Load += new System.EventHandler(this.MpvStreamControl_Load);
 			this.ResumeLayout(false);
 			this.PerformLayout();
