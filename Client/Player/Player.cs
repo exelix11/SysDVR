@@ -249,6 +249,8 @@ namespace SysDVR.Client.Player
 
 				DisplayRect.x = w / 2 - DisplayRect.w / 2;
 				DisplayRect.y = h / 2 - DisplayRect.h / 2;
+
+				SDL_RenderClear(SDL.Renderer);
 			}
 
 			CalculateDisplayRect();
@@ -264,8 +266,8 @@ namespace SysDVR.Client.Player
 					}
 				else
 				{
-					for (int i = 0; i < 10 && TextureConsumed; i++)
-						SDL_Delay(10);
+					for (int i = 0; i < 20 && TextureConsumed; i++)
+						Thread.Sleep(5); // If no new frame wait up to 100ms before polling events again
 					if (!TextureConsumed)
 						continue;
 				}
@@ -319,9 +321,8 @@ namespace SysDVR.Client.Player
 						TextureConsumed = false;
 					}
 
-					// TODO: This never seems to happen. figure out proper timings
-					if (Decoder.OutFrame->pkt_duration != 0)
-						Thread.Sleep((int)Decoder.OutFrame->pkt_duration);
+					// TODO: figure out synchronization. 
+					// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
 				}
 			}
 		}
