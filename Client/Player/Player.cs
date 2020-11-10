@@ -89,7 +89,13 @@ namespace SysDVR.Client.Player
 
 	class Player : IDisposable
 	{
+		readonly bool HasAudio;
+		readonly bool HasVideo;
+
 		protected bool ShouldQuit = true;
+
+		bool Running = false;
+		protected Thread ReceiveThread;
 		volatile bool TextureConsumed = true;
 
 		protected SDLContext SDL; // This must be initialized by the UI thread
@@ -285,7 +291,6 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-
 		unsafe void DecodeReceiverThreadMain()
 		{
 			while (!SDL.Initialized && !ShouldQuit)
@@ -327,8 +332,6 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		readonly bool HasAudio;
-		readonly bool HasVideo;
 		public Player(PlayerManager owner)
 		{
 			HasAudio = owner.HasAudio;
@@ -350,13 +353,12 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public bool IsRunning => ReceiveThread != null;
-		Thread ReceiveThread;
 		public void Start() 
 		{
-			if (!ShouldQuit)
+			if (Running)
 				throw new Exception("Already started");
 
+			Running = true;
 			ShouldQuit = false;
 
 			if (HasAudio)
@@ -381,6 +383,8 @@ namespace SysDVR.Client.Player
 				ReceiveThread.Join();
 				ReceiveThread = null;
 			}
+			
+			Running = false;
 		}
 
 		private bool disposedValue;
@@ -388,7 +392,7 @@ namespace SysDVR.Client.Player
 		{
 			if (!disposedValue)
 			{
-				if (IsRunning)
+				if (Running)
 					Stop();
 
 				// Dispose of unmanaged resources
