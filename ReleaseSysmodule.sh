@@ -7,7 +7,7 @@ mkdir -p SysmoduleRelease/Debug/
 
 cd SysDVRConfig
 make clean
-make
+make -j4
 
 cd ../sysmodule
 make clean
