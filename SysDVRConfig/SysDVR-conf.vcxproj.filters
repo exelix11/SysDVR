@@ -1,15 +1,108 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="source\main.c" />
-    <ClCompile Include="source\utils.c" />
+    <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\UI\UI.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\Image.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\glad.c">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\imgui\imgui.cpp">
+      <Filter>UI\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\imgui\imgui_demo.cpp">
+      <Filter>UI\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\imgui\imgui_draw.cpp">
+      <Filter>UI\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\imgui\imgui_impl_opengl3.cpp">
+      <Filter>UI\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\imgui\imgui_widgets.cpp">
+      <Filter>UI\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Platform\fs.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Platform\PlatformSwitch.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Platform\PlatformWin.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Platform\Windows\dirent.c">
+      <Filter>Platform\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="source\ipc.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\UI\UI.hpp">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\stb_image.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\Image.hpp">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\glad.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imgui.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imconfig.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imgui_impl_opengl3.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imgui_internal.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imstb_rectpack.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imstb_textedit.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\UI\imgui\imstb_truetype.h">
+      <Filter>UI\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Platform\fs.hpp">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Platform\PlatformFs.hpp">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Platform\Platform.hpp">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Platform\Windows\dirent.h">
+      <Filter>Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="source\ipc.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\utils.h" />
-    <ClInclude Include="source\ipc.h" />
+    <Filter Include="UI">
+      <UniqueIdentifier>{e4967012-92eb-45e4-a152-1d42bd5ec2cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{11449685-2be5-4362-989d-4f3b2ee9f9c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI\imgui">
+      <UniqueIdentifier>{0bddd2d4-5e00-4b4c-b49b-6a297e4985de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform\Windows">
+      <UniqueIdentifier>{31cf3b43-bb24-4acb-87d3-d48c02902303}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
