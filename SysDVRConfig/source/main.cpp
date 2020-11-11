@@ -108,7 +108,7 @@ static Result ConnectToSysmodule()
 	ImGui::NewLine();
 
 	CenterText("Connecting to SysDVR.");
-	CenterText("If you just turned on your console this may take up to 20 seconds");
+	CenterText("If you just turned on your console this may take up to 20 seconds.");
 	ImGui::NewLine();
 	CenterText("If you can't get past this screen SysDVR is probably not running, make sure your setup is correct.");
 
@@ -116,6 +116,37 @@ static Result ConnectToSysmodule()
 	UI::EndFrame();
 
 	return SysDvrConnect();
+}
+
+template <size_t N, typename T>
+static inline int ImGuiCenterButtons(T(&& buttons)[N])
+{
+	const auto str = [&buttons](size_t i) -> const char*
+	{
+		if constexpr (std::is_same<T, std::string>())
+			return buttons[i].c_str();
+		else if constexpr (std::is_same<T, const char*>())
+			return buttons[i];
+	};
+
+	const ImGuiStyle& style = GImGui->Style;
+	auto win = ImGui::GetWindowWidth();
+	float TotX = 0;
+	for (size_t i = 0; i < N; i++)
+	{
+		auto sz = ImGui::CalcTextSize(str(i), nullptr, false, win);
+		TotX += ImGui::CalcItemSize({}, sz.x + style.FramePadding.x * 2.0f, sz.y + style.FramePadding.y * 2.0f).x;
+	}
+	ImGui::SetCursorPosX((win / 2 - TotX / 2) - (N - 1) * style.FramePadding.x * 2);
+	int res = -1;
+	for (size_t i = 0; i < N; i++)
+	{
+		if (ImGui::Button(str(i)))
+			res = i;
+		if (i != N - 1)
+			ImGui::SameLine();
+	}
+	return res;
 }
 
 static void FatalError(const std::string_view message, const std::string_view secondline)
@@ -126,7 +157,6 @@ static void FatalError(const std::string_view message, const std::string_view se
 	{
 		Platform::GetInputs();
 
-		// Exit by pressing Start (aka Plus)
 		if (g_gamepad.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS)
 			App::SetShouldClose();
 
@@ -143,7 +173,8 @@ static void FatalError(const std::string_view message, const std::string_view se
 		CenterText("github.com/exelix11/SysDVR/wiki/Troubleshooting");
 
 		ImGui::NewLine();
-		CenterText("Press + to quit");
+		if (ImGuiCenterButtons({"  Click or press + to exit  "}) != -1)
+			App::SetShouldClose();
 
 		ImGui::End();
 		UI::EndFrame();
@@ -226,37 +257,6 @@ static bool ModeButton(std::string_view title, std::string_view description, Ima
 
 	IMGUI_TEST_ENGINE_ITEM_INFO(id, label, window->DC.LastItemStatusFlags);
 	return pressed;
-}
-
-template <size_t N, typename T>
-static inline int ImGuiCenterButtons(T(&& buttons)[N])
-{
-	const auto str = [&buttons](size_t i) -> const char*
-	{
-		if constexpr (std::is_same<T, std::string>())
-			return buttons[i].c_str();
-		else if constexpr (std::is_same<T, const char*>())
-			return buttons[i];
-	};
-
-	const ImGuiStyle& style = GImGui->Style;
-	auto win = ImGui::GetWindowWidth();
-	float TotX = 0;
-	for (size_t i = 0; i < N; i++)
-	{
-		auto sz = ImGui::CalcTextSize(str(i), nullptr, false, win);
-		TotX += ImGui::CalcItemSize({}, sz.x + style.FramePadding.x * 2.0f, sz.y + style.FramePadding.y * 2.0f).x;
-	}
-	ImGui::SetCursorPosX((win / 2 - TotX / 2) - (N - 1) * style.FramePadding.x * 2);
-	int res = -1;
-	for (size_t i = 0; i < N; i++)
-	{
-		if (ImGui::Button(str(i)))
-			res = i;
-		if (i != N - 1)
-			ImGui::SameLine();
-	}
-	return res;
 }
 
 enum class Scene{
