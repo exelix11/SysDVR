@@ -1,5 +1,12 @@
 #pragma once
 
+#ifdef USE_LOGGING
+#include <stdio.h>
+#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
+#else
+#define LOG(...) 
+#endif
+
 #define SYSDVR_CRASH_MODULEID 0x69
 
 #define ERR_RTSP_VIDEO MAKERESULT(SYSDVR_CRASH_MODULEID, 1)
