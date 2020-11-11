@@ -46,7 +46,12 @@ Debugging socket crash:
 
 #define CMD_GET_VER 100
 #define CMD_GET_MODE 101
-#define CMD_SET_USB TYPE_MODE_USB
-#define CMD_SET_TCP TYPE_MODE_TCP
-#define CMD_SET_RTSP TYPE_MODE_RTSP
-#define CMD_SET_OFF TYPE_MODE_NULL
+
+#define MODE_TO_CMD_SET(x) x
+#define CMD_SET_TO_MODE(x) x
+
+// Aliases provided for readability, use macro to convert mode <-> cmd in case the values ever change
+#define CMD_SET_USB MODE_TO_CMD_SET(TYPE_MODE_USB)
+#define CMD_SET_TCP MODE_TO_CMD_SET(TYPE_MODE_TCP)
+#define CMD_SET_RTSP MODE_TO_CMD_SET(TYPE_MODE_RTSP)
+#define CMD_SET_OFF MODE_TO_CMD_SET(TYPE_MODE_NULL)
