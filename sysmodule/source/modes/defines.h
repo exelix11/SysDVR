@@ -43,7 +43,7 @@ Debugging socket crash:
 #define ERR_SOCK_CONFIG_2 6
 
 //This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
-#define SYSDVR_VERSION 4
+#define SYSDVR_VERSION 5
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_RTSP 4
