@@ -169,12 +169,17 @@ bool ReadVideoStream()
 	return result;
 }
 
-void LaunchThread(Thread* t, ThreadFunc f, void* arg)
+void LaunchThreadEx(Thread* t, ThreadFunc f, void* arg, int prio, int cpuid)
 {
-	Result rc = threadCreate(t, f, arg, NULL, 0x2000, 0x3F, 3);
+	Result rc = threadCreate(t, f, arg, NULL, 0x2000, prio, cpuid);
 	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = threadStart(t);
 	if (R_FAILED(rc)) fatalThrow(rc);
+}
+
+void LaunchThread(Thread* t, ThreadFunc f, void* arg)
+{
+	LaunchThreadEx(t, f, arg, 0x3F, 3);
 }
 
 void JoinThread(Thread* t)
@@ -229,14 +234,24 @@ static void SetModeInternal(void* argmode)
 
 static Thread SwitchingThread;
 static void BeginSetMode(StreamMode* mode)
-{
+{	
 	if (IsSwitchingModes)
 		fatalThrow(ERR_MAIN_SWITCHING);
 
 	if (SwitchingThread.handle)
-		JoinThread(&SwitchingThread);
+	{
+		threadClose(&SwitchingThread);
+		SwitchingThread.handle = 0;
+	}
 
-	LaunchThread(&SwitchingThread, SetModeInternal, mode);
+	/* 
+		Using the default LaunchThread options seems to cause usbdsExit to hang forever, not sure why.
+		May want to change proprity to other threads too but would require too much testing to make sure it doesn't affect performances in games, 
+		the current settings are already battle-tested.
+		This is called by the IPC thread, we use another thread to set modes as it can get stuck.
+		By keeping the IPC thread free the settings app can show a proper error message instead of hanging while connecting.
+	*/
+	LaunchThreadEx(&SwitchingThread, SetModeInternal, mode, 0x2C, -2);
 }
 
 u32 GetCurrentMode()
@@ -292,7 +307,9 @@ static bool FileExists(const char* fname)
 
 int main(int argc, char* argv[])
 {
-	//freopen("/file.txt", "w", stdout);
+#ifdef USE_LOGGING
+	freopen("/sysdvr_log.txt", "w", stdout);
+#endif
 
 	Result rc = OpenGrcdForThread(GrcStream_Audio);
 	if (R_FAILED(rc)) fatalThrow(rc);
@@ -313,7 +330,6 @@ int main(int argc, char* argv[])
 		SetModeInternal(&TCP_MODE);
 
 	IpcThread();
-	SetModeInternal(NULL);
 #endif
 
 	grcdServiceClose(&grcdVideo);
