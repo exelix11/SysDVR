@@ -10,10 +10,10 @@
     <Company />
     <PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
     <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-    <Version>4.0.2</Version>
+    <Version>5.0.0</Version>
     <RootNamespace>SysDVR.Client</RootNamespace>
-    <AssemblyVersion>4.0.0.2</AssemblyVersion>
-    <FileVersion>4.0.0.2</FileVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <FileVersion>5.0.0.2</FileVersion>
     <Configurations>Debug;Release</Configurations>
     <ApplicationIcon>Client.ico</ApplicationIcon>
   </PropertyGroup>
@@ -30,8 +30,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="3.0.83-alpha-g94397fba28" />
     <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
+    <PackageReference Include="SysDVR.LibUsbDotNet" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
