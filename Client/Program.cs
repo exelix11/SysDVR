@@ -45,7 +45,7 @@ Stream sources:
 	The source mode is how the client connects to SysDVR running on the console. Make sure to set the correct mode with SysDVR-Settings.
 	`usb` : Connects to SysDVR via USB, used if no source is specified. Remember to setup the driver as explained on the guide
 	`bridge <IP address>` : Connects to SysDVR via network at the specified IP address, requires a strong connection between the PC and switch (LAN or full signal wireless)
-	Note that the `Stream over RTSP (simple network mode)` option in SysDVR-Settings does not require the client, you must open it directly in a video player.
+	Note that the `Simple network mode` option in SysDVR-Settings does not require the client, you must open it directly in a video player.
 
 Source options:
 	`--print-stats` : Logs received data size and errors
