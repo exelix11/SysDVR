@@ -102,9 +102,9 @@ namespace SysDVR.Client.Player
 		protected readonly SDLAudioContext SDLAudio;
 		protected readonly DecoderContext Decoder;
 
-		SDLContext InitSDL()
+		SDLContext InitSDLVideo()
 		{
-			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).Assert(SDL_GetError);
+			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
 
 			var win = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
 				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
@@ -132,6 +132,8 @@ namespace SysDVR.Client.Player
 		
 		unsafe SDLAudioContext InitSDLAudio(AudioStreamTarget target)
 		{
+			SDL_InitSubSystem(SDL_INIT_AUDIO).Assert(SDL_GetError);
+
 			var handle = GCHandle.Alloc(target);
 
 			SDL_AudioSpec wantedSpec = new SDL_AudioSpec()
@@ -227,7 +229,7 @@ namespace SysDVR.Client.Player
 
 		public void UiThreadMain()
 		{
-			SDL = InitSDL();
+			SDL = InitSDLVideo();
 
 			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
 
@@ -340,6 +342,8 @@ namespace SysDVR.Client.Player
 			if (!HasAudio && !HasVideo)
 				throw new Exception("Can't start a player with no streams");
 
+			SDL_Init(0).Assert(SDL_GetError);
+
 			if (HasVideo)
 			{
 				Decoder = InitDecoder();
@@ -376,7 +380,7 @@ namespace SysDVR.Client.Player
 			ShouldQuit = true;
 
 			if (HasAudio)
-				SDL_PauseAudio(0);
+				SDL_PauseAudio(1);
 
 			if (HasVideo)
 			{
