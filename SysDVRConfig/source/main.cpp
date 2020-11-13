@@ -156,6 +156,8 @@ static void FatalError(const std::string_view message, const std::string_view se
 	while (App::MainLoop())
 	{
 		Platform::GetInputs();
+		ImguiBindController();
+		Platform::ImguiBindings();
 
 		if (g_gamepad.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS)
 			App::SetShouldClose();
