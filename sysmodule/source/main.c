@@ -179,7 +179,7 @@ void LaunchThreadEx(Thread* t, ThreadFunc f, void* arg, int prio, int cpuid)
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg)
 {
-	LaunchThreadEx(t, f, arg, 0x3F, 3);
+	LaunchThreadEx(t, f, arg, 0x2D, 3);
 }
 
 void JoinThread(Thread* t)
