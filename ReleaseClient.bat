@@ -19,11 +19,11 @@ msbuild ClientGUI.csproj -p:Configuration=Release || goto error
 
 cd ..
 
-move Client\bin\Release\netcoreapp3.1\SysDVR-ClientGUI.exe Client\bin\Release\netcoreapp3.1\publish\SysDVR-ClientGUI.exe 
+move Client\bin\Release\net5.0\SysDVR-ClientGUI.exe Client\bin\Release\net5.0\publish\SysDVR-ClientGUI.exe 
 
-del Client\bin\Release\netcoreapp3.1\publish\*.pdb
+del Client\bin\Release\net5.0\publish\*.pdb
 
-7z a Client.7z .\Client\bin\Release\netcoreapp3.1\publish\*
+7z a Client.7z .\Client\bin\Release\net5.0\publish\*
 
 :error
 pause

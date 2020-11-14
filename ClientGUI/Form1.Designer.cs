@@ -37,6 +37,7 @@
 			this.rbChannelsAudio = new System.Windows.Forms.RadioButton();
 			this.rbChannelsVideo = new System.Windows.Forms.RadioButton();
 			this.groupBox2 = new System.Windows.Forms.GroupBox();
+			this.label2 = new System.Windows.Forms.Label();
 			this.tbTcpIP = new System.Windows.Forms.TextBox();
 			this.rbSrcUsb = new System.Windows.Forms.RadioButton();
 			this.rbSrcTcp = new System.Windows.Forms.RadioButton();
@@ -56,7 +57,6 @@
 			this.cbUsbWarn = new System.Windows.Forms.CheckBox();
 			this.StreamConfigPanel = new System.Windows.Forms.Panel();
 			this.cbAdvOpt = new System.Windows.Forms.CheckBox();
-			this.label2 = new System.Windows.Forms.Label();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.pAdvOptions.SuspendLayout();
@@ -67,7 +67,7 @@
 			// button1
 			// 
 			this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button1.Location = new System.Drawing.Point(551, 582);
+			this.button1.Location = new System.Drawing.Point(551, 600);
 			this.button1.Name = "button1";
 			this.button1.Size = new System.Drawing.Size(75, 23);
 			this.button1.TabIndex = 8;
@@ -78,7 +78,7 @@
 			// button2
 			// 
 			this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button2.Location = new System.Drawing.Point(416, 582);
+			this.button2.Location = new System.Drawing.Point(416, 600);
 			this.button2.Name = "button2";
 			this.button2.Size = new System.Drawing.Size(114, 23);
 			this.button2.TabIndex = 6;
@@ -89,7 +89,7 @@
 			// button3
 			// 
 			this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-			this.button3.Location = new System.Drawing.Point(530, 582);
+			this.button3.Location = new System.Drawing.Point(530, 600);
 			this.button3.Name = "button3";
 			this.button3.Size = new System.Drawing.Size(19, 23);
 			this.button3.TabIndex = 7;
@@ -162,6 +162,17 @@
 			this.groupBox2.TabStop = false;
 			this.groupBox2.Text = "Stream source";
 			// 
+			// label2
+			// 
+			this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.label2.Location = new System.Drawing.Point(11, 18);
+			this.label2.Name = "label2";
+			this.label2.Size = new System.Drawing.Size(604, 33);
+			this.label2.TabIndex = 0;
+			this.label2.Text = "Remember to switch to the correct mode with SysDVR-Settings on your console befor" +
+    "e beginning to stream. If you need help check the guide.";
+			// 
 			// tbTcpIP
 			// 
 			this.tbTcpIP.Location = new System.Drawing.Point(169, 75);
@@ -228,7 +239,7 @@
 			// button4
 			// 
 			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button4.Location = new System.Drawing.Point(6, 581);
+			this.button4.Location = new System.Drawing.Point(6, 599);
 			this.button4.Name = "button4";
 			this.button4.Size = new System.Drawing.Size(117, 23);
 			this.button4.TabIndex = 5;
@@ -246,7 +257,7 @@
 			this.pAdvOptions.Controls.Add(this.StreamConfigPanel);
 			this.pAdvOptions.Location = new System.Drawing.Point(6, 242);
 			this.pAdvOptions.Name = "pAdvOptions";
-			this.pAdvOptions.Size = new System.Drawing.Size(620, 333);
+			this.pAdvOptions.Size = new System.Drawing.Size(620, 351);
 			this.pAdvOptions.TabIndex = 5;
 			// 
 			// groupBox4
@@ -323,7 +334,7 @@
 			this.groupBox3.Controls.Add(this.cbStats);
 			this.groupBox3.Controls.Add(this.cbUsbLog);
 			this.groupBox3.Controls.Add(this.cbUsbWarn);
-			this.groupBox3.Location = new System.Drawing.Point(7, 262);
+			this.groupBox3.Location = new System.Drawing.Point(7, 280);
 			this.groupBox3.Name = "groupBox3";
 			this.groupBox3.Size = new System.Drawing.Size(608, 68);
 			this.groupBox3.TabIndex = 2;
@@ -377,7 +388,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.StreamConfigPanel.Location = new System.Drawing.Point(5, 120);
 			this.StreamConfigPanel.Name = "StreamConfigPanel";
-			this.StreamConfigPanel.Size = new System.Drawing.Size(610, 141);
+			this.StreamConfigPanel.Size = new System.Drawing.Size(610, 159);
 			this.StreamConfigPanel.TabIndex = 1;
 			// 
 			// cbAdvOpt
@@ -386,7 +397,7 @@
 			this.cbAdvOpt.AutoSize = true;
 			this.cbAdvOpt.Checked = true;
 			this.cbAdvOpt.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.cbAdvOpt.Location = new System.Drawing.Point(129, 585);
+			this.cbAdvOpt.Location = new System.Drawing.Point(129, 603);
 			this.cbAdvOpt.Name = "cbAdvOpt";
 			this.cbAdvOpt.Size = new System.Drawing.Size(141, 17);
 			this.cbAdvOpt.TabIndex = 4;
@@ -394,22 +405,11 @@
 			this.cbAdvOpt.UseVisualStyleBackColor = true;
 			this.cbAdvOpt.CheckedChanged += new System.EventHandler(this.cbAdvOpt_CheckedChanged);
 			// 
-			// label2
-			// 
-			this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.label2.Location = new System.Drawing.Point(11, 18);
-			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(604, 33);
-			this.label2.TabIndex = 0;
-			this.label2.Text = "Remember to switch to the correct mode with SysDVR-Settings on your console befor" +
-    "e beginning to stream. If you need help check the guide.";
-			// 
-			// AdvancedOptions
+			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(630, 609);
+			this.ClientSize = new System.Drawing.Size(630, 627);
 			this.Controls.Add(this.cbAdvOpt);
 			this.Controls.Add(this.pAdvOptions);
 			this.Controls.Add(this.button4);
@@ -422,10 +422,10 @@
 			this.Controls.Add(this.button1);
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
-			this.MaximumSize = new System.Drawing.Size(646, 648);
+			this.MaximumSize = new System.Drawing.Size(646, 666);
 			this.MinimizeBox = false;
 			this.MinimumSize = new System.Drawing.Size(646, 309);
-			this.Name = "AdvancedOptions";
+			this.Name = "Form1";
 			this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
 			this.Text = "<Set in code>";
 			this.Load += new System.EventHandler(this.Form1_Load);
