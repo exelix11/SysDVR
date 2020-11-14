@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -54,9 +55,20 @@ namespace SysDVRClientGUI
 #endif
 
 			if (Utils.FindExecutableInPath("dotnet.exe") == null)
-				if (MessageBox.Show(".NET core 3.1 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-					System.Diagnostics.Process.Start("https://dotnet.microsoft.com/download");
-			
+			{
+				if (MessageBox.Show(".NET 5 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+					Process.Start("https://dotnet.microsoft.com/download");
+				else
+					this.Close();
+			}
+			else if (!Utils.IsDotnet5Installed())
+			{
+				if (MessageBox.Show("It seems you're running an outdated version of .net core. Since SysDVR 5.0 the client app requires the .NET 5 runtime. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+					Process.Start("https://dotnet.microsoft.com/download");
+				else 
+					MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.") ;
+			}
+
 			rbStreamRtsp.Checked = true;
 			rbChannelsBoth.Checked = true;
 			rbPlay.Checked = true;
@@ -240,5 +252,23 @@ namespace SysDVRClientGUI
 				.Split(Path.PathSeparator)
 				.Select(x => Path.Combine(x, fileName))
 				.FirstOrDefault(x => File.Exists(x));
+
+		public static bool IsDotnet5Installed()
+		{
+			Process proc = new Process();
+			proc.StartInfo = new ProcessStartInfo()
+			{
+				FileName = "dotnet",
+				Arguments = "--info",
+				CreateNoWindow = true,
+				RedirectStandardOutput = true,
+				UseShellExecute = false
+			};
+			proc.Start();
+			proc.WaitForExit();
+			var s = proc.StandardOutput.ReadToEnd();
+
+			return s.Contains("NETCore.App 5.");
+		}
 	}
 }
