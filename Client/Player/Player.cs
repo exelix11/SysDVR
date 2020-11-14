@@ -379,8 +379,8 @@ namespace SysDVR.Client.Player
 		{
 			ShouldQuit = true;
 
-			if (HasAudio)
-				SDL_PauseAudio(1);
+			//if (HasAudio)
+			//	SDL_PauseAudio(1); this seems to hang sometimes for no apparent reason
 
 			if (HasVideo)
 			{
