@@ -19,7 +19,7 @@ namespace SysDVRClientGUI
 
 		public string GetCommandLine()
 		{
-			return "";
+			return cbHwAcc.Checked ? "--hw-acc" : "";
 		}
 
 		public string GetExtraCmd()
