@@ -35,6 +35,9 @@ namespace SysDVR.Client.Player
 		public AVCodecContext* CodecCtx;
 		public AVFrame* OutFrame;
 
+		public SwsContext* ConverterContext;
+		public AVFrame* ConvertedFrame;
+
 		public object CodecLock;
 	}
 
@@ -43,11 +46,11 @@ namespace SysDVR.Client.Player
 		readonly Player player;
 		private bool disposedValue;
 
-		public PlayerManager(bool HasVideo, bool HasAudio) : base(
+		public PlayerManager(bool HasVideo, bool HasAudio, bool noAcc, string codecName) : base(
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
-			player = new Player(this);
+			player = new Player(this, noAcc, codecName);
 		}
 
 		public override void Begin()
@@ -157,19 +160,19 @@ namespace SysDVR.Client.Player
 			{
 				swrctx = swr_alloc();
 				if (swrctx == null)
-					throw new Exception();
+					throw new Exception("Couldn't allocate the audio converter context");
 
-				av_opt_set_int(swrctx, "in_channel_layout", AV_CH_LAYOUT_STEREO, 0).Assert();
-				av_opt_set_int(swrctx, "in_sample_rate", StreamInfo.AudioSampleRate, 0).Assert();
-				av_opt_set_sample_fmt(swrctx, "in_sample_fmt", AVSampleFormat.AV_SAMPLE_FMT_S16, 0).Assert();
+				av_opt_set_int(swrctx, "in_channel_layout", AV_CH_LAYOUT_STEREO, 0).Assert("av_opt_set_int in_channel_layout");
+				av_opt_set_int(swrctx, "in_sample_rate", StreamInfo.AudioSampleRate, 0).Assert("av_opt_set_int in_sample_rate");
+				av_opt_set_sample_fmt(swrctx, "in_sample_fmt", AVSampleFormat.AV_SAMPLE_FMT_S16, 0).Assert("av_opt_set_sample_fmt in_sample_fmt");
 
 				if (spec.channels != 1 && spec.channels != 2)
 					throw new Exception("Invalid channel count");
 
 				av_opt_set_int(swrctx, "out_channel_layout",
-					spec.channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO, 0).Assert();
+					spec.channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO, 0).Assert("av_opt_set_int out_channel_layout");
 
-				av_opt_set_int(swrctx, "out_sample_rate", spec.freq, 0).Assert();
+				av_opt_set_int(swrctx, "out_sample_rate", spec.freq, 0).Assert("av_opt_set_int out_sample_rate");
 
 				av_opt_set_sample_fmt(swrctx, "out_sample_fmt", spec.format switch
 				{
@@ -177,9 +180,9 @@ namespace SysDVR.Client.Player
 					AUDIO_S32 => AVSampleFormat.AV_SAMPLE_FMT_S32,
 					AUDIO_F32 => AVSampleFormat.AV_SAMPLE_FMT_FLT,
 					_ => throw new NotImplementedException(),
-				}, 0).Assert();
+				}, 0).Assert("av_opt_set_sample_fmt out_sample_fmt");
 
-				swr_init(swrctx).Assert();
+				swr_init(swrctx).Assert("Couldn't initialize the audio converter");
 			}
 
 			return new SDLAudioContext
@@ -199,30 +202,94 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		unsafe DecoderContext InitDecoder()
-		{
-			var codec = avcodec_find_decoder(AVCodecID.AV_CODEC_ID_H264);
+		unsafe DecoderContext InitDecoder(string forceDecoder)
+		{				
+			var codec = avcodec_find_decoder_by_name("h264_cuvid");
+
 			if (codec == null)
-				throw new Exception();
+			{
+				Console.WriteLine($"ERROR: The codec {forceDecoder} Couldn't be initialized, falling back to default decoder.");
+				return InitDecoder(false);
+			}
+			else return InitDecoder(codec);
+		}
+
+		unsafe DecoderContext InitDecoder(bool noAcc)
+		{
+			AVCodec* codec = null;
+
+			if (!noAcc)
+			{
+				codec = avcodec_find_decoder_by_name("h264_qsv");
+
+				if (codec == null)
+					codec = avcodec_find_decoder_by_name("h264_cuvid");
+			}
+
+			if (codec == null)
+				codec = avcodec_find_decoder(AVCodecID.AV_CODEC_ID_H264);			
+			
+			if (codec == null)
+				throw new Exception("Couldn't find any compatible video codecs");
+
+			return InitDecoder(codec);
+		}
+
+		unsafe DecoderContext InitDecoder(AVCodec* codec)
+		{
+			if (codec == null)
+				throw new Exception("Codec can't be null");
+
+			Console.WriteLine($"Initializing video player with {Marshal.PtrToStringAnsi((IntPtr)codec->name)} codec.");
 
 			var codectx = avcodec_alloc_context3(codec);
 			if (codectx == null)
-				throw new Exception();
+				throw new Exception("Couldn't allocate a codec context");
 
 			codectx->width = StreamInfo.VideoWidth;
 			codectx->height = StreamInfo.VideoHeight;
-			codectx->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
+			
+			codectx->pix_fmt = 
+				codec->pix_fmts == null || *codec->pix_fmts == AVPixelFormat.AV_PIX_FMT_NONE ? // If the codec doesn't provide any format
+				AVPixelFormat.AV_PIX_FMT_YUV420P : // Use ours
+				*codec->pix_fmts; // Otherwise use codec's
 
-			avcodec_open2(codectx, codec, null).Assert();
+			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec");
 
 			var pic = av_frame_alloc();
 			if (pic == null)
-				throw new Exception();
+				throw new Exception("Couldn't allocate the decoding frame");
+
+			AVFrame* dstframe = null;
+			SwsContext* swsContext = null;
+			// If we're using a format we can't display initialize the converter
+			if (codectx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
+			{
+				dstframe = av_frame_alloc();
+
+				if (dstframe == null)
+					throw new Exception("Couldn't allocate the the converted frame");
+
+				dstframe->format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
+				dstframe->width = StreamInfo.VideoWidth;
+				dstframe->height = StreamInfo.VideoHeight;
+
+				av_frame_get_buffer(dstframe, 32).Assert("Couldn't allocate the buffer for the converted frame");
+
+				swsContext = sws_getContext(codectx->width, codectx->height, codectx->pix_fmt,
+											dstframe->width, dstframe->height, AVPixelFormat.AV_PIX_FMT_YUV420P,
+											SWS_BILINEAR, null, null, null);
+
+				if (swsContext == null)
+					throw new Exception("Couldn't initialize the converter");
+			}
 
 			return new DecoderContext()
 			{
 				CodecCtx = codectx,
 				OutFrame = pic,
+				ConverterContext = swsContext,
+				ConvertedFrame = dstframe,
 				CodecLock = new object()
 			};
 		}
@@ -298,11 +365,15 @@ namespace SysDVR.Client.Player
 			while (!SDL.Initialized && !ShouldQuit)
 				Thread.Sleep(100);
 
+			// Copy state to locals for faster access
+			var sdl = SDL;
+			var dec = Decoder;
+
 			while (!ShouldQuit)
 			{
 				int ret = 0;
-				lock (Decoder.CodecLock)
-					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.OutFrame);
+				lock (dec.CodecLock)
+					ret = avcodec_receive_frame(dec.CodecCtx, dec.OutFrame);
 
 				if (ret == AVERROR(EAGAIN))
 					Thread.Sleep(2);
@@ -316,11 +387,17 @@ namespace SysDVR.Client.Player
 					if (ShouldQuit)
 						break;
 
-					lock (SDL.TextureLock)
-					{
-						var pic = Decoder.OutFrame;
+					var pic = dec.OutFrame;
 
-						SDL_UpdateYUVTexture(SDL.Texture, in SDL.TextureSize,
+					if (dec.ConverterContext != null)
+					{
+						sws_scale(dec.ConverterContext, pic->data, pic->linesize, 0, pic->height, dec.ConvertedFrame->data, dec.ConvertedFrame->linesize);
+						pic = dec.ConvertedFrame;
+					}
+
+					lock (sdl.TextureLock)
+					{
+						SDL_UpdateYUVTexture(sdl.Texture, in sdl.TextureSize,
 							(IntPtr)pic->data[0], pic->linesize[0],
 							(IntPtr)pic->data[1], pic->linesize[1],
 							(IntPtr)pic->data[2], pic->linesize[2]);
@@ -334,7 +411,7 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public Player(PlayerManager owner)
+		public Player(PlayerManager owner, bool noAcc, string codecName)
 		{
 			HasAudio = owner.HasAudio;
 			HasVideo = owner.HasVideo;
@@ -346,7 +423,8 @@ namespace SysDVR.Client.Player
 
 			if (HasVideo)
 			{
-				Decoder = InitDecoder();
+				Decoder = codecName == null ? InitDecoder(noAcc) : InitDecoder(codecName);
+				
 				((H264StreamTarget)owner.VideoTarget).UseContext(Decoder);
 			}
 
@@ -446,6 +524,12 @@ namespace SysDVR.Client.Player
 		{
 			if (code != 0)
 				throw new Exception($"Asserition failed: {code} {(MessageFun?.Invoke() ?? "Unknown error")}");
+		}
+
+		public static void Assert(this int code, string Message)
+		{
+			if (code != 0)
+				throw new Exception($"Asserition failed: {code} {Message}");
 		}
 
 		public static IntPtr Assert(this IntPtr val, Func<string> MessageFun = null)

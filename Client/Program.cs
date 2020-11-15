@@ -59,8 +59,11 @@ Stream options:
 
 Output options:
 	If you don't specify any option the built-in video player will be used.
-	
-	RTSP Options:
+	Built-in player options:
+	`--no-acc` : Don't try to initialize hardware acceleration for decoding
+	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-codecs
+
+	RTSP options:
 	`--rtsp` : Relay the video feed via RTSP. SysDVR-Client will act as an RTSP server, you can connect to it with RTSP with any compatible video player like mpv or vlc
 	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
 	`--rtsp-any-addr` : By default only the pc running SysDVR-Client can connect to the RTSP stream, enable this to allow connections from other devices in your local network
@@ -71,6 +74,11 @@ Output options:
 	
 	Storage options
 	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.	
+
+Extra options:
+	These options will not stream, they just print the output and then quit.
+	`--show-codecs` : Prints all video codecs available for the built-in video player
+	`--version` : Prints the version
 
 Command examples:
 	SysDVR-Client.exe usb
@@ -127,6 +135,14 @@ Command examples:
 				if (int.TryParse(a, out int res))
 					return res;
 				return null;
+			}
+
+			if (HasArg("--version"))
+				return;
+			else if (HasArg("--show-codecs"))
+			{
+				Player.CodecUtils.PrintAllCodecs();
+				return;
 			}
 
 			if (HasArg("--usb-warn")) UsbContext.Logging = UsbContext.LogLevel.Warning;
@@ -187,7 +203,7 @@ Command examples:
 			}
 			else // Stream to the built-in player by default
 			{
-				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio);
+				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--no-acc"), ArgValue("--decoder"));
 			}
 
 			if (args.Length == 0 || args[0] == "usb")
@@ -220,6 +236,11 @@ Command examples:
 				StreamManager.VideoSource = new StubSource();
 				StreamManager.AudioSource = new StubSource();
 			}
+			else if (args[0] == "record")
+			{
+				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video);
+				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio);
+			}
 #endif
 			else
 			{
@@ -228,6 +249,7 @@ Command examples:
 			}
 
 			StartStreaming(StreamManager);
+			Environment.Exit(0);
 		}
 
 		static void StartStreaming(BaseStreamManager Streams)
