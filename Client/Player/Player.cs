@@ -7,6 +7,7 @@ using FFmpeg.AutoGen;
 using static FFmpeg.AutoGen.ffmpeg;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace SysDVR.Client.Player
 {
@@ -46,11 +47,11 @@ namespace SysDVR.Client.Player
 		readonly Player player;
 		private bool disposedValue;
 
-		public PlayerManager(bool HasVideo, bool HasAudio, bool noAcc, string codecName) : base(
+		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName) : base(
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
-			player = new Player(this, noAcc, codecName);
+			player = new Player(this, hwAcc, codecName);
 		}
 
 		public override void Begin()
@@ -211,19 +212,27 @@ namespace SysDVR.Client.Player
 				Console.WriteLine($"ERROR: The codec {forceDecoder} Couldn't be initialized, falling back to default decoder.");
 				return InitDecoder(true);
 			}
-			else return InitDecoder(codec);
+			else
+			{
+				Console.WriteLine("You manually set a video decoder with the --decoder option, in case of issues remove it to use the default one.");
+				return InitDecoder(codec);
+			}
 		}
 
-		unsafe DecoderContext InitDecoder(bool noAcc)
+		unsafe DecoderContext InitDecoder(bool hwAcc)
 		{
 			AVCodec* codec = null;
 
-			if (!noAcc)
+			if (hwAcc)
 			{
-				codec = avcodec_find_decoder_by_name("h264_qsv");
+				var name = CodecUtils.GetH264Decoders().Where(x => x.Name != "h264").FirstOrDefault();
 
-				if (codec == null)
-					codec = avcodec_find_decoder_by_name("h264_cuvid");
+				if (name != null)
+				{
+					codec = avcodec_find_decoder_by_name(name.Name);
+					if (codec != null)
+						Console.WriteLine("Attempting to initialize the video player with an hardware accelerated video decoder, in case of issues try removing the --hw-acc option do disable this.");
+				}
 			}
 
 			if (codec == null)
@@ -248,13 +257,14 @@ namespace SysDVR.Client.Player
 
 			codectx->width = StreamInfo.VideoWidth;
 			codectx->height = StreamInfo.VideoHeight;
-			
+
+			// Actually no clue about this part, for the h264 codec assigning the pixel format works fine, for h264_v4l2m2m on rpi it doesn't
 			codectx->pix_fmt = 
 				codec->pix_fmts == null || *codec->pix_fmts == AVPixelFormat.AV_PIX_FMT_NONE ? // If the codec doesn't provide any format
 				AVPixelFormat.AV_PIX_FMT_YUV420P : // Use ours
-				*codec->pix_fmts; // Otherwise use codec's
+				*codec->pix_fmts; // Otherwise use the codec's
 
-			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec");
+			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec.");
 
 			var pic = av_frame_alloc();
 			if (pic == null)
@@ -411,7 +421,7 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public Player(PlayerManager owner, bool noAcc, string codecName)
+		public Player(PlayerManager owner, bool hwAcc, string codecName)
 		{
 			HasAudio = owner.HasAudio;
 			HasVideo = owner.HasVideo;
@@ -423,7 +433,7 @@ namespace SysDVR.Client.Player
 
 			if (HasVideo)
 			{
-				Decoder = codecName == null ? InitDecoder(noAcc) : InitDecoder(codecName);
+				Decoder = codecName == null ? InitDecoder(hwAcc) : InitDecoder(codecName);
 				
 				((H264StreamTarget)owner.VideoTarget).UseContext(Decoder);
 			}

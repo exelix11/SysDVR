@@ -19,7 +19,7 @@ namespace SysDVR.Client
 
 		public RecordedSource(StreamKind kind)
 		{
-			Source = new BinaryReader(File.OpenRead(kind == StreamKind.Video ? "F:/dio/video.h264" : "F:/dio/audio.raw"));
+			Source = new BinaryReader(File.OpenRead(kind == StreamKind.Video ? "video.h264" : "audio.raw"));
 		}
 
 		public void Flush()
