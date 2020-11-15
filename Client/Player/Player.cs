@@ -204,12 +204,12 @@ namespace SysDVR.Client.Player
 
 		unsafe DecoderContext InitDecoder(string forceDecoder)
 		{				
-			var codec = avcodec_find_decoder_by_name("h264_cuvid");
+			var codec = avcodec_find_decoder_by_name(forceDecoder);
 
 			if (codec == null)
 			{
 				Console.WriteLine($"ERROR: The codec {forceDecoder} Couldn't be initialized, falling back to default decoder.");
-				return InitDecoder(false);
+				return InitDecoder(true);
 			}
 			else return InitDecoder(codec);
 		}
