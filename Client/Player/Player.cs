@@ -244,12 +244,23 @@ namespace SysDVR.Client.Player
 			return InitDecoder(codec);
 		}
 
+		// Some codecs such as h265 and h264_v4l2m2m don't expose the format they support as pix_fmts so look them up manually
+		// Todo: add more codecs that cause issues
+		private static AVPixelFormat GetPixFormat(string codecName) => codecName switch 
+		{
+			"h264_v4l2m2m" => AVPixelFormat.AV_PIX_FMT_NV12,
+			"h264" => AVPixelFormat.AV_PIX_FMT_YUV420P,
+			_ => AVPixelFormat.AV_PIX_FMT_NV12
+		};
+
 		unsafe DecoderContext InitDecoder(AVCodec* codec)
 		{
 			if (codec == null)
 				throw new Exception("Codec can't be null");
 
-			Console.WriteLine($"Initializing video player with {Marshal.PtrToStringAnsi((IntPtr)codec->name)} codec.");
+			string codecName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
+
+			Console.WriteLine($"Initializing video player with {codecName} codec.");
 
 			var codectx = avcodec_alloc_context3(codec);
 			if (codectx == null)
@@ -258,13 +269,17 @@ namespace SysDVR.Client.Player
 			codectx->width = StreamInfo.VideoWidth;
 			codectx->height = StreamInfo.VideoHeight;
 
-			// Actually no clue about this part, for the h264 codec assigning the pixel format works fine, for h264_v4l2m2m on rpi it doesn't
+			// Actually no clue about this part, what's the right format to set when an encoder doesn't provide any ?
 			codectx->pix_fmt = 
 				codec->pix_fmts == null || *codec->pix_fmts == AVPixelFormat.AV_PIX_FMT_NONE ? // If the codec doesn't provide any format
-				AVPixelFormat.AV_PIX_FMT_YUV420P : // Use ours
+				GetPixFormat(codecName) : // Use ours
 				*codec->pix_fmts; // Otherwise use the codec's
 
 			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec.");
+
+#if DEBUG
+			Console.WriteLine($"Using pixel format {codectx->pix_fmt}");
+#endif
 
 			var pic = av_frame_alloc();
 			if (pic == null)
