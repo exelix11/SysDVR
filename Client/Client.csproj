@@ -39,4 +39,10 @@
     <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Help.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
