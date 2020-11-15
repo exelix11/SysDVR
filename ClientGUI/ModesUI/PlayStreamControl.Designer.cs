@@ -28,32 +28,34 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.label2 = new System.Windows.Forms.Label();
+			this.cbHwAcc = new System.Windows.Forms.CheckBox();
 			this.SuspendLayout();
 			// 
-			// label2
+			// cbHwAcc
 			// 
-			this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+			this.cbHwAcc.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.label2.Location = new System.Drawing.Point(3, 6);
-			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(427, 75);
-			this.label2.TabIndex = 4;
-			this.label2.Text = "There are no configurable options for this mode";
+			this.cbHwAcc.Location = new System.Drawing.Point(5, 5);
+			this.cbHwAcc.Name = "cbHwAcc";
+			this.cbHwAcc.Size = new System.Drawing.Size(429, 43);
+			this.cbHwAcc.TabIndex = 5;
+			this.cbHwAcc.Text = "Use hardware acceleration for decoding (not recommended as auto detection may fai" +
+    "l, it\'s better to use the --decoder option from cmd)";
+			this.cbHwAcc.UseVisualStyleBackColor = true;
 			// 
 			// PlayStreamControl
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.Controls.Add(this.label2);
+			this.Controls.Add(this.cbHwAcc);
 			this.Name = "PlayStreamControl";
-			this.Size = new System.Drawing.Size(433, 90);
+			this.Size = new System.Drawing.Size(437, 90);
 			this.ResumeLayout(false);
 
 		}
 
 		#endregion
-
-		private System.Windows.Forms.Label label2;
+		private System.Windows.Forms.CheckBox cbHwAcc;
 	}
 }
