@@ -60,7 +60,7 @@ Stream options:
 Output options:
 	If you don't specify any option the built-in video player will be used.
 	Built-in player options:
-	`--no-acc` : Don't try to initialize hardware acceleration for decoding
+	`--hw-acc` : Try to use hardware acceleration for decoding, this option uses the first detected decoder, it's recommended to manually specify the decoder name with --decoder
 	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-codecs
 
 	RTSP options:
@@ -77,7 +77,7 @@ Output options:
 
 Extra options:
 	These options will not stream, they just print the output and then quit.
-	`--show-codecs` : Prints all video codecs available for the built-in video player
+	`--show-decoders` : Prints all video codecs available for the built-in video player
 	`--version` : Prints the version
 
 Command examples:
@@ -139,7 +139,7 @@ Command examples:
 
 			if (HasArg("--version"))
 				return;
-			else if (HasArg("--show-codecs"))
+			else if (HasArg("--show-decoders"))
 			{
 				Player.CodecUtils.PrintAllCodecs();
 				return;
@@ -203,7 +203,7 @@ Command examples:
 			}
 			else // Stream to the built-in player by default
 			{
-				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--no-acc"), ArgValue("--decoder"));
+				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--hw-acc"), ArgValue("--decoder"));
 			}
 
 			if (args.Length == 0 || args[0] == "usb")
