@@ -15,34 +15,41 @@ namespace SysDVR.Client.Player
 	{
 		public volatile bool Initialized;
 
-		public IntPtr Texture;
-		public IntPtr Renderer;
-		public IntPtr Window;
+		public IntPtr Texture { get; init; }
+		public IntPtr Renderer { get; init; }
+		public IntPtr Window { get; init; }
 		public SDL_Rect TextureSize;
 
-		public object TextureLock;
+		public object TextureLock { get; init; }
 	}
 
 	unsafe struct SDLAudioContext
 	{
-		public SwrContext* ConverterCtx;
-		public SDL_AudioSpec AudioSpec;
-		public int ChannelCount, SampleSize, SampleRate;
-		public GCHandle TargetHandle;
+		public SwrContext* ConverterCtx { get; init; }
+		public SDL_AudioSpec AudioSpec { get; init; }
+		public int ChannelCount { get; init; }
+		public int SampleSize { get; init; }
+		public int SampleRate { get; init; }
+		public GCHandle TargetHandle { get; init; }
 	}
 
-	unsafe struct DecoderContext
+	unsafe class DecoderContext
 	{
-		public AVCodecContext* CodecCtx;
-		public AVFrame* OutFrame;
+		public AVCodecContext* CodecCtx { get; init; }
 
-		public object CodecLock;
+		public AVFrame* RenderFrame;
+		public AVFrame* ReceiveFrame;
+
+		public AVFrame* Frame1 { get; init; }
+		public AVFrame* Frame2 { get; init; }
+
+		public object CodecLock { get; init; }
 	}
 
 	unsafe struct FormatConverterContext
 	{
-		public SwsContext* Converter;
-		public AVFrame* Frame;	
+		public SwsContext* Converter { get; init; }
+		public AVFrame* Frame { get; init; }	
 	}
 
 	class PlayerManager : BaseStreamManager, IDisposable
@@ -105,10 +112,10 @@ namespace SysDVR.Client.Player
 		protected Thread ReceiveThread;
 		volatile bool TextureConsumed = true;
 
+		protected DecoderContext Decoder; // Need to swap the target frames
 		protected SDLContext SDL; // This must be initialized by the UI thread
 		protected FormatConverterContext Converter; // Initialized only if needed
 		protected readonly SDLAudioContext SDLAudio;
-		protected readonly DecoderContext Decoder;
 
 		static SDLContext InitSDLVideo()
 		{
@@ -122,6 +129,9 @@ namespace SysDVR.Client.Player
 				SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC |
 				SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE)
 				.Assert(SDL_GetError);
+
+			SDL_GetRendererInfo(render, out var info);
+			Console.WriteLine($"Initialized SDL with renderer: {Marshal.PtrToStringAnsi(info.name)}");
 
 			var tex = SDL_CreateTexture(render, SDL_PIXELFORMAT_IYUV,
 				(int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
@@ -278,10 +288,17 @@ namespace SysDVR.Client.Player
 			if (pic == null)
 				throw new Exception("Couldn't allocate the decoding frame");
 
+			var pic2 = av_frame_alloc();
+			if (pic2 == null)
+				throw new Exception("Couldn't allocate the decoding frame");
+
 			return new DecoderContext()
 			{
 				CodecCtx = codectx,
-				OutFrame = pic,
+				Frame1 = pic,
+				Frame2 = pic2,
+				ReceiveFrame = pic,
+				RenderFrame = pic2,
 				CodecLock = new object()
 			};
 		}
@@ -318,7 +335,7 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		public void UiThreadMain()
+		unsafe public void UiThreadMain()
 		{
 			SDL = InitSDLVideo();
 
@@ -357,12 +374,12 @@ namespace SysDVR.Client.Player
 			while (!ShouldQuit)
 			{
 				if (!TextureConsumed)
-					lock (SDL.TextureLock)
-					{
-						SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
-						SDL_RenderPresent(SDL.Renderer);
-						TextureConsumed = true;
-					}
+				{
+					UpdateSDLTexture(Decoder.RenderFrame);
+					SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
+					SDL_RenderPresent(SDL.Renderer);
+					TextureConsumed = true;
+				}
 				else
 				{
 					for (int i = 0; i < 20 && TextureConsumed; i++)
@@ -388,23 +405,46 @@ namespace SysDVR.Client.Player
 		static int av_ceil_rshift(int a, int b) =>
 			-((-(a)) >> (b));
 
+		unsafe void UpdateSDLTexture(AVFrame* pic)
+		{
+			if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
+			{
+				SDL_UpdateYUVTexture(SDL.Texture, in SDL.TextureSize,
+					(IntPtr)pic->data[0], pic->linesize[0],
+					(IntPtr)pic->data[1], pic->linesize[1],
+					(IntPtr)pic->data[2], pic->linesize[2]);
+			}
+#if DEBUG
+			// Not sure if this is needed but ffplay source does handle this case, all my tests had positive linesize
+			else if (pic->linesize[0] < 0 && pic->linesize[1] < 0 && pic->linesize[2] < 0)
+			{
+				Console.WriteLine("Negative Linesize");
+				SDL_UpdateYUVTexture(SDL.Texture, in SDL.TextureSize,
+					(IntPtr)(pic->data[0] + pic->linesize[0] * (pic->height - 1)), -pic->linesize[0],
+					(IntPtr)(pic->data[1] + pic->linesize[1] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[1],
+					(IntPtr)(pic->data[2] + pic->linesize[2] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[2]);
+			}
+#endif
+			// While this doesn't seem to be handled in ffplay but the texture can be non-planar with some decoders
+			else if (pic->linesize[0] > 0 && pic->linesize[1] == 0)
+			{
+				SDL_UpdateTexture(SDL.Texture, ref SDL.TextureSize, (IntPtr)pic->data[0], pic->linesize[0]);
+			}
+			else Console.WriteLine($"Error: Non-positive planar linesizes are not supported, open an issue on Github. {pic->linesize[0]} {pic->linesize[1]} {pic->linesize[2]}");
+		}
+
 		unsafe void DecodeReceiverThreadMain()
 		{
 			while (!SDL.Initialized && !ShouldQuit)
 				Thread.Sleep(100);
-
-			// Copy state to locals for faster access
-			var sdl = SDL;
-			var dec = Decoder;
-			var conv = Converter;
 
 			bool converterCheck = false;
 
 			while (!ShouldQuit)
 			{
 				int ret = 0;
-				lock (dec.CodecLock)
-					ret = avcodec_receive_frame(dec.CodecCtx, dec.OutFrame);
+				lock (Decoder.CodecLock)
+					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
 
 				if (ret == AVERROR(EAGAIN))
 					Thread.Sleep(2);
@@ -413,14 +453,18 @@ namespace SysDVR.Client.Player
 				else
 				{
 					// On the first frame we get check if we need to use a converter
-					if (!converterCheck && dec.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
+					if (!converterCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
 					{
 #if DEBUG
-						Console.WriteLine($"Using pixel format {dec.CodecCtx->pix_fmt}");
+						Console.WriteLine($"Using pixel format {Decoder.CodecCtx->pix_fmt}");
 #endif
 						converterCheck = true;
-						if (dec.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
-							conv = Converter = InitializeConverter(dec.CodecCtx);
+						if (Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
+						{
+							Converter = InitializeConverter(Decoder.CodecCtx);
+							// Render to the converted frame
+							Decoder.RenderFrame = Converter.Frame;
+						}
 					}
 
 					while (!TextureConsumed && !ShouldQuit)
@@ -429,43 +473,23 @@ namespace SysDVR.Client.Player
 					if (ShouldQuit)
 						break;
 
-					var pic = dec.OutFrame;
-
-					if (conv.Converter != null)
+					if (Converter.Converter != null)
 					{
-						sws_scale(conv.Converter, pic->data, pic->linesize, 0, pic->height, conv.Frame->data, conv.Frame->linesize);
-						pic = conv.Frame;
+						var source = Decoder.ReceiveFrame;
+						var target = Decoder.RenderFrame;
+						sws_scale(Converter.Converter, source->data, source->linesize, 0, source->height, target->data, target->linesize);
 					}
-
-					lock (sdl.TextureLock)
+					else
 					{
-						if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
-						{
-							SDL_UpdateYUVTexture(sdl.Texture, in sdl.TextureSize,
-								(IntPtr)pic->data[0], pic->linesize[0],
-								(IntPtr)pic->data[1], pic->linesize[1],
-								(IntPtr)pic->data[2], pic->linesize[2]);
-						}
-#if DEBUG
-						// Not sure if this is needed but ffplay source does handle this case, all my tests had positive linesize
-						else if (pic->linesize[0] < 0 && pic->linesize[1] < 0 && pic->linesize[2] < 0)
-						{
-							Console.WriteLine("Negative Linesize");
-							SDL_UpdateYUVTexture(sdl.Texture, in sdl.TextureSize,
-								(IntPtr)(pic->data[0] + pic->linesize[0] * (pic->height - 1)), -pic->linesize[0],
-								(IntPtr)(pic->data[1] + pic->linesize[1] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[1],
-								(IntPtr)(pic->data[2] + pic->linesize[2] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[2]);
-						}
-#endif
-						// While this doesn't seem to be handled in ffplay but the texture can be non-planar with some decoders
-						else if (pic->linesize[0] > 0 && pic->linesize[1] == 0)
-						{
-							SDL_UpdateTexture(sdl.Texture, ref sdl.TextureSize, (IntPtr)pic->data[0], pic->linesize[0]);
-						}
-						else Console.WriteLine($"Error: Non-positive planar linesizes are not supported, open an issue on Github. {pic->linesize[0]} {pic->linesize[1]} {pic->linesize[2]}");
+						// Swap the frames so we can render source
+						var toRender = Decoder.ReceiveFrame;
+						var receiveNext = Decoder.RenderFrame;
 
-						TextureConsumed = false;
-					}
+						Decoder.ReceiveFrame = receiveNext;
+						Decoder.RenderFrame = toRender;
+					}					
+
+					TextureConsumed = false;
 
 					// TODO: figure out synchronization. 
 					// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
@@ -486,7 +510,6 @@ namespace SysDVR.Client.Player
 			if (HasVideo)
 			{
 				Decoder = codecName == null ? InitDecoder(hwAcc) : InitDecoder(codecName);
-				
 				((H264StreamTarget)owner.VideoTarget).UseContext(Decoder);
 			}
 
@@ -551,9 +574,12 @@ namespace SysDVR.Client.Player
 
 				if (HasVideo)
 				{
-					var ptr = Decoder.OutFrame;
+					var ptr = Decoder.Frame1;
 					av_frame_free(&ptr);
-				
+
+					ptr = Decoder.Frame2;
+					av_frame_free(&ptr);
+
 					var ptr2 = Decoder.CodecCtx;
 					avcodec_free_context(&ptr2);
 
