@@ -36,10 +36,13 @@ namespace SysDVR.Client.Player
 		public AVCodecContext* CodecCtx;
 		public AVFrame* OutFrame;
 
-		public SwsContext* ConverterContext;
-		public AVFrame* ConvertedFrame;
-
 		public object CodecLock;
+	}
+
+	unsafe struct FormatConverterContext
+	{
+		public SwsContext* Converter;
+		public AVFrame* Frame;	
 	}
 
 	class PlayerManager : BaseStreamManager, IDisposable
@@ -103,10 +106,11 @@ namespace SysDVR.Client.Player
 		volatile bool TextureConsumed = true;
 
 		protected SDLContext SDL; // This must be initialized by the UI thread
+		protected FormatConverterContext Converter; // Initialized only if needed
 		protected readonly SDLAudioContext SDLAudio;
 		protected readonly DecoderContext Decoder;
 
-		SDLContext InitSDLVideo()
+		static SDLContext InitSDLVideo()
 		{
 			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
 
@@ -119,7 +123,7 @@ namespace SysDVR.Client.Player
 				SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE)
 				.Assert(SDL_GetError);
 
-			var tex = SDL_CreateTexture(render, SDL_PIXELFORMAT_YV12,
+			var tex = SDL_CreateTexture(render, SDL_PIXELFORMAT_IYUV,
 				(int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
 				StreamInfo.VideoWidth, StreamInfo.VideoHeight).Assert(SDL_GetError);
 
@@ -134,7 +138,7 @@ namespace SysDVR.Client.Player
 			};
 		}
 		
-		unsafe SDLAudioContext InitSDLAudio(AudioStreamTarget target)
+		static unsafe SDLAudioContext InitSDLAudio(AudioStreamTarget target)
 		{
 			SDL_InitSubSystem(SDL_INIT_AUDIO).Assert(SDL_GetError);
 
@@ -203,14 +207,14 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		unsafe DecoderContext InitDecoder(string forceDecoder)
+		static unsafe DecoderContext InitDecoder(string forceDecoder)
 		{				
 			var codec = avcodec_find_decoder_by_name(forceDecoder);
 
 			if (codec == null)
 			{
 				Console.WriteLine($"ERROR: The codec {forceDecoder} Couldn't be initialized, falling back to default decoder.");
-				return InitDecoder(true);
+				return InitDecoder(false);
 			}
 			else
 			{
@@ -219,7 +223,7 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		unsafe DecoderContext InitDecoder(bool hwAcc)
+		static unsafe DecoderContext InitDecoder(bool hwAcc)
 		{
 			AVCodec* codec = null;
 
@@ -244,16 +248,7 @@ namespace SysDVR.Client.Player
 			return InitDecoder(codec);
 		}
 
-		// Some codecs such as h265 and h264_v4l2m2m don't expose the format they support as pix_fmts so look them up manually
-		// Todo: add more codecs that cause issues
-		private static AVPixelFormat GetPixFormat(string codecName) => codecName switch 
-		{
-			"h264_v4l2m2m" => AVPixelFormat.AV_PIX_FMT_NV12,
-			"h264" => AVPixelFormat.AV_PIX_FMT_YUV420P,
-			_ => AVPixelFormat.AV_PIX_FMT_NV12
-		};
-
-		unsafe DecoderContext InitDecoder(AVCodec* codec)
+		static unsafe DecoderContext InitDecoder(AVCodec* codec)
 		{
 			if (codec == null)
 				throw new Exception("Codec can't be null");
@@ -266,56 +261,60 @@ namespace SysDVR.Client.Player
 			if (codectx == null)
 				throw new Exception("Couldn't allocate a codec context");
 
+			// These are set in ffplay
+			codectx->codec_id = codec->id;
+			codectx->codec_type = AVMediaType.AVMEDIA_TYPE_VIDEO;
+			codectx->bit_rate = 0;
+
+			// Some decoders break without this
 			codectx->width = StreamInfo.VideoWidth;
 			codectx->height = StreamInfo.VideoHeight;
 
-			// Actually no clue about this part, what's the right format to set when an encoder doesn't provide any ?
-			codectx->pix_fmt = 
-				codec->pix_fmts == null || *codec->pix_fmts == AVPixelFormat.AV_PIX_FMT_NONE ? // If the codec doesn't provide any format
-				GetPixFormat(codecName) : // Use ours
-				*codec->pix_fmts; // Otherwise use the codec's
+			// TODO: in theory we should set SPS and PPS in extradata here but it seems to not be working due to format differencies
 
 			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec.");
-
-#if DEBUG
-			Console.WriteLine($"Using pixel format {codectx->pix_fmt}");
-#endif
 
 			var pic = av_frame_alloc();
 			if (pic == null)
 				throw new Exception("Couldn't allocate the decoding frame");
 
-			AVFrame* dstframe = null;
-			SwsContext* swsContext = null;
-			// If we're using a format we can't display initialize the converter
-			if (codectx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
-			{
-				dstframe = av_frame_alloc();
-
-				if (dstframe == null)
-					throw new Exception("Couldn't allocate the the converted frame");
-
-				dstframe->format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
-				dstframe->width = StreamInfo.VideoWidth;
-				dstframe->height = StreamInfo.VideoHeight;
-
-				av_frame_get_buffer(dstframe, 32).Assert("Couldn't allocate the buffer for the converted frame");
-
-				swsContext = sws_getContext(codectx->width, codectx->height, codectx->pix_fmt,
-											dstframe->width, dstframe->height, AVPixelFormat.AV_PIX_FMT_YUV420P,
-											SWS_BILINEAR, null, null, null);
-
-				if (swsContext == null)
-					throw new Exception("Couldn't initialize the converter");
-			}
-
 			return new DecoderContext()
 			{
 				CodecCtx = codectx,
 				OutFrame = pic,
-				ConverterContext = swsContext,
-				ConvertedFrame = dstframe,
 				CodecLock = new object()
+			};
+		}
+
+		unsafe static FormatConverterContext InitializeConverter(AVCodecContext* codecctx) 
+		{
+			AVFrame* dstframe = null;
+			SwsContext* swsContext = null;
+		
+			Console.WriteLine($"Initializing converter for {codecctx->pix_fmt}");
+
+			dstframe = av_frame_alloc();
+			
+			if (dstframe == null)
+				throw new Exception("Couldn't allocate the the converted frame");
+			
+			dstframe->format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
+			dstframe->width = StreamInfo.VideoWidth;
+			dstframe->height = StreamInfo.VideoHeight;
+
+			av_frame_get_buffer(dstframe, 32).Assert("Couldn't allocate the buffer for the converted frame");
+			
+			swsContext = sws_getContext(codecctx->width, codecctx->height, codecctx->pix_fmt,
+										dstframe->width, dstframe->height, AVPixelFormat.AV_PIX_FMT_YUV420P,
+										SWS_FAST_BILINEAR, null, null, null);
+			
+			if (swsContext == null)
+				throw new Exception("Couldn't initialize the converter");
+
+			return new FormatConverterContext()
+			{
+				Converter = swsContext,
+				Frame = dstframe
 			};
 		}
 
@@ -385,6 +384,10 @@ namespace SysDVR.Client.Player
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static int av_ceil_rshift(int a, int b) =>
+			-((-(a)) >> (b));
+
 		unsafe void DecodeReceiverThreadMain()
 		{
 			while (!SDL.Initialized && !ShouldQuit)
@@ -393,6 +396,9 @@ namespace SysDVR.Client.Player
 			// Copy state to locals for faster access
 			var sdl = SDL;
 			var dec = Decoder;
+			var conv = Converter;
+
+			bool converterCheck = false;
 
 			while (!ShouldQuit)
 			{
@@ -406,6 +412,17 @@ namespace SysDVR.Client.Player
 					Console.WriteLine($"avcodec_receive_frame {ret}");
 				else
 				{
+					// On the first frame we get check if we need to use a converter
+					if (!converterCheck && dec.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
+					{
+#if DEBUG
+						Console.WriteLine($"Using pixel format {dec.CodecCtx->pix_fmt}");
+#endif
+						converterCheck = true;
+						if (dec.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
+							conv = Converter = InitializeConverter(dec.CodecCtx);
+					}
+
 					while (!TextureConsumed && !ShouldQuit)
 						Thread.Sleep(2);
 
@@ -414,18 +431,38 @@ namespace SysDVR.Client.Player
 
 					var pic = dec.OutFrame;
 
-					if (dec.ConverterContext != null)
+					if (conv.Converter != null)
 					{
-						sws_scale(dec.ConverterContext, pic->data, pic->linesize, 0, pic->height, dec.ConvertedFrame->data, dec.ConvertedFrame->linesize);
-						pic = dec.ConvertedFrame;
+						sws_scale(conv.Converter, pic->data, pic->linesize, 0, pic->height, conv.Frame->data, conv.Frame->linesize);
+						pic = conv.Frame;
 					}
 
 					lock (sdl.TextureLock)
 					{
-						SDL_UpdateYUVTexture(sdl.Texture, in sdl.TextureSize,
-							(IntPtr)pic->data[0], pic->linesize[0],
-							(IntPtr)pic->data[1], pic->linesize[1],
-							(IntPtr)pic->data[2], pic->linesize[2]);
+						if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
+						{
+							SDL_UpdateYUVTexture(sdl.Texture, in sdl.TextureSize,
+								(IntPtr)pic->data[0], pic->linesize[0],
+								(IntPtr)pic->data[1], pic->linesize[1],
+								(IntPtr)pic->data[2], pic->linesize[2]);
+						}
+#if DEBUG
+						// Not sure if this is needed but ffplay source does handle this case, all my tests had positive linesize
+						else if (pic->linesize[0] < 0 && pic->linesize[1] < 0 && pic->linesize[2] < 0)
+						{
+							Console.WriteLine("Negative Linesize");
+							SDL_UpdateYUVTexture(sdl.Texture, in sdl.TextureSize,
+								(IntPtr)(pic->data[0] + pic->linesize[0] * (pic->height - 1)), -pic->linesize[0],
+								(IntPtr)(pic->data[1] + pic->linesize[1] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[1],
+								(IntPtr)(pic->data[2] + pic->linesize[2] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[2]);
+						}
+#endif
+						// While this doesn't seem to be handled in ffplay but the texture can be non-planar with some decoders
+						else if (pic->linesize[0] > 0 && pic->linesize[1] == 0)
+						{
+							SDL_UpdateTexture(sdl.Texture, ref sdl.TextureSize, (IntPtr)pic->data[0], pic->linesize[0]);
+						}
+						else Console.WriteLine($"Error: Non-positive planar linesizes are not supported, open an issue on Github. {pic->linesize[0]} {pic->linesize[1]} {pic->linesize[2]}");
 
 						TextureConsumed = false;
 					}
@@ -519,6 +556,14 @@ namespace SysDVR.Client.Player
 				
 					var ptr2 = Decoder.CodecCtx;
 					avcodec_free_context(&ptr2);
+
+					if (Converter.Converter != null)
+					{
+						var ptr3 = Converter.Frame;
+						av_frame_free(&ptr3);
+
+						sws_freeContext(Converter.Converter);
+					}
 				}
 				
 				disposedValue = true;
