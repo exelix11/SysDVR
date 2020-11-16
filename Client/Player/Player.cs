@@ -375,6 +375,8 @@ namespace SysDVR.Client.Player
 			{
 				if (!TextureConsumed)
 				{
+					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
+					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
 					UpdateSDLTexture(Decoder.RenderFrame);
 					SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
 					SDL_RenderPresent(SDL.Renderer);
@@ -382,8 +384,8 @@ namespace SysDVR.Client.Player
 				}
 				else
 				{
-					for (int i = 0; i < 20 && TextureConsumed; i++)
-						Thread.Sleep(5); // If no new frame wait up to 100ms before polling events again
+					for (int i = 0; i < 50 && TextureConsumed; i++)
+						Thread.Sleep(2); // If no new frame wait up to 100ms before polling events again
 					if (!TextureConsumed)
 						continue;
 				}
@@ -405,6 +407,7 @@ namespace SysDVR.Client.Player
 		static int av_ceil_rshift(int a, int b) =>
 			-((-(a)) >> (b));
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		unsafe void UpdateSDLTexture(AVFrame* pic)
 		{
 			if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
