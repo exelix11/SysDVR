@@ -1,18 +1,8 @@
 ﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using LibUsbDotNet;
-using LibUsbDotNet.LibUsb;
-using LibUsbDotNet.Main;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
 	class Program
 	{
@@ -38,7 +28,7 @@ namespace SysDVRClient
 		{
 			if (!full) {
 				Console.WriteLine("Basic usage:\r\n" +
-						"Simply launching this exectuable will show this message and launch the RTSP server via USB.\r\n" +
+						"Simply launching this exectuable will show this message and launch the video player via USB.\r\n" +
 						"Use 'SysDVR-Client usb' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
 						"To stream in TCP Bridge mode launch 'SysDVR-Client bridge <switch ip address>'\r\n" +
 						"There are more advanced options, you can see them with 'SysDVR-Client --help'\r\n" +
@@ -52,8 +42,10 @@ namespace SysDVRClient
 SysDVR-Client.exe <Stream source> [Source options] [Stream options] [Output options]
 
 Stream sources:
+	The source mode is how the client connects to SysDVR running on the console. Make sure to set the correct mode with SysDVR-Settings.
 	`usb` : Connects to SysDVR via USB, used if no source is specified. Remember to setup the driver as explained on the guide
 	`bridge <IP address>` : Connects to SysDVR via network at the specified IP address, requires a strong connection between the PC and switch (LAN or full signal wireless)
+	Note that the `Simple network mode` option in SysDVR-Settings does not require the client, you must open it directly in a video player.
 
 Source options:
 	`--print-stats` : Logs received data size and errors
@@ -66,18 +58,34 @@ Stream options:
 	`--no-audio` : Disable audio streaming, only streams video
 
 Output options:
-	Low-latency streaming options
+	If you don't specify any option the built-in video player will be used.
+	Built-in player options:
+	`--hw-acc` : Try to use hardware acceleration for decoding, this option uses the first detected decoder, it's recommended to manually specify the decoder name with --decoder
+	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-codecs
+
+	RTSP options:
+	`--rtsp` : Relay the video feed via RTSP. SysDVR-Client will act as an RTSP server, you can connect to it with RTSP with any compatible video player like mpv or vlc
+	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
+	`--rtsp-any-addr` : By default only the pc running SysDVR-Client can connect to the RTSP stream, enable this to allow connections from other devices in your local network
+
+	Low-latency streaming options:
 	`--mpv <mpv path>` : Streams the specified channel to mpv via stdin, only works with one channel, if no stream option is specified `--no-audio` will be used.
 	`--stdout` : Streams the specified channel to stdout, only works with one channel, if no stream option is specified `--no-audio` will be used.
+	
 	Storage options
-	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.
-	If you don't specify any of these SysDVR-Client will stream via RTSP, the following are RTSP options
-	`--rtsp-port <port number>` : Port used to stream via RTSP (default is 6666)
-	`--rtsp-any-addr` : The RTSP socket will be open for INADDR_ANY, this means other devices in your local network can connect to your pc by IP and watch the stream
+	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.	
+
+Extra options:
+	These options will not stream, they just print the output and then quit.
+	`--show-decoders` : Prints all video codecs available for the built-in video player
+	`--version` : Prints the version
 
 Command examples:
 	SysDVR-Client.exe usb
-		Connects to switch via USB and streams video and audio over rtsp at rtsp://127.0.0.1:6666/
+		Connects to switch via USB and streams video and audio in the built-in player
+
+	SysDVR-Client.exe usb --rtsp
+		Connects to switch via USB and streams video and audio via rtsp at rtsp://127.0.0.1:6666/
 		
 	SysDVR-Client.exe bridge 192.168.1.20 --no-video --rtsp-port 9090
 		Connects to switch via network at 192.168.1.20 and streams the audio over rtsp at rtsp://127.0.0.1:9090/
@@ -113,7 +121,12 @@ Command examples:
 				int index = Array.IndexOf(args, arg);
 				if (index == -1) return null;
 				if (args.Length <= index + 1) return null;
-				return args[index + 1];
+
+				string value = args[index + 1];
+				if (!value.Contains(' ') && value.StartsWith('"') && value.EndsWith('"'))
+					value = value.Substring(1, value.Length - 2);
+
+				return value;
 			}
 
 			int? ArgValueInt(string arg) 
@@ -124,13 +137,21 @@ Command examples:
 				return null;
 			}
 
-			if (HasArg("--usb-warn")) UsbHelper.LogLevel = LogLevel.Info;
-			if (HasArg("--usb-debug")) UsbHelper.LogLevel = LogLevel.Debug;
+			if (HasArg("--version"))
+				return;
+			else if (HasArg("--show-decoders"))
+			{
+				Player.CodecUtils.PrintAllCodecs();
+				return;
+			}
+
+			if (HasArg("--usb-warn")) UsbContext.Logging = UsbContext.LogLevel.Warning;
+			if (HasArg("--usb-debug")) UsbContext.Logging = UsbContext.LogLevel.Debug;
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
 			StreamingThread.Logging = HasArg("--print-stats");
-			UsbHelper.ForceLibUsb = HasArg("--no-winusb");
+			UsbContext.ForceLibUsb = HasArg("--no-winusb");
 
 			if (NoVideo && NoAudio)
 			{
@@ -158,7 +179,7 @@ Command examples:
 			}
 			else if (HasArg("--file"))
 			{
-				string diskPath = ArgValue("--file").Replace("\"", "");
+				string diskPath = ArgValue("--file");
 				if (diskPath == null || !Directory.Exists(diskPath))
 				{
 					Console.WriteLine("The specified directory is not valid");
@@ -173,20 +194,26 @@ Command examples:
 				StreamManager = new LoggingManager(NoVideo ? null : Path.Combine(path, "video.h264"), NoAudio ? null : Path.Combine(path, "audio.raw"));
 			}
 #endif
-			else // use RTSP by default
+			else if (HasArg("--rtsp"))
 			{
 				int port = ArgValueInt("--rtsp-port") ?? 6666;
 				if (port <= 1024)
 					Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
 				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, !HasArg("--rtsp-any-addr"), port);
 			}
+			else // Stream to the built-in player by default
+			{
+				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--hw-acc"), ArgValue("--decoder"));
+			}
 
 			if (args.Length == 0 || args[0] == "usb")
 			{
+				var ctx = UsbContext.GetInstance();
+
 				if (!NoVideo)
-					StreamManager.VideoSource = UsbHelper.MakeStreamingSource(StreamKind.Video);
+					StreamManager.VideoSource = ctx.MakeStreamingSource(StreamKind.Video);
 				if (!NoAudio)
-					StreamManager.AudioSource = UsbHelper.MakeStreamingSource(StreamKind.Audio);
+					StreamManager.AudioSource = ctx.MakeStreamingSource(StreamKind.Audio);
 			}
 			else if (args[0] == "bridge")
 			{
@@ -203,6 +230,18 @@ Command examples:
 				if (!NoAudio)
 					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
 			}
+#if DEBUG
+			else if (args[0] == "stub")
+			{
+				StreamManager.VideoSource = new StubSource();
+				StreamManager.AudioSource = new StubSource();
+			}
+			else if (args[0] == "record")
+			{
+				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video);
+				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio);
+			}
+#endif
 			else
 			{
 				Console.WriteLine("Invalid source");
@@ -210,15 +249,15 @@ Command examples:
 			}
 
 			StartStreaming(StreamManager);
+			Environment.Exit(0);
 		}
 
 		static void StartStreaming(BaseStreamManager Streams)
 		{
-			Console.WriteLine("Starting stream, press return to stop");
-			Console.WriteLine("If the stream lags try pausing and unpausing the player.");
 			Streams.Begin();
 
-			Console.ReadLine();
+			Streams.MainThread();
+
 			Console.WriteLine("Terminating threads...");
 
 			Streams.Stop();

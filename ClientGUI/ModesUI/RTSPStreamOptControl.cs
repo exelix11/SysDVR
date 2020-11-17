@@ -20,7 +20,7 @@ namespace SysDVRClientGUI
 
 		public StreamKind TargetKind { get; set; }
 
-		public string GetCommandLine() => "";
+		public string GetCommandLine() => "--rtsp";
 
 		public string GetExtraCmd()
 		{
@@ -30,8 +30,16 @@ namespace SysDVRClientGUI
 				throw new Exception($"{mpv} does not exist");
 
 			if (!string.IsNullOrEmpty(mpv))
-				return $"\"{mpv}\" rtsp://127.0.0.1:6666/";
-			return "";
+				mpv = $"\"{mpv}\" rtsp://127.0.0.1:6666/";
+			else return "";
+
+			if (cbMpvLowLat.Checked)
+				mpv += " --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no";
+			
+			if (cbMpvUntimed.Checked) 
+				mpv += " --untimed";
+
+			return mpv;
 		}
 
 		private void button1_Click(object sender, EventArgs e)

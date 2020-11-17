@@ -32,7 +32,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\Client\bin\Debug\netcoreapp3.0\</OutputPath>
+    <OutputPath>..\Client\bin\Debug\net5.0\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -42,8 +42,8 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\Client\bin\Release\netcoreapp3.0\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>..\Client\bin\Release\net5.0\</OutputPath>
+    <DefineConstants>TRACE;RELEASE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>8.0</LangVersion>
@@ -84,6 +84,12 @@
     <Compile Include="ModesUI\MpvStreamControl.Designer.cs">
       <DependentUpon>MpvStreamControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="ModesUI\PlayStreamControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ModesUI\PlayStreamControl.Designer.cs">
+      <DependentUpon>PlayStreamControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModesUI\RTSPStreamOptControl.cs">
@@ -100,6 +106,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ModesUI\MpvStreamControl.resx">
       <DependentUpon>MpvStreamControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ModesUI\PlayStreamControl.resx">
+      <DependentUpon>PlayStreamControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

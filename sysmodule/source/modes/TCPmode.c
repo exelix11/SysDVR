@@ -48,7 +48,7 @@ static inline bool GetClient(int *client, int *sock, GrcStream stream)
 	int fails = 0;
 	/*
 		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
-		in detecting it, as we're using non-blocking mode the counter will reset the socket every 3 seconds
+		in detecting it, as we're using non-blocking mode the counter will reset the socket every 8 seconds
 	*/
 	while (IsThreadRunning)
 	{
@@ -56,7 +56,7 @@ static inline bool GetClient(int *client, int *sock, GrcStream stream)
 		if (*client < 0)
 		{
 			svcSleepThread(1E+9);
-			if (fails++ >= 3)
+			if (++fails >= 8)
 			{
 				fails = 0;
 				TCP_InitSockets(stream);
