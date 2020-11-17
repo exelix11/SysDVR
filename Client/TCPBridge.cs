@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
-	class TCPBridgeSource : StreamingSource
+	class TCPBridgeSource : IStreamingSource
 	{
 		public bool Logging { get; set; }
 

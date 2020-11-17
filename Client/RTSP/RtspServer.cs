@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 
-namespace SysDVRClient.RTSP
+namespace SysDVR.Client.RTSP
 {
 	class RtspServer : IDisposable
 	{
@@ -28,9 +28,6 @@ namespace SysDVRClient.RTSP
 			Video = 0,
 			Audio = 1
 		}
-
-		byte[] raw_sps = null;
-		byte[] raw_pps = null;
 
 		List<RTSPConnection> rtsp_list = new List<RTSPConnection>(); // list of RTSP Listeners
 
@@ -193,10 +190,8 @@ namespace SysDVRClient.RTSP
 				// TODO. Check the requsted_url is valid. In this example we accept any RTSP URL
 
 				// Make the Base64 SPS and PPS
-				raw_sps = StreamInfo.SPS; // no 0x00 0x00 0x00 0x01 or 32 bit size header
-				raw_pps = StreamInfo.PPS; // no 0x00 0x00 0x00 0x01 or 32 bit size header
-				String sps_str = Convert.ToBase64String(raw_sps);
-				String pps_str = Convert.ToBase64String(raw_pps);
+				String sps_str = Convert.ToBase64String(StreamInfo.SPS);
+				String pps_str = Convert.ToBase64String(StreamInfo.PPS);
 
 				StringBuilder sdp = new StringBuilder();
 

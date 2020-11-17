@@ -1,34 +1,55 @@
 ﻿using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
-	static class UsbHelper
+	// Making UsbContext non static will remove requirement on libusb, it will be loaded only if actually using USB, this is useful on architectures where it's not supported
+	class UsbContext : IDisposable
 	{
-		public static bool ForceLibUsb { get; set; } = false;
+		static object LockObject = new object();
 
-		static UsbContext LibUsbCtx = null;
-		static IUsbDevice device = null;
-		static int refCount = 0;
-
-		public static LibUsbDotNet.LogLevel LogLevel = LibUsbDotNet.LogLevel.Error;
-
-		private static IUsbDevice GetSysDVRDevice()
+		public enum LogLevel 
 		{
-			if (device != null)
-				return device;
+			Error,
+			Warning,
+			Debug
+		}
 
-			LibUsbCtx = new UsbContext();
-			LibUsbCtx.SetDebugLevel(LogLevel);
+		public static bool ForceLibUsb { get; set; } = false;
+		public static LogLevel Logging { get; set; } = LogLevel.Error;
+		int deviceReferences = 0;
+
+		static UsbContext instance = null;
+		public static UsbContext GetInstance() 
+		{
+			lock (LockObject)
+			{
+				if (instance is null)
+					instance = new UsbContext();
+
+				return instance;
+			}
+		}
+
+		readonly LibUsbDotNet.LibUsb.UsbContext LibUsbCtx = null;
+		public readonly IUsbDevice device = null;
+		
+		private UsbContext() 
+		{
+			LibUsbCtx = new LibUsbDotNet.LibUsb.UsbContext();
+			
+			LibUsbCtx.SetDebugLevel(Logging switch
+			{
+				LogLevel.Error => LibUsbDotNet.LogLevel.Error,
+				LogLevel.Warning => LibUsbDotNet.LogLevel.Info,
+				LogLevel.Debug => LibUsbDotNet.LogLevel.Debug,
+				_ => throw new NotImplementedException(),
+			});
+			
 			var usbDeviceCollection = LibUsbCtx.List();
 			var dev = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
 
@@ -38,15 +59,14 @@ namespace SysDVRClient
 			dev.Open();
 
 			device = dev;
-			return dev;
 		}
 
-		public static (UsbEndpointReader, UsbEndpointWriter) GetForInterface(StreamKind iface)
+		public (UsbEndpointReader, UsbEndpointWriter) GetForInterface(StreamKind iface)
 		{
-			var dev = GetSysDVRDevice();
-
-			lock (device)
+			lock (LockObject)
 			{
+				var dev = device;
+
 				if (!dev.ClaimInterface(iface == StreamKind.Video ? 0 : 1))
 					throw new Exception($"Couldn't claim interface for {iface}");
 
@@ -54,45 +74,74 @@ namespace SysDVRClient
 
 				var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
 				var writer = dev.OpenEndpointWriter(epOut, EndpointType.Interrupt);
-				refCount++;
+				Interlocked.Increment(ref deviceReferences);
 
 				return (reader, writer);
 			}
 		}
 
-		public static void MarkInterfaceClosed()
+		public void MarkInterfaceClosed()
 		{
-			lock (device)
+			lock (LockObject)
 			{
-				refCount--;
-				if (refCount == 0)
-					device.Close();
-				else if (refCount < 0)
+				Interlocked.Decrement(ref deviceReferences);
+				if (deviceReferences == 0)
+					Dispose();
+				else if (deviceReferences < 0)
 					throw new Exception("interface refCount out of range");
 			}
 		}
 
-		public static UsbStreamingSourceBase MakeStreamingSource(StreamKind stream)
+		public UsbStreamingSourceBase MakeStreamingSource(StreamKind stream)
 		{
 			// LibUsb backend on linux and windows doesn't seem to buffer reads from the pipe, this causes issues and requires manually receiving everything and copying data
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !ForceLibUsb)
-				return new UsbStreamingSourceWinUsb(stream);
+				return new UsbStreamingSourceWinUsb(stream, this);
 			else 
-				return new UsbStreamingSourceLibUsb(stream);
+				return new UsbStreamingSourceLibUsb(stream, this);
+		}
+
+		private bool disposedValue;
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposedValue)
+			{
+				if (disposing)
+				{
+					device.Close();
+					LibUsbCtx.Dispose();
+				}
+
+				instance = null;
+				disposedValue = true;
+			}
+		}
+
+		~UsbContext()
+		{
+			Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
 		}
 	}
 
-	abstract class UsbStreamingSourceBase : StreamingSource
+	abstract class UsbStreamingSourceBase : IStreamingSource
 	{
 		protected static readonly byte[] USBMagic = { 0xAA, 0xAA, 0xAA, 0xAA };
 		public bool Logging { get; set; }
 
 		protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
+		protected UsbContext context;
 
-		public UsbStreamingSourceBase(StreamKind kind)
+		public UsbStreamingSourceBase(StreamKind kind, UsbContext context)
 		{
-			(reader, writer) = UsbHelper.GetForInterface(kind);
+			this.context = context;
+			(reader, writer) = context.GetForInterface(kind);
 		}
 
 		public void WaitForConnection()
@@ -102,7 +151,7 @@ namespace SysDVRClient
 
 		public void StopStreaming()
 		{
-			UsbHelper.MarkInterfaceClosed();
+			context.MarkInterfaceClosed();
 		}
 
 		public void UseCancellationToken(CancellationToken tok)
@@ -117,8 +166,7 @@ namespace SysDVRClient
 
 	class UsbStreamingSourceWinUsb : UsbStreamingSourceBase
 	{
-
-		public UsbStreamingSourceWinUsb(StreamKind kind) : base(kind) { }
+		public UsbStreamingSourceWinUsb(StreamKind kind, UsbContext context) : base(kind, context) { }
 
 		public override void Flush()
 		{
@@ -162,7 +210,7 @@ namespace SysDVRClient
 
 	class UsbStreamingSourceLibUsb : UsbStreamingSourceBase
 	{
-		public UsbStreamingSourceLibUsb(StreamKind kind) : base(kind) { }
+		public UsbStreamingSourceLibUsb(StreamKind kind, UsbContext context) : base(kind, context) { }
 
 		public override void Flush()
 		{

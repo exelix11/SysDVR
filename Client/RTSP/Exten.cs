@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SysDVRClient.RTSP
+namespace SysDVR.Client.RTSP
 {
 	static internal class Exten
 	{
