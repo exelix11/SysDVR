@@ -211,14 +211,11 @@ namespace SysDVRClientGUI
 		private void BatchInfo(object sender, EventArgs e) =>
 			MessageBox.Show("This will create a bat file to launch SysDVR-Client with the selected options you will just need to double click it. The file name depends on the configuration, you can rename it later.\r\n");
 
-		private void button4_Click(object sender, EventArgs e) => MessageBox.Show(
-				"SysDVR-Client requires .NET core 3.1 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
-				"Make sure to properly setup the drivers following the GitHub guide before attempting to stream\r\n" +
-				"If SysDVR-Client can't connect to SysDVR make sure it's running and that it's in the correct streaming mode (you can set that from the settings homebrew)\r\n\r\n" + 
-				"If the stream is laggy try pausing and unpausing the playback.\r\n\r\n" +
-				"In case of issues check SysDVR-Client output for errors and search in the github issues, discord channel or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
+		private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
+			Process.Start("https://github.com/exelix11/SysDVR/wiki/Troubleshooting");
 
-		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");
+		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => 
+			Process.Start("https://github.com/exelix11/SysDVR/wiki/");
 
 		private void tbTcpIP_Enter(object sender, EventArgs e)
 		{
