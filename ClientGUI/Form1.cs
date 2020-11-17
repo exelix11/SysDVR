@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -45,18 +46,33 @@ namespace SysDVRClientGUI
 		{
 			SetDefaultText();
 
+#if RELEASE
 			if (!File.Exists("SysDVR-Client.dll"))
 			{
 				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
 				this.Close();
 			}
+#endif
 
 			if (Utils.FindExecutableInPath("dotnet.exe") == null)
-				if (MessageBox.Show(".NET core 3.0 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-					System.Diagnostics.Process.Start("https://dotnet.microsoft.com/download");
-			
+			{
+				if (MessageBox.Show(".NET 5 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+					Process.Start("https://dotnet.microsoft.com/download");
+				else
+					this.Close();
+			}
+			else if (!Utils.IsDotnet5Installed())
+			{
+				if (MessageBox.Show("It seems you're running an outdated version of .net core. Since SysDVR 5.0 the client app requires the .NET 5 runtime. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+					Process.Start("https://dotnet.microsoft.com/download");
+				else 
+					MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.") ;
+			}
+
 			rbStreamRtsp.Checked = true;
 			rbChannelsBoth.Checked = true;
+			rbPlay.Checked = true;
+			cbAdvOpt.Checked = false;
 		}
 
 		private void StreamTargetSelected(object sender, EventArgs e)
@@ -68,7 +84,8 @@ namespace SysDVRClientGUI
 			{	
 				{ rbStreamRtsp, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
 				{ rbPlayMpv, new MpvStreamControl() { Dock = DockStyle.Fill} },
-				{ rbSaveToFile , new FileStreamControl() { Dock = DockStyle.Fill} }
+				{ rbSaveToFile , new FileStreamControl() { Dock = DockStyle.Fill} },
+				{ rbPlay, new PlayStreamControl() { Dock = DockStyle.Fill} }
 			};
 
 			CurrentControl = StreamControls[sender];
@@ -149,11 +166,6 @@ namespace SysDVRClientGUI
 				{
 					str.Append("\ntimeout 2 > NUL && ");
 					str.Append(extra);
-					if (CurrentControl is RTSPStreamOptControl)
-					{
-						if (cbMpvLowLat.Checked) str.Append(" --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no");
-						if (cbMpvUntimed.Checked) str.Append(" --untimed");
-					}
 				}
 
 				return str.ToString();
@@ -175,7 +187,6 @@ namespace SysDVRClientGUI
 					System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
 				this.Close();
 			}
-
 		}
 
 		private void ExportBatch(object sender, EventArgs e)
@@ -200,14 +211,11 @@ namespace SysDVRClientGUI
 		private void BatchInfo(object sender, EventArgs e) =>
 			MessageBox.Show("This will create a bat file to launch SysDVR-Client with the selected options you will just need to double click it. The file name depends on the configuration, you can rename it later.\r\n");
 
-		private void button4_Click(object sender, EventArgs e) => MessageBox.Show(
-				"SysDVR-Client requires .NET core 3.0 (note that it's not the same thing as .NET framework), in case you don't have it yet you can download it from microsoft's website: https://dotnet.microsoft.com/download\r\n\r\n" +
-				"Make sure to properly setup the drivers following the GitHub guide before attempting to stream\r\n" +
-				"If SysDVR-Client can't connect to SysDVR make sure it's running and that it's in the correct streaming mode (you can set that from the settings homebrew)\r\n\r\n" + 
-				"If the stream is laggy try pausing and unpausing the playback.\r\n\r\n" +
-				"In case of issues check SysDVR-Client output for errors and search in the github issues, discord channel or on the gbatemp thread, chances are someone else already faced that issue.\r\n\r\n");
+		private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
+			Process.Start("https://github.com/exelix11/SysDVR/wiki/Troubleshooting");
 
-		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => System.Diagnostics.Process.Start("https://github.com/exelix11/SysDVR/blob/master/readme.md#usage");
+		private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => 
+			Process.Start("https://github.com/exelix11/SysDVR/wiki/");
 
 		private void tbTcpIP_Enter(object sender, EventArgs e)
 		{
@@ -226,6 +234,12 @@ namespace SysDVRClientGUI
 			if (tbTcpIP.Text != "IP address" && tbTcpIP.Text != "" && !rbSrcTcp.Checked)
 				rbSrcTcp.Checked = true;
 		}
+
+		private void cbAdvOpt_CheckedChanged(object sender, EventArgs e)
+		{
+			pAdvOptions.Visible = cbAdvOpt.Checked;
+			this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
+		}
 	}
 
 	static class Utils 
@@ -235,5 +249,23 @@ namespace SysDVRClientGUI
 				.Split(Path.PathSeparator)
 				.Select(x => Path.Combine(x, fileName))
 				.FirstOrDefault(x => File.Exists(x));
+
+		public static bool IsDotnet5Installed()
+		{
+			Process proc = new Process();
+			proc.StartInfo = new ProcessStartInfo()
+			{
+				FileName = "dotnet",
+				Arguments = "--info",
+				CreateNoWindow = true,
+				RedirectStandardOutput = true,
+				UseShellExecute = false
+			};
+			proc.Start();
+			proc.WaitForExit();
+			var s = proc.StandardOutput.ReadToEnd();
+
+			return s.Contains("NETCore.App 5.");
+		}
 	}
 }

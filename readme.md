@@ -5,16 +5,15 @@
 [![Downloads](https://img.shields.io/github/downloads/exelix11/SysDVR/total)](https://github.com/exelix11/SysDVR/releases)
 [![ko-fi](https://img.shields.io/badge/supporting-ko--fi-f96854)](https://ko-fi.com/exelix11)
 
-This is an experimental sysmodule that allows capturing the running game output to a pc via USB or network connection.
+This is a sysmodule that allows capturing the running game output to a pc via USB or network connection.
 
 **If you have issues make sure to read the full [guide](https://github.com/exelix11/SysDVR/wiki), the [troubleshooting section](https://github.com/exelix11/SysDVR/wiki/Troubleshooting) in particular. If you need help you can either ask on discord or open an issue with the correct template.**
 
 ## Features/Limitations
 - **Video quality is fixed to 720p @ 30fps with h264 compression, this is an hardware limit**
-- Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed
+- Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed.
 - **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
-- Only captures game output. System UI, home menu and homebrews running as applet won't be captured
-- It is not possible to stream audio in real-time, low-latency video works fine
+- Only captures game output. System UI, home menu and homebrews running as applet won't be captured.
 - Stream quality depends heavily on the environment, bad usb wires or low wifi signal can affect it significantly.
 - **USB streaming is not available when docked**
 - Requires at least firmware 6.0.0

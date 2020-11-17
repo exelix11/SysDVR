@@ -2,36 +2,47 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <Platforms>AnyCPU;x86</Platforms>
+    <TargetFramework>net5.0</TargetFramework>
+    <Platforms>AnyCPU</Platforms>
     <AssemblyName>SysDVR-Client</AssemblyName>
     <Description>https://github.com/exelix11/SysDVR</Description>
     <Authors>exelix</Authors>
     <Company />
     <PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
     <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-    <Version>4.0.2</Version>
-    <RootNamespace>SysDVRClient</RootNamespace>
-    <AssemblyVersion>4.0.0.2</AssemblyVersion>
-    <FileVersion>4.0.0.2</FileVersion>
+    <Version>5.0.0</Version>
+    <RootNamespace>SysDVR.Client</RootNamespace>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <FileVersion>5.0.0.0</FileVersion>
     <Configurations>Debug;Release</Configurations>
     <ApplicationIcon>Client.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>false</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="3.0.83-alpha-g94397fba28" />
-    <PackageReference Include="SharpRTSP" Version="0.0.1" />
+    <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
+    <PackageReference Include="SysDVR.LibUsbDotNet" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Libs\FFmpeg.AutoGen\FFmpeg.AutoGen\FFmpeg.AutoGen.csproj" />
+    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Help.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

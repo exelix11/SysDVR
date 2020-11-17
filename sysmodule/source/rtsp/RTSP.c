@@ -103,7 +103,7 @@ void RTSP_ServerThread(void* _)
 		if (client < 0)
 		{
 			// Workaround for a libnx issue explained in TCPMode.c
-			if (sockFails++ >= 3 && RTSP_Running)
+			if (++sockFails >= 8 && RTSP_Running)
 			{
 				CloseSocket(&RTSPSock);
 				RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_2);

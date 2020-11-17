@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 
-namespace SysDVRClient
+namespace SysDVR.Client
 {
 	class MpvStdinManager : BaseStreamManager
 	{
@@ -71,6 +72,8 @@ namespace SysDVRClient
 		{
 			Vfs.Write(data, offset, size);
 		}
+
+		public void UseCancellationToken(CancellationToken tok) { }
 	}
 
 	class StdInTarget : IOutTarget
@@ -102,6 +105,8 @@ namespace SysDVRClient
 			proc.StandardInput.BaseStream.Write(data, offset, size);
 			proc.StandardInput.BaseStream.Flush();
 		}
+
+		public void UseCancellationToken(CancellationToken tok) { }
 	}
 
 	class StdOutTarget : IOutTarget
@@ -126,5 +131,7 @@ namespace SysDVRClient
 			stdout.Write(data, offset, size);
 			stdout.Flush();
 		}
+
+		public void UseCancellationToken(CancellationToken tok) { }
 	}
 }
