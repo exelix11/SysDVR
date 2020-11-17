@@ -43,7 +43,6 @@
 			this.rbSrcTcp = new System.Windows.Forms.RadioButton();
 			this.label1 = new System.Windows.Forms.Label();
 			this.linkLabel1 = new System.Windows.Forms.LinkLabel();
-			this.button4 = new System.Windows.Forms.Button();
 			this.pAdvOptions = new System.Windows.Forms.Panel();
 			this.groupBox4 = new System.Windows.Forms.GroupBox();
 			this.rbPlay = new System.Windows.Forms.RadioButton();
@@ -57,6 +56,7 @@
 			this.cbUsbWarn = new System.Windows.Forms.CheckBox();
 			this.StreamConfigPanel = new System.Windows.Forms.Panel();
 			this.cbAdvOpt = new System.Windows.Forms.CheckBox();
+			this.linkLabel2 = new System.Windows.Forms.LinkLabel();
 			this.groupBox1.SuspendLayout();
 			this.groupBox2.SuspendLayout();
 			this.pAdvOptions.SuspendLayout();
@@ -236,17 +236,6 @@
 			this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 			this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
 			// 
-			// button4
-			// 
-			this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.button4.Location = new System.Drawing.Point(6, 599);
-			this.button4.Name = "button4";
-			this.button4.Size = new System.Drawing.Size(117, 23);
-			this.button4.TabIndex = 5;
-			this.button4.Text = "Common issues";
-			this.button4.UseVisualStyleBackColor = true;
-			this.button4.Click += new System.EventHandler(this.button4_Click);
-			// 
 			// pAdvOptions
 			// 
 			this.pAdvOptions.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -397,7 +386,7 @@
 			this.cbAdvOpt.AutoSize = true;
 			this.cbAdvOpt.Checked = true;
 			this.cbAdvOpt.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.cbAdvOpt.Location = new System.Drawing.Point(129, 603);
+			this.cbAdvOpt.Location = new System.Drawing.Point(132, 603);
 			this.cbAdvOpt.Name = "cbAdvOpt";
 			this.cbAdvOpt.Size = new System.Drawing.Size(141, 17);
 			this.cbAdvOpt.TabIndex = 4;
@@ -405,14 +394,27 @@
 			this.cbAdvOpt.UseVisualStyleBackColor = true;
 			this.cbAdvOpt.CheckedChanged += new System.EventHandler(this.cbAdvOpt_CheckedChanged);
 			// 
+			// linkLabel2
+			// 
+			this.linkLabel2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+			this.linkLabel2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.linkLabel2.Location = new System.Drawing.Point(1, 600);
+			this.linkLabel2.Name = "linkLabel2";
+			this.linkLabel2.Size = new System.Drawing.Size(125, 20);
+			this.linkLabel2.TabIndex = 9;
+			this.linkLabel2.TabStop = true;
+			this.linkLabel2.Text = "Common issues";
+			this.linkLabel2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+			this.linkLabel2.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel2_LinkClicked);
+			// 
 			// Form1
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(630, 627);
+			this.Controls.Add(this.linkLabel2);
 			this.Controls.Add(this.cbAdvOpt);
 			this.Controls.Add(this.pAdvOptions);
-			this.Controls.Add(this.button4);
 			this.Controls.Add(this.linkLabel1);
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.groupBox2);
@@ -455,7 +457,6 @@
 		private System.Windows.Forms.GroupBox groupBox2;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.LinkLabel linkLabel1;
-		private System.Windows.Forms.Button button4;
 		private System.Windows.Forms.RadioButton rbSrcTcp;
 		private System.Windows.Forms.RadioButton rbSrcUsb;
 		private System.Windows.Forms.TextBox tbTcpIP;
@@ -473,6 +474,7 @@
 		private System.Windows.Forms.Panel StreamConfigPanel;
 		private System.Windows.Forms.CheckBox cbAdvOpt;
 		private System.Windows.Forms.Label label2;
+		private System.Windows.Forms.LinkLabel linkLabel2;
 	}
 }
 
