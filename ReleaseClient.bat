@@ -15,7 +15,7 @@ dotnet publish -c Release || goto error
 
 cd ..\ClientGUI
 call VsDevCmd.bat
-msbuild ClientGUI.csproj -p:Configuration=Release || goto error
+msbuild ClientGUI.csproj /p:Configuration=Release || goto error
 
 cd ..
 
