@@ -25,7 +25,6 @@ namespace SysDVR.Client.Player
 
 	unsafe struct SDLAudioContext
 	{
-		public SwrContext* ConverterCtx { get; init; }
 		public SDL_AudioSpec AudioSpec { get; init; }
 		public int ChannelCount { get; init; }
 		public int SampleSize { get; init; }
@@ -165,48 +164,14 @@ namespace SysDVR.Client.Player
 				userdata = GCHandle.ToIntPtr(handle)
 			};
 
-			SDL_OpenAudio(ref wantedSpec, out SDL_AudioSpec spec).Assert(SDL_GetError);
-
-			SwrContext* swrctx = null;
-
-			if (spec.channels != wantedSpec.channels ||
-				spec.format != wantedSpec.format ||
-				spec.freq != wantedSpec.freq)
-			{
-				swrctx = swr_alloc();
-				if (swrctx == null)
-					throw new Exception("Couldn't allocate the audio converter context");
-
-				av_opt_set_int(swrctx, "in_channel_layout", AV_CH_LAYOUT_STEREO, 0).Assert("av_opt_set_int in_channel_layout");
-				av_opt_set_int(swrctx, "in_sample_rate", StreamInfo.AudioSampleRate, 0).Assert("av_opt_set_int in_sample_rate");
-				av_opt_set_sample_fmt(swrctx, "in_sample_fmt", AVSampleFormat.AV_SAMPLE_FMT_S16, 0).Assert("av_opt_set_sample_fmt in_sample_fmt");
-
-				if (spec.channels != 1 && spec.channels != 2)
-					throw new Exception("Invalid channel count");
-
-				av_opt_set_int(swrctx, "out_channel_layout",
-					spec.channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO, 0).Assert("av_opt_set_int out_channel_layout");
-
-				av_opt_set_int(swrctx, "out_sample_rate", spec.freq, 0).Assert("av_opt_set_int out_sample_rate");
-
-				av_opt_set_sample_fmt(swrctx, "out_sample_fmt", spec.format switch
-				{
-					AUDIO_S16 => AVSampleFormat.AV_SAMPLE_FMT_S16,
-					AUDIO_S32 => AVSampleFormat.AV_SAMPLE_FMT_S32,
-					AUDIO_F32 => AVSampleFormat.AV_SAMPLE_FMT_FLT,
-					_ => throw new NotImplementedException(),
-				}, 0).Assert("av_opt_set_sample_fmt out_sample_fmt");
-
-				swr_init(swrctx).Assert("Couldn't initialize the audio converter");
-			}
+			SDL_OpenAudio(ref wantedSpec, IntPtr.Zero).Assert(SDL_GetError);
 
 			return new SDLAudioContext
 			{
-				AudioSpec = spec,
-				ChannelCount = spec.channels,
-				ConverterCtx = swrctx,
-				SampleRate = spec.freq,
-				SampleSize = spec.format switch
+				AudioSpec = wantedSpec,
+				ChannelCount = wantedSpec.channels,
+				SampleRate = wantedSpec.freq,
+				SampleSize = wantedSpec.format switch
 				{
 					AUDIO_S16 => 2,
 					AUDIO_S32 => 4,
@@ -519,7 +484,6 @@ namespace SysDVR.Client.Player
 			if (HasAudio)
 			{
 				SDLAudio = InitSDLAudio((AudioStreamTarget)owner.AudioTarget);
-				((AudioStreamTarget)owner.AudioTarget).UseContext(SDLAudio);
 			}
 		}
 
@@ -568,12 +532,6 @@ namespace SysDVR.Client.Player
 				// Dispose of unmanaged resources
 				SDLAudio.TargetHandle.Free();
 				SDL_Quit();
-
-				if (HasAudio && SDLAudio.ConverterCtx != null)
-				{
-					var ctx = SDLAudio.ConverterCtx;
-					swr_free(&ctx);
-				}
 
 				if (HasVideo)
 				{

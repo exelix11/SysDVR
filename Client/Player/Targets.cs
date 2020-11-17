@@ -55,29 +55,9 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		private SDLAudioContext AudioCtx = new SDLAudioContext { };
 		public unsafe void SendData(PoolBuffer block, UInt64 ts)
 		{
-			if (AudioCtx.ConverterCtx != null) { 
-				int inSamples = block.Length / StreamInfo.AudioSampleSize / StreamInfo.AudioChannels;
-
-				var outSamples = (int)av_rescale_rnd(
-					swr_get_delay(AudioCtx.ConverterCtx, StreamInfo.AudioSampleRate) + inSamples,
-					StreamInfo.AudioSampleRate, AudioCtx.SampleRate, AVRounding.AV_ROUND_UP);
-
-				if (outSamples <= 0)
-					throw new Exception($"ERROR: Calculated sample size is {outSamples}");
-
-				var outData = PoolBuffer.Rent(outSamples * AudioCtx.ChannelCount * AudioCtx.SampleSize);
-
-				fixed (byte* outbuf = outData.Buffer)
-				fixed (byte* inbuf = block.Buffer)
-					swr_convert(AudioCtx.ConverterCtx, &outbuf, outSamples, &inbuf, inSamples).AssertEqual(outSamples);
-
-				block.Free();
-				samples.Add(outData, tok);
-			}
-			else samples.Add(block, tok);
+			samples.Add(block, tok);
 		}
 
 		public void UseCancellationToken(CancellationToken tok)
@@ -88,11 +68,6 @@ namespace SysDVR.Client.Player
 		public void SendData(byte[] data, int offset, int size, ulong ts)
 		{
 			throw new NotImplementedException("For efficiency only the PoolBuffer interface can be used with this class");
-		}
-
-		internal void UseContext(SDLAudioContext ctx)
-		{
-			AudioCtx = ctx;
 		}
 	}
 
