@@ -56,11 +56,11 @@ namespace SysDVR.Client.Player
 		readonly Player player;
 		private bool disposedValue;
 
-		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName) : base(
+		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName, string quality) : base(
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
-			player = new Player(this, hwAcc, codecName);
+			player = new Player(this, hwAcc, codecName, quality);
 		}
 
 		public override void Begin()
@@ -106,6 +106,7 @@ namespace SysDVR.Client.Player
 	{
 		readonly bool HasAudio;
 		readonly bool HasVideo;
+		readonly string ScaleQuality;
 
 		protected bool ShouldQuit = true;
 
@@ -118,12 +119,19 @@ namespace SysDVR.Client.Player
 		protected FormatConverterContext Converter; // Initialized only if needed
 		protected readonly SDLAudioContext SDLAudio;
 
-		static SDLContext InitSDLVideo()
+		static SDLContext InitSDLVideo(string scaleQuality)
 		{
 			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
 
 			var win = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
 				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
+
+			if (scaleQuality != null)
+			{
+				if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality) == SDL_bool.SDL_FALSE)
+					Console.WriteLine($"Coudln't set the requested scale quality {scaleQuality}: {SDL_GetError()}");
+			}
+			else SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
 			var render = SDL_CreateRenderer(win, -1,
 				SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
@@ -132,7 +140,7 @@ namespace SysDVR.Client.Player
 				.Assert(SDL_GetError);
 
 			SDL_GetRendererInfo(render, out var info);
-			Console.WriteLine($"Initialized SDL with renderer: {Marshal.PtrToStringAnsi(info.name)}");
+			Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
 
 			var tex = SDL_CreateTexture(render, SDL_PIXELFORMAT_IYUV,
 				(int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
@@ -304,7 +312,7 @@ namespace SysDVR.Client.Player
 
 		unsafe public void UiThreadMain()
 		{
-			SDL = InitSDLVideo();
+			SDL = InitSDLVideo(ScaleQuality);
 
 			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
 			bool fullscreen = false;
@@ -362,8 +370,9 @@ namespace SysDVR.Client.Player
 				do
 				{
 					res = SDL_PollEvent(out var evt);
-					if (evt.type == SDL_EventType.SDL_QUIT ||
-						evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)
+					if (evt.type == SDL_EventType.SDL_QUIT
+						|| (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)
+						|| (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_ESCAPE))
 						ShouldQuit = true;
 					else if (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 						CalculateDisplayRect();
@@ -474,10 +483,11 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public Player(PlayerManager owner, bool hwAcc, string codecName)
+		public Player(PlayerManager owner, bool hwAcc, string codecName, string scaleQuality)
 		{
 			HasAudio = owner.HasAudio;
 			HasVideo = owner.HasVideo;
+			ScaleQuality = scaleQuality;
 
 			if (!HasAudio && !HasVideo)
 				throw new Exception("Can't start a player with no streams");
