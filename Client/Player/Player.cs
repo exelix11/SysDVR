@@ -8,6 +8,7 @@ using static FFmpeg.AutoGen.ffmpeg;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Diagnostics;
 
 namespace SysDVR.Client.Player
 {
@@ -80,7 +81,7 @@ namespace SysDVR.Client.Player
 			if (HasVideo)
 			{
 				Console.WriteLine("Starting stream, close the player window to stop.");
-				Console.WriteLine("Press F11 for full screen.");
+				Console.WriteLine("Press F11 for full screen, esc to quit.");
 				Console.WriteLine();
 				player.UiThreadMain();
 			}
@@ -123,7 +124,7 @@ namespace SysDVR.Client.Player
 		{
 			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
 
-			var win = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
+			var win = SDL_CreateWindow($"SysDVR-Client [PID {Process.GetCurrentProcess().Id}]", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
 				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
 
 			if (scaleQuality != null)
