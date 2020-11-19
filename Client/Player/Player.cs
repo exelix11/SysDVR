@@ -80,6 +80,8 @@ namespace SysDVR.Client.Player
 			if (HasVideo)
 			{
 				Console.WriteLine("Starting stream, close the player window to stop.");
+				Console.WriteLine("Press F11 for full screen.");
+				Console.WriteLine();
 				player.UiThreadMain();
 			}
 			else base.MainThread();
@@ -305,6 +307,7 @@ namespace SysDVR.Client.Player
 			SDL = InitSDLVideo();
 
 			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
+			bool fullscreen = false;
 
 			void CalculateDisplayRect()
 			{
@@ -364,6 +367,12 @@ namespace SysDVR.Client.Player
 						ShouldQuit = true;
 					else if (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 						CalculateDisplayRect();
+					else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_F11) 
+					{
+						SDL_SetWindowFullscreen(SDL.Window, fullscreen ? 0 : (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+						fullscreen = !fullscreen;
+						CalculateDisplayRect();
+					}
 				} while (res > 0);
 			}
 		}
