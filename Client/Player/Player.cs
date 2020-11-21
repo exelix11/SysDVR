@@ -377,23 +377,24 @@ namespace SysDVR.Client.Player
 						continue;
 				}
 
-				int res;
-				do
+				int res = SDL_PollEvent(out var evt);
+				while (res > 0)
 				{
-					res = SDL_PollEvent(out var evt);
 					if (evt.type == SDL_EventType.SDL_QUIT
 						|| (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)
 						|| (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_ESCAPE))
 						ShouldQuit = true;
 					else if (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 						CalculateDisplayRect();
-					else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_F11) 
+					else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_F11)
 					{
 						SDL_SetWindowFullscreen(SDL.Window, fullscreen ? 0 : (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
 						fullscreen = !fullscreen;
 						CalculateDisplayRect();
 					}
-				} while (res > 0);
+
+					res = SDL_PollEvent(out evt);
+				};
 			}
 		}
 
