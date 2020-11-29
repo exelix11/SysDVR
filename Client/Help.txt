@@ -19,7 +19,7 @@ Install sdl2 and ffmpeg with brew
 `brew install SDL2`
 `brew install ffmpeg`
 
-To stream via USB see the USB driver setup part of the guide: https://github.com/exelix11/SysDVR/wiki/SysDVR-Client-setup#usb-driver-setup
+To stream via USB see the USB driver setup part of the guide: https://github.com/exelix11/SysDVR/wiki/USB-Driver
 
 In case of problems see the common issues page: https://github.com/exelix11/SysDVR/wiki/Troubleshooting
 
