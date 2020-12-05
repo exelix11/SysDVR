@@ -339,7 +339,7 @@ namespace SysDVR.Client.Player
 				float scaleY = pixelHeight / (float)h;
 				SDL_RenderSetScale(SDL.Renderer, scaleX, scaleY);				
 				
-				if (w > h)
+				if (w >= h * Ratio)
 				{
 					DisplayRect.w = (int)(h * Ratio);
 					DisplayRect.h = h;
