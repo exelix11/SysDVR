@@ -16,6 +16,7 @@ void Platform::Init()
 {
 	romfsInit();
 	socketInitializeDefault();
+	hidInitializeTouchScreen();
 #ifdef __NXLINK_ENABLE__
 	nxlink_sock = nxlinkStdio();
 #endif
@@ -45,12 +46,10 @@ void Platform::GetInputs()
 void Platform::ImguiBindings()
 {
 	ImGuiIO &io = ImGui::GetIO();
-	u32 touch_count = hidTouchCount();
-	if (touch_count == 1)
+	HidTouchScreenState state;
+	if (hidGetTouchScreenStates(&state, 1) && state.count == 1)
 	{
-		touchPosition touch;
-		hidTouchRead(&touch, 0);
-		io.MousePos = ImVec2(touch.px, touch.py);
+		io.MousePos = ImVec2(state.touches[0].x, state.touches[0].y);
 		io.MouseDown[0] = true;
 	}
 	else io.MouseDown[0] = false;
