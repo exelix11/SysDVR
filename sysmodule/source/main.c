@@ -204,6 +204,7 @@ static void SetModeInternal(void* argmode)
 
 	if (CurrentMode)
 	{
+		LOG("Terminating mode\n");
 		IsThreadRunning = false;
 		svcSleepThread(5E+8);
 		if (CurrentMode->ExitFn)
@@ -220,6 +221,7 @@ static void SetModeInternal(void* argmode)
 	CurrentMode = mode;
 	if (mode)
 	{
+		LOG("Starting mode\n");
 		IsThreadRunning = true;
 		svcSleepThread(5E+8);
 		if (mode->InitFn)
@@ -230,6 +232,7 @@ static void SetModeInternal(void* argmode)
 			LaunchThread(&AudioThread, mode->AThread, NULL);
 	}
 	IsSwitchingModes = false;
+	LOG("Done\n");
 }
 
 static Thread SwitchingThread;
@@ -237,6 +240,8 @@ static void BeginSetMode(StreamMode* mode)
 {	
 	if (IsSwitchingModes)
 		fatalThrow(ERR_MAIN_SWITCHING);
+
+	LOG("Switching modes..");
 
 	if (SwitchingThread.handle)
 	{
