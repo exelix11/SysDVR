@@ -101,7 +101,7 @@ static void ApplyModeChanges()
 	if (modeToSet == TYPE_MODE_ERROR)
 		return;
 
-	SetModeID(modeToSet);
+	SetModeID(CMD_SET_TO_MODE(modeToSet));
 
 	modeToSet = TYPE_MODE_ERROR;
 }
