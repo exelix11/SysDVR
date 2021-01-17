@@ -101,7 +101,7 @@ Result UsbCommsInitialize(struct usb_device_descriptor* device_descriptor, u32 n
                     rwlockWriteLock(&intf->lock);
                     rwlockWriteLock(&intf->lock_in);
                     rwlockWriteLock(&intf->lock_out);
-                    rc = _usbCommsInterfaceInit(i, infos == NULL ? NULL : infos + i);
+                    rc = _usbCommsInterfaceInit(i, infos + i);
                     rwlockWriteUnlock(&intf->lock_out);
                     rwlockWriteUnlock(&intf->lock_in);
                     rwlockWriteUnlock(&intf->lock);
@@ -192,22 +192,13 @@ static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbInterfaceDesc* inf
     usbCommsInterface* interface = &g_usbCommsInterfaces[intf_ind];
 
     struct usb_interface_descriptor interface_descriptor = *info->interface_desc;
-
-    struct usb_endpoint_descriptor endpoint_descriptor_in = {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_ENDPOINT_IN,
-        .bmAttributes = USB_TRANSFER_TYPE_BULK,
-        .wMaxPacketSize = 0x40,
-    };
-
-    struct usb_endpoint_descriptor endpoint_descriptor_out = {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_ENDPOINT_OUT,
-        .bmAttributes = USB_TRANSFER_TYPE_BULK,
-        .wMaxPacketSize = 0x40,
-    };
+    
+    u8 iStringDesc;
+    if (R_SUCCEEDED(usbDsAddUsbStringDescriptor(&iStringDesc, info->string_descriptor)))
+        interface_descriptor.iInterface = iStringDesc;
+    
+    struct usb_endpoint_descriptor endpoint_descriptor_in = *info->endpoint_in;
+    struct usb_endpoint_descriptor endpoint_descriptor_out = *info->endpoint_out;
 
     struct usb_ss_endpoint_companion_descriptor endpoint_companion = {
         .bLength = sizeof(struct usb_ss_endpoint_companion_descriptor),
@@ -237,10 +228,6 @@ static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbInterfaceDesc* inf
 
     rc = usbDsRegisterInterface(&interface->interface);
     if (R_FAILED(rc)) return rc;
-
-    interface_descriptor.bInterfaceNumber = interface->interface->interface_index;
-    endpoint_descriptor_in.bEndpointAddress += interface_descriptor.bInterfaceNumber + 1;
-    endpoint_descriptor_out.bEndpointAddress += interface_descriptor.bInterfaceNumber + 1;
 
     // Full Speed Config
     rc = usbDsInterface_AppendConfigurationData(interface->interface, UsbDeviceSpeed_Full, &interface_descriptor, USB_DT_INTERFACE_SIZE);
@@ -294,22 +281,8 @@ static Result _usbCommsInterfaceInit1x(u32 intf_ind, const UsbInterfaceDesc* inf
     usbCommsInterface* interface = &g_usbCommsInterfaces[intf_ind];
 
     struct usb_interface_descriptor interface_descriptor = *info->interface_desc;
-
-    struct usb_endpoint_descriptor endpoint_descriptor_in = {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_ENDPOINT_IN,
-        .bmAttributes = USB_TRANSFER_TYPE_BULK,
-        .wMaxPacketSize = 0x200,
-    };
-
-    struct usb_endpoint_descriptor endpoint_descriptor_out = {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_ENDPOINT_OUT,
-        .bmAttributes = USB_TRANSFER_TYPE_BULK,
-        .wMaxPacketSize = 0x200,
-    };
+    struct usb_endpoint_descriptor endpoint_descriptor_in = *info->endpoint_in;
+    struct usb_endpoint_descriptor endpoint_descriptor_out = *info->endpoint_out;
 
     interface->initialized = 1;
 
