@@ -48,7 +48,9 @@ void __libnx_initheap(void)
 
 void __attribute__((weak)) __appInit(void)
 {
+#ifndef DEV
 	svcSleepThread(2E+10); // 20 seconds
+#endif
 
 	Result rc;
 

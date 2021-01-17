@@ -28,7 +28,7 @@ void UsbSerialExit()
 	ClearState();
 }
 
-Result UsbSerialInitializeForStreaming(UsbPipe* video, UsbPipe* audio)
+Result UsbSerialInitializeForStreaming(UsbInterface* video, UsbInterface* audio)
 {
 	ClearState();
 
@@ -77,15 +77,23 @@ Result UsbSerialInitializeForStreaming(UsbPipe* video, UsbPipe* audio)
 		.bInterval = 1 //Max nak rate
 	};
 
+	VInt.bEndpointAddress |= 1;
+	VBulk.bEndpointAddress |= 1;
+
+	AInt.bEndpointAddress |= 2;
+	ABulk.bEndpointAddress |= 2;
+
 	UsbInterfaceDesc iface[2] = {
 		{
 			.interface_desc = &Viface,
-			.endpoint_desc = {&VInt, &VBulk},
+			.endpoint_in = &VBulk,
+			.endpoint_out = &VInt,
 			.string_descriptor = "SysDVR - Video"
 		},
 		{
 			.interface_desc = &Aiface,
-			.endpoint_desc = {&AInt, &ABulk},
+			.endpoint_in = &ABulk,
+			.endpoint_out = &AInt,
 			.string_descriptor = "SysDVR - Audio"
 		}
 	};
@@ -94,17 +102,8 @@ Result UsbSerialInitializeForStreaming(UsbPipe* video, UsbPipe* audio)
 	if (R_FAILED(rc))
 		return rc;
 
-	*video = (UsbPipe){
-		.interface = Viface.bInterfaceNumber,
-		.WriteEP = 1,
-		.ReadEP = 0
-	};
-
-	*audio = (UsbPipe){
-		.interface = Aiface.bInterfaceNumber,
-		.WriteEP = 1,
-		.ReadEP = 0
-	};
+	*video = Viface.bInterfaceNumber;
+	*audio = Aiface.bInterfaceNumber;
 
 	return 0;
 }
