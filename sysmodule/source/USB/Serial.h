@@ -1,5 +1,5 @@
 #pragma once 
 #include "UsbComms.h"
 
-Result UsbSerialInitializeForStreaming(UsbPipe* video, UsbPipe* audio);
+Result UsbSerialInitializeForStreaming(UsbInterface* video, UsbInterface* audio);
 void UsbSerialExit();

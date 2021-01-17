@@ -2,15 +2,15 @@
 #include "../USB/Serial.h"
 #include "../grcd.h"
 
-static UsbPipe VPipe, APipe;
+static UsbInterface VPipe, APipe;
 
-static inline bool SerialWrite(UsbPipe* interface, const VLAPacket* packet)
+static inline bool SerialWrite(UsbInterface interface, const VLAPacket* packet)
 {
 	const u32 size = packet->Header.DataSize + sizeof(PacketHeader);
 	return UsbSerialWrite(interface, packet, size, 1E+9) == size;
 }
 
-static inline bool WaitRequest(UsbPipe* interface) 
+static inline bool WaitRequest(UsbInterface interface)
 {
 	u32 data = 0;
 	return UsbSerialRead(interface, &data, sizeof(data), 3e+9) == sizeof(data) && data == 0xAAAAAAAA;
@@ -23,13 +23,13 @@ static void USB_StreamVideo(void* _)
 
 	while (true)
 	{
-		if (!WaitRequest(&VPipe))
+		if (!WaitRequest(VPipe))
 			TerminateOrContinue
 
 		if (!ReadVideoStream())
 			TerminateOrContinue
 
-		if (!SerialWrite(&VPipe, (VLAPacket*)&VPkt))
+		if (!SerialWrite(VPipe, (VLAPacket*)&VPkt))
 			TerminateOrContinue
 	}
 }
@@ -41,13 +41,13 @@ static void USB_StreamAudio(void* _)
 
 	while (true)
 	{
-		if (!WaitRequest(&APipe))
+		if (!WaitRequest(APipe))
 			TerminateOrContinue
 
 		if (!ReadAudioStream())
 			TerminateOrContinue
 
-		if (!SerialWrite(&APipe, (VLAPacket*)&APkt))
+		if (!SerialWrite(APipe, (VLAPacket*)&APkt))
 			TerminateOrContinue
 	}
 }
