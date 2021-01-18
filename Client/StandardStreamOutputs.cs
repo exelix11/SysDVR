@@ -11,10 +11,10 @@ namespace SysDVR.Client
 	{
 		private const string BaseArgs = "--profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts";
 
-		private static IOutTarget GetVTarget(StreamKind kind, string path) =>
+		private static IOutStream GetVTarget(StreamKind kind, string path) =>
 			kind == StreamKind.Video ? new StdInTarget(path, "- --fps=30 " + BaseArgs) : null;
 
-		private static IOutTarget GetATarget(StreamKind kind, string path) =>
+		private static IOutStream GetATarget(StreamKind kind, string path) =>
 			kind == StreamKind.Audio ? new StdInTarget(path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
 
 		// This can only handle one stream
@@ -27,10 +27,10 @@ namespace SysDVR.Client
 
 	class StdOutManager : BaseStreamManager
 	{
-		private static IOutTarget GetVTarget(StreamKind kind) =>
+		private static IOutStream GetVTarget(StreamKind kind) =>
 			kind == StreamKind.Video ? new StdOutTarget() : null;
 
-		private static IOutTarget GetATarget(StreamKind kind) =>
+		private static IOutStream GetATarget(StreamKind kind) =>
 			kind == StreamKind.Audio ? new StdOutTarget() : null;
 
 		// This can only handle one stream
@@ -41,42 +41,7 @@ namespace SysDVR.Client
 		}
 	}
 
-	class SaveToDiskManager : BaseStreamManager
-	{
-		private static IOutTarget GetTarget(bool enable, string path, string name) =>
-			enable ? new OutFileTarget(Path.Join(path, name)) : null;
-
-		public SaveToDiskManager(bool video, bool audio, string path) :
-			base(GetTarget(video, path, "video.h264"), GetTarget(audio, path, "audio.raw"))
-		{
-
-		}
-	}
-
-	class OutFileTarget : IOutTarget
-	{
-		FileStream Vfs;
-
-		public OutFileTarget(string fname)
-		{
-			Vfs = File.Open(fname, FileMode.Create);
-		}
-
-		public void Dispose()
-		{
-			Vfs.Close();
-			Vfs.Dispose();
-		}
-
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
-		{
-			Vfs.Write(data, offset, size);
-		}
-
-		public void UseCancellationToken(CancellationToken tok) { }
-	}
-
-	class StdInTarget : IOutTarget
+	class StdInTarget : IOutStream
 	{
 		Process proc;
 
@@ -109,7 +74,7 @@ namespace SysDVR.Client
 		public void UseCancellationToken(CancellationToken tok) { }
 	}
 
-	class StdOutTarget : IOutTarget
+	class StdOutTarget : IOutStream
 	{
 		Stream stdout;
 

@@ -45,41 +45,7 @@ namespace SysDVR.Client
 		bool ReadPayload(byte[] buffer, int length);
 	}
 
-#if DEBUG
-	class StubSource : IStreamingSource
-	{
-		public bool Logging { get; set; }
-
-		public void Flush()
-		{
-			
-		}
-
-		public bool ReadHeader(byte[] buffer) =>
-			throw new NotImplementedException();
-
-		public bool ReadPayload(byte[] buffer, int length) =>
-			throw new NotImplementedException();
-
-		public void StopStreaming()
-		{
-			
-		}
-
-		public void UseCancellationToken(CancellationToken tok)
-		{
-
-		}
-
-		public void WaitForConnection()
-		{
-			while (true)
-				Thread.Sleep(1000);
-		}
-	}
-#endif
-
-	class StreamingThread : IDisposable
+	class StreamThread : IDisposable
 	{
 		public static bool Logging;
 
@@ -87,12 +53,12 @@ namespace SysDVR.Client
 		Thread TargetThread;
 		CancellationTokenSource Cancel;
 
-		public IOutTarget Target { get; set; }
+		public IOutStream Target { get; set; }
 		public IStreamingSource Source { get; set; }
 
 		public StreamKind Kind { get; private set; }
 
-		public StreamingThread(StreamKind kind, IOutTarget target)
+		public StreamThread(StreamKind kind, IOutStream target)
 		{
 			Kind = kind;
 			Target = target;
@@ -130,8 +96,7 @@ namespace SysDVR.Client
 				{
 					var (ts, data) = o;
 
-					Target.SendData(data, ts);
-					// The target is expected to free data
+					Target.SendAndFreeData(data, ts);
 				}
 			}
 			catch (OperationCanceledException)
