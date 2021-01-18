@@ -14,7 +14,7 @@ namespace SysDVR.Client.Player
 			((AudioStreamTarget)GCHandle.FromIntPtr(userdata).Target).SDLCallback(new Span<byte>(buf.ToPointer(), len));
 	}
 
-	class AudioStreamTarget : IOutTarget
+	class AudioStreamTarget : IOutStream
 	{
 		readonly BlockingCollection<PoolBuffer> samples = new BlockingCollection<PoolBuffer>(20);
 		CancellationToken tok;
@@ -55,7 +55,7 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public unsafe void SendData(PoolBuffer block, UInt64 ts)
+		public unsafe void SendAndFreeData(PoolBuffer block, UInt64 ts)
 		{
 			samples.Add(block, tok);
 		}
@@ -71,7 +71,7 @@ namespace SysDVR.Client.Player
 		}
 	}
 
-	class H264StreamTarget : IOutTarget
+	class H264StreamTarget : IOutStream
 	{
 		DecoderContext ctx;
 		CancellationToken tok;
@@ -87,6 +87,7 @@ namespace SysDVR.Client.Player
 		}
 
 		bool FirstPacket = true;
+		long firstTs = -1;
 		public unsafe void SendData(byte[] data, int offset, int size, ulong ts)
 		{
 			// Must add SPS and PPS to the first frame manually to keep ffmpeg happy
@@ -101,6 +102,7 @@ namespace SysDVR.Client.Player
 				size = next.Length;
 
 				FirstPacket = false;
+				firstTs = (long)ts;
 			}
 
 			fixed (byte* nal_data = data)
@@ -110,7 +112,7 @@ namespace SysDVR.Client.Player
 
 				pkt.data = nal_data + offset;
 				pkt.size = size;
-				pkt.pts = (long)ts;
+				pkt.pts = pkt.dts = (long)(((long)ts - firstTs) / 1E+6 * 90000);
 
 				int res = 0;
 

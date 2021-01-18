@@ -31,7 +31,7 @@ namespace SysDVR.Client.RTSP
 		}
 	}
 
-	abstract class SysDvrRTSPTarget : IOutTarget
+	abstract class SysDvrRTSPTarget : IOutStream
 	{
 		public delegate void DataAvailableFn(Span<byte> Data, ulong tsMsec);
 		public event DataAvailableFn DataAvailable;
