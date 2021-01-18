@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SysDVR.Client
+namespace SysDVR.Client.Sources
 {
 	class TCPBridgeSource : IStreamingSource
 	{

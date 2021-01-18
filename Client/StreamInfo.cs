@@ -16,5 +16,7 @@
 		public const int AudioChannels = 2;
 		public const int AudioSampleRate = 48000;
 		public const int AudioSampleSize = 2;
+
+		public const int AudioSamplesPerPayload = AudioBatching * AudioPayloadSize / (AudioChannels * AudioSampleSize);
 	}
 }

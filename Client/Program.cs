@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using SysDVR.Client.FileOutput;
+using SysDVR.Client.Sources;
 
 namespace SysDVR.Client
 {
@@ -142,7 +144,7 @@ Command examples:
 				return;
 			else if (HasArg("--show-decoders"))
 			{
-				Player.CodecUtils.PrintAllCodecs();
+				Player.LibavUtils.PrintAllCodecs();
 				return;
 			}
 
@@ -151,12 +153,12 @@ Command examples:
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
-			StreamingThread.Logging = HasArg("--print-stats");
+			StreamThread.Logging = HasArg("--print-stats");
 			UsbContext.ForceLibUsb = HasArg("--no-winusb");
 
 			if (NoVideo && NoAudio)
 			{
-				Console.WriteLine("Specify at least a video or audio target");
+				Console.WriteLine("Specify at least a video or audio output");
 				return;
 			}
 
@@ -186,7 +188,7 @@ Command examples:
 					Console.WriteLine("The specified directory is not valid");
 					return;
 				}
-				StreamManager = new SaveToDiskManager(!NoVideo, !NoAudio, diskPath);
+				throw new NotImplementedException();
 			}
 #if DEBUG
 			else if (HasArg("--debug"))
@@ -262,6 +264,9 @@ Command examples:
 			Console.WriteLine("Terminating threads...");
 
 			Streams.Stop();
+
+			if (Streams is IDisposable d)
+				d.Dispose();
 		}
 	}
 }
