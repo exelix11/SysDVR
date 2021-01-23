@@ -121,7 +121,6 @@ namespace SysDVR.Client.Player
 					res = avcodec_send_packet(ctx.CodecCtx, &pkt);
 				if (res == AVERROR(EAGAIN))
 				{
-					Thread.Sleep(2);
 					if (!tok.IsCancellationRequested)
 						goto send_again;
 				}
