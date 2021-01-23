@@ -76,7 +76,7 @@ Output options:
 	`--stdout` : Streams the specified channel to stdout, only works with one channel, if no stream option is specified `--no-audio` will be used.
 	
 	Storage options
-	`--file <folder path>` : Stores to the specified folder the streams, video will be saved as `video.h264` and audio as `audio.raw`, existing files will be overwritten.	
+	`--file <output path>` : Saves an mp4 file to the specified folder, existing files will be overwritten.	
 
 Extra options:
 	These options will not stream, they just print the output and then quit.
@@ -182,13 +182,13 @@ Command examples:
 			}
 			else if (HasArg("--file"))
 			{
-				string diskPath = ArgValue("--file");
-				if (diskPath == null || !Directory.Exists(diskPath))
+				string filename = ArgValue("--file");
+				if (string.IsNullOrWhiteSpace(filename))
 				{
-					Console.WriteLine("The specified directory is not valid");
+					Console.WriteLine("The specified path is not valid");
 					return;
 				}
-				throw new NotImplementedException();
+				StreamManager = new Mp4OutputManager(filename, !NoVideo, !NoAudio);
 			}
 #if DEBUG
 			else if (HasArg("--debug"))
