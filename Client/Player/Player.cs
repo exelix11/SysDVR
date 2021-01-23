@@ -1,11 +1,11 @@
-﻿using System;
+﻿//#define DEBUG_FRAMERATE
+
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using SDL2;
 using static SDL2.SDL;
 using FFmpeg.AutoGen;
 using static FFmpeg.AutoGen.ffmpeg;
-using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
 using System.Diagnostics;
@@ -111,10 +111,11 @@ namespace SysDVR.Client.Player
 		readonly string ScaleQuality;
 
 		protected bool ShouldQuit = true;
+		protected Thread ReceiveThread;
 
 		bool Running = false;
-		protected Thread ReceiveThread;
-		volatile bool TextureConsumed = true;
+		AutoResetEvent ConsumedFrame = new AutoResetEvent(true);
+		AutoResetEvent ReadyFrame = new AutoResetEvent(false);
 
 		protected DecoderContext Decoder; // Need to swap the target frames
 		protected SDLContext SDL; // This must be initialized by the UI thread
@@ -349,24 +350,34 @@ namespace SysDVR.Client.Player
 
 			CalculateDisplayRect();
 
+#if DEBUG_FRAMERATE
+			int frames = 0;
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
+#endif
 			while (!ShouldQuit)
 			{
-				if (!TextureConsumed)
+				if (ReadyFrame.WaitOne(50))
 				{
 					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
 					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
 					UpdateSDLTexture(Decoder.RenderFrame);
 					SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
 					SDL_RenderPresent(SDL.Renderer);
-					TextureConsumed = true;
+					ConsumedFrame.Set();
+#if DEBUG_FRAMERATE
+					frames++;
+#endif
 				}
-				else
+
+#if DEBUG_FRAMERATE
+				if (sw.ElapsedMilliseconds >= 1000)
 				{
-					for (int i = 0; i < 50 && TextureConsumed; i++)
-						Thread.Sleep(2); // If no new frame wait up to 100ms before polling events again
-					if (!TextureConsumed)
-						continue;
+					Console.WriteLine($"{frames} {sw.ElapsedMilliseconds}");
+					sw.Restart();
+					frames = 0;
 				}
+#endif
 
 				int res = SDL_PollEvent(out var evt);
 				while (res > 0)
@@ -436,7 +447,7 @@ namespace SysDVR.Client.Player
 					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
 
 				if (ret == AVERROR(EAGAIN))
-					Thread.Sleep(2);
+					Thread.Sleep(1);
 				else if (ret != 0)
 					Console.WriteLine($"avcodec_receive_frame {ret}");
 				else
@@ -456,8 +467,7 @@ namespace SysDVR.Client.Player
 						}
 					}
 
-					while (!TextureConsumed && !ShouldQuit)
-						Thread.Sleep(2);
+					ConsumedFrame.WaitOne();
 
 					if (ShouldQuit)
 						break;
@@ -476,9 +486,9 @@ namespace SysDVR.Client.Player
 
 						Decoder.ReceiveFrame = receiveNext;
 						Decoder.RenderFrame = toRender;
-					}					
+					}
 
-					TextureConsumed = false;
+					ReadyFrame.Set();
 
 					// TODO: figure out synchronization. 
 					// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
@@ -530,6 +540,9 @@ namespace SysDVR.Client.Player
 		public void Stop() 
 		{
 			ShouldQuit = true;
+
+			ReadyFrame.Dispose();
+			ConsumedFrame.Dispose();
 
 			//if (HasAudio)
 			//	SDL_PauseAudio(1); this seems to hang sometimes for no apparent reason
