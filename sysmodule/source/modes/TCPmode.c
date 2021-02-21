@@ -30,7 +30,7 @@ static inline bool SendData(int sock, PacketHeader header, const char* FullPacke
 		{
 			if (errno == EWOULDBLOCK || errno == EAGAIN)
 			{
-				svcSleepThread(2);
+				svcSleepThread(1);
 				continue;
 			}
 			else return false;
