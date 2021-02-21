@@ -20,7 +20,7 @@ extern atomic_bool IsThreadRunning;
 
 #define TerminateOrContinue {if (IsThreadRunning) continue; else break;}
 
-#define VbufSz 0x32000
+#define VbufSz 0x50000
 
 /*
 	Audio is 16bit pcm at 48000hz stereo. In official software it's read in 0x1000 chunks
