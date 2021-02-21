@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,49 +15,55 @@ namespace SysDVR.Client.FileOutput
 {
 	unsafe class Mp4AudioTarget : IOutStream, IDisposable
 	{
-		AVFormatContext* OutCtx;
-		AVCodecContext* CodecCtx;
+		AVFormatContext* outCtx;
+		object ctxSync;
+		AVCodecContext* codecCtx;
 
 		AVFrame* frame;
 		AVPacket* packet;
 
 		int channelId;
+		int timebase_den;
 
-		bool running = true;
+		bool running = false;
 		public void Stop()
 		{
-			running = false;
+			lock (this)
+			{
+				running = false;
+				// Flush the encoder
+				SendFrame(null);
+				outCtx = null;
+			}
 		}
 
-		public void UseContext(AVFormatContext* ctx, int id)
+		public void StartWithContext(AVFormatContext* ctx, object sync, int id)
 		{
-			OutCtx = ctx;
+			outCtx = ctx;
+			ctxSync = sync;
 			channelId = id;
 
-			if (OutCtx->streams[id]->time_base.den != StreamInfo.AudioSampleRate)
-				Console.WriteLine("Warning: time_base doesn't match the sample rate");
+			timebase_den = outCtx->streams[id]->time_base.den;
 
-			var encoder = avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP3);
+			var encoder = avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP2);
 
-			CodecCtx = avcodec_alloc_context3(encoder);
-			if (CodecCtx == null) throw new Exception("Couldn't allocate MP3 encoder");
+			codecCtx = avcodec_alloc_context3(encoder);
+			if (codecCtx == null) throw new Exception("Couldn't allocate MP2 encoder");
 
-			CodecCtx->sample_rate = StreamInfo.AudioSampleRate;
-			CodecCtx->channels = StreamInfo.AudioChannels;
-			CodecCtx->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
-			CodecCtx->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
-			CodecCtx->max_samples = StreamInfo.AudioSamplesPerPayload * StreamInfo.AudioChannels;
-			CodecCtx->frame_size = StreamInfo.AudioSamplesPerPayload;
-			CodecCtx->channel_layout = AV_CH_LAYOUT_STEREO;
-			CodecCtx->bit_rate = 128000;
-			CodecCtx->time_base = new AVRational { num = 1, den = StreamInfo.AudioSampleRate };
+			codecCtx->sample_rate = StreamInfo.AudioSampleRate;
+			codecCtx->channels = StreamInfo.AudioChannels;
+			codecCtx->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
+			codecCtx->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_S16;
+			codecCtx->channel_layout = AV_CH_LAYOUT_STEREO;
+			codecCtx->bit_rate = 128000;
+			codecCtx->time_base = new AVRational { num = 1, den = timebase_den };
 
-			avcodec_open2(CodecCtx, encoder, null).AssertNotNeg();
+			avcodec_open2(codecCtx, encoder, null).AssertNotNeg();
 
 			frame = av_frame_alloc();
 			if (frame == null) throw new Exception("Couldn't allocate AVFrame");
-			frame->nb_samples = Math.Min(StreamInfo.AudioSamplesPerPayload, CodecCtx->frame_size);
-			frame->format = (int)AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+			frame->nb_samples = Math.Min(StreamInfo.AudioSamplesPerPayload, codecCtx->frame_size);
+			frame->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
 			frame->channel_layout = AV_CH_LAYOUT_STEREO;
 			frame->sample_rate = StreamInfo.AudioSampleRate;
 
@@ -64,58 +71,62 @@ namespace SysDVR.Client.FileOutput
 
 			packet = av_packet_alloc();
 			if (packet == null) throw new Exception("Couldn't allocate AVPacket");
-		}
 
-		public void Dispose()
-		{
-			AVFrame* frame = this.frame;
-			av_frame_free(&frame);
-
-			AVPacket* packet = this.packet;
-			av_packet_free(&packet);
+			running = true;
 		}
 
 		long firstTs = -1;
+		// need to fill the encoder frame before sending it, it can also happen across SendData calls
+		int frameFreeSpace = 0;
+		ulong framePrevTs = 0;
 		private void SendData(byte[] data, int size, ulong ts)
 		{
 			if (!running)
 				return;
 
-			if (firstTs == -1)
-				firstTs = (long)ts;
-
-			// Will break on big endian
-			Span<short> d = MemoryMarshal.Cast<byte, short>(new Span<byte>(data, 0, size));
-			long samplesSinceTs = 0;
-			while (d.Length > 0)
+			lock (this)
 			{
-				int SamplesInBlock = Math.Min(
-					d.Length / 2, // Two channels array of shorts
-					frame->linesize[0] / 4 // Single channel array of bytes, 4 byte per sample
-				);
-				
-				Span<float> l = new Span<float>(frame->data[0], frame->linesize[0] / sizeof(float));
-				Span<float> r = new Span<float>(frame->data[1], frame->linesize[0] / sizeof(float));
-				
-				for (int i = 0; i < SamplesInBlock; i++)
+				if (firstTs == -1)
+					firstTs = (long)ts;
+
+				// Should look into endianness for this
+				Span<byte> d = new Span<byte>(data, 0, size);
+				while (d.Length > 0 && running)
 				{
-					l[i] = d[i * 2] / -(float)Int16.MinValue;
-					r[i] = d[i * 2 + 1] / -(float)Int16.MinValue;
+					bool newframe = frameFreeSpace == 0;
+
+					if (newframe)
+					{
+						av_frame_make_writable(frame).AssertNotNeg();
+						frameFreeSpace = frame->linesize[0];
+						framePrevTs = ts;
+					}
+
+					Span<byte> target = new Span<byte>(frame->data[0] + frame->linesize[0] - frameFreeSpace, frameFreeSpace);
+					int copyBytes = Math.Min(d.Length, frameFreeSpace);
+
+					d.Slice(0, copyBytes).CopyTo(target);
+					d = d.Slice(copyBytes);
+					frameFreeSpace -= copyBytes;
+
+					frame->pkt_dts = frame->pts = (long)(((long)ts - firstTs) * timebase_den / 1E+6);
+					ts += (ulong)(copyBytes / 4 * 1E+6 / StreamInfo.AudioSampleRate);
+
+					if (frameFreeSpace == 0)
+						SendFrame(frame);
 				}
-				
-				d = d.Slice(SamplesInBlock * 2);
+			}
+		}
 
-				// We use the sample rate as time base so we can just add samples to the pts
-				frame->pts = ((long)ts - firstTs) * StreamInfo.AudioSampleRate / (long)1E+6 + samplesSinceTs;
-				samplesSinceTs += SamplesInBlock;
-
-				avcodec_send_frame(CodecCtx, frame);
-				//Console.Write("" + avcodec_send_frame(CodecCtx, frame) + " ");
-				if (avcodec_receive_packet(CodecCtx, packet) < 0)
-					continue;
-
+		private unsafe void SendFrame(AVFrame* frame)
+		{
+			avcodec_send_frame(codecCtx, frame).Assert();
+			while (avcodec_receive_packet(codecCtx, packet) == 0)
+			{
 				packet->stream_index = channelId;
-				av_interleaved_write_frame(OutCtx, packet).AssertNotNeg();
+				lock (ctxSync)
+					av_interleaved_write_frame(outCtx, packet).AssertNotNeg();
+				av_packet_unref(packet);
 			}
 		}
 
@@ -129,23 +140,60 @@ namespace SysDVR.Client.FileOutput
 		{
 
 		}
+
+		private bool disposedValue;
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposedValue)
+			{
+				AVFrame* frame = this.frame;
+				av_frame_free(&frame);
+
+				AVPacket* packet = this.packet;
+				av_packet_free(&packet);
+
+				AVCodecContext* c = this.codecCtx;
+				avcodec_free_context(&c);
+
+				disposedValue = true;
+			}
+		}
+
+		~Mp4AudioTarget()
+		{
+			Dispose(disposing: false);
+		}
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
 	}
 
 	unsafe class Mp4VideoTarget : IOutStream
 	{
-		AVFormatContext* OutCtx;
+		AVFormatContext* outCtx;
+		object ctxSync;
+
 		int timebase_den;
 
 		bool running = true;
-		public void Stop() 
+		public void Stop()
 		{
-			running = false;
+			lock (this)
+			{
+				running = false;
+				outCtx = null;
+			}
 		}
 
-		public void UseContext(AVFormatContext* ctx)
+		public void StartWithContext(AVFormatContext* ctx, object sync)
 		{
-			OutCtx = ctx;
-			timebase_den = OutCtx->streams[0]->time_base.den;
+			outCtx = ctx;
+			ctxSync = sync;
+			timebase_den = outCtx->streams[0]->time_base.den;
+			running = true;
 		}
 
 		long firstTs = -1;
@@ -155,34 +203,35 @@ namespace SysDVR.Client.FileOutput
 			if (!running)
 				return;
 
-			// Must add SPS and PPS to the first frame manually to keep ffmpeg happy
-			if (firstTs == -1)
+			lock (this)
 			{
-				byte[] next = new byte[size + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
-				Buffer.BlockCopy(StreamInfo.SPS, 0, next, 0, StreamInfo.SPS.Length);
-				Buffer.BlockCopy(StreamInfo.PPS, 0, next, StreamInfo.SPS.Length, StreamInfo.PPS.Length);
-				Buffer.BlockCopy(data, 0, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, size);
+				// Must add SPS and PPS to the first frame manually to keep ffmpeg happy
+				if (firstTs == -1)
+				{
+					byte[] next = new byte[size + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
+					Buffer.BlockCopy(StreamInfo.SPS, 0, next, 0, StreamInfo.SPS.Length);
+					Buffer.BlockCopy(StreamInfo.PPS, 0, next, StreamInfo.SPS.Length, StreamInfo.PPS.Length);
+					Buffer.BlockCopy(data, 0, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, size);
 
-				data = next;
-				size = next.Length;
+					data = next;
+					size = next.Length;
 
-				firstTs = (long)ts;				
-			}
+					firstTs = (long)ts;
+				}
 
-			fixed (byte* nal_data = data)
-			{
-				AVPacket pkt;
-				av_init_packet(&pkt);
+				fixed (byte* nal_data = data)
+				{
+					AVPacket pkt;
+					av_init_packet(&pkt);
 
-				pkt.data = nal_data;
-				pkt.size = size;
-				pkt.dts = dts++;
-				pkt.pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
-				pkt.stream_index = 0;
+					pkt.data = nal_data;
+					pkt.size = size;
+					pkt.dts = pkt.pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
+					pkt.stream_index = 0;
 
-				//Console.WriteLine($"{size:x5} {ts} {pkt.dts}");
-
-				av_write_frame(OutCtx, &pkt).AssertNotNeg();
+					lock(ctxSync)
+						av_interleaved_write_frame(outCtx, &pkt).AssertNotNeg();
+				}
 			}
 		}
 

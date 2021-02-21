@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Runtime.InteropServices;
+using System.IO;
 
 namespace SysDVR.Client.FileOutput
 {
@@ -32,7 +34,7 @@ namespace SysDVR.Client.FileOutput
 
 		public override void Stop()
 		{
-			// Close the output first because sometimes the other threads can get stuck (especially with USB) and prevent the recorder from finalizing the mp4 file.
+			// Close the output first because sometimes the other threads can get stuck (especially with USB) and prevent the recorder from finalizing the file.
 			output.Stop();
 			base.Stop();
 		}
@@ -70,6 +72,37 @@ namespace SysDVR.Client.FileOutput
 			Filename = filename;
 		}
 
+		/* 
+		 * TODO: This is needed for MKV files but doesn't seem to be quite right: 
+		 * ffmpeg shows several errors and seeking in mpv doesn't work. Adding this to mp4 files breaks video in the windows 10 video player.
+		private unsafe (IntPtr, int) GenerateH264ExtraData() 
+		{
+			var mem = new MemoryStream();
+			var bin = new BinaryWriter(mem);
+		
+			var sps = new Span<byte>(StreamInfo.SPS).Slice(4);
+			var pps = new Span<byte>(StreamInfo.PPS).Slice(4);
+		
+			bin.Write((byte)0x1);
+			bin.Write(sps[1]);
+			bin.Write(sps[2]);
+			bin.Write(sps[3]);
+			bin.Write((byte)(0xFC | 3));
+			bin.Write((byte)(0xE0 | 1));
+			bin.Write((byte)0);
+			bin.Write((byte)(sps.Length & 0xFF));
+			bin.Write(sps);
+			bin.Write((byte)1);
+			bin.Write((byte)0);
+			bin.Write((byte)(pps.Length & 0xFF));
+			bin.Write(pps);
+		
+			var data = mem.ToArray();
+			var ptr = av_malloc((ulong)data.Length);
+			data.AsSpan().CopyTo(new Span<byte>(ptr, data.Length));
+			return ((IntPtr)ptr, data.Length);
+		}*/
+
 		public void Start() 
 		{
 			var OutFmt = av_guess_format(null, Filename, null);
@@ -89,19 +122,23 @@ namespace SysDVR.Client.FileOutput
 				VStream->codecpar->width = StreamInfo.VideoWidth;
 				VStream->codecpar->height = StreamInfo.VideoHeight;
 				VStream->codecpar->format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
+
+				//var (ptr, sz) = GenerateH264ExtraData();
+				//VStream->codecpar->extradata = (byte*)ptr.ToPointer();
+				//VStream->codecpar->extradata_size = sz;
 			}
 
 			if (Aud != null)
 			{
-				AStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP3));
+				AStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP2));
 				if (AStream == null) throw new Exception("Couldn't allocate audio stream");
 			
 				AStream->id = Vid == null ? 0 : 1;
-				AStream->codecpar->codec_id = AVCodecID.AV_CODEC_ID_MP3;
+				AStream->codecpar->codec_id = AVCodecID.AV_CODEC_ID_MP2;
 				AStream->codecpar->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
 				AStream->codecpar->sample_rate = StreamInfo.AudioSampleRate;
 				AStream->codecpar->channels = StreamInfo.AudioChannels;
-				AStream->codecpar->format = (int)AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+				AStream->codecpar->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
 				AStream->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
 				AStream->codecpar->frame_size = StreamInfo.AudioSamplesPerPayload;
 				AStream->codecpar->bit_rate = 128000;
@@ -110,28 +147,33 @@ namespace SysDVR.Client.FileOutput
 			avio_open(&OutCtx->pb, Filename, AVIO_FLAG_WRITE).Assert();
 			avformat_write_header(OutCtx, null).Assert();
 
-			Vid?.UseContext(OutCtx);
-			Aud?.UseContext(OutCtx, AStream->id);
+			object sync = new object();
+			Vid?.StartWithContext(OutCtx, sync);
+			Aud?.StartWithContext(OutCtx, sync, AStream->id);
 
-			Console.WriteLine("Starting to stream. Press enter to quit, if you close SysDVR-Client via the X button the output video may become corrupted");
+			var defColor = Console.ForegroundColor;
+			Console.ForegroundColor = ConsoleColor.Red;
+			Console.WriteLine("if you close SysDVR-Client via the X button the output video may become corrupted.");
+			Console.ForegroundColor = defColor;
+
 			Running = true;
 		}
 
-		public void Stop() 
+		public unsafe void Stop() 
 		{
 			Aud?.Stop();
 			Vid?.Stop();
 
-			// Give some time to the handlers to finish what they're doing
-			Thread.Sleep(200);
-			Console.WriteLine("Finalizing MP4...");
+			Console.WriteLine("Finalizing file...");
 
 			av_write_trailer(OutCtx);
 			avio_close(OutCtx->pb);
-			avformat_free_context(OutCtx);
+			avformat_free_context(OutCtx);	
 			OutCtx = null;
 
-			Running = false;	
+			Running = false;
+			
+			Aud?.Dispose();
 		}
 
 		private bool disposedValue;
