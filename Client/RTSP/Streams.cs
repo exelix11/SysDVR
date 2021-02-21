@@ -38,16 +38,17 @@ namespace SysDVR.Client.RTSP
 		
 		protected void InvokeEvent(Span<byte> Data, ulong tsMsec) => DataAvailable(Data, tsMsec);
 
-		public abstract void SendData(byte[] data, int offset, int size, ulong ts);
+		public abstract void SendData(PoolBuffer block, ulong ts);
 
 		public void UseCancellationToken(CancellationToken tok) { }
 	}
 
 	class SysDVRAudioRTSPTarget : SysDvrRTSPTarget
 	{
-		public override void SendData(byte[] data, int offset, int size, ulong ts)
+		public override void SendData(PoolBuffer block, ulong ts)
 		{
-			InvokeEvent(new Span<byte>(data, offset, size), ts / 1000);
+			InvokeEvent(block, ts / 1000);
+			block.Free();
 		}
 	}
 
@@ -76,15 +77,16 @@ namespace SysDVR.Client.RTSP
 			return span.Slice(nalOffset, nextOffset - nalOffset);
 		}
 
-		override public void SendData(byte[] indata, int offset, int size, ulong ts)
+		override public void SendData(PoolBuffer block, ulong ts)
 		{
-			Span<byte> data = new Span<byte>(indata, offset, size);
+			Span<byte> data = block;
 			var nal = FindNalOffset(data);
 			while (nal != null)
 			{
 				InvokeEvent(nal, ts / 1000);
 				nal = FindNalOffset(nal);
 			}
+			block.Free();
 		}
 	}
 }

@@ -55,7 +55,7 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public unsafe void SendAndFreeData(PoolBuffer block, UInt64 ts)
+		public unsafe void SendData(PoolBuffer block, UInt64 ts)
 		{
 			samples.Add(block, tok);
 		}
@@ -64,21 +64,18 @@ namespace SysDVR.Client.Player
 		{
 			this.tok = tok;
 		}
-
-		public void SendData(byte[] data, int offset, int size, ulong ts)
-		{
-			throw new NotImplementedException("For efficiency only the PoolBuffer interface can be used with this class");
-		}
 	}
 
 	class H264StreamTarget : IOutStream
 	{
 		DecoderContext ctx;
 		CancellationToken tok;
+		int timebase_den;
 
-		public void UseContext(DecoderContext ctx)
+		unsafe public void UseContext(DecoderContext ctx)
 		{
 			this.ctx = ctx;
+			timebase_den = ctx.CodecCtx->time_base.den;
 		}
 
 		public void UseCancellationToken(CancellationToken tok)
@@ -88,37 +85,41 @@ namespace SysDVR.Client.Player
 
 		bool FirstPacket = true;
 		long firstTs = -1;
-		public unsafe void SendData(byte[] data, int offset, int size, ulong ts)
+		public unsafe void SendData(PoolBuffer data, ulong ts)
 		{
+			byte[] buffer = data.Buffer;
+			int size = data.Length;
+		
 			// Must add SPS and PPS to the first frame manually to keep ffmpeg happy
 			if (FirstPacket)
 			{
 				byte[] next = new byte[size + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
 				Buffer.BlockCopy(StreamInfo.SPS, 0, next, 0, StreamInfo.SPS.Length);
 				Buffer.BlockCopy(StreamInfo.PPS, 0, next, StreamInfo.SPS.Length, StreamInfo.PPS.Length);
-				Buffer.BlockCopy(data, offset, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, size);
+				Buffer.BlockCopy(data.Buffer, 0, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, data.Length);
 
-				data = next;
+				buffer = next;
 				size = next.Length;
 
 				FirstPacket = false;
 				firstTs = (long)ts;
 			}
 
-			fixed (byte* nal_data = data)
+			fixed (byte* nal_data = buffer)
 			{
 				AVPacket pkt;
 				av_init_packet(&pkt);
 
-				pkt.data = nal_data + offset;
+				pkt.data = nal_data;
 				pkt.size = size;
-				pkt.pts = pkt.dts = (long)(((long)ts - firstTs) / 1E+6 * 90000);
+				pkt.pts = pkt.dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
 
 				int res = 0;
 
 			send_again:
 				lock (ctx.CodecLock)
 					res = avcodec_send_packet(ctx.CodecCtx, &pkt);
+				
 				if (res == AVERROR(EAGAIN))
 				{
 					if (!tok.IsCancellationRequested)
@@ -129,6 +130,8 @@ namespace SysDVR.Client.Player
 					Console.WriteLine($"avcodec_send_packet {res}");
 				}
 			}
+
+			data.Free();
 		}
 	}
 }
