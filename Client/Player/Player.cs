@@ -357,7 +357,7 @@ namespace SysDVR.Client.Player
 #endif
 			while (!ShouldQuit)
 			{
-				if (ReadyFrame.WaitOne(50))
+				if (ReadyFrame.WaitOne(70))
 				{
 					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
 					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
@@ -467,11 +467,6 @@ namespace SysDVR.Client.Player
 						}
 					}
 
-					ConsumedFrame.WaitOne();
-
-					if (ShouldQuit)
-						break;
-
 					if (Converter.Converter != null)
 					{
 						var source = Decoder.ReceiveFrame;
@@ -489,6 +484,7 @@ namespace SysDVR.Client.Player
 					}
 
 					ReadyFrame.Set();
+					ConsumedFrame.WaitOne();
 
 					// TODO: figure out synchronization. 
 					// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
@@ -541,6 +537,10 @@ namespace SysDVR.Client.Player
 		{
 			ShouldQuit = true;
 
+			// Unlock the other threads and wait so they can quit
+			ConsumedFrame.Set();
+			Thread.Sleep(200);
+
 			ReadyFrame.Dispose();
 			ConsumedFrame.Dispose();
 
@@ -568,7 +568,9 @@ namespace SysDVR.Client.Player
 				}
 
 				// Dispose of unmanaged resources
-				SDLAudio.TargetHandle.Free();
+				if (HasAudio)
+					SDLAudio.TargetHandle.Free();
+				
 				SDL_Quit();
 
 				if (HasVideo)
