@@ -71,6 +71,7 @@ extern AudioPacket APkt;
 
 bool ReadAudioStream();
 bool ReadVideoStream();
+void VideoRequestSPSPPS();
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg);
 void JoinThread(Thread* t);

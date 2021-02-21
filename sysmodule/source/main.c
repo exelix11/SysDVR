@@ -152,6 +152,12 @@ bool ReadAudioStream()
 static const uint8_t SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 static const uint8_t PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
+static bool forceSPSPPS = false;
+void VideoRequestSPSPPS()
+{
+	forceSPSPPS = true;
+}
+
 bool ReadVideoStream()
 {		
 	static int IDRCount = 0;
@@ -159,21 +165,26 @@ bool ReadVideoStream()
 	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
-	#ifndef RELEASE
-		// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
-		if (!result)
-			fatalThrow(ERR_DEV_BUFSIZECHECK);
-	#endif
+	
+	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
+	if (!result)
+#ifndef RELEASE
+		fatalThrow(ERR_DEV_BUFSIZECHECK);
+#elif
+		return false;
+#endif
 
-	// If there's space add SPS and PPS to IDR frames every once in a while
-	if (   result
-		&& (VPkt.Data[4] & 0x1F) == 5 // This is an IDR frame
-		&& ++IDRCount >= 5
-		&& (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
+	/*
+		GRC only emits SPS and PPS once when a game is started, this is not good as without those it's not possible to play the stream If there's space add SPS and PPS to IDR frames every once in a while
+	*/
+	if (
+		(((VPkt.Data[4] & 0x1F) == 5 && ++IDRCount >= 5) || forceSPSPPS) // if this is an IDR frame and we haven't added SPS/PPS in the last 5 or forceSPSPPS is set
+		&& (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS))) // if there's enough space
 	{
 		IDRCount = 0;
+		forceSPSPPS = false;
 		memmove(VPkt.Data + sizeof(PPS) + sizeof(SPS), VPkt.Data, VPkt.Header.DataSize);
-		memcpy(VPkt.Data, SPS, sizeof(SPS));
+		memcpy(VPkt.Data,				SPS, sizeof(SPS));
 		memcpy(VPkt.Data + sizeof(SPS), PPS, sizeof(PPS));
 		VPkt.Header.DataSize += sizeof(SPS) + sizeof(PPS);
 	}

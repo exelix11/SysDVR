@@ -20,7 +20,6 @@ static inline int AttemptOpenTCPListener(int port, bool LocalOnly, int DebugFlag
 	temp.sin_addr.s_addr = LocalOnly ? htonl(INADDR_LOOPBACK) : INADDR_ANY;
 	temp.sin_port = htons(port);
 
-	//We don't actually want a non-blocking socket but this is a workaround for the issue described in StreamThreadMain
 	fcntl(sock, F_SETFL, O_NONBLOCK);
 
 	const int optVal = 1;

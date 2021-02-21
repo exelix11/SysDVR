@@ -14,15 +14,23 @@ static void RTSP_StreamVideo(void* _)
 
 	while (IsThreadRunning)
 	{
-		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
+		u64 firstTs = 0;
+
+		while (!RTSP_ClientStreaming && IsThreadRunning) 
+			svcSleepThread(1E+8); // 1/10 of second
 		if (!IsThreadRunning) break;
 		
+		VideoRequestSPSPPS();
+
 		while (true)
 		{			
 			if (!ReadVideoStream()) 
 				TerminateOrContinue
+
+			if (firstTs == 0)
+				firstTs = VPkt.Header.Timestamp;
 			
-			int error = PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, VPkt.Header.Timestamp / 1000, RTSP_H264SendPacket);			
+			int error = PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
 			if (error) break;
 		}
 	}
@@ -35,6 +43,8 @@ static void RTSP_StreamAudio(void* _)
 
 	while (IsThreadRunning)
 	{
+		u64 firstTs = 0;
+
 		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
 		if (!IsThreadRunning) break;
 
@@ -43,7 +53,10 @@ static void RTSP_StreamAudio(void* _)
 			if (!ReadAudioStream()) 
 				TerminateOrContinue
 
-			int error = PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, APkt.Header.Timestamp / 1000, RTSP_LE16SendPacket);
+			if (firstTs == 0)
+				firstTs = VPkt.Header.Timestamp;
+
+			int error = PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
 			if (error) break;
 		}
 	}
