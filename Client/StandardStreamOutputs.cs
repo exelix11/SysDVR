@@ -58,7 +58,7 @@ namespace SysDVR.Client
 		}
 
 		private bool FirstTime = true;
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
+		public void SendData(PoolBuffer data, UInt64 ts)
 		{
 			if (FirstTime)
 			{
@@ -67,8 +67,10 @@ namespace SysDVR.Client
 				FirstTime = false;
 			}
 
-			proc.StandardInput.BaseStream.Write(data, offset, size);
+			proc.StandardInput.BaseStream.Write(data.Span);
 			proc.StandardInput.BaseStream.Flush();
+
+			data.Free();
 		}
 
 		public void UseCancellationToken(CancellationToken tok) { }
@@ -84,7 +86,7 @@ namespace SysDVR.Client
 		}
 
 		private bool FirstTime = true;
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
+		public void SendData(PoolBuffer data, UInt64 ts)
 		{
 			if (FirstTime)
 			{
@@ -93,8 +95,10 @@ namespace SysDVR.Client
 				FirstTime = false;
 			}
 
-			stdout.Write(data, offset, size);
+			stdout.Write(data.Span);
 			stdout.Flush();
+
+			data.Free();
 		}
 
 		public void UseCancellationToken(CancellationToken tok) { }

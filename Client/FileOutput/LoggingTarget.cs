@@ -25,15 +25,17 @@ namespace SysDVR.Client.FileOutput
 
 		Stopwatch sw = new Stopwatch();
 
-		public void SendData(byte[] data, int offset, int size, UInt64 ts)
+		public void SendData(PoolBuffer data, UInt64 ts)
 		{
 			Console.WriteLine($"{filename} - ts: {ts}");
 			bin.Write(0xAAAAAAAA);
 			bin.Write(sw.ElapsedMilliseconds);
 			bin.Write(ts);
-			bin.Write(size);
-			bin.Write(data, offset, size);
+			bin.Write(data.Length);
+			bin.Write(data.Span);
 			sw.Restart();
+
+			data.Free();
 		}
 
 		public void UseCancellationToken(CancellationToken tok) { }
