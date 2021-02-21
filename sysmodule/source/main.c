@@ -170,7 +170,7 @@ bool ReadVideoStream()
 	if (!result)
 #ifndef RELEASE
 		fatalThrow(ERR_DEV_BUFSIZECHECK);
-#elif
+#else
 		return false;
 #endif
 
