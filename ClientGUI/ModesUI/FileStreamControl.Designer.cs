@@ -28,6 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FileStreamControl));
 			this.label2 = new System.Windows.Forms.Label();
 			this.tbVideoFile = new System.Windows.Forms.TextBox();
 			this.btnVideo = new System.Windows.Forms.Button();
@@ -40,25 +41,23 @@
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.label2.Location = new System.Drawing.Point(3, 4);
 			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(512, 32);
+			this.label2.Size = new System.Drawing.Size(512, 47);
 			this.label2.TabIndex = 4;
-			this.label2.Text = "This will save the raw data to a pair of files, video data is raw h264 NAL units," +
-    " you can convert it to mp4 via ffmpeg, audio data is uncompressed 16-bit little-" +
-    "endian stero samples at 48kHz";
+			this.label2.Text = resources.GetString("label2.Text");
 			// 
 			// tbVideoFile
 			// 
 			this.tbVideoFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.tbVideoFile.Location = new System.Drawing.Point(87, 46);
+			this.tbVideoFile.Location = new System.Drawing.Point(41, 57);
 			this.tbVideoFile.Name = "tbVideoFile";
-			this.tbVideoFile.Size = new System.Drawing.Size(391, 20);
+			this.tbVideoFile.Size = new System.Drawing.Size(437, 20);
 			this.tbVideoFile.TabIndex = 0;
 			// 
 			// btnVideo
 			// 
 			this.btnVideo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.btnVideo.Location = new System.Drawing.Point(484, 45);
+			this.btnVideo.Location = new System.Drawing.Point(484, 56);
 			this.btnVideo.Name = "btnVideo";
 			this.btnVideo.Size = new System.Drawing.Size(31, 23);
 			this.btnVideo.TabIndex = 1;
@@ -69,11 +68,11 @@
 			// label1
 			// 
 			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(3, 49);
+			this.label1.Location = new System.Drawing.Point(3, 60);
 			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(78, 13);
+			this.label1.Size = new System.Drawing.Size(32, 13);
 			this.label1.TabIndex = 9;
-			this.label1.Text = "Save directory:";
+			this.label1.Text = "Path:";
 			// 
 			// FileStreamControl
 			// 

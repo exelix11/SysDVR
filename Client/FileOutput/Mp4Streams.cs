@@ -197,7 +197,6 @@ namespace SysDVR.Client.FileOutput
 		}
 
 		long firstTs = -1;
-		long dts = 0;
 		private void SendData(byte[] data, int size, ulong ts)
 		{
 			if (!running)
