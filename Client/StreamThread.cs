@@ -1,4 +1,4 @@
-﻿//#define EXCEPTION_DEBUG
+﻿#define EXCEPTION_DEBUG
 
 using System;
 using System.Buffers;
@@ -53,10 +53,10 @@ namespace SysDVR.Client
 		Thread TargetThread;
 		CancellationTokenSource Cancel;
 
-		public IOutStream Target { get; set; }
 		public IStreamingSource Source { get; set; }
 
-		public StreamKind Kind { get; private set; }
+		public IOutStream Target { get; private init; }
+		public StreamKind Kind { get; private init; }
 
 		public StreamThread(StreamKind kind, IOutStream target)
 		{
@@ -88,7 +88,7 @@ namespace SysDVR.Client
 		}
 
 		BlockingCollection<(ulong, PoolBuffer)> queue = new BlockingCollection<(ulong, PoolBuffer)>(5);
-		void DeviceThreadMain(CancellationToken token)
+		void TargetThreadMain(CancellationToken token)
 		{
 			try
 			{
@@ -96,6 +96,21 @@ namespace SysDVR.Client
 				{
 					var (ts, data) = o;
 
+#if LOG_NAL_TYPES
+					if (Kind == StreamKind.Video)
+					{
+						var s = data.Span;
+						Console.Write("{");
+						while (s.Length > 4)
+						{
+							if (s[0] == 0 && s[1] == 0 && s[2] == 0 && s[3] == 1)
+								Console.Write($"{s[4] & 0x1F} ");								
+							s = s.Slice(1);
+						}
+						Console.Write("}");
+					}
+#endif
+					
 					Target.SendData(data, ts);
 				}
 			}
@@ -111,7 +126,7 @@ namespace SysDVR.Client
 #endif
 		}
 
-		void TargetThreadMain(CancellationToken token)
+		void DeviceThreadMain(CancellationToken token)
 		{
 			var log = Logging;
 
