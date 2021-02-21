@@ -188,6 +188,8 @@ Command examples:
 					Console.WriteLine("The specified path is not valid");
 					return;
 				}
+				if (!filename.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase))
+					Console.WriteLine($"Warning: {filename} doesn't end with .mp4, some programs may not be able to open it if you don't rename it manually.");
 				StreamManager = new Mp4OutputManager(filename, !NoVideo, !NoAudio);
 			}
 #if DEBUG
@@ -251,22 +253,29 @@ Command examples:
 				return;
 			}
 
-			StartStreaming(StreamManager);
-			Environment.Exit(0);
+			new Program().StartStreaming(StreamManager);
 		}
 
-		static void StartStreaming(BaseStreamManager Streams)
+		void StartStreaming(BaseStreamManager streams)
 		{
-			Streams.Begin();
+			streams.Begin();
+			streams.MainThread();
 
-			Streams.MainThread();
+			void Quit()
+			{
+				lock (this)
+				{
+					Console.WriteLine("Terminating threads...");
+					streams.Stop();
+					if (streams is IDisposable d)
+						d.Dispose();
+					Environment.Exit(0);
+				}
+			}
 
-			Console.WriteLine("Terminating threads...");
+			Console.CancelKeyPress += delegate { Quit(); };
 
-			Streams.Stop();
-
-			if (Streams is IDisposable d)
-				d.Dispose();
+			Quit();
 		}
 	}
 }
