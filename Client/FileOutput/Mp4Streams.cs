@@ -76,7 +76,7 @@ namespace SysDVR.Client.FileOutput
 		}
 
 		long firstTs = -1;
-		public void SendData(byte[] data, int offset, int size, ulong ts)
+		private void SendData(byte[] data, int size, ulong ts)
 		{
 			if (!running)
 				return;
@@ -85,7 +85,7 @@ namespace SysDVR.Client.FileOutput
 				firstTs = (long)ts;
 
 			// Will break on big endian
-			Span<short> d = MemoryMarshal.Cast<byte, short>(new Span<byte>(data, offset, size));
+			Span<short> d = MemoryMarshal.Cast<byte, short>(new Span<byte>(data, 0, size));
 			long samplesSinceTs = 0;
 			while (d.Length > 0)
 			{
@@ -119,6 +119,12 @@ namespace SysDVR.Client.FileOutput
 			}
 		}
 
+		public void SendData(PoolBuffer block, ulong ts)
+		{
+			SendData(block.Buffer, block.Length, ts);
+			block.Free();
+		}
+
 		public void UseCancellationToken(CancellationToken tok)
 		{
 
@@ -144,7 +150,7 @@ namespace SysDVR.Client.FileOutput
 
 		long firstTs = -1;
 		long dts = 0;
-		public void SendData(byte[] data, int offset, int size, ulong ts)
+		private void SendData(byte[] data, int size, ulong ts)
 		{
 			if (!running)
 				return;
@@ -155,7 +161,7 @@ namespace SysDVR.Client.FileOutput
 				byte[] next = new byte[size + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
 				Buffer.BlockCopy(StreamInfo.SPS, 0, next, 0, StreamInfo.SPS.Length);
 				Buffer.BlockCopy(StreamInfo.PPS, 0, next, StreamInfo.SPS.Length, StreamInfo.PPS.Length);
-				Buffer.BlockCopy(data, offset, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, size);
+				Buffer.BlockCopy(data, 0, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, size);
 
 				data = next;
 				size = next.Length;
@@ -168,7 +174,7 @@ namespace SysDVR.Client.FileOutput
 				AVPacket pkt;
 				av_init_packet(&pkt);
 
-				pkt.data = nal_data + offset;
+				pkt.data = nal_data;
 				pkt.size = size;
 				pkt.dts = dts++;
 				pkt.pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
@@ -180,9 +186,15 @@ namespace SysDVR.Client.FileOutput
 			}
 		}
 
+		public void SendData(PoolBuffer block, ulong ts)
+		{
+			SendData(block.Buffer, block.Length, ts);
+			block.Free();
+		}
+
 		public void UseCancellationToken(CancellationToken tok)
 		{
-			//throw new NotImplementedException();
+
 		}
 	}
 }

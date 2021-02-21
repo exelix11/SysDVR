@@ -96,7 +96,7 @@ namespace SysDVR.Client
 				{
 					var (ts, data) = o;
 
-					Target.SendAndFreeData(data, ts);
+					Target.SendData(data, ts);
 				}
 			}
 			catch (OperationCanceledException)

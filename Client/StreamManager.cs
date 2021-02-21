@@ -15,27 +15,19 @@ namespace SysDVR.Client
 		Audio
 	};
 
-	interface IUnmanagedMemory
-	{
-		byte[] Buffer { get; }
-		int Length { get; }
-
-		void Free();
-	}
-
-	struct PoolBuffer : IUnmanagedMemory
+	struct PoolBuffer
 	{
 		private readonly static ArrayPool<byte> pool = ArrayPool<byte>.Shared;
 
-		bool freed;
-		readonly byte[] buffer;
-		public byte[] Buffer => !freed ? buffer : throw new Exception("The buffer has been freed");
 		public int Length { get; private set; }
+		private byte[] _buffer;		
+
+		public byte[] Buffer => _buffer ?? throw new Exception("The buffer has been freed");
 
 		public void Free() 
 		{
-			freed = true;
-			pool.Return(buffer);
+			pool.Return(Buffer);
+			_buffer = null;
 		}
 
 		public static PoolBuffer Rent(int len) =>
@@ -43,24 +35,22 @@ namespace SysDVR.Client
 
 		private PoolBuffer(byte[] buf, int len)
 		{
-			freed = false;
 			Length = len;
-			buffer = buf;
+			_buffer = buf;
 		}
+
+		public Span<byte> Span =>
+			new Span<byte>(Buffer, 0, Length);
+
+		public static implicit operator Span<byte>(PoolBuffer o) => o.Span;
 	}
 
 	interface IOutStream
 	{
 		void UseCancellationToken(CancellationToken tok);
 
-		void SendData(byte[] data, UInt64 ts) => SendData(data, 0, data.Length, ts);
-		void SendData(byte[] data, int offset, int size, UInt64 ts);
-
-		void SendAndFreeData(PoolBuffer block, UInt64 ts)
-		{
-			SendData(block.Buffer, 0, block.Length, ts);
-			block.Free();
-		}
+		// The implementation must call Free() on the buffer
+		void SendData(PoolBuffer block, UInt64 ts);
 	}
 
 	abstract class BaseStreamManager : IDisposable
