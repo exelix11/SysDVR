@@ -6,7 +6,7 @@
 #include "grcd.h"
 #include "modes/modes.h"
 
-#if defined(RELEASE)
+#ifdef RELEASE
 #pragma message "Building release"
 #else
 //#define USB_ONLY
@@ -16,7 +16,7 @@
 	Build with USB_ONLY to have a smaller impact on memory,
 	it will only stream via USB and won't support the config app.
 */
-#if defined(USB_ONLY)
+#ifdef USB_ONLY
 	#define INNER_HEAP_SIZE 100 * 1024
 	#pragma message "Building USB-only mode"
 #else
@@ -48,7 +48,7 @@ void __libnx_initheap(void)
 
 void __attribute__((weak)) __appInit(void)
 {
-#ifndef DEV
+#ifdef RELEASE
 	svcSleepThread(2E+10); // 20 seconds
 #endif
 
@@ -154,17 +154,27 @@ static const uint8_t PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 bool ReadVideoStream()
 {		
-	static int SPSCount = 0;
+	static int IDRCount = 0;
 	
 	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
-	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 0;
+	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
-	//If there's space append SPS and PPS every once in a while
-	if (++SPSCount > 500 && result && (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
+	#ifndef RELEASE
+		// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
+		if (!result)
+			fatalThrow(ERR_DEV_BUFSIZECHECK);
+	#endif
+
+	// If there's space add SPS and PPS to IDR frames every once in a while
+	if (   result
+		&& (VPkt.Data[4] & 0x1F) == 5 // This is an IDR frame
+		&& ++IDRCount >= 5
+		&& (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
 	{
-		SPSCount = 0;
-		memcpy(VPkt.Data + VPkt.Header.DataSize, SPS, sizeof(SPS));
-		memcpy(VPkt.Data + VPkt.Header.DataSize + sizeof(SPS), PPS, sizeof(PPS));
+		IDRCount = 0;
+		memmove(VPkt.Data + sizeof(PPS) + sizeof(SPS), VPkt.Data, VPkt.Header.DataSize);
+		memcpy(VPkt.Data, SPS, sizeof(SPS));
+		memcpy(VPkt.Data + sizeof(SPS), PPS, sizeof(PPS));
 		VPkt.Header.DataSize += sizeof(SPS) + sizeof(PPS);
 	}
 
