@@ -117,4 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label2.Text" xml:space="preserve">
+    <value>This will save the stream to an mp4 file. Minimal processing is done to the stream: the output file may be big or in a format that is not supported by some players, it's recommended to re-encode it with ffmpeg or another converter once the recording is done.</value>
+  </data>
 </root>
