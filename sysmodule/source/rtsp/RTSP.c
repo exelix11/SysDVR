@@ -160,7 +160,7 @@ static inline int RTSP_SendInternal(const char* data, size_t len)
 		{
 			if (errno == EWOULDBLOCK || errno == EAGAIN)
 			{
-				svcSleepThread(2);
+				svcSleepThread(1);
 				continue;
 			}
 			else
@@ -343,16 +343,30 @@ static inline void RTSP_AnswerTextSDPContent(char* source, char* text, const cha
 //recev in non blocking mode
 static inline int recvAll(int sock, char* data, int size)
 {
-	while (true)
-	{
-		int res = recv(sock, data, size, MSG_DONTWAIT);
-		if (res == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) 
+	fd_set read;
+	FD_ZERO(&read);
+	FD_SET(sock, &read);
+
+	int res = select(sock + 1, &read, NULL, NULL, NULL);
+
+	if (res <= 0)
+		return -1;
+
+	int readsz = 0;
+
+	if (FD_ISSET(sock, &read))
+		while (size > 0)
 		{
-			svcSleepThread(2E+8); 
-			continue; 
+			int res = recv(sock, data, size, MSG_DONTWAIT);
+			if (res <= 0)
+				return readsz;
+
+			data += res;
+			size -= res;
+			readsz += res;
 		}
-		else return res;
-	}
+
+	return readsz;
 }
 
 //Don't use RTSP_Send* functions here !
@@ -372,7 +386,7 @@ static inline void RTSP_MainLoop()
 #define ISCOMMAND(command) (!strncmp(rtspBuf, command, sizeof(command) - 1))
 
 		if (ISCOMMAND("OPTIONS"))
-			RTSP_AnswerText(rtspBuf, "Public: DESCRIBE, SETUP, PLAY\r\n");
+			RTSP_AnswerText(rtspBuf, "Public: DESCRIBE, SETUP, PLAY, TEARDOWN\r\n");
 		else if (ISCOMMAND("DESCRIBE"))
 		{
 			char* arg1 = rtspBuf + sizeof("DESCRIBE");
@@ -496,8 +510,8 @@ static inline void RTSP_MainLoop()
 #endif
 				}
 
-				char transportRespnse[130];
-				snprintf(transportRespnse, sizeof(transportRespnse), "Transport: %s\r\n", transport);
+				char transportRespnse[150];
+				snprintf(transportRespnse, sizeof(transportRespnse), "Transport: %s\r\nSession: 69\r\n", transport);
 				RTSP_AnswerText(rtspBuf, transportRespnse);
 			}
 			else RTSP_AnswerError("461 Unsupported transport");
