@@ -1,5 +1,6 @@
 #include <string.h>
 #include <switch.h>
+#include "grcd.h"
 
 static Result _grcCmdNoIO(Service* srv, u32 cmd_id) {
 	return serviceDispatch(srv, cmd_id);
