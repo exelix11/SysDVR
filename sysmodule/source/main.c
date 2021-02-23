@@ -178,9 +178,12 @@ bool ReadVideoStream()
 	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
+#ifndef RELEASE
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
+	// These big NALs are not common and even if they're missed they only cause graphical glitches, it's better not to fatal in release builds
 	if (res == 0xCD4)
 		fatalThrow(ERR_DEV_BUFSIZECHECK);
+#endif
 
 	if (!result)
 		return false;
