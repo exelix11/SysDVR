@@ -121,18 +121,31 @@ static Service grcdAudio;
 atomic_bool IsThreadRunning = false;
 #endif
 
-static Result OpenGrcdForThread(GrcStream stream)
+static Result GrcConnect()
 {
-	Result rc;
-	if (stream == GrcStream_Audio)
-		rc = grcdServiceOpen(&grcdAudio);
-	else
-	{
-		rc = grcdServiceOpen(&grcdVideo);
-		if (R_FAILED(rc)) return rc;
-		rc = grcdServiceBegin(&grcdVideo);
-	}
+	Result rc = grcdServiceOpen(&grcdVideo);
+	if (R_FAILED(rc)) return rc;
+	rc = grcdServiceOpen(&grcdAudio);
+	if (R_FAILED(rc)) return rc;
 	return rc;
+}
+
+static Result GrcInitialize()
+{
+	Result rc = GrcConnect();
+	if (R_FAILED(rc)) return rc;
+	return grcdServiceBegin(&grcdVideo);
+}
+
+static void GrcDisconnect()
+{
+	grcdServiceClose(&grcdVideo);
+	grcdServiceClose(&grcdAudio);
+}
+
+static bool GrcIsConnected()
+{
+	return serviceIsActive(&grcdVideo) && serviceIsActive(&grcdAudio);
 }
 
 bool ReadAudioStream()
@@ -165,14 +178,12 @@ bool ReadVideoStream()
 	Result res = grcdServiceTransfer(&grcdVideo, GrcStream_Video, VPkt.Data, VbufSz, NULL, &VPkt.Header.DataSize, &VPkt.Header.Timestamp);
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
-	
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
-	if (!result)
-#ifndef RELEASE
+	if (res == 0xCD4)
 		fatalThrow(ERR_DEV_BUFSIZECHECK);
-#else
+
+	if (!result)
 		return false;
-#endif
 
 	/*
 		GRC only emits SPS and PPS once when a game is started, this is not good as without those it's not possible to play the stream If there's space add SPS and PPS to IDR frames every once in a while
@@ -232,6 +243,8 @@ static void SetModeInternal(void* argmode)
 		svcSleepThread(5E+8);
 		if (CurrentMode->ExitFn)
 			CurrentMode->ExitFn();
+		if (GrcIsConnected())
+			GrcDisconnect();
 		/*
 			If a client is connected this will hang as GrcdServiceRead will block till it acquires a new buffer,
 			to resume you need to go back in the game and disconnect the client
@@ -244,6 +257,12 @@ static void SetModeInternal(void* argmode)
 	CurrentMode = mode;
 	if (mode)
 	{
+		if (!GrcIsConnected())
+		{
+			Result rc = GrcConnect();
+			if (R_FAILED(rc)) fatalThrow(rc);
+		}
+
 		LOG("Starting mode\n");
 		IsThreadRunning = true;
 		svcSleepThread(5E+8);
@@ -339,9 +358,7 @@ int main(int argc, char* argv[])
 	freopen("/sysdvr_log.txt", "w", stdout);
 #endif
 
-	Result rc = OpenGrcdForThread(GrcStream_Audio);
-	if (R_FAILED(rc)) fatalThrow(rc);
-	rc = OpenGrcdForThread(GrcStream_Video);
+	Result rc = GrcInitialize();
 	if (R_FAILED(rc)) fatalThrow(rc);
 
 #if defined(USB_ONLY)
