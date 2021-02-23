@@ -58,7 +58,7 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
-#if !defined(USB_ONLY)
+#ifndef USB_ONLY
 	rc = fsInitialize();
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
@@ -96,14 +96,14 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 10));
 
-#if !defined(USB_ONLY)
+#ifndef USB_ONLY
 	fsdevMountSdmc();
 #endif
 }
 
 void __attribute__((weak)) __appExit(void)
 {
-#if !defined(USB_ONLY)
+#ifndef USB_ONLY
 	fsdevUnmountAll();
 	socketExit();
 	fsExit();
@@ -117,7 +117,7 @@ AudioPacket alignas(0x1000) APkt;
 static Service grcdVideo;
 static Service grcdAudio;
 
-#if !defined(USB_ONLY)
+#ifndef USB_ONLY
 atomic_bool IsThreadRunning = false;
 #endif
 
@@ -137,6 +137,7 @@ static Result GrcInitialize()
 	return grcdServiceBegin(&grcdVideo);
 }
 
+#ifndef USB_ONLY
 static void GrcDisconnect()
 {
 	grcdServiceClose(&grcdVideo);
@@ -147,6 +148,7 @@ static bool GrcIsConnected()
 {
 	return serviceIsActive(&grcdVideo) || serviceIsActive(&grcdAudio);
 }
+#endif
 
 bool ReadAudioStream()
 {
@@ -228,7 +230,7 @@ void JoinThread(Thread* t)
 }
 
 static Thread AudioThread;
-#if !defined(USB_ONLY)
+#ifndef USB_ONLY
 static Thread VideoThread;
 
 StreamMode* CurrentMode = NULL;
@@ -364,7 +366,7 @@ int main(int argc, char* argv[])
 	Result rc = GrcInitialize();
 	if (R_FAILED(rc)) fatalThrow(rc);
 
-#if defined(USB_ONLY)
+#ifdef USB_ONLY
 	USB_MODE.InitFn();
 	LaunchThread(&AudioThread, USB_MODE.AThread, NULL);
 	USB_MODE.VThread(NULL);
