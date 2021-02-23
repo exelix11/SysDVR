@@ -100,6 +100,19 @@ Command examples:
 
 		static void Main(string[] args)
 		{
+			try 
+			{
+				// Not pretty but at least won't segfault and generate crash dumps
+				InnerMain(args);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine(ex);
+			}
+		}
+
+		static void InnerMain(string[] args)
+		{
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
 			bool StreamStdout = HasArg("--stdout");
 
