@@ -11,7 +11,8 @@ Result grcdServiceOpen(Service* out) {
 
     Result rc = smGetService(out, "grc:d");
 
-    if (R_FAILED(rc)) grcdExit();
+    if (R_FAILED(rc)) 
+		grcdServiceClose(out);
 
     return rc;
 }
