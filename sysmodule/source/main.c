@@ -145,7 +145,7 @@ static void GrcDisconnect()
 
 static bool GrcIsConnected()
 {
-	return serviceIsActive(&grcdVideo) && serviceIsActive(&grcdAudio);
+	return serviceIsActive(&grcdVideo) || serviceIsActive(&grcdAudio);
 }
 
 bool ReadAudioStream()
