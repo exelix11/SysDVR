@@ -272,8 +272,7 @@ Command examples:
 		void StartStreaming(BaseStreamManager streams)
 		{
 			streams.Begin();
-			streams.MainThread();
-
+			
 			void Quit()
 			{
 				lock (this)
@@ -287,6 +286,8 @@ Command examples:
 			}
 
 			Console.CancelKeyPress += delegate { Quit(); };
+
+			streams.MainThread();		
 
 			Quit();
 		}
