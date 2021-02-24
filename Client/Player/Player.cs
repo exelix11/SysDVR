@@ -26,10 +26,6 @@ namespace SysDVR.Client.Player
 
 	unsafe struct SDLAudioContext
 	{
-		public SDL_AudioSpec AudioSpec { get; init; }
-		public int ChannelCount { get; init; }
-		public int SampleSize { get; init; }
-		public int SampleRate { get; init; }
 		public GCHandle TargetHandle { get; init; }
 	}
 
@@ -117,9 +113,10 @@ namespace SysDVR.Client.Player
 		AutoResetEvent ConsumedFrame = new AutoResetEvent(true);
 		AutoResetEvent ReadyFrame = new AutoResetEvent(false);
 
-		protected DecoderContext Decoder; // Need to swap the target frames
+
+		protected DecoderContext Decoder; 
 		protected SDLContext SDL; // This must be initialized by the UI thread
-		protected FormatConverterContext Converter; // Initialized only if needed
+		protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 		protected readonly SDLAudioContext SDLAudio;
 
 		static SDLContext InitSDLVideo(string scaleQuality)
@@ -181,16 +178,6 @@ namespace SysDVR.Client.Player
 
 			return new SDLAudioContext
 			{
-				AudioSpec = wantedSpec,
-				ChannelCount = wantedSpec.channels,
-				SampleRate = wantedSpec.freq,
-				SampleSize = wantedSpec.format switch
-				{
-					AUDIO_S16 => 2,
-					AUDIO_S32 => 4,
-					AUDIO_F32 => 4,
-					_ => throw new NotImplementedException(),
-				},
 				TargetHandle = handle
 			};
 		}
@@ -543,9 +530,6 @@ namespace SysDVR.Client.Player
 
 			ReadyFrame.Dispose();
 			ConsumedFrame.Dispose();
-
-			//if (HasAudio)
-			//	SDL_PauseAudio(1); this seems to hang sometimes for no apparent reason
 
 			if (HasVideo)
 			{
