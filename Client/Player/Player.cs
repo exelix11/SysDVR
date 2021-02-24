@@ -24,8 +24,9 @@ namespace SysDVR.Client.Player
 		public object TextureLock { get; init; }
 	}
 
-	unsafe struct SDLAudioContext
+	struct SDLAudioContext
 	{
+		public SDL_AudioCallback CallbackDelegate { get; init; }
 		public GCHandle TargetHandle { get; init; }
 	}
 
@@ -110,9 +111,8 @@ namespace SysDVR.Client.Player
 		protected Thread ReceiveThread;
 
 		bool Running = false;
-		AutoResetEvent ConsumedFrame = new AutoResetEvent(true);
+		AutoResetEvent ConsumedFrame = new AutoResetEvent(false);
 		AutoResetEvent ReadyFrame = new AutoResetEvent(false);
-
 
 		protected DecoderContext Decoder; 
 		protected SDLContext SDL; // This must be initialized by the UI thread
@@ -135,8 +135,7 @@ namespace SysDVR.Client.Player
 
 			var render = SDL_CreateRenderer(win, -1,
 				SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
-				SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC |
-				SDL_RendererFlags.SDL_RENDERER_TARGETTEXTURE)
+				SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC )
 				.Assert(SDL_GetError);
 
 			SDL_GetRendererInfo(render, out var info);
@@ -161,8 +160,9 @@ namespace SysDVR.Client.Player
 		{
 			SDL_InitSubSystem(SDL_INIT_AUDIO).Assert(SDL_GetError);
 
-			var handle = GCHandle.Alloc(target);
+			var handle = GCHandle.Alloc(target, GCHandleType.Normal);
 
+			SDL_AudioCallback callback = AudioStreamTargetNative.SDLCallback;
 			SDL_AudioSpec wantedSpec = new SDL_AudioSpec()
 			{
 				silence = 0,
@@ -170,7 +170,7 @@ namespace SysDVR.Client.Player
 				format = AUDIO_S16LSB,
 				freq = StreamInfo.AudioSampleRate,
 				size = StreamInfo.AudioPayloadSize * StreamInfo.AudioBatching,
-				callback = AudioStreamTargetNative.SDLCallback,
+				callback = callback,
 				userdata = GCHandle.ToIntPtr(handle)
 			};
 
@@ -178,6 +178,7 @@ namespace SysDVR.Client.Player
 
 			return new SDLAudioContext
 			{
+				CallbackDelegate = callback, // Prevents the delegate passed to native code from being GC'd
 				TargetHandle = handle
 			};
 		}
@@ -245,7 +246,9 @@ namespace SysDVR.Client.Player
 			codectx->width = StreamInfo.VideoWidth;
 			codectx->height = StreamInfo.VideoHeight;
 
-			// TODO: in theory we should set SPS and PPS in extradata here but it seems to not be working due to format differencies
+			var (ex, sz) = LibavUtils.AllocateH264Extradata();
+			codectx->extradata_size = sz;
+			codectx->extradata = (byte*)ex.ToPointer();
 
 			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec.");
 
@@ -349,6 +352,7 @@ namespace SysDVR.Client.Player
 					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
 					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
 					UpdateSDLTexture(Decoder.RenderFrame);
+					SDL_RenderClear(SDL.Renderer);
 					SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
 					SDL_RenderPresent(SDL.Renderer);
 					ConsumedFrame.Set();
@@ -426,7 +430,6 @@ namespace SysDVR.Client.Player
 				Thread.Sleep(100);
 
 			bool converterCheck = false;
-
 			while (!ShouldQuit)
 			{
 				int ret = 0;
@@ -434,7 +437,10 @@ namespace SysDVR.Client.Player
 					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
 
 				if (ret == AVERROR(EAGAIN))
-					Thread.Sleep(1);
+				{
+					// This seems to happen quite often, as Sleep() is not precise this may cause stuttering, should probably figure out a better way to wait without spinlocking
+					Thread.Sleep(2);
+				}
 				else if (ret != 0)
 					Console.WriteLine($"avcodec_receive_frame {ret}");
 				else
@@ -473,7 +479,7 @@ namespace SysDVR.Client.Player
 					ReadyFrame.Set();
 					ConsumedFrame.WaitOne();
 
-					// TODO: figure out synchronization. 
+					// TODO: figure out audio/video synchronization. 
 					// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
 				}
 			}

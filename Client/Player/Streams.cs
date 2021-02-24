@@ -83,27 +83,14 @@ namespace SysDVR.Client.Player
 			this.tok = tok;
 		}
 
-		bool FirstPacket = true;
 		long firstTs = -1;
 		public unsafe void SendData(PoolBuffer data, ulong ts)
 		{
 			byte[] buffer = data.Buffer;
 			int size = data.Length;
 		
-			// Must add SPS and PPS to the first frame manually to keep ffmpeg happy
-			if (FirstPacket)
-			{
-				byte[] next = new byte[size + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
-				Buffer.BlockCopy(StreamInfo.SPS, 0, next, 0, StreamInfo.SPS.Length);
-				Buffer.BlockCopy(StreamInfo.PPS, 0, next, StreamInfo.SPS.Length, StreamInfo.PPS.Length);
-				Buffer.BlockCopy(data.Buffer, 0, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, data.Length);
-
-				buffer = next;
-				size = next.Length;
-
-				FirstPacket = false;
+			if (firstTs == -1)
 				firstTs = (long)ts;
-			}
 
 			fixed (byte* nal_data = buffer)
 			{
@@ -123,6 +110,7 @@ namespace SysDVR.Client.Player
 				if (res == AVERROR(EAGAIN))
 				{
 					if (!tok.IsCancellationRequested)
+						// This never seems to happen
 						goto send_again;
 				}
 				else if (res != 0)

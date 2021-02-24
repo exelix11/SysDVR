@@ -72,37 +72,6 @@ namespace SysDVR.Client.FileOutput
 			Filename = filename;
 		}
 
-		/* 
-		 * TODO: This is needed for MKV files but doesn't seem to be quite right: 
-		 * ffmpeg shows several errors and seeking in mpv doesn't work. Adding this to mp4 files breaks video in the windows 10 video player.
-		private unsafe (IntPtr, int) GenerateH264ExtraData() 
-		{
-			var mem = new MemoryStream();
-			var bin = new BinaryWriter(mem);
-		
-			var sps = new Span<byte>(StreamInfo.SPS).Slice(4);
-			var pps = new Span<byte>(StreamInfo.PPS).Slice(4);
-		
-			bin.Write((byte)0x1);
-			bin.Write(sps[1]);
-			bin.Write(sps[2]);
-			bin.Write(sps[3]);
-			bin.Write((byte)(0xFC | 3));
-			bin.Write((byte)(0xE0 | 1));
-			bin.Write((byte)0);
-			bin.Write((byte)(sps.Length & 0xFF));
-			bin.Write(sps);
-			bin.Write((byte)1);
-			bin.Write((byte)0);
-			bin.Write((byte)(pps.Length & 0xFF));
-			bin.Write(pps);
-		
-			var data = mem.ToArray();
-			var ptr = av_malloc((ulong)data.Length);
-			data.AsSpan().CopyTo(new Span<byte>(ptr, data.Length));
-			return ((IntPtr)ptr, data.Length);
-		}*/
-
 		public void Start() 
 		{
 			var OutFmt = av_guess_format(null, Filename, null);
@@ -123,7 +92,11 @@ namespace SysDVR.Client.FileOutput
 				VStream->codecpar->height = StreamInfo.VideoHeight;
 				VStream->codecpar->format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
 
-				//var (ptr, sz) = GenerateH264ExtraData();
+				/* 
+				 * TODO: This is needed for MKV files but doesn't seem to be quite right: 
+				 * ffmpeg shows several errors and seeking in mpv doesn't work. Adding this to mp4 files breaks video in the windows 10 video player.
+				*/
+				//var (ptr, sz) = LibavUtils.AllocateH264Extradata();;
 				//VStream->codecpar->extradata = (byte*)ptr.ToPointer();
 				//VStream->codecpar->extradata_size = sz;
 			}

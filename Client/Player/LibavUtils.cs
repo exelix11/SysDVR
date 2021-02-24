@@ -62,6 +62,35 @@ namespace SysDVR.Client.Player
 			foreach (var c in GetH264Decoders())
 				Console.WriteLine($"{c.Name} : {c.Description} - Formats: [{string.Join(',', c.Formats)}]");
 		}
-		
+
+		public static unsafe (IntPtr, int) AllocateH264Extradata()
+		{
+			var mem = new System.IO.MemoryStream();
+			var bin = new System.IO.BinaryWriter(mem);
+
+			var sps = new Span<byte>(StreamInfo.SPS).Slice(4);
+			var pps = new Span<byte>(StreamInfo.PPS).Slice(4);
+
+			// This struct is called AVCDecoderConfigurationRecord
+			bin.Write((byte)0x1);
+			bin.Write(sps[1]);
+			bin.Write(sps[2]);
+			bin.Write(sps[3]);
+			bin.Write((byte)(0xFC | 3));
+			bin.Write((byte)(0xE0 | 1));
+			bin.Write((byte)0);
+			bin.Write((byte)(sps.Length & 0xFF));
+			bin.Write(sps);
+			bin.Write((byte)1);
+			bin.Write((byte)0);
+			bin.Write((byte)(pps.Length & 0xFF));
+			bin.Write(pps);
+
+			var data = mem.ToArray();
+			// This pointer is freed by ffmpeg automatically, we must use av_malloc to prevent heap corruption 
+			var ptr = av_malloc((ulong)data.Length);
+			data.AsSpan().CopyTo(new Span<byte>(ptr, data.Length));
+			return ((IntPtr)ptr, data.Length);
+		}
 	}
 }
