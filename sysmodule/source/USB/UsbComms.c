@@ -1,6 +1,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <switch.h>
+#include <stdio.h>
 #include "UsbComms.h"
 #include "../modes/modes.h"
 
@@ -31,7 +32,22 @@ static Result _usbCommsWrite(usbCommsInterface* interface, const void* buffer, s
 Result UsbCommsInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos)
 {
     Result rc = 0;
+    char consoleSerial[sizeof(SetSysSerialNumber) + 1] = {0};
     rwlockWriteLock(&g_usbCommsLock);
+
+    rc = setsysInitialize();
+    if (R_SUCCEEDED(rc))
+    {
+        SetSysSerialNumber serial;
+        rc = setsysGetSerialNumber(&serial);
+        if (R_SUCCEEDED(rc))
+            memcpy(consoleSerial, serial.number, sizeof(serial.number));
+        else
+            snprintf(consoleSerial, sizeof(consoleSerial), "EGET%x", rc);
+        setsysExit();
+    }
+    else
+        snprintf(consoleSerial, sizeof(consoleSerial), "EINI%x", rc);
 
     if (g_usbCommsInitialized) {
         rc = MAKERESULT(Module_Libnx, LibnxError_AlreadyInitialized);
@@ -53,7 +69,7 @@ Result UsbCommsInitialize(struct usb_device_descriptor* device_descriptor, u32 n
                 // Send product
                 if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iProduct, "SysDVR (Nintendo Switch)");
                 // Send serial number
-                if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iSerialNumber, " https://github.com/exelix11/SysDVR ");
+                if (R_SUCCEEDED(rc)) rc = usbDsAddUsbStringDescriptor(&iSerialNumber, consoleSerial);
 
                 // Send device descriptors
                 device_descriptor->iManufacturer = iManufacturer;
