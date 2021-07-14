@@ -1,6 +1,7 @@
 ﻿using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -10,83 +11,104 @@ namespace SysDVR.Client.Sources
 	// Making UsbContext non static will remove requirement on libusb, it will be loaded only if actually using USB, this is useful on architectures where it's not supported
 	class UsbContext : IDisposable
 	{
-		static object LockObject = new object();
-
 		public enum LogLevel 
 		{
 			Error,
 			Warning,
-			Debug
+			Debug,
+			None
 		}
 
-		public static bool ForceLibUsb { get; set; } = false;
-		public static LogLevel Logging { get; set; } = LogLevel.Error;
 		int deviceReferences = 0;
 
-		static UsbContext instance = null;
-		public static UsbContext GetInstance() 
-		{
-			lock (LockObject)
-			{
-				if (instance is null)
-					instance = new UsbContext();
+		readonly LibUsbDotNet.LibUsb.UsbContext LibUsbCtx = null;
+		readonly bool ForceLibUsb;
 
-				return instance;
+		private LogLevel _debugLevel;
+		public LogLevel DebugLevel {
+			set {
+				_debugLevel = value;
+				LibUsbCtx.SetDebugLevel(value switch
+				{
+					LogLevel.Error => LibUsbDotNet.LogLevel.Error,
+					LogLevel.Warning => LibUsbDotNet.LogLevel.Info,
+					LogLevel.Debug => LibUsbDotNet.LogLevel.Debug,
+					_ => LibUsbDotNet.LogLevel.None,
+				});
 			}
+			get => _debugLevel;
 		}
 
-		readonly LibUsbDotNet.LibUsb.UsbContext LibUsbCtx = null;
-		public readonly IUsbDevice device = null;
+		public IUsbDevice device { get; private set; }
 		
-		private UsbContext() 
+		public UsbContext(LogLevel logLevel = LogLevel.Error, bool forceLibUsb = false) 
 		{
+			ForceLibUsb = forceLibUsb;
+
 			LibUsbCtx = new LibUsbDotNet.LibUsb.UsbContext();
+
+			DebugLevel = logLevel;
+		}
+
+		public unsafe IReadOnlyList<(IUsbDevice, string)> FindSysdvrDevices() 
+		{
+			if (device != null)
+				throw new Exception("device has already been set");
+
+			// THis is hacky but libusb can't seem to get the device serial without opening it first
+			// If the device is already opened by another instance of sysdvr it will print an error, suppress it by temporarily changing the log level 
+			var old = DebugLevel;
+			DebugLevel = LogLevel.None;
+
+			var res = LibUsbCtx.List().Where(d => d.ProductId == 0x3006 && d.VendorId == 0x057e).Select(x => {
+				if (!x.TryOpen())
+					return (null, null);
+
+				var serial = x.Info.SerialNumber;
+				x.Close();
+
+				return (x, serial);
+			}).Where(x => x.serial != null).ToArray();
 			
-			LibUsbCtx.SetDebugLevel(Logging switch
-			{
-				LogLevel.Error => LibUsbDotNet.LogLevel.Error,
-				LogLevel.Warning => LibUsbDotNet.LogLevel.Info,
-				LogLevel.Debug => LibUsbDotNet.LogLevel.Debug,
-				_ => throw new NotImplementedException(),
-			});
-			
-			var usbDeviceCollection = LibUsbCtx.List();
-			var dev = usbDeviceCollection.FirstOrDefault(d => d.ProductId == 0x3006 && d.VendorId == 0x057e);
+			DebugLevel = old;
+			return res;
+		}
 
-			if (dev == null)
-				throw new Exception("Device not found");
+		public void OpenUsbDevice(IUsbDevice device)
+		{
+			if (this.device != null)
+				throw new Exception("device has already been set");
 
-			dev.Open();
-
-			device = dev;
+			this.device = device;
+			this.device.Open();
 		}
 
 		public (UsbEndpointReader, UsbEndpointWriter) GetForInterface(StreamKind iface)
 		{
-			lock (LockObject)
-			{
-				var dev = device;
+			var dev = device;
 
-				if (!dev.ClaimInterface(iface == StreamKind.Video ? 0 : 1))
-					throw new Exception($"Couldn't claim interface for {iface}");
+			if (!dev.ClaimInterface(iface == StreamKind.Video ? 0 : 1))
+				throw new Exception($"Couldn't claim interface for {iface}");
 
-				var (epIn, epOut) = iface == StreamKind.Video ? (ReadEndpointID.Ep01, WriteEndpointID.Ep01) : (ReadEndpointID.Ep02, WriteEndpointID.Ep02);
+			var (epIn, epOut) = iface == StreamKind.Video ? (ReadEndpointID.Ep01, WriteEndpointID.Ep01) : (ReadEndpointID.Ep02, WriteEndpointID.Ep02);
 
-				var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
-				var writer = dev.OpenEndpointWriter(epOut, EndpointType.Interrupt);
-				Interlocked.Increment(ref deviceReferences);
+			var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
+			var writer = dev.OpenEndpointWriter(epOut, EndpointType.Interrupt);
+			Interlocked.Increment(ref deviceReferences);
 
-				return (reader, writer);
-			}
+			return (reader, writer);
 		}
 
 		public void MarkInterfaceClosed()
 		{
-			lock (LockObject)
+			lock (this)
 			{
 				Interlocked.Decrement(ref deviceReferences);
 				if (deviceReferences == 0)
-					Dispose();
+				{
+					device.Close();
+					device = null;
+				}
 				else if (deviceReferences < 0)
 					throw new Exception("interface refCount out of range");
 			}
@@ -108,11 +130,11 @@ namespace SysDVR.Client.Sources
 			{
 				if (disposing)
 				{
-					device.Close();
+					deviceReferences = 0;
+					device?.Close();
 					LibUsbCtx.Dispose();
 				}
 
-				instance = null;
 				disposedValue = true;
 			}
 		}
