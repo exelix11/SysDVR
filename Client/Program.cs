@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using SysDVR.Client.FileOutput;
 using SysDVR.Client.Sources;
@@ -54,6 +55,7 @@ Source options:
 	`--no-winusb` : Forces the LibUsb backend on windows, you must use this option in case you installed LibUsb-win32 as the SysDVR driver (it's recommended to use WinUsb)
 	`--usb-warn` : Enables printing warnings from the usb stack, use it to debug USB issues
 	`--usb-debug` : Same as `--usb-warn` but more detailed
+	`--usb-serial NX0000000` : When multiple consoles are plugged in via USB use this option to automatically select one by serial number
 
 Stream options:
 	`--no-video` : Disable video streaming, only streams audio
@@ -65,6 +67,7 @@ Output options:
 	`--hw-acc` : Try to use hardware acceleration for decoding, this option uses the first detected decoder, it's recommended to manually specify the decoder name with --decoder
 	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-codecs
 	`--scale <quality>` : Use a specific quality for scaling, possible values are `nearest`, `linear` and `best`. `best` may not be available on all PCs, see SDL docs for SDL_HINT_RENDER_SCALE_QUALITY, `linear` is the default mode.
+	`--fullscreen` : Start in full screen mode. Press F11 to toggle manually
 
 	RTSP options:
 	`--rtsp` : Relay the video feed via RTSP. SysDVR-Client will act as an RTSP server, you can connect to it with RTSP with any compatible video player like mpv or vlc
@@ -161,13 +164,9 @@ Command examples:
 				return;
 			}
 
-			if (HasArg("--usb-warn")) UsbContext.Logging = UsbContext.LogLevel.Warning;
-			if (HasArg("--usb-debug")) UsbContext.Logging = UsbContext.LogLevel.Debug;
-
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
 			StreamThread.Logging = HasArg("--print-stats");
-			UsbContext.ForceLibUsb = HasArg("--no-winusb");
 
 			if (NoVideo && NoAudio)
 			{
@@ -221,12 +220,20 @@ Command examples:
 			}
 			else // Stream to the built-in player by default
 			{
-				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--hw-acc"), ArgValue("--decoder"), ArgValue("--scale"));
+				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--hw-acc"), ArgValue("--decoder"), ArgValue("--scale"), HasArg("--fullscreen"));
 			}
 
 			if (args.Length == 0 || args[0] == "usb")
 			{
-				var ctx = UsbContext.GetInstance();
+				var forceLibUsb = HasArg("--no-winusb");
+				var warnLevel = UsbContext.LogLevel.Error;
+
+				if (HasArg("--usb-warn")) warnLevel = UsbContext.LogLevel.Warning;
+				if (HasArg("--usb-debug")) warnLevel = UsbContext.LogLevel.Debug;
+
+				var ctx = OpenUsbSource(warnLevel, forceLibUsb, ArgValue("--usb-serial"));
+				if (ctx == null)
+					return;
 
 				if (!NoVideo)
 					StreamManager.VideoSource = ctx.MakeStreamingSource(StreamKind.Video);
@@ -267,6 +274,56 @@ Command examples:
 			}
 
 			new Program().StartStreaming(StreamManager);
+		}
+
+		static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, bool forceLibUsb, string? preferredSerial)
+		{
+			var ctx = new UsbContext(usbLogLeve, forceLibUsb);
+
+			var devices = ctx.FindSysdvrDevices();
+
+			if (devices.Count == 0)
+			{
+				Console.WriteLine("ERROR: SysDVR usb device not found.\r\n" +
+					"Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver.");
+				return null;
+			}
+			else if (devices.Count == 1)
+			{
+				if (!string.IsNullOrWhiteSpace(preferredSerial) && preferredSerial.ToLower() != devices[0].Item2.ToLower())
+					Console.WriteLine($"Warning: Connecting to the console with serial {devices[0].Item2} instead of the requested {preferredSerial}");
+
+				Console.WriteLine($"Connecting to the console with serial {devices[0].Item2}...");
+				ctx.OpenUsbDevice(devices[0].Item1);
+				return ctx;
+			}
+			else
+			{
+				var preferred = devices.Any(x => x.Item2 == preferredSerial.ToLower());
+				if (preferred)
+				{
+					ctx.OpenUsbDevice(devices.First(x => x.Item2 == preferredSerial.ToLower()).Item1);
+					return ctx;
+				}
+				else Console.WriteLine($"Warning: Requsted serial {preferredSerial} not found");
+
+				Console.WriteLine("Multiple SysDVR devices found:");
+				for (int i = 0; i < devices.Count; i++)
+					Console.WriteLine($"{i + 1}) {devices[i].Item2}");
+
+				Console.WriteLine("\r\nTIP: You can use the --usb-serial command line optional to automatically select one based on the serial number");
+			
+				select_value:
+				Console.Write("Enter the number of the device you want to use: ");
+				if (!int.TryParse(Console.ReadLine(), out int selection) || selection < 1 || selection > devices.Count)
+				{
+					Console.WriteLine($"Error: expected value between 1 and {devices.Count}, try again");
+					goto select_value;
+				}
+
+				ctx.OpenUsbDevice(devices[selection - 1].Item1);
+				return ctx;
+			}
 		}
 
 		void StartStreaming(BaseStreamManager streams)
