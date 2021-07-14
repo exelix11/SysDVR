@@ -52,14 +52,17 @@ namespace SysDVR.Client.Player
 	class PlayerManager : BaseStreamManager, IDisposable
 	{
 		readonly Player player;
-		private bool disposedValue;
+		readonly bool startFullScreen;
 
-		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName, string quality) : base(
+		bool disposedValue;
+
+		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName, string quality, bool startFullScreen) : base(
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
 			LibavUtils.PrintCpuArchWarning();
 			player = new Player(this, hwAcc, codecName, quality);
+			this.startFullScreen = startFullScreen;
 		}
 
 		public override void Begin()
@@ -81,7 +84,7 @@ namespace SysDVR.Client.Player
 				Console.WriteLine("Starting stream, close the player window to stop.");
 				Console.WriteLine("Press F11 for full screen, esc to quit.");
 				Console.WriteLine();
-				player.UiThreadMain();
+				player.UiThreadMain(startFullScreen);
 			}
 			else base.MainThread();
 		}
@@ -303,12 +306,12 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		unsafe public void UiThreadMain()
+		unsafe public void UiThreadMain(bool startFullScreen)
 		{
 			SDL = InitSDLVideo(ScaleQuality);
 
 			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
-			bool fullscreen = false;
+			bool fullscreen = startFullScreen;
 
 			void CalculateDisplayRect()
 			{
@@ -338,6 +341,9 @@ namespace SysDVR.Client.Player
 				SDL_RenderClear(SDL.Renderer);
 			}
 
+			if (fullscreen)
+				SDL_SetWindowFullscreen(SDL.Window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+			
 			CalculateDisplayRect();
 
 #if DEBUG_FRAMERATE
