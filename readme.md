@@ -20,6 +20,7 @@ This is a sysmodule that allows capturing the running game output to a pc via US
 
 # Limitations
 - **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
+   - [There is now a workaround to support most games](https://github.com/exelix11/dvr-patches/), as it may cause issues it's hosted on a different repo and must be installed manually.
 - Only captures game output. System UI, home menu and homebrews running as applet won't be captured.
 - Stream quality depends heavily on the environment, bad usb wires or low wifi signal can affect it significantly.
 - **USB streaming is not available when docked**
