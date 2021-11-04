@@ -14,7 +14,7 @@ This is a sysmodule that allows capturing the running game output to a pc via US
 # Features
 - Cross platform, can stream to Windows, Mac and Linux.
 - Stream via USB or Wifi.
-- **Video quality is fixed to 720p @ 30fps with h264 compression, this is an hardware limit**.
+- **Video quality is fixed to 720p @ 30fps with h264 compression, this is a hardware limit**.
 - Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed.
 - Very low latency with an optimal setup, most games are playable !
 
