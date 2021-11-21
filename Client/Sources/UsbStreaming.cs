@@ -64,7 +64,7 @@ namespace SysDVR.Client.Sources
 				if (!x.TryOpen())
 					return (null, null);
 
-				var serial = x.Info.SerialNumber;
+				var serial = x.Info.SerialNumber.ToLower().Trim();
 				x.Close();
 
 				return (x, serial);
