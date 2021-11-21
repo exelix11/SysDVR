@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -265,7 +266,18 @@ namespace SysDVRClientGUI
 			proc.WaitForExit();
 			var s = proc.StandardOutput.ReadToEnd();
 
-			return s.Contains("NETCore.App 5.");
+			// Find dotnet 5 or 6
+			foreach (Match match in new Regex(@"NETCore\.App (\d+)\.").Matches(s))
+			{
+				if (match.Captures.Count == 0) continue;
+
+				string val = match.Value.Substring("NETCore.App ".Length).TrimEnd('.');
+
+				if (int.TryParse(val, out int num) && num >= 5)
+					return true;
+			}
+
+			return false;
 		}
 	}
 }
