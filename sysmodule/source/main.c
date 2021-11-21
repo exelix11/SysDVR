@@ -9,6 +9,7 @@
 #ifdef RELEASE
 #pragma message "Building release"
 #else
+#pragma message "Building debug"
 //#define USB_ONLY
 #endif
 
@@ -18,9 +19,10 @@
 */
 #ifdef USB_ONLY
 	#define INNER_HEAP_SIZE 100 * 1024
-	#pragma message "Building USB-only mode"
+	#pragma message "Building USB-only version"
 #else
 	#define INNER_HEAP_SIZE 1024 * 1024
+	#pragma message "Building full version"
 	
 	#include "rtsp/RTP.h"
 	#include "ipc/ipc.h"
@@ -183,8 +185,8 @@ bool ReadVideoStream()
 #ifndef RELEASE
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
 	// These big NALs are not common and even if they're missed they only cause graphical glitches, it's better not to fatal in release builds
-	if (res == 0xCD4)
-		fatalThrow(ERR_DEV_BUFSIZECHECK);
+	if (R_FAILED(res))
+		fatalThrow(res);
 #endif
 
 	if (!result)
