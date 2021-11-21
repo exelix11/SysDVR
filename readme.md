@@ -14,12 +14,13 @@ This is a sysmodule that allows capturing the running game output to a pc via US
 # Features
 - Cross platform, can stream to Windows, Mac and Linux.
 - Stream via USB or Wifi.
-- **Video quality is fixed to 720p @ 30fps with h264 compression, this is an hardware limit**.
+- **Video quality is fixed to 720p @ 30fps with h264 compression, this is a hardware limit**.
 - Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed.
 - Very low latency with an optimal setup, most games are playable !
 
 # Limitations
 - **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
+   - [There is now a workaround to support most games](https://github.com/exelix11/dvr-patches/), as it may cause issues it's hosted on a different repo and must be installed manually.
 - Only captures game output. System UI, home menu and homebrews running as applet won't be captured.
 - Stream quality depends heavily on the environment, bad usb wires or low wifi signal can affect it significantly.
 - **USB streaming is not available when docked**
