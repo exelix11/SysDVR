@@ -306,6 +306,42 @@ namespace SysDVR.Client.Player
 			};
 		}
 
+		SDL_Rect prevSize = new SDL_Rect { x = 0, y = 0, w = 1280, h = 720 };
+		private void SetFullScreen(bool enableFullScreen)
+		{
+			/*
+				This workarounds an SDL issue on windows, see https://github.com/exelix11/SysDVR/issues/161
+				I don't know about other OSes so i'll keep the old behavior for now
+			 */
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+			{
+				SDL_SetWindowFullscreen(SDL.Window, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+				return;
+			}
+			else
+			{
+				var @false = enableFullScreen ? SDL_bool.SDL_FALSE : SDL_bool.SDL_TRUE;
+
+				SDL_SetWindowResizable(SDL.Window, @false);
+				SDL_SetWindowBordered(SDL.Window, @false);
+
+				if (enableFullScreen)
+				{
+					SDL_GetWindowSize(SDL.Window, out prevSize.w, out prevSize.h);
+					SDL_GetWindowPosition(SDL.Window, out prevSize.x, out prevSize.y);
+
+					SDL_GetDisplayBounds(SDL_GetWindowDisplayIndex(SDL.Window), out var bounds);
+					SDL_SetWindowPosition(SDL.Window, bounds.x, bounds.y);
+					SDL_SetWindowSize(SDL.Window, bounds.w, bounds.h);
+				}
+				else
+				{
+					SDL_SetWindowPosition(SDL.Window, prevSize.x, prevSize.y);
+					SDL_SetWindowSize(SDL.Window, prevSize.w, prevSize.h);
+				}
+			}
+		}
+
 		unsafe public void UiThreadMain(bool startFullScreen)
 		{
 			SDL = InitSDLVideo(ScaleQuality);
@@ -342,8 +378,8 @@ namespace SysDVR.Client.Player
 			}
 
 			if (fullscreen)
-				SDL_SetWindowFullscreen(SDL.Window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
-			
+				SetFullScreen(true);//SDL_SetWindowFullscreen(SDL.Window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+
 			CalculateDisplayRect();
 
 #if DEBUG_FRAMERATE
@@ -387,8 +423,9 @@ namespace SysDVR.Client.Player
 						CalculateDisplayRect();
 					else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_F11)
 					{
-						SDL_SetWindowFullscreen(SDL.Window, fullscreen ? 0 : (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+						//SDL_SetWindowFullscreen(SDL.Window, fullscreen ? 0 : (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
 						fullscreen = !fullscreen;
+						SetFullScreen(fullscreen);
 						CalculateDisplayRect();
 					}
 
