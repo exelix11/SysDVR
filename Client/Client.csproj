@@ -16,6 +16,7 @@
     <FileVersion>5.1.0.0</FileVersion>
     <Configurations>Debug;Release</Configurations>
     <ApplicationIcon>Client.ico</ApplicationIcon>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
