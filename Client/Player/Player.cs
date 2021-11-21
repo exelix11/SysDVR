@@ -316,7 +316,6 @@ namespace SysDVR.Client.Player
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 			{
 				SDL_SetWindowFullscreen(SDL.Window, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-				return;
 			}
 			else
 			{
@@ -340,6 +339,8 @@ namespace SysDVR.Client.Player
 					SDL_SetWindowSize(SDL.Window, prevSize.w, prevSize.h);
 				}
 			}
+
+			SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
 		}
 
 		unsafe public void UiThreadMain(bool startFullScreen)
