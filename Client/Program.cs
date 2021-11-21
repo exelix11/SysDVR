@@ -55,7 +55,8 @@ Source options:
 	`--no-winusb` : Forces the LibUsb backend on windows, you must use this option in case you installed LibUsb-win32 as the SysDVR driver (it's recommended to use WinUsb)
 	`--usb-warn` : Enables printing warnings from the usb stack, use it to debug USB issues
 	`--usb-debug` : Same as `--usb-warn` but more detailed
-	`--usb-serial NX0000000` : When multiple consoles are plugged in via USB use this option to automatically select one by serial number
+	`--usb-serial NX0000000` : When multiple consoles are plugged in via USB use this option to automatically select one by serial number. 
+		This also matches partial serials starting from the end, for example NX012345 will be matched by doing --usb-serial 45
 
 Stream options:
 	`--no-video` : Disable video streaming, only streams audio
@@ -282,6 +283,11 @@ Command examples:
 
 			var devices = ctx.FindSysdvrDevices();
 
+			if (!string.IsNullOrWhiteSpace(preferredSerial))
+				preferredSerial = preferredSerial.ToLower().Trim();
+			else 
+				preferredSerial = null;
+
 			if (devices.Count == 0)
 			{
 				Console.WriteLine("ERROR: SysDVR usb device not found.\r\n" +
@@ -290,7 +296,7 @@ Command examples:
 			}
 			else if (devices.Count == 1)
 			{
-				if (!string.IsNullOrWhiteSpace(preferredSerial) && preferredSerial.ToLower() != devices[0].Item2.ToLower())
+				if (preferredSerial is not null && devices[0].Item2.EndsWith(preferredSerial))
 					Console.WriteLine($"Warning: Connecting to the console with serial {devices[0].Item2} instead of the requested {preferredSerial}");
 
 				Console.WriteLine($"Connecting to the console with serial {devices[0].Item2}...");
@@ -299,19 +305,30 @@ Command examples:
 			}
 			else
 			{
-				var preferred = devices.Any(x => x.Item2 == preferredSerial.ToLower());
-				if (preferred)
+				var preferred = devices.Where(x => x.Item2.EndsWith(preferredSerial)).ToArray();
+				if (preferred.Length == 1)
 				{
-					ctx.OpenUsbDevice(devices.First(x => x.Item2 == preferredSerial.ToLower()).Item1);
+					ctx.OpenUsbDevice(preferred[0].Item1);
 					return ctx;
 				}
+				// Multiple partial matches ? look for the exact one
+				else if (preferred.Length >= 1)
+				{
+					preferred = devices.Where(x => x.Item2 == preferredSerial).ToArray();
+					if (preferred.Length == 1)
+					{
+						ctx.OpenUsbDevice(preferred[0].Item1);
+						return ctx;
+					}
+					else Console.WriteLine($"Warning: Multiple matches for {preferredSerial}, exact match not found");
+				}				
 				else Console.WriteLine($"Warning: Requsted serial {preferredSerial} not found");
 
-				Console.WriteLine("Multiple SysDVR devices found:");
+				Console.WriteLine("Available SysDVR devices:");
 				for (int i = 0; i < devices.Count; i++)
 					Console.WriteLine($"{i + 1}) {devices[i].Item2}");
 
-				Console.WriteLine("\r\nTIP: You can use the --usb-serial command line optional to automatically select one based on the serial number");
+				Console.WriteLine("\r\nTIP: You can use the --usb-serial command line option to automatically select one based on the serial number");
 			
 				select_value:
 				Console.Write("Enter the number of the device you want to use: ");
