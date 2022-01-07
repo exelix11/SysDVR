@@ -145,11 +145,6 @@ static void GrcDisconnect()
 	grcdServiceClose(&grcdVideo);
 	grcdServiceClose(&grcdAudio);
 }
-
-static bool GrcIsConnected()
-{
-	return serviceIsActive(&grcdVideo) || serviceIsActive(&grcdAudio);
-}
 #endif
 
 bool ReadAudioStream()
@@ -250,8 +245,6 @@ static void SetModeInternal(void* argmode)
 		svcSleepThread(5E+8);
 		if (CurrentMode->ExitFn)
 			CurrentMode->ExitFn();
-		if (GrcIsConnected())
-			GrcDisconnect();
 		/*
 			If a client is connected this will hang as GrcdServiceRead will block till it acquires a new buffer,
 			to resume you need to go back in the game and disconnect the client
@@ -264,12 +257,6 @@ static void SetModeInternal(void* argmode)
 	CurrentMode = mode;
 	if (mode)
 	{
-		if (!GrcIsConnected())
-		{
-			Result rc = GrcConnect();
-			if (R_FAILED(rc)) fatalThrow(rc);
-		}
-
 		LOG("Starting mode\n");
 		IsThreadRunning = true;
 		svcSleepThread(5E+8);
