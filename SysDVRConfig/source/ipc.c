@@ -1,11 +1,32 @@
 #include <stdio.h>
+#include <string.h>
 #include "ipc.h"
 
 #ifdef __SWITCH__
 static Service dvr;
 
+bool SysDvrIsRunning()
+{
+	SmServiceName name = {0};
+	memcpy(name.name, "sysdvr", sizeof("sysdvr"));
+	
+	Handle h;
+	Result rc = smRegisterService(&h, name, false, 1);	
+	
+	if (R_SUCCEEDED(rc))
+	{
+		smUnregisterService(name);
+		return false;
+	}
+	
+	return true;
+}
+
 Result SysDvrConnect()
 {
+	if (!SysDvrIsRunning())
+		return ERR_MAIN_NOTRUNNING;
+	
 	Result rc = smGetService(&dvr, "sysdvr");
 	return rc;
 }

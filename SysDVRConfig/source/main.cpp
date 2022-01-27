@@ -114,7 +114,7 @@ static Result ConnectToSysmodule()
 
 	ImGui::End();
 	UI::EndFrame();
-
+	
 	return SysDvrConnect();
 }
 
@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
 	Result rc = ConnectToSysmodule();
 
 	if (R_FAILED(rc))
-		FatalError("Couldn't connect to SysDVR", rc);
+		FatalError("Couldn't connect to SysDVR.", "If you just installed it reboot, otherwise wait a bit and try again.");
 	
 	u32 version;
 	rc = SysDvrGetVersion(&version);
