@@ -46,7 +46,7 @@ ROMFS		:=	romfs
 
 APP_TITLE	:=	SysDVR Settings
 APP_AUTHOR	:=	Exelix
-APP_VERSION	:=	5.1
+APP_VERSION	:=	5.2
 
 #---------------------------------------------------------------------------------
 # options for code generation
