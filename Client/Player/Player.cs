@@ -308,40 +308,9 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		SDL_Rect prevSize = new SDL_Rect { x = 0, y = 0, w = 1280, h = 720 };
 		private void SetFullScreen(bool enableFullScreen)
 		{
-			/*
-				This workarounds an SDL issue on windows, see https://github.com/exelix11/SysDVR/issues/161
-				I don't know about other OSes so i'll keep the old behavior for now
-			 */
-			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-			{
-				SDL_SetWindowFullscreen(SDL.Window, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-			}
-			else
-			{
-				var @false = enableFullScreen ? SDL_bool.SDL_FALSE : SDL_bool.SDL_TRUE;
-
-				SDL_SetWindowResizable(SDL.Window, @false);
-				SDL_SetWindowBordered(SDL.Window, @false);
-
-				if (enableFullScreen)
-				{
-					SDL_GetWindowSize(SDL.Window, out prevSize.w, out prevSize.h);
-					SDL_GetWindowPosition(SDL.Window, out prevSize.x, out prevSize.y);
-
-					SDL_GetDisplayBounds(SDL_GetWindowDisplayIndex(SDL.Window), out var bounds);
-					SDL_SetWindowPosition(SDL.Window, bounds.x, bounds.y);
-					SDL_SetWindowSize(SDL.Window, bounds.w, bounds.h);
-				}
-				else
-				{
-					SDL_SetWindowPosition(SDL.Window, prevSize.x, prevSize.y);
-					SDL_SetWindowSize(SDL.Window, prevSize.w, prevSize.h);
-				}
-			}
-
+			SDL_SetWindowFullscreen(SDL.Window, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 			SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
 		}
 
