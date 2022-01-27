@@ -139,14 +139,6 @@ static Result GrcInitialize()
 	return grcdServiceBegin(&grcdVideo);
 }
 
-#ifndef USB_ONLY
-static void GrcDisconnect()
-{
-	grcdServiceClose(&grcdVideo);
-	grcdServiceClose(&grcdAudio);
-}
-#endif
-
 bool ReadAudioStream()
 {
 	Result rc = grcdServiceTransfer(&grcdAudio, GrcStream_Audio, APkt.Data, AbufSz, NULL, &APkt.Header.DataSize, &APkt.Header.Timestamp);
