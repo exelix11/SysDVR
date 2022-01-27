@@ -17,6 +17,8 @@ typedef uint32_t Result;
 #ifdef __cplusplus
 extern "C" {
 #endif
+	bool SysDvrIsRunning();
+
 	Result SysDvrConnect();
 	void SysDvrClose();
 	
