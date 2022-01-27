@@ -1,6 +1,6 @@
 @echo off
 
-set PATH=C:\Program Files\7zip;C:\Program Files\7-Zip\;C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\;%PATH%
+set PATH=C:\Program Files\7zip;C:\Program Files\7-Zip\;C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\;%PATH%
 
 cd Libs\LibUsbDotNet\src\LibUsbDotNet\
 dotnet pack -c Release || goto error
