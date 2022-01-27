@@ -126,6 +126,8 @@ namespace SysDVR.Client.Player
 		{
 			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
 
+			SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+
 			var win = SDL_CreateWindow($"SysDVR-Client [PID {Process.GetCurrentProcess().Id}]", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
 				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
 
