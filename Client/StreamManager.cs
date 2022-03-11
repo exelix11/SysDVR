@@ -85,6 +85,20 @@ namespace SysDVR.Client
 		{
 			VideoThread?.Stop();
 			AudioThread?.Stop();
+
+#if MEASURE_STATS
+			var vDiff = DateTime.Now - VideoThread.FirstByteTs;
+			var aDiff = DateTime.Now - AudioThread.FirstByteTs;
+			var total = VideoThread.ReceivedBytes + AudioThread.ReceivedBytes;
+
+			var max = vDiff > aDiff ? vDiff : aDiff;
+
+			Console.WriteLine($"MEASURE_STATS: received {total} bytes in {max.TotalSeconds} s of streaming, avg of {total / max.TotalSeconds} B/s.");
+			Console.WriteLine($"Per thread stats:");
+			Console.WriteLine($"\tVideo: {VideoThread.ReceivedBytes} bytes in {vDiff.TotalSeconds} s, avg of {VideoThread.ReceivedBytes / vDiff.TotalSeconds} B/s");
+			Console.WriteLine($"\tAudio: {AudioThread.ReceivedBytes} bytes in {aDiff.TotalSeconds} s, avg of {AudioThread.ReceivedBytes / aDiff.TotalSeconds} B/s");
+#endif
+
 			VideoThread?.Join();
 			AudioThread?.Join();
 		}
