@@ -1,4 +1,4 @@
-﻿#define EXCEPTION_DEBUG
+﻿//#define EXCEPTION_DEBUG
 
 using System;
 using System.Buffers;
@@ -58,6 +58,18 @@ namespace SysDVR.Client
 		public IOutStream Target { get; private init; }
 		public StreamKind Kind { get; private init; }
 
+#if MEASURE_STATS
+		public ulong ReceivedBytes { get; private set; }
+		public DateTime FirstByteTs { get; private set; }
+
+		public void StatsReceivedData(int length)
+        {
+			if (ReceivedBytes == 0)
+				FirstByteTs = DateTime.Now;
+			ReceivedBytes += (uint)length + PacketHeader.StructLength;
+        }
+#endif
+
 		public StreamThread(StreamKind kind, IOutStream target)
 		{
 			Kind = kind;
@@ -110,7 +122,10 @@ namespace SysDVR.Client
 						Console.Write("}");
 					}
 #endif
-					
+
+#if MEASURE_STATS
+					StatsReceivedData(data.Length);
+#endif
 					Target.SendData(data, ts);
 				}
 			}
