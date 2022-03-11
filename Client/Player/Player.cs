@@ -52,17 +52,18 @@ namespace SysDVR.Client.Player
 	class PlayerManager : BaseStreamManager, IDisposable
 	{
 		readonly Player player;
-		readonly bool startFullScreen;
 
 		bool disposedValue;
 
-		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName, string quality, bool startFullScreen) : base(
+		public string WindowTitle { get; set; }
+		public bool StartFullScreen { get; set; }
+
+		public PlayerManager(bool HasVideo, bool HasAudio, bool hwAcc, string codecName, string quality) : base(
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
 			LibavUtils.PrintCpuArchWarning();
 			player = new Player(this, hwAcc, codecName, quality);
-			this.startFullScreen = startFullScreen;
 		}
 
 		public override void Begin()
@@ -84,7 +85,7 @@ namespace SysDVR.Client.Player
 				Console.WriteLine("Starting stream, close the player window to stop.");
 				Console.WriteLine("Press F11 for full screen, esc to quit.");
 				Console.WriteLine();
-				player.UiThreadMain(startFullScreen);
+				player.UiThreadMain(StartFullScreen, WindowTitle);
 			}
 			else base.MainThread();
 		}
@@ -122,14 +123,17 @@ namespace SysDVR.Client.Player
 		protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 		protected readonly SDLAudioContext SDLAudio;
 
-		static SDLContext InitSDLVideo(string scaleQuality)
+		static SDLContext InitSDLVideo(string scaleQuality, string windowTitle)
 		{
 			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
 
 			SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
-			var win = SDL_CreateWindow($"SysDVR-Client [PID {Process.GetCurrentProcess().Id}]", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
-				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE).Assert(SDL_GetError);
+			var win = SDL_CreateWindow(
+				$"SysDVR-Client - {windowTitle ?? ($"PID {Process.GetCurrentProcess().Id}")}",
+				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
+				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
+				.Assert(SDL_GetError);
 
 			if (scaleQuality != null)
 			{
@@ -314,9 +318,9 @@ namespace SysDVR.Client.Player
 			SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
 		}
 
-		unsafe public void UiThreadMain(bool startFullScreen)
+		unsafe public void UiThreadMain(bool startFullScreen, string windowTitle)
 		{
-			SDL = InitSDLVideo(ScaleQuality);
+			SDL = InitSDLVideo(ScaleQuality, windowTitle);
 
 			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
 			bool fullscreen = startFullScreen;
