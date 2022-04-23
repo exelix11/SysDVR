@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Platforms>AnyCPU</Platforms>
     <AssemblyName>SysDVR-Client</AssemblyName>
     <Description>https://github.com/exelix11/SysDVR</Description>
@@ -17,6 +17,7 @@
     <Configurations>Debug;Release</Configurations>
     <ApplicationIcon>Client.ico</ApplicationIcon>
 	<RollForward>Major</RollForward>
+	<Nullable>annotations</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -31,8 +32,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="LibUsbDotNet" Version="3.0.100-alpha" />
     <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
-    <PackageReference Include="SysDVR.LibUsbDotNet" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
