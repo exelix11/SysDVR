@@ -1,4 +1,4 @@
-﻿#define DEBUG_FRAMERATE
+﻿//#define DEBUG_FRAMERATE
 
 using System;
 using System.Runtime.CompilerServices;
@@ -356,8 +356,8 @@ namespace SysDVR.Client.Player
 			CalculateDisplayRect();
 
 #if DEBUG_FRAMERATE
-			int diplayFrames = 0;
-			int consoleFrames = 0;
+			int diplayFrames = 0;	// FPS for the SDL window
+			int consoleFrames = 0;	// FPS for the remote stream
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 #endif
@@ -448,19 +448,31 @@ namespace SysDVR.Client.Player
 		unsafe bool DecodeNextFrame()
 		{
 			int ret = 0;
+			int attempts = 0;
 
-			lock (Decoder.CodecLock)
-				ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
+			do
+			{
+				lock (Decoder.CodecLock)
+					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
+
+				if (ret == AVERROR(EAGAIN))
+					// Empirically chosen value, seems to be a good balance between latency and CPU usage, without sleeping you get at most 1 less frame of latency
+					Thread.Sleep(3);
+
+				++attempts;
+			}
+			while (ret == AVERROR(EAGAIN) && !ShouldQuit && attempts < 15);
 
 			if (ret == AVERROR(EAGAIN))
 			{
-				Thread.Sleep(1);
-				//Console.WriteLine("returning");
+				// After too many failed attempts return in order to handle UI events
 			}
 			else if (ret != 0)
 				Console.WriteLine($"avcodec_receive_frame {ret}");
 			else
 			{
+				//Console.WriteLine("Attempts " + attempts);
+				
 				// On the first frame we get check if we need to use a converter
 				if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
 				{
