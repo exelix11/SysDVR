@@ -1,4 +1,4 @@
-﻿//#define DEBUG_FRAMERATE
+﻿#define DEBUG_FRAMERATE
 
 using System;
 using System.Runtime.CompilerServices;
@@ -112,12 +112,9 @@ namespace SysDVR.Client.Player
 		readonly string ScaleQuality;
 
 		protected bool ShouldQuit = true;
-		protected Thread ReceiveThread;
 
 		bool Running = false;
-		AutoResetEvent ConsumedFrame = new AutoResetEvent(false);
-		AutoResetEvent ReadyFrame = new AutoResetEvent(false);
-
+		
 		protected DecoderContext Decoder; 
 		protected SDLContext SDL; // This must be initialized by the UI thread
 		protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
@@ -354,18 +351,19 @@ namespace SysDVR.Client.Player
 			}
 
 			if (fullscreen)
-				SetFullScreen(true);//SDL_SetWindowFullscreen(SDL.Window, (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
+				SetFullScreen(true);
 
 			CalculateDisplayRect();
 
 #if DEBUG_FRAMERATE
-			int frames = 0;
+			int diplayFrames = 0;
+			int consoleFrames = 0;
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 #endif
 			while (!ShouldQuit)
 			{
-				if (ReadyFrame.WaitOne(70))
+				if (DecodeNextFrame())
 				{
 					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
 					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
@@ -373,18 +371,21 @@ namespace SysDVR.Client.Player
 					SDL_RenderClear(SDL.Renderer);
 					SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
 					SDL_RenderPresent(SDL.Renderer);
-					ConsumedFrame.Set();
 #if DEBUG_FRAMERATE
-					frames++;
+					consoleFrames++;
 #endif
 				}
 
 #if DEBUG_FRAMERATE
+				diplayFrames++;
+#endif
+
+#if DEBUG_FRAMERATE
 				if (sw.ElapsedMilliseconds >= 1000)
 				{
-					Console.WriteLine($"{frames} {sw.ElapsedMilliseconds}");
+					Console.WriteLine($"Disp:{diplayFrames} Console:{consoleFrames} {sw.ElapsedMilliseconds}");
 					sw.Restart();
-					frames = 0;
+					consoleFrames = diplayFrames = 0;
 				}
 #endif
 
@@ -443,65 +444,61 @@ namespace SysDVR.Client.Player
 			else Console.WriteLine($"Error: Non-positive planar linesizes are not supported, open an issue on Github. {pic->linesize[0]} {pic->linesize[1]} {pic->linesize[2]}");
 		}
 
-		unsafe void DecodeReceiverThreadMain()
+		bool converterFirstFrameCheck = false;
+		unsafe bool DecodeNextFrame()
 		{
-			while (!SDL.Initialized && !ShouldQuit)
-				Thread.Sleep(100);
+			int ret = 0;
 
-			bool converterCheck = false;
-			while (!ShouldQuit)
+			lock (Decoder.CodecLock)
+				ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
+
+			if (ret == AVERROR(EAGAIN))
 			{
-				int ret = 0;
-				lock (Decoder.CodecLock)
-					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
-
-				if (ret == AVERROR(EAGAIN))
+				Thread.Sleep(1);
+				//Console.WriteLine("returning");
+			}
+			else if (ret != 0)
+				Console.WriteLine($"avcodec_receive_frame {ret}");
+			else
+			{
+				// On the first frame we get check if we need to use a converter
+				if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
 				{
-					// This seems to happen quite often, as Sleep() is not precise this may cause stuttering, should probably figure out a better way to wait without spinlocking
-					Thread.Sleep(2);
+#if DEBUG
+					Console.WriteLine($"Using pixel format {Decoder.CodecCtx->pix_fmt}");
+#endif
+					converterFirstFrameCheck = true;
+					if (Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
+					{
+						Converter = InitializeConverter(Decoder.CodecCtx);
+						// Render to the converted frame
+						Decoder.RenderFrame = Converter.Frame;
+					}
 				}
-				else if (ret != 0)
-					Console.WriteLine($"avcodec_receive_frame {ret}");
+
+				if (Converter.Converter != null)
+				{
+					var source = Decoder.ReceiveFrame;
+					var target = Decoder.RenderFrame;
+					sws_scale(Converter.Converter, source->data, source->linesize, 0, source->height, target->data, target->linesize);
+				}
 				else
 				{
-					// On the first frame we get check if we need to use a converter
-					if (!converterCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
-					{
-#if DEBUG
-						Console.WriteLine($"Using pixel format {Decoder.CodecCtx->pix_fmt}");
-#endif
-						converterCheck = true;
-						if (Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_YUV420P)
-						{
-							Converter = InitializeConverter(Decoder.CodecCtx);
-							// Render to the converted frame
-							Decoder.RenderFrame = Converter.Frame;
-						}
-					}
+					// Swap the frames so we can render source
+					var toRender = Decoder.ReceiveFrame;
+					var receiveNext = Decoder.RenderFrame;
 
-					if (Converter.Converter != null)
-					{
-						var source = Decoder.ReceiveFrame;
-						var target = Decoder.RenderFrame;
-						sws_scale(Converter.Converter, source->data, source->linesize, 0, source->height, target->data, target->linesize);
-					}
-					else
-					{
-						// Swap the frames so we can render source
-						var toRender = Decoder.ReceiveFrame;
-						var receiveNext = Decoder.RenderFrame;
-
-						Decoder.ReceiveFrame = receiveNext;
-						Decoder.RenderFrame = toRender;
-					}
-
-					ReadyFrame.Set();
-					ConsumedFrame.WaitOne();
-
-					// TODO: figure out audio/video synchronization. 
-					// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
+					Decoder.ReceiveFrame = receiveNext;
+					Decoder.RenderFrame = toRender;
 				}
+
+				return true;
+
+				// TODO: figure out audio/video synchronization. 
+				// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
 			}
+
+			return false;
 		}
 
 		public Player(PlayerManager owner, bool hwAcc, string codecName, string scaleQuality)
@@ -540,9 +537,9 @@ namespace SysDVR.Client.Player
 
 			if (HasVideo)
 			{
-				ReceiveThread = new Thread(DecodeReceiverThreadMain);
-				ReceiveThread.Name = "DecodeReceiverThreadMain";
-				ReceiveThread.Start();
+				//ReceiveThread = new Thread(DecodeReceiverThreadMain);
+				//ReceiveThread.Name = "DecodeReceiverThreadMain";
+				//ReceiveThread.Start();
 			}
 		}
 
@@ -551,17 +548,11 @@ namespace SysDVR.Client.Player
 			ShouldQuit = true;
 
 			// Unlock the other threads and wait so they can quit
-			ConsumedFrame.Set();
+			//ConsumedFrame.Set();
 			Thread.Sleep(200);
 
-			ReadyFrame.Dispose();
-			ConsumedFrame.Dispose();
-
-			if (HasVideo)
-			{
-				ReceiveThread.Join();
-				ReceiveThread = null;
-			}
+			//ReadyFrame.Dispose();
+			//ConsumedFrame.Dispose();
 			
 			Running = false;
 		}

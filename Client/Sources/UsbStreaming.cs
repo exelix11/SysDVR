@@ -2,7 +2,6 @@
 using LibUsbDotNet.Main;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -164,34 +163,9 @@ namespace SysDVR.Client.Sources
 		// TODO: Remove tracing code
 		readonly private TimeTrace tracer = new();
 		protected readonly string streamKind;
+		
 		protected TimeTrace BeginTrace(string extra = "", [CallerMemberName] string funcName = null) => 
 			tracer.Begin(streamKind, extra, funcName);
-
-		protected class TimeTrace : IDisposable
-        {
-			Stopwatch sw = new Stopwatch();
-			StringBuilder sb = new(); 
-
-			public TimeTrace Begin(string kind, string extra, string funcname) 
-			{
-				sb.Clear();
-				sb.Append($"[{kind}] [{funcname}] {extra} ");
-				sw.Restart();
-				return this;
-			}
-
-			public void Mark(string name) {
-				sb.Append($"{sw.ElapsedMilliseconds} ms | {name} ");
-				sw.Restart();
-			}
-
-			public void Dispose()
-            {
-				sw.Stop();
-				sb.Append($"{sw.ElapsedMilliseconds} ms");
-				Console.WriteLine(sb.ToString());
-            }
-        }
 
         protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
@@ -213,13 +187,13 @@ namespace SysDVR.Client.Sources
 		{
 			while (!Token.IsCancellationRequested) 
 			{
-				using var trace = BeginTrace();
+				//using var trace = BeginTrace();
 
 				var err = writer.Write(USBMagic, 1000, out int _);
 				if (err != LibUsbDotNet.Error.Success)
 				{
 					Thread.Sleep(1000);
-					Console.WriteLine($"Warning: console handshake failed ({err}). Try unplugging your console and restart SysDVR o");
+					Console.WriteLine($"Warning: console handshake failed ({err}). Try unplugging your console and restart SysDVR");
 					continue;
 				}
 
@@ -251,7 +225,7 @@ namespace SysDVR.Client.Sources
 
 		public override bool ReadHeader(byte[] buffer)
 		{
-			using var trace = BeginTrace();
+			//using var trace = BeginTrace();
 
 			var err = reader.Read(buffer, 0, PacketHeader.StructLength, 200, out int _);
 			if (err != LibUsbDotNet.Error.Success)
@@ -291,7 +265,7 @@ namespace SysDVR.Client.Sources
 		private int ReadSize = 0;
 		public override bool ReadHeader(byte[] buffer)
 		{
-			using var trace = BeginTrace();
+			//using var trace = BeginTrace();
 
 			var err = reader.Read(ReadBuffer, 0, PacketHeader.MaxTransferSize, 400, out ReadSize);
 			if (err != LibUsbDotNet.Error.Success)
