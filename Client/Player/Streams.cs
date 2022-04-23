@@ -119,7 +119,7 @@ namespace SysDVR.Client.Player
 						goto send_again;
 					}
 #if DEBUG
-					Console.WriteLine("Warning: dropping video packet due to UI thread timeout");
+					Console.WriteLine("Info: dropping video packet due to UI thread timeout");
 #endif
 				}
 				else if (res != 0)
