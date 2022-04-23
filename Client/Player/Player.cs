@@ -541,6 +541,7 @@ namespace SysDVR.Client.Player
 			if (HasVideo)
 			{
 				ReceiveThread = new Thread(DecodeReceiverThreadMain);
+				ReceiveThread.Name = "DecodeReceiverThreadMain";
 				ReceiveThread.Start();
 			}
 		}
