@@ -50,7 +50,6 @@ namespace SysDVR.Client
 		public static bool Logging;
 
 		Thread DeviceThread;
-		Thread TargetThread;
 		CancellationTokenSource Cancel;
 
 		public IStreamingSource Source { get; set; }
@@ -80,15 +79,9 @@ namespace SysDVR.Client
 		{
 			Cancel = new CancellationTokenSource();
 
-			TargetThread = new Thread(() => TargetThreadMain(Cancel.Token));
 			DeviceThread = new Thread(() => DeviceThreadMain(Cancel.Token));
-
-			TargetThread.Name = "TargetThread for " + Kind;
 			DeviceThread.Name = "DeviceThread for " + Kind;
 
-			DeviceThread.Priority = ThreadPriority.Highest;
-
-			TargetThread.Start();
 			DeviceThread.Start();
 		}
 
@@ -100,52 +93,10 @@ namespace SysDVR.Client
 
 		public void Join()
 		{
-			TargetThread.Join();
 			DeviceThread.Join();
 		}
 
-		BlockingCollection<(ulong, PoolBuffer)> queue = new BlockingCollection<(ulong, PoolBuffer)>(5);
-		void TargetThreadMain(CancellationToken token)
-		{
-			try
-			{
-				foreach (var o in queue.GetConsumingEnumerable(token))
-				{
-					var (ts, data) = o;
-
-#if LOG_NAL_TYPES
-					if (Kind == StreamKind.Video)
-					{
-						var s = data.Span;
-						Console.Write("{");
-						while (s.Length > 4)
-						{
-							if (s[0] == 0 && s[1] == 0 && s[2] == 0 && s[3] == 1)
-								Console.Write($"{s[4] & 0x1F} ");								
-							s = s.Slice(1);
-						}
-						Console.Write("}");
-					}
-#endif
-
-#if MEASURE_STATS
-					StatsReceivedData(data.Length);
-#endif
-					Target.SendData(data, ts);
-				}
-			}
-			catch (OperationCanceledException)
-			{
-				return;
-			}
-#if !EXCEPTION_DEBUG || RELEASE
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Terminating SendToTargetThread for {Kind} due to {ex}");
-			}
-#endif
-		}
-
+		TimeTrace trace = new TimeTrace();
 		void DeviceThreadMain(CancellationToken token)
 		{
 			var log = Logging;
@@ -198,14 +149,9 @@ namespace SysDVR.Client
 						continue;
 					}
 
-					queue.Add((Header.Timestamp, Data), token);
+					Target.SendData(Data, Header.Timestamp);
 				}
 
-				queue.CompleteAdding();
-			}
-			catch (OperationCanceledException)
-			{
-				return;
 			}
 #if !EXCEPTION_DEBUG || RELEASE
 			catch (Exception ex)
@@ -218,11 +164,10 @@ namespace SysDVR.Client
 
 		public void Dispose()
 		{
-			if (DeviceThread.IsAlive || TargetThread.IsAlive)
+			if (DeviceThread.IsAlive)
 				throw new Exception($"{Kind} Thread is still running");
 
 			Cancel.Dispose();
-			queue.Dispose();
 		}
 	}
 }
