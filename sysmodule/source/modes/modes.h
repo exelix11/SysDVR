@@ -66,6 +66,8 @@ typedef struct {
 	u8 Data[];
 } VLAPacket;
 
+_Static_assert(sizeof(VLAPacket) == sizeof(PacketHeader));
+
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
 
@@ -82,11 +84,13 @@ typedef struct
 	void (*ExitFn)();
 	void (*VThread)(void*);
 	void (*AThread)(void*);
+	void* Vargs;
+	void* Aargs;
 } StreamMode;
 
-extern StreamMode USB_MODE;
+extern const StreamMode USB_MODE;
 
 #if !defined(USB_ONLY)
-extern StreamMode TCP_MODE;
-extern StreamMode RTSP_MODE;
+extern const StreamMode TCP_MODE;
+extern const StreamMode RTSP_MODE;
 #endif

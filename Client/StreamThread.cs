@@ -80,11 +80,16 @@ namespace SysDVR.Client
 		{
 			Cancel = new CancellationTokenSource();
 
-			DeviceThread = new Thread(() => TargetThreadMain(Cancel.Token));
-			TargetThread = new Thread(() => DeviceThreadMain(Cancel.Token));
+			TargetThread = new Thread(() => TargetThreadMain(Cancel.Token));
+			DeviceThread = new Thread(() => DeviceThreadMain(Cancel.Token));
 
-			DeviceThread.Start();
+			TargetThread.Name = "TargetThread for " + Kind;
+			DeviceThread.Name = "DeviceThread for " + Kind;
+
+			DeviceThread.Priority = ThreadPriority.Highest;
+
 			TargetThread.Start();
+			DeviceThread.Start();
 		}
 
 		public void Stop()
@@ -158,6 +163,7 @@ namespace SysDVR.Client
 				{
 					while (!Source.ReadHeader(HeaderData))
 					{
+						Source.Flush();
 						Thread.Sleep(10);
 						continue;
 					}
