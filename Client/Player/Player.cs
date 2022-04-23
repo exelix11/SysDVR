@@ -546,26 +546,11 @@ namespace SysDVR.Client.Player
 
 			if (HasAudio)
 				SDL_PauseAudio(0);
-
-			if (HasVideo)
-			{
-				//ReceiveThread = new Thread(DecodeReceiverThreadMain);
-				//ReceiveThread.Name = "DecodeReceiverThreadMain";
-				//ReceiveThread.Start();
-			}
 		}
 
 		public void Stop() 
 		{
-			ShouldQuit = true;
-
-			// Unlock the other threads and wait so they can quit
-			//ConsumedFrame.Set();
-			Thread.Sleep(200);
-
-			//ReadyFrame.Dispose();
-			//ConsumedFrame.Dispose();
-			
+			ShouldQuit = true;			
 			Running = false;
 		}
 
