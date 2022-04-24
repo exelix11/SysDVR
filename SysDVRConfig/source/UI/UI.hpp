@@ -22,6 +22,8 @@ namespace UI {
 		
 	void StartFrame();
 	void EndFrame();
+
+	void DecodeFont(uint8_t* data, uint32_t len);
 }
 
 namespace App {
