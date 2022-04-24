@@ -67,6 +67,7 @@ namespace SysDVR.Client.RTSP
 
 			_Stopping = new ManualResetEvent(false);
 			_ListenTread = new Thread(new ThreadStart(AcceptConnection));
+			_ListenTread.Name = "_ListenTread";
 			_ListenTread.Start();
 		}
 

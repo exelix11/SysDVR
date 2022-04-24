@@ -3,7 +3,7 @@ name: SysDVR-Client
 on:
   workflow_dispatch:
   push:
-    branches: [ master, net6 ] # TODO: Remove net6
+    branches: [ master ]
     paths:
       - Client/**
       - ClientGUI/**
@@ -17,9 +17,12 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    # Must use windows-2019 as windows-latest doesn't have .net framework 4.5 needed to build the GUI
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
+      with: 
+        submodules: true
     # SysDVR-Client uses .NET6
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
