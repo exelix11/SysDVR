@@ -29,7 +29,7 @@ jobs:
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
     - name: Run build script
-      run: ReleaseClient.bat
+      run: .\ReleaseClient.bat
     - uses: actions/upload-artifact@v3
       with:
         name: SysDVR-Client
