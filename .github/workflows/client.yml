@@ -17,6 +17,7 @@ on:
 
 jobs:
   build:
+    # Must use windows-2019 as windows-latest doesn't have .net framework 4.5 needed to build the GUI
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
