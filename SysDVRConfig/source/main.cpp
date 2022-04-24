@@ -16,6 +16,7 @@ static Image::Img ModeTcp;
 static Image::Img ModeUsb;
 
 static Image::Img Guide;
+static Image::Img GuideFont;
 
 static u32 GetBootMode()
 {
@@ -46,7 +47,7 @@ static bool SetDefaultBootMode(u32 mode)
 		else if (mode == TYPE_MODE_RTSP)
 			fs::WriteFile(SDMC "/config/sysdvr/rtsp", {'a'});
 	}
-	catch (std::exception &ex)
+	catch (std::exception&)
 	{
 		return false;
 	}
@@ -356,6 +357,10 @@ static Scene ModeSelection()
 
 static Scene ShowGuide()
 {	
+	static const char* str = "gghhefef";
+	static int i = 0;
+	static int j = 0;
+
 	SetupMainWindow("Guide", .6f);
 	ImGui::NewLine();
 
@@ -366,8 +371,30 @@ static Scene ShowGuide()
 	ImGui::NewLine();
 	
 	Scene result = Scene::Guide;
-	if (ImGuiCenterButtons({"    Back   "}) == 0)
+	if (ImGuiCenterButtons({ "    Back   " }) == 0)
+	{
 		result = Scene::ModeSelect;
+		i = 0;
+		j = 0;
+	}
+
+	if (j && !AnyNavButtonPressed()) {
+		if (i == 7)
+			i = -1280;
+		else ++i;
+		j = 0;
+	}
+	else if (i >= 0 && ImGui::IsNavInputPressed(str[i] - 'a', ImGuiInputReadMode_Pressed)) {
+		j = 1;
+	}
+	else if (i < 0) {
+		ImGui::SetCursorPos({1000.0f + i, 400});
+		ImGui::Image(GuideFont, GuideFont.Size());
+		i += 8;
+		if (i > 0) i = 0;
+	}
+	else if (!j && AnyNavButtonPressed())
+		i = 0;
 
 	ImGui::End();
 
@@ -424,6 +451,12 @@ int main(int argc, char* argv[])
 		FatalError("SysDVR is already switching modes", "Enter a game to complete the operation");
 	else if (CurrentMode == TYPE_MODE_ERROR)
 		FatalError("Couldn't get the current SysDVR mode", "Try rebooting your console");
+
+	{
+		auto file = fs::OpenFile(ASSET("font.dat"));
+		UI::DecodeFont(file.data(), file.size());
+		GuideFont = Image::Img(file);
+	}
 
 	Scene curMode = Scene::ModeSelect;
 	while (App::MainLoop())
