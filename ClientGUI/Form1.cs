@@ -266,14 +266,14 @@ namespace SysDVRClientGUI
 			proc.WaitForExit();
 			var s = proc.StandardOutput.ReadToEnd();
 
-			// Find dotnet 5 or 6
+			// Find dotnet 6
 			foreach (Match match in new Regex(@"NETCore\.App (\d+)\.").Matches(s))
 			{
 				if (match.Captures.Count == 0) continue;
 
 				string val = match.Value.Substring("NETCore.App ".Length).TrimEnd('.');
 
-				if (int.TryParse(val, out int num) && num >= 5)
+				if (int.TryParse(val, out int num) && num >= 6)
 					return true;
 			}
 

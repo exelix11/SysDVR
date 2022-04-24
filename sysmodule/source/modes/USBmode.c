@@ -2,12 +2,10 @@
 #include "../USB/Serial.h"
 #include "../grcd.h"
 
-static UsbInterface VPipe, APipe;
-
 static inline bool SerialWrite(UsbInterface interface, const VLAPacket* packet)
 {
 	const u32 size = packet->Header.DataSize + sizeof(PacketHeader);
-	return UsbSerialWrite(interface, packet, size, 1E+9) == size;
+	return UsbSerialWrite(interface, packet, size, 2E+8) == size;
 }
 
 static inline bool WaitRequest(UsbInterface interface)
@@ -16,47 +14,59 @@ static inline bool WaitRequest(UsbInterface interface)
 	return UsbSerialRead(interface, &data, sizeof(data), 3e+9) == sizeof(data) && data == 0xAAAAAAAA;
 }
 
-static void USB_StreamVideo(void* _)
+typedef struct {
+	u32 CheckCode;
+	UsbInterface Pipe;
+	VLAPacket* Packet;
+	bool (*ReadStreamFunc)();
+} UsbStreamBlock;
+
+static void USB_StreamThread(void* threadConf)
 {
+	const UsbStreamBlock* const info = (UsbStreamBlock*)threadConf;
+
 	if (!IsThreadRunning)
-		fatalThrow(ERR_USB_VIDEO);
+		fatalThrow(info->CheckCode);
 
-	while (true)
+	while (IsThreadRunning)
 	{
-		if (!WaitRequest(VPipe))
-			TerminateOrContinue
+		// Wait for client
+		if (!WaitRequest(info->Pipe))
+			continue;
 
-		if (!ReadVideoStream())
-			TerminateOrContinue
+		// Once client is connected just continuously send data
+		while (true) {
+			if (!info->ReadStreamFunc())
+			{
+				if (IsThreadRunning) continue; else break;
+			}
 
-		if (!SerialWrite(VPipe, (VLAPacket*)&VPkt))
-			TerminateOrContinue
+			if (!SerialWrite(info->Pipe, info->Packet))
+			{
+				// If writing fails go back to waiting for client
+				break;
+			}
+		}
 	}
 }
 
-static void USB_StreamAudio(void* _)
-{
-	if (!IsThreadRunning)
-		fatalThrow(ERR_USB_AUDIO);
+UsbStreamBlock VideoConfig = {
+	.CheckCode = ERR_USB_VIDEO,
+	.Packet = (VLAPacket*)&VPkt,
+	.ReadStreamFunc = ReadVideoStream
+};
 
-	while (true)
-	{
-		if (!WaitRequest(APipe))
-			TerminateOrContinue
-
-		if (!ReadAudioStream())
-			TerminateOrContinue
-
-		if (!SerialWrite(APipe, (VLAPacket*)&APkt))
-			TerminateOrContinue
-	}
-}
+UsbStreamBlock AudioConfig = {
+	.CheckCode = ERR_USB_AUDIO,
+	.Packet = (VLAPacket*)&APkt,
+	.ReadStreamFunc = ReadAudioStream
+};
 
 static void USB_Init()
 {
 	VPkt.Header.Magic = 0xAAAAAAAA;
 	APkt.Header.Magic = 0xAAAAAAAA;
-	Result rc = UsbSerialInitializeForStreaming(&VPipe, &APipe);
+	Result rc = UsbSerialInitializeForStreaming(&VideoConfig.Pipe, &AudioConfig.Pipe);
 	if (R_FAILED(rc)) 
 		fatalThrow(rc);
 }
@@ -66,4 +76,8 @@ static void USB_Exit()
 	UsbSerialExit();
 }
 
-StreamMode USB_MODE = { USB_Init, USB_Exit, USB_StreamVideo, USB_StreamAudio };
+const StreamMode USB_MODE = {
+	USB_Init, USB_Exit, 
+	USB_StreamThread, USB_StreamThread,
+	&VideoConfig, &AudioConfig 
+};

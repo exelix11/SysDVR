@@ -96,12 +96,13 @@ namespace SysDVR.Client.Player
 			{
 				AVPacket pkt;
 				av_init_packet(&pkt);
-
+				
 				pkt.data = nal_data;
 				pkt.size = size;
 				pkt.pts = pkt.dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
 
 				int res = 0;
+				int resendCount = 0;
 
 			send_again:
 				lock (ctx.CodecLock)
@@ -109,9 +110,17 @@ namespace SysDVR.Client.Player
 				
 				if (res == AVERROR(EAGAIN))
 				{
-					if (!tok.IsCancellationRequested)
-						// This never seems to happen
+					// Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
+					// Since this is not threaded anymore if we block here the device thread also blocks, possibly causing desync, so just discard the packet after a few attempts
+					if (resendCount < 60 && !tok.IsCancellationRequested)
+					{
+						Thread.Sleep(1);
+						resendCount++;
 						goto send_again;
+					}
+#if DEBUG
+					Console.WriteLine("Info: dropping video packet due to UI thread timeout");
+#endif
 				}
 				else if (res != 0)
 				{

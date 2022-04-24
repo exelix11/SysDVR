@@ -172,6 +172,7 @@ bool ReadVideoStream()
 #ifndef RELEASE
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
 	// These big NALs are not common and even if they're missed they only cause graphical glitches, it's better not to fatal in release builds
+	// Error code should be 2212-0006
 	if (R_FAILED(res))
 		fatalThrow(res);
 #endif
@@ -222,13 +223,13 @@ static Thread AudioThread;
 #ifndef USB_ONLY
 static Thread VideoThread;
 
-StreamMode* CurrentMode = NULL;
+const StreamMode* CurrentMode = NULL;
 static atomic_bool IsSwitchingModes = false;
 
-static void SetModeInternal(void* argmode)
+static void SetModeInternal(const void* argmode)
 { 
 	IsSwitchingModes = true;
-	StreamMode* mode = argmode;
+	const StreamMode* mode = argmode;
 
 	if (CurrentMode)
 	{
@@ -255,16 +256,16 @@ static void SetModeInternal(void* argmode)
 		if (mode->InitFn)
 			mode->InitFn();
 		if (mode->VThread)
-			LaunchThread(&VideoThread, mode->VThread, NULL);
+			LaunchThread(&VideoThread, mode->VThread, mode->Vargs);
 		if (mode->AThread)
-			LaunchThread(&AudioThread, mode->AThread, NULL);
+			LaunchThread(&AudioThread, mode->AThread, mode->Aargs);
 	}
 	IsSwitchingModes = false;
 	LOG("Done\n");
 }
 
 static Thread SwitchingThread;
-static void BeginSetMode(StreamMode* mode)
+static void BeginSetMode(const StreamMode* mode)
 {	
 	if (IsSwitchingModes)
 		fatalThrow(ERR_MAIN_SWITCHING);
@@ -284,7 +285,7 @@ static void BeginSetMode(StreamMode* mode)
 		This is called by the IPC thread, we use another thread to set modes as it can get stuck.
 		By keeping the IPC thread free the settings app can show a proper error message instead of hanging while connecting.
 	*/
-	LaunchThreadEx(&SwitchingThread, SetModeInternal, mode, 0x2C, -2);
+	LaunchThreadEx(&SwitchingThread, (ThreadFunc)SetModeInternal, (void*)mode, 0x2C, -2);
 }
 
 u32 GetCurrentMode()
