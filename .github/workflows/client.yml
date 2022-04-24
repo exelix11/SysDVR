@@ -1,0 +1,36 @@
+name: SysDVR-Client
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, net6 ] # TODO: Remove net6
+    paths:
+      - Client/**
+      - ClientGUI/**
+      - Libs/**
+  pull_request:
+    branches: [ master ]
+    paths:
+      - Client/**
+      - ClientGUI/**
+      - Libs/**
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    # SysDVR-Client uses .NET6
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.x
+    # SysDVR-ClientGUI uses net framework
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Run build script
+      run: ReleaseClient.bat
+    - uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Client
+        path: Client.7z
