@@ -112,7 +112,7 @@ namespace SysDVR.Client.Sources
 					device = null;
 				}
 				else if (deviceReferences < 0)
-					throw new Exception("interface refCount out of range");
+					throw new Exception("Interface refCount out of range");
 			}
 		}
 
@@ -193,7 +193,7 @@ namespace SysDVR.Client.Sources
 				if (err != LibUsbDotNet.Error.Success)
 				{
 					Thread.Sleep(1000);
-					Console.WriteLine($"Warning: console handshake failed ({err}). Try unplugging your console and restart SysDVR");
+					Console.WriteLine($"Warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting SysDVR.");
 					continue;
 				}
 
@@ -230,7 +230,8 @@ namespace SysDVR.Client.Sources
 			var err = reader.Read(buffer, 0, PacketHeader.StructLength, 200, out int _);
 			if (err != LibUsbDotNet.Error.Success)
 			{
-				Console.WriteLine($"Warning: winusb error {err} while reading header");
+				if (Logging)
+					Console.WriteLine($"Warning: winusb error {err} while reading header");
 				return false;
 			}
 
@@ -242,7 +243,8 @@ namespace SysDVR.Client.Sources
 			var err = reader.Read(buffer, 0, length, 200, out int sz);
 			if (err != LibUsbDotNet.Error.Success)
 			{
-				Console.WriteLine($"Warning: winusb error {err} while reading payload. ({sz} read)");
+				if (Logging)
+					Console.WriteLine($"Warning: winusb error {err} while reading payload. ({sz} read)");
 				return false;
 			}
 
@@ -270,7 +272,8 @@ namespace SysDVR.Client.Sources
 			var err = reader.Read(ReadBuffer, 0, PacketHeader.MaxTransferSize, 400, out ReadSize);
 			if (err != LibUsbDotNet.Error.Success)
 			{
-				Console.WriteLine($"Warning: libusb error {err} while reading header");
+				if (Logging)
+					Console.WriteLine($"Warning: libusb error {err} while reading header");
 				return false;
 			}
 
