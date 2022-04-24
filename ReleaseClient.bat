@@ -2,7 +2,7 @@
 
 set PATH=C:\Program Files\7zip;C:\Program Files\7-Zip\;C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\;%PATH%
 
-cd ..\..\..\Client.Native
+cd Libs\Client.Native
 dotnet build -c Release || goto error
 REM Client.Native is automatically copied to Libs\Built
 
