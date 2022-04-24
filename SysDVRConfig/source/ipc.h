@@ -4,6 +4,7 @@
 #include <switch.h>
 #else
 #include <stdint.h>
+#include <stdbool.h>
 typedef uint32_t u32;
 typedef uint32_t Result;
 #define MAKERESULT(x,y) 0

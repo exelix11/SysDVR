@@ -74,5 +74,5 @@ static void RTSP_Exit()
 	JoinThread(&RTSPThread);
 }
 
-StreamMode RTSP_MODE = { RTSP_Init, RTSP_Exit, RTSP_StreamVideo, RTSP_StreamAudio };
+const StreamMode RTSP_MODE = { RTSP_Init, RTSP_Exit, RTSP_StreamVideo, RTSP_StreamAudio, NULL, NULL };
 #endif

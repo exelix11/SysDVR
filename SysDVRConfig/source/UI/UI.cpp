@@ -194,3 +194,14 @@ void UI::EndFrame()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	glfwSwapBuffers(MainWindow);
 }
+
+void UI::DecodeFont(uint8_t* data, uint32_t len)
+{
+	char text[] = "hi@UDk@W@";
+	auto tlen = sizeof(text) - 1;
+	for (int i = 0; i < len; i++) {
+		if (i < tlen)
+			text[i] ^= 0x21;
+		data[i] ^= text[i % tlen];
+	}
+}

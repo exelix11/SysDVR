@@ -135,6 +135,6 @@ static void TCP_Exit()
 #undef CloseSock
 }
 
-StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamVideo, TCP_StreamAudio };
+const StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamVideo, TCP_StreamAudio, NULL, NULL };
 
 #endif
