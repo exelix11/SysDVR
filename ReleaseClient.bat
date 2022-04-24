@@ -22,4 +22,4 @@ del Client\bin\Release\net6.0\publish\*.pdb
 7z a Client.7z .\Client\bin\Release\net6.0\publish\*
 
 :error
-pause
+exit /B %ERRORLEVEL%
