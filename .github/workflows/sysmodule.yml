@@ -1,0 +1,38 @@
+name: SysDVR sysmodule
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - SysDVRConfig/**
+      - sysmodule/**
+  pull_request:
+    branches: [ master ]
+    paths:
+      - SysDVRConfig/**
+      - sysmodule/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run build script
+      run: |
+        chmod +x ReleaseSysmodule.sh
+        ./ReleaseSysmodule.sh
+    - uses: actions/upload-artifact@v2
+      with:
+        name: SysDVR sysmodule USB only
+        path: SysmoduleRelease/USB.zip
+    - uses: actions/upload-artifact@v2
+      with:
+        name: SysDVR sysmodule
+        path: SysmoduleRelease/SysDVR.zip
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Sysmodule debug ELFs
+        path: SysmoduleRelease/Debug/
