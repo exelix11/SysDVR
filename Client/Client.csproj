@@ -32,7 +32,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibUsbDotNet" Version="3.0.100-alpha" />
+    <PackageReference Include="LibUsbDotNet" Version="3.0.97-alpha" />
     <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
   </ItemGroup>
 
@@ -46,5 +46,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 
 </Project>
