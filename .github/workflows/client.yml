@@ -3,7 +3,7 @@ name: SysDVR-Client
 on:
   workflow_dispatch:
   push:
-    branches: [ master, net6 ] # TODO: Remove net6
+    branches: [ master ]
     paths:
       - Client/**
       - ClientGUI/**
