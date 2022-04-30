@@ -111,9 +111,7 @@ namespace SysDVR.Client.Player
 		readonly bool HasVideo;
 		readonly string ScaleQuality;
 
-		protected bool ShouldQuit = true;
-
-		bool Running = false;
+		private bool Running = false;
 		
 		protected DecoderContext Decoder; 
 		protected SDLContext SDL; // This must be initialized by the UI thread
@@ -361,7 +359,7 @@ namespace SysDVR.Client.Player
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 #endif
-			while (!ShouldQuit)
+			while (Running)
 			{
 				if (DecodeNextFrame())
 				{
@@ -395,12 +393,11 @@ namespace SysDVR.Client.Player
 					if (evt.type == SDL_EventType.SDL_QUIT
 						|| (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)
 						|| (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_ESCAPE))
-						ShouldQuit = true;
+						Stop();
 					else if (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 						CalculateDisplayRect();
 					else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_F11)
 					{
-						//SDL_SetWindowFullscreen(SDL.Window, fullscreen ? 0 : (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
 						fullscreen = !fullscreen;
 						SetFullScreen(fullscreen);
 						CalculateDisplayRect();
@@ -461,18 +458,21 @@ namespace SysDVR.Client.Player
 
 				++attempts;
 			}
-			while (ret == AVERROR(EAGAIN) && !ShouldQuit && attempts < 15);
+			while (ret == AVERROR(EAGAIN) && Running && attempts < 15);
 
 			if (ret == AVERROR(EAGAIN))
 			{
 				// After too many failed attempts return in order to handle UI events
+				return false;
 			}
 			else if (ret != 0)
+			{
+				// Should not happen
 				Console.WriteLine($"avcodec_receive_frame {ret}");
+				return false;
+			}
 			else
 			{
-				//Console.WriteLine("Attempts " + attempts);
-				
 				// On the first frame we get check if we need to use a converter
 				if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
 				{
@@ -509,8 +509,6 @@ namespace SysDVR.Client.Player
 				// TODO: figure out audio/video synchronization. 
 				// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
 			}
-
-			return false;
 		}
 
 		public Player(PlayerManager owner, bool hwAcc, string codecName, string scaleQuality)
@@ -542,7 +540,6 @@ namespace SysDVR.Client.Player
 				throw new Exception("Already started");
 
 			Running = true;
-			ShouldQuit = false;
 
 			if (HasAudio)
 				SDL_PauseAudio(0);
@@ -550,7 +547,6 @@ namespace SysDVR.Client.Player
 
 		public void Stop() 
 		{
-			ShouldQuit = true;			
 			Running = false;
 		}
 
