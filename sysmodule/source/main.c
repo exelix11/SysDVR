@@ -350,8 +350,8 @@ int main(int argc, char* argv[])
 
 #ifdef USB_ONLY
 	USB_MODE.InitFn();
-	LaunchThread(&AudioThread, USB_MODE.AThread, NULL);
-	USB_MODE.VThread(NULL);
+	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs);
+	USB_MODE.VThread(USB_MODE.Vargs);
 	USB_MODE.ExitFn();
 #else
 	if (FileExists("/config/sysdvr/usb"))
