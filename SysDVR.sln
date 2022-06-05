@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29318.209
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csproj", "{79443CAF-C9CC-4EBD-996E-B711C7709ED0}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -20,8 +20,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client.Native", "Libs\Client.Native\Client.Native.csproj", "{F20BF7C9-251B-41D3-850C-636DC2F1CC55}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RTSP", "Libs\SharpRTSP\RTSP\RTSP.csproj", "{4426CF39-BBED-42D0-B7CD-EB3AFD2212F6}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FFmpeg.AutoGen", "Libs\FFmpeg.AutoGen\FFmpeg.AutoGen\FFmpeg.AutoGen.csproj", "{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{FEC82D89-41F0-4B16-A800-6B11947BCC34}"
 EndProject
@@ -131,24 +129,6 @@ Global
 		{4426CF39-BBED-42D0-B7CD-EB3AFD2212F6}.Release|x64.Build.0 = Release|Any CPU
 		{4426CF39-BBED-42D0-B7CD-EB3AFD2212F6}.Release|x86.ActiveCfg = Release|Any CPU
 		{4426CF39-BBED-42D0-B7CD-EB3AFD2212F6}.Release|x86.Build.0 = Release|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug USB_ONLY|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug USB_ONLY|Any CPU.Build.0 = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug USB_ONLY|x64.ActiveCfg = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug USB_ONLY|x64.Build.0 = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug USB_ONLY|x86.ActiveCfg = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug USB_ONLY|x86.Build.0 = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug|x64.Build.0 = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Debug|x86.Build.0 = Debug|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Release|x64.ActiveCfg = Release|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Release|x64.Build.0 = Release|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Release|x86.ActiveCfg = Release|Any CPU
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -156,7 +136,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{F20BF7C9-251B-41D3-850C-636DC2F1CC55} = {FEC82D89-41F0-4B16-A800-6B11947BCC34}
 		{4426CF39-BBED-42D0-B7CD-EB3AFD2212F6} = {FEC82D89-41F0-4B16-A800-6B11947BCC34}
-		{A8030F1C-6869-484E-9E40-2D95AB7C0EFF} = {FEC82D89-41F0-4B16-A800-6B11947BCC34}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7BD82B3-53B2-4B7A-9535-0C153910DF0F}
