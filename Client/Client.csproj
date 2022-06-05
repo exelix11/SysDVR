@@ -32,13 +32,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FFmpeg.AutoGen" Version="5.0.0" />
     <PackageReference Include="LibUsbDotNet" Version="3.0.97-alpha" />
     <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Libs\FFmpeg.AutoGen\FFmpeg.AutoGen\FFmpeg.AutoGen.csproj" />
-    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
+    <ProjectReference Include="..\Libs\FFmpeg.AutoGen\FFmpeg.AutoGen\FFmpeg.AutoGen.csproj" />    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
   </ItemGroup>
 
   <ItemGroup>
