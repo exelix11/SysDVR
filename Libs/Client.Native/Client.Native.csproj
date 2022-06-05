@@ -1,26 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>SysDVR.Client.Native</RootNamespace>
     <AssemblyName>SysDVR.Client.Native</AssemblyName>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	<Version>1.0.1</Version>
+	<Version>1.0.2</Version>
 	<OutputPath>../Built</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-	  <None Include="SDL2/SDL2-x64.dll" Pack="true" PackagePath="runtimes/win-x64/native/SDL2.dll" />
-	  <None Include="SDL2/SDL2-x86.dll" Pack="true" PackagePath="runtimes/win-x86/native/SDL2.dll" />
-
-	  <None Include="ffmpeg/win64/avcodec-58.dll" Pack="true" PackagePath="runtimes/win-x64/native/avcodec-58.dll" />
-	  <None Include="ffmpeg/win64/avdevice-58.dll" Pack="true" PackagePath="runtimes/win-x64/native/avdevice-58.dll" />
-	  <None Include="ffmpeg/win64/avfilter-7.dll" Pack="true" PackagePath="runtimes/win-x64/native/avfilter-7.dll" />
-	  <None Include="ffmpeg/win64/avformat-58.dll" Pack="true" PackagePath="runtimes/win-x64/native/avformat-58.dll" />
-	  <None Include="ffmpeg/win64/avutil-56.dll" Pack="true" PackagePath="runtimes/win-x64/native/avutil-56.dll" />
-	  <None Include="ffmpeg/win64/swresample-3.dll" Pack="true" PackagePath="runtimes/win-x64/native/swresample-3.dll" />
-	  <None Include="ffmpeg/win64/swscale-5.dll" Pack="true" PackagePath="runtimes/win-x64/native/swscale-5.dll" />
+	  <None Include="binaries/**/*.*" Pack="true" PackagePath="runtimes/" />
   </ItemGroup>
 </Project>
