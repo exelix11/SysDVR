@@ -37,8 +37,7 @@
     <PackageReference Include="SysDVR.Client.Native" Version="1.0.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Libs\FFmpeg.AutoGen\FFmpeg.AutoGen\FFmpeg.AutoGen.csproj" />    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
+  <ItemGroup>    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
   </ItemGroup>
 
   <ItemGroup>
