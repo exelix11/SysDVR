@@ -220,17 +220,18 @@ namespace SysDVR.Client.FileOutput
 
 				fixed (byte* nal_data = data)
 				{
-					AVPacket pkt;
-					av_init_packet(&pkt);
+					AVPacket* pkt = av_packet_alloc();
 
-					pkt.data = nal_data;
-					pkt.size = size;
-					pkt.dts = pkt.pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
-					pkt.stream_index = 0;
+					pkt->data = nal_data;
+					pkt->size = size;
+					pkt->dts = pkt->pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
+					pkt->stream_index = 0;
 
 					lock(ctxSync)
-						av_interleaved_write_frame(outCtx, &pkt).AssertNotNeg();
-				}
+						av_interleaved_write_frame(outCtx, pkt).AssertNotNeg();
+
+                    av_packet_free(&pkt);
+                }
 			}
 		}
 
