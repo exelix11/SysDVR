@@ -230,8 +230,8 @@ namespace SysDVR.Client.FileOutput
 					lock(ctxSync)
 						av_interleaved_write_frame(outCtx, pkt).AssertNotNeg();
 
-                    av_packet_free(&pkt);
-                }
+          av_packet_free(&pkt);
+         }
 			}
 		}
 
