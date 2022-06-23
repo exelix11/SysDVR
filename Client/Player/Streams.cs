@@ -66,11 +66,21 @@ namespace SysDVR.Client.Player
 		}
 	}
 
-	class H264StreamTarget : IOutStream
+	unsafe class H264StreamTarget : IOutStream
 	{
 		DecoderContext ctx;
 		CancellationToken tok;
 		int timebase_den;
+		AVPacket* packet;
+
+		unsafe public H264StreamTarget() {
+			packet = av_packet_alloc();
+		}
+
+		unsafe ~H264StreamTarget() {
+			fixed (AVPacket** p = &packet)
+				av_packet_free(p);
+		}
 
 		unsafe public void UseContext(DecoderContext ctx)
 		{
@@ -94,19 +104,17 @@ namespace SysDVR.Client.Player
 
 			fixed (byte* nal_data = buffer)
 			{
-				AVPacket pkt;
-				av_init_packet(&pkt);
-				
-				pkt.data = nal_data;
-				pkt.size = size;
-				pkt.pts = pkt.dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
+				var pkt = packet;
+				pkt->data = nal_data;
+				pkt->size = size;
+				pkt->pts = pkt->dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
 
 				int res = 0;
 				int resendCount = 0;
 
 			send_again:
 				lock (ctx.CodecLock)
-					res = avcodec_send_packet(ctx.CodecCtx, &pkt);
+					res = avcodec_send_packet(ctx.CodecCtx, pkt);
 				
 				if (res == AVERROR(EAGAIN))
 				{
