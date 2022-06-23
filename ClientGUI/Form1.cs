@@ -57,14 +57,13 @@ namespace SysDVRClientGUI
 
 			if (Utils.FindExecutableInPath("dotnet.exe") == null)
 			{
-				if (MessageBox.Show(".NET 5 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				if (MessageBox.Show(".NET 6 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 					Process.Start("https://dotnet.microsoft.com/download");
-				else
-					this.Close();
+				this.Close();
 			}
-			else if (!Utils.IsDotnet5Installed())
+			else if (!Utils.IsDotnet6Installed())
 			{
-				if (MessageBox.Show("It seems you're running an outdated version of .net core. Since SysDVR 5.0 the client app requires the .NET 5 runtime. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				if (MessageBox.Show("It seems you're running an outdated version of .NET. Since SysDVR 5.0 the client app requires the .NET 6 runtime. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 					Process.Start("https://dotnet.microsoft.com/download");
 				else 
 					MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.") ;
@@ -251,7 +250,7 @@ namespace SysDVRClientGUI
 				.Select(x => Path.Combine(x, fileName))
 				.FirstOrDefault(x => File.Exists(x));
 
-		public static bool IsDotnet5Installed()
+		public static bool IsDotnet6Installed()
 		{
 			Process proc = new Process();
 			proc.StartInfo = new ProcessStartInfo()
