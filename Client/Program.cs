@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using FFmpeg.AutoGen;
 using SysDVR.Client.FileOutput;
 using SysDVR.Client.Sources;
 
@@ -87,12 +88,13 @@ Extra options:
 	These options will not stream, they just print the output and then quit.
 	`--show-decoders` : Prints all video codecs available for the built-in video player
 	`--version` : Prints the version
+	`--ffmpeg` : Overrides the ffmpeg load path, use only if dotnet can't locate your ffmpeg/avcoded libraries automatically
 
 Command examples:
 	SysDVR-Client.exe usb
 		Connects to switch via USB and streams video and audio in the built-in player
 
-	SysDVR-Client.exe usb --rtsp
+	SysDVR-Client.exe usb --rtsp	
 		Connects to switch via USB and streams video and audio via rtsp at rtsp://127.0.0.1:6666/
 		
 	SysDVR-Client.exe bridge 192.168.1.20 --no-video --rtsp-port 9090
@@ -105,6 +107,11 @@ Command examples:
 
 		static void Main(string[] args)
 		{
+			if (System.OperatingSystem.IsWindows())
+				ffmpeg.RootPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), $"runtimes\\win-{(Environment.Is64BitProcess ? "x64" : "x86")}\\native");
+			else
+				ffmpeg.RootPath = ""; // SHould call LoadLibrary with just the file name which should search in LD_LIBRARY_PATH
+
 			try 
 			{
 				// Not pretty but at least won't segfault and generate crash dumps
@@ -119,7 +126,34 @@ Command examples:
 		static void InnerMain(string[] args)
 		{
 			bool HasArg(string arg) => Array.IndexOf(args, arg) != -1;
+
+			string ArgValue(string arg)
+			{
+				int index = Array.IndexOf(args, arg);
+				if (index == -1) return null;
+				if (args.Length <= index + 1) return null;
+
+				string value = args[index + 1];
+				if (!value.Contains(' ') && value.StartsWith('"') && value.EndsWith('"'))
+					value = value.Substring(1, value.Length - 2);
+
+				return value;
+			}
+
+			int? ArgValueInt(string arg)
+			{
+				var a = ArgValue(arg);
+				if (int.TryParse(a, out int res))
+					return res;
+				return null;
+			}
+
+
 			bool StreamStdout = HasArg("--stdout");
+			string FfmpegPath = ArgValue("--ffmpeg");
+
+			if (FfmpegPath is not null)
+				ffmpeg.RootPath = FfmpegPath;
 
 			if (StreamStdout)
 				Console.SetOut(Console.Error);
@@ -136,27 +170,6 @@ Command examples:
 
 			BaseStreamManager StreamManager;
 			bool NoAudio, NoVideo;
-
-			string ArgValue(string arg) 
-			{
-				int index = Array.IndexOf(args, arg);
-				if (index == -1) return null;
-				if (args.Length <= index + 1) return null;
-
-				string value = args[index + 1];
-				if (!value.Contains(' ') && value.StartsWith('"') && value.EndsWith('"'))
-					value = value.Substring(1, value.Length - 2);
-
-				return value;
-			}
-
-			int? ArgValueInt(string arg) 
-			{
-				var a = ArgValue(arg);
-				if (int.TryParse(a, out int res))
-					return res;
-				return null;
-			}
 
 			if (HasArg("--version"))
 				return;

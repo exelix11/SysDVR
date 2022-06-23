@@ -23,6 +23,14 @@ jobs:
     - uses: actions/checkout@v3
       with: 
         submodules: true
+    # Download ffmpeg for windows builds
+    - uses: robinraju/release-downloader@v1.3
+      with:
+        repository: "BtbN/FFmpeg-Builds"
+        latest: true
+        fileName: "ffmpeg-master-latest-win64-lgpl-shared.zip"
+    - name: Download SDL2 bins
+      run: iwr https://www.libsdl.org/release/SDL2-2.0.22-win32-x64.zip -o SDL2.zip
     # SysDVR-Client uses .NET6
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
