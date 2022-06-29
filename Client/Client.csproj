@@ -34,6 +34,7 @@
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="5.0.0" />
     <PackageReference Include="LibUsbDotNet" Version="3.0.97-alpha" />
+    <PackageReference Include="PInvoke.SetupApi" Version="0.7.104" />
     <PackageReference Include="SysDVR.Client.Native" Version="1.0.2" />
   </ItemGroup>
 
