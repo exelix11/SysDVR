@@ -16,6 +16,8 @@ if exist SDL2.zip (
 	copy SDL2\*.dll Libs\Client.Native\binaries\win-x64\native\
 )
 
+REM TODO: Download wdi-simple and add to runtimes to install drivers on windows
+
 cd Libs\Client.Native
 dotnet build -c Release || goto error
 REM Client.Native is automatically copied to Libs\Built
