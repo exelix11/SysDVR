@@ -131,10 +131,10 @@ namespace SysDVRClientGUI.DriverInstall
             Trace.WriteLine("Installing driver...");
 
             // It seems the 32-bit version can install 64-bit drivers as well
-            var wdiExe = Path.Combine(Program.OsArchGenericFolder, "wdi-simple.exe");
+            var wdiExe = Path.Combine(Program.OsArchGenericFolder, "wdi-simple32.exe");
             if (!File.Exists(wdiExe))
             {
-                MessageBox.Show("wdi-simple.exe is missing, did you download and extract SysDVR-Client properly ?");
+                MessageBox.Show("wdi-simple32.exe is missing, did you download and extract SysDVR-Client properly ?");
                 return false;
             }
 

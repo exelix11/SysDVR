@@ -118,8 +118,8 @@ namespace SysDVRClientGUI
 
 		void CheckUSBDriver() 
 		{
-			// Note if the state is unknown no message is shown, it usually means sysdvr has never been plugged in before
-			if (DriverInstall.DriverHelper.GetDriverInfo() == DriverInstall.DriverStatus.NotInstalled)
+			var state = DriverInstall.DriverHelper.GetDriverInfo();
+			if (state == DriverInstall.DriverStatus.NotInstalled)
 			{
 				if (MessageBox.Show("You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 				{
@@ -127,6 +127,12 @@ namespace SysDVRClientGUI
 				}
 				else MessageBox.Show("Without installing the driver USB streaming may not work");
 			}
+			else if (state == DriverInstall.DriverStatus.Unknown)
+			{
+                MessageBox.Show(
+					"Obtaining driver information failed, this usually means Windows has never seen the SysDVR USB device ID before.\r\n\r\n" +
+                    "Make sure that the console is plugged in, SysDVR is running and it is set to USB mode.");
+            }
 		}
 
 		string GetExtraArgs() 

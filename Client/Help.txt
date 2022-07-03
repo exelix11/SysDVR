@@ -1,4 +1,4 @@
-To use SysDVR-Client you need .NET 5 https://dotnet.microsoft.com/download
+To use SysDVR-Client you need .NET 6 https://dotnet.microsoft.com/download
 Download .NET for your OS, don't use mono. 
 
 You can launch SysDVR-Client with this command: `dotnet SysDVR-Client.dll`
