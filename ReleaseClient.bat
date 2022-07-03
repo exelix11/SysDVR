@@ -39,6 +39,7 @@ msbuild ClientGUI.csproj /p:Configuration=Release || goto error
 cd ..
 
 move Client\bin\Release\net6.0\SysDVR-ClientGUI.exe Client\bin\Release\net6.0\publish\SysDVR-ClientGUI.exe 
+move Client\bin\Release\net6.0\*.dll Client\bin\Release\net6.0\publish\ 
 
 del Client\bin\Release\net6.0\publish\*.pdb
 

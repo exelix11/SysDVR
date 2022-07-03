@@ -8,12 +8,14 @@ on:
       - Client/**
       - ClientGUI/**
       - Libs/**
+      - ReleaseClient.bat
   pull_request:
     branches: [ master ]
     paths:
       - Client/**
       - ClientGUI/**
       - Libs/**
+      - ReleaseClient.bat
 
 jobs:
   build:
