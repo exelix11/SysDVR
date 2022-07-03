@@ -57,7 +57,7 @@ namespace SysDVRClientGUI
 
 			if (Utils.FindExecutableInPath("dotnet.exe") == null)
 			{
-				if (MessageBox.Show(".NET 6 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				if (MessageBox.Show(".NET 6 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
 					Process.Start("https://dotnet.microsoft.com/download");
 				this.Close();
 			}
@@ -68,6 +68,17 @@ namespace SysDVRClientGUI
 				else 
 					MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.") ;
 			}
+
+            // TODO: Check on systems that have never seen sysdvr as well as systems where it was plugged in so it auto-installed a different driver
+			MessageBox.Show(DriverInstall.DriverHelper.GetDriverInfo().ToString());
+			if (DriverInstall.DriverHelper.GetDriverInfo() == DriverInstall.DriverStatus.NotInstalled)
+			{
+				if (MessageBox.Show("SysDVR driver is not installed, do you want to install it ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				{
+					DriverInstall.DriverHelper.InstallDriver();
+				}
+				else MessageBox.Show("Without installing the driver USB streaming may not work");
+            }
 
 			rbStreamRtsp.Checked = true;
 			rbChannelsBoth.Checked = true;
@@ -240,9 +251,18 @@ namespace SysDVRClientGUI
 			pAdvOptions.Visible = cbAdvOpt.Checked;
 			this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
 		}
-	}
 
-	static class Utils 
+        private void button4_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("In case of issues with USB streaming you can try to reinstall the driver. Do you want to do it now ? (SysDVR will be closed)", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+				if (DriverInstall.DriverHelper.InstallDriver())
+					Environment.Exit(0);
+			}
+        }
+    }
+
+    static class Utils 
 	{
 		public static string FindExecutableInPath(string fileName) =>
 			Environment.GetEnvironmentVariable("PATH")
