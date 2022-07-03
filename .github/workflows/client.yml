@@ -29,6 +29,12 @@ jobs:
         repository: "BtbN/FFmpeg-Builds"
         latest: true
         fileName: "ffmpeg-master-latest-win64-lgpl-shared.zip"
+    # Download releases from my libwdi fork for CI builds of Wdi-simple.exe, it's needd to install the USB driver
+    - uses: robinraju/release-downloader@v1.3
+      with:
+        repository: "exelix11/libwdi"
+        latest: true
+        fileName: "wdi-simple.zip"
     - name: Download SDL2 bins
       run: iwr https://www.libsdl.org/release/SDL2-2.0.22-win32-x64.zip -o SDL2.zip
     # SysDVR-Client uses .NET6
