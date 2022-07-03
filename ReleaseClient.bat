@@ -31,9 +31,12 @@ REM Client.Native is automatically copied to Libs\Built
 cd ..\..\Client
 dotnet publish -c Release || goto error
 
-cd ..\ClientGUI
 call VsDevCmd.bat
-dotnet restore
+
+cd ..
+nuget restore
+
+cd ClientGUI
 msbuild ClientGUI.csproj /p:Configuration=Release || goto error
 
 cd ..
