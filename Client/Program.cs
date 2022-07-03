@@ -105,8 +105,6 @@ namespace SysDVR.Client
 				return true;
 			else if (HasArg("--show-decoders"))
 				Player.LibavUtils.PrintAllCodecs();
-			else if (HasArg("--force-install-driver"))
-				InstallUsbDriver();
 			else
 				return false;
 
@@ -187,9 +185,6 @@ namespace SysDVR.Client
             // Stream sources
 			if (Args.Length == 0 || Args[0] == "usb")
 			{
-				if (!HasArg("--no-driver-check"))
-					CheckUsbDriver();
-
 				var forceLibUsb = HasArg("--no-winusb");
 				var warnLevel = UsbContext.LogLevel.Error;
 
@@ -240,42 +235,6 @@ namespace SysDVR.Client
 
 			return StreamManager;
 		}
-
-		static void InstallUsbDriver() 
-		{
-			if (!OperatingSystem.IsWindows())
-				Console.WriteLine("This feature is only available on Windows");
-			else if (!Platform.Windows.DriverHelper.InstallDriver())
-				Environment.Exit(0);
-		}
-
-		static void CheckUsbDriver() 
-		{
-			if (!OperatingSystem.IsWindows())
-				return;
-
-			var info = Platform.Windows.DriverHelper.GetDriverInfo();
-			if (info != Platform.Windows.DriverStatus.NotInstalled)
-				return;
-
-            ask_again:
-			Console.WriteLine(); 
-			Console.WriteLine("SysDVR Usb driver is not installed, do you want to install it now ? (y/n)");
-            var answer = Console.ReadLine();
-			if (answer == "y")
-				InstallUsbDriver();
-			else if (answer == "n")
-			{
-				Console.WriteLine("Can't continue without the driver, exiting.");
-				Console.WriteLine("You can also manually install the driver with Zadig.");
-				Environment.Exit(0);
-			}
-			else
-			{
-				Console.WriteLine("Invalid answer");
-				goto ask_again;
-			}
-        }
 
 		static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, bool forceLibUsb, string? preferredSerial)
 		{
@@ -427,8 +386,6 @@ Extra options:
 	`--show-decoders` : Prints all video codecs available for the built-in video player
 	`--version` : Prints the version
 	`--ffmpeg` : Overrides the ffmpeg load path, use only if dotnet can't locate your ffmpeg/avcoded libraries automatically
-	`--no-driver-check` : Skip the driver check (Windows only)
-	`--force-install-driver` : Forecuflly install the WinUsb driver for the SysDVR device (Windows only)
 
 Command examples:
 	SysDVR-Client.exe usb
