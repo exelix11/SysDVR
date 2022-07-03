@@ -16,7 +16,13 @@ if exist SDL2.zip (
 	copy SDL2\*.dll Libs\Client.Native\binaries\win-x64\native\
 )
 
-REM TODO: Download wdi-simple and add to runtimes to install drivers on windows
+if exist SDL2.zip (
+	echo extracting wdi-simple.zip
+	7z x wdi-simple.zip -owdi-simple
+	
+	REM turns out we just need the 32bit version
+	copy wdi-simple\wdi-simple32.exe Libs\Client.Native\binaries\win\native\
+)
 
 cd Libs\Client.Native
 dotnet build -c Release || goto error
