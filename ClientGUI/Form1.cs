@@ -69,17 +69,6 @@ namespace SysDVRClientGUI
 					MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.") ;
 			}
 
-            // TODO: Check on systems that have never seen sysdvr as well as systems where it was plugged in so it auto-installed a different driver
-			MessageBox.Show(DriverInstall.DriverHelper.GetDriverInfo().ToString());
-			if (DriverInstall.DriverHelper.GetDriverInfo() == DriverInstall.DriverStatus.NotInstalled)
-			{
-				if (MessageBox.Show("SysDVR driver is not installed, do you want to install it ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-				{
-					DriverInstall.DriverHelper.InstallDriver();
-				}
-				else MessageBox.Show("Without installing the driver USB streaming may not work");
-            }
-
 			rbStreamRtsp.Checked = true;
 			rbChannelsBoth.Checked = true;
 			rbPlay.Checked = true;
@@ -127,6 +116,19 @@ namespace SysDVRClientGUI
 			rbPlayMpv.Enabled = CurKind != StreamKind.Both;
 		}
 
+		void CheckUSBDriver() 
+		{
+			// Note if the state is unknown no message is shown, it usually means sysdvr has never been plugged in before
+			if (DriverInstall.DriverHelper.GetDriverInfo() == DriverInstall.DriverStatus.NotInstalled)
+			{
+				if (MessageBox.Show("You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+				{
+					DriverInstall.DriverHelper.InstallDriver();
+				}
+				else MessageBox.Show("Without installing the driver USB streaming may not work");
+			}
+		}
+
 		string GetExtraArgs() 
 		{
 			StringBuilder str = new StringBuilder();
@@ -142,6 +144,9 @@ namespace SysDVRClientGUI
 
 		string GetFinalCommand() 
 		{
+			if (rbSrcUsb.Checked)
+				CheckUSBDriver();
+
 			try
 			{
 				if (CurrentControl == null)

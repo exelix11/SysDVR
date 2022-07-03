@@ -151,7 +151,7 @@ namespace SysDVRClientGUI.DriverInstall
 
             if (ec == 0)
             {
-                if (MessageBox.Show("Driver installed successfully\r\nYou may need to unplug your console for the changes to take effect.\r\n\r\nDo you want to open the log page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show("Driver installed successfully\r\n\r\nUnplug and plug back in your console now for the changes to take effect.\r\n\r\nDo you want to open the log page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     new DriverInstallResultForm(log).ShowDialog();
             }
             else 
