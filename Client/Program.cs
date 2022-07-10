@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using FFmpeg.AutoGen;
 using SysDVR.Client.FileOutput;
@@ -20,14 +21,38 @@ namespace SysDVR.Client
 		{
 			if (OperatingSystem.IsWindows())
 				ffmpeg.RootPath = OsNativeFolder; // Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
-			else if (OperatingSystem.IsMacOS())
-				ffmpeg.RootPath = "/opt/homebrew/"; // See https://github.com/exelix11/SysDVR/issues/192
+            else if (OperatingSystem.IsMacOS() && !Environment.Is64BitProcess)
+				// Should we really account for misconfigured end user PCs ? See https://github.com/exelix11/SysDVR/issues/192 , https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+				ffmpeg.RootPath = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/" : "/usr/local/lib/"; 
 			else
 				ffmpeg.RootPath = ""; // Should call LoadLibrary with just the file name which should search in LD_LIBRARY_PATH
 
 			try
 			{
 				new Program(args).ProgramMain();
+			}
+			catch (DllNotFoundException ex)
+			{
+                Console.Error.WriteLine($"There was an error loading a dynamic library. Make sure you installed all the dependencies and that you have the correct version of the libraries.");
+
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !Environment.Is64BitProcess)
+				{
+					Console.WriteLine(
+						"You are running the 32-bit version of .NET, on Windows this is NOT supported due to ffmpeg not providing official 32-bit versions of their libs.\r\n" +
+						"If you're on 64-bit Windows (check your pc info) uninstall .NET and install the x64 version from Microsoft's website.\r\n" +
+						"If you're on 32-bit Windows you should upgrade your PC. Alternatively you need to find a 32-bit build of ffmpeg libs and copy them in the SysDVR-Client folder"
+					);
+				}
+				else
+				{
+					Console.Error.WriteLine(
+						"If all libraries are properly installed ensure their path is set in your dynamic loader environment variable (PATH on Windows, LD_LIBRARY_PATH on Linux and DYLD_LIBRARY_PATH on MacOS)\r\n\r\n" +
+						
+						"In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --ffmpeg <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).\r\n" + 
+						"For example on x64 linux you can try --ffmpeg /lib/x86_64-linux-gnu/");
+				}
+
+				Console.Error.WriteLine("\r\nFull error message:\r\n" + ex);
 			}
 			catch (Exception ex)
 			{
