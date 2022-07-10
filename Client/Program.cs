@@ -20,8 +20,10 @@ namespace SysDVR.Client
 		{
 			if (OperatingSystem.IsWindows())
 				ffmpeg.RootPath = OsNativeFolder; // Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
+			else if (OperatingSystem.IsMacOS())
+				ffmpeg.RootPath = "/opt/homebrew/"; // See https://github.com/exelix11/SysDVR/issues/192
 			else
-				ffmpeg.RootPath = ""; // SHould call LoadLibrary with just the file name which should search in LD_LIBRARY_PATH
+				ffmpeg.RootPath = ""; // Should call LoadLibrary with just the file name which should search in LD_LIBRARY_PATH
 
 			try
 			{
