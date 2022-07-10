@@ -62,8 +62,24 @@ namespace SysDVR.Client.Player
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
-			LibavUtils.PrintCpuArchWarning();
-			player = new Player(this, hwAcc, codecName, quality);
+			try
+			{
+				LibavUtils.PrintCpuArchWarning();
+				player = new Player(this, hwAcc, codecName, quality);
+			}
+			catch (DllNotFoundException ex)
+			{
+                Console.Error.WriteLine(
+@"There was an error loading a dynamic library. Make sure you installed all the dependencies and that you have the correct version of the libraries.
+If all libraries are properly installed ensure their path is set in you dynamic loader environment variable (PATH on Windows, LD_LIBRARY_PATH on Linux and DYLD_LIBRARY_PATH on MacOS)
+
+In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding --ffmpeg <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).
+For example on x64 linux you can try --ffmpeg /lib/x86_64-linux-gnu
+
+The full error text will now be printed");
+
+                throw ex;
+			}
 		}
 
 		public override void Begin()
