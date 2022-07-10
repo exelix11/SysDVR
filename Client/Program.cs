@@ -21,7 +21,7 @@ namespace SysDVR.Client
 		{
 			if (OperatingSystem.IsWindows())
 				ffmpeg.RootPath = OsNativeFolder; // Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
-            else if (OperatingSystem.IsMacOS() && !Environment.Is64BitProcess)
+            else if (OperatingSystem.IsMacOS())
 				// Should we really account for misconfigured end user PCs ? See https://github.com/exelix11/SysDVR/issues/192 , https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
 				ffmpeg.RootPath = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/" : "/usr/local/lib/"; 
 			else
