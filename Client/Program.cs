@@ -242,12 +242,13 @@ namespace SysDVR.Client
 				if (!NoAudio)
 					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
 			}
-#if DEBUG
+//TODO: #if DEBUG
 			else if (Args[0] == "stub")
 			{
 				StreamManager.VideoSource = new StubSource();
 				StreamManager.AudioSource = new StubSource();
 			}
+#if DEBUG
 			else if (Args[0] == "record")
 			{
 				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video);
