@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -17,15 +18,18 @@ namespace SysDVR.Client
 			Path.Combine(RuntimesFolder, $"win-{(Environment.Is64BitProcess ? "x64" : "x86")}\\native")
 			: throw new NotImplementedException("Not needed");
 
-		static void Main(string[] args)
+
+        static void Main(string[] args)
 		{
 			if (OperatingSystem.IsWindows())
-				ffmpeg.RootPath = OsNativeFolder; // Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
-            else if (OperatingSystem.IsMacOS())
+				// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
+				ffmpeg.RootPath = OsNativeFolder;
+			else if (OperatingSystem.IsMacOS())
 				// Should we really account for misconfigured end user PCs ? See https://github.com/exelix11/SysDVR/issues/192 , https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
-				ffmpeg.RootPath = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/" : "/usr/local/lib/"; 
+				ffmpeg.RootPath = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
 			else
-				ffmpeg.RootPath = ""; // Should call LoadLibrary with just the file name which should search in LD_LIBRARY_PATH
+                // On linux use an empty path so when ffmpeg.Autogen calls dlopen it will try to search in the system folder
+				ffmpeg.RootPath = "";
 
 			try
 			{
@@ -48,9 +52,15 @@ namespace SysDVR.Client
 					Console.Error.WriteLine(
 						"If all libraries are properly installed ensure their path is set in your dynamic loader environment variable (PATH on Windows, LD_LIBRARY_PATH on Linux and DYLD_LIBRARY_PATH on MacOS)\r\n\r\n" +
 						
-						"In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --ffmpeg <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).\r\n" + 
-						"For example on x64 linux you can try --ffmpeg /lib/x86_64-linux-gnu/");
-				}
+						"In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --ffmpeg <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).");
+
+					if (OperatingSystem.IsLinux())
+						Console.Error.WriteLine("For example on x64 linux you can try --ffmpeg /lib/x86_64-linux-gnu/");
+                    else if (OperatingSystem.IsMacOS())
+						Console.Error.WriteLine("For example on MacOS you can try --ffmpeg $(brew --prefix)/lib/");
+                    else
+                        Console.Error.WriteLine("For example on Windows you can try --ffmpeg C:\\Program Files\\ffmpeg\\bin");
+                }
 
 				Console.Error.WriteLine("\r\nFull error message:\r\n" + ex);
 			}
@@ -100,10 +110,10 @@ namespace SysDVR.Client
 		void ProgramMain()
 		{
 			bool StreamStdout = HasArg("--stdout");
-			string FfmpegPath = ArgValue("--ffmpeg");
+			string ffmpegPath = ArgValue("--ffmpeg");
 
-			if (FfmpegPath is not null)
-				ffmpeg.RootPath = FfmpegPath;
+			if (ffmpegPath is not null)
+				ffmpeg.RootPath = ffmpegPath;
 
 			if (StreamStdout)
 				Console.SetOut(Console.Error);
