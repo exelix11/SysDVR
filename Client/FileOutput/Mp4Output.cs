@@ -21,7 +21,6 @@ namespace SysDVR.Client.FileOutput
 			HasVideo ? new Mp4VideoTarget() : null,
 			HasAudio ? new Mp4AudioTarget() : null)
 		{
-			LibavUtils.PrintCpuArchWarning();
 			output = new Mp4Output(filename, this);
 		}
 
