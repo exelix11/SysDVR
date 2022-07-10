@@ -1,5 +1,4 @@
-﻿#if DEBUG
-using System;
+﻿using System;
 using System.Threading;
 
 namespace SysDVR.Client.Sources
@@ -36,4 +35,3 @@ namespace SysDVR.Client.Sources
 		}
 	}
 }
-#endif
