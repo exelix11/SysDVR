@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using FFmpeg.AutoGen;
@@ -12,24 +13,48 @@ namespace SysDVR.Client
 {
 	class Program
 	{
-		public static string RuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes/");
+		public static string BundledRuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes/");
 
-		public static string OsNativeFolder => OperatingSystem.IsWindows() ?
-			Path.Combine(RuntimesFolder, $"win-{(Environment.Is64BitProcess ? "x64" : "x86")}\\native")
+		public static string BundledOsNativeFolder => OperatingSystem.IsWindows() ?
+			Path.Combine(BundledRuntimesFolder, $"win-{(Environment.Is64BitProcess ? "x64" : "x86")}\\native")
 			: throw new NotImplementedException("Not needed");
 
+		public static string OsLibFolder { 
+			get {
+				if (OperatingSystem.IsWindows())
+					// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
+					return BundledOsNativeFolder;
+				else if (OperatingSystem.IsMacOS())
+					// Should we really account for misconfigured end user PCs ? See https://github.com/exelix11/SysDVR/issues/192 , https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+					return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
+				else
+                    // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
+					return "";
+			} 
+		}    
 
         static void Main(string[] args)
 		{
-			if (OperatingSystem.IsWindows())
-				// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
-				ffmpeg.RootPath = OsNativeFolder;
-			else if (OperatingSystem.IsMacOS())
-				// Should we really account for misconfigured end user PCs ? See https://github.com/exelix11/SysDVR/issues/192 , https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
-				ffmpeg.RootPath = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
-			else
-                // On linux use an empty path so when ffmpeg.Autogen calls dlopen it will try to search in the system folder
-				ffmpeg.RootPath = "";
+			ffmpeg.RootPath = OsLibFolder;
+
+			// TODO: Add here future dependencies
+			if (OperatingSystem.IsMacOS())
+			{
+				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, (string libraryName, Assembly assembly, DllImportSearchPath? searchPath) =>
+				{
+					var result = IntPtr.Zero;
+
+					var loaded =
+						NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"), out result) ||
+						NativeLibrary.TryLoad($"lib{libraryName}.dylib", out result) ||
+						NativeLibrary.TryLoad(libraryName, out result);
+
+					if (!loaded)
+						Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
+
+                    return result;
+				});
+			}
 
 			try
 			{
