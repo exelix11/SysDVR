@@ -61,9 +61,14 @@ namespace SysDVR.Client
 			var result = IntPtr.Zero;
 
 			var loaded =
-				NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"), out result) ||
+                // Maybe it's in the brew native folder ?
+                NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"), out result) ||
 				NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"{libraryName}.dylib"), out result) ||
-				NativeLibrary.TryLoad($"lib{libraryName}.dylib", out result) ||
+				// Otherwise search in bundled libs (currently ony x64 libusb is provided)
+				NativeLibrary.TryLoad(Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"), out result) ||
+				NativeLibrary.TryLoad(Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"), out result) ||
+                // Othrwise pray dyld will find it
+                NativeLibrary.TryLoad($"lib{libraryName}.dylib", out result) ||
 				NativeLibrary.TryLoad(libraryName, out result);
 
 			if (!loaded)
@@ -80,7 +85,6 @@ namespace SysDVR.Client
 			if (OperatingSystem.IsMacOS())
 			{
 				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, OsXLibraryLoader);
-				NativeLibrary.SetDllImportResolver(typeof(LibUsbDotNet.LibUsb.UsbContext).Assembly, OsXLibraryLoader);
 			}
 
 			try
