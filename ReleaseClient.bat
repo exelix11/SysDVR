@@ -16,7 +16,7 @@ if exist SDL2.zip (
 	copy SDL2\*.dll Libs\Client.Native\binaries\win-x64\native\
 )
 
-if exist SDL2.zip (
+if exist wdi-simple.zip (
 	echo extracting wdi-simple.zip
 	7z x wdi-simple.zip -owdi-simple
 	
