@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -56,35 +57,54 @@ namespace SysDVR.Client
 			} 
 		}
 
-		static IntPtr OsXLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+		static IEnumerable<string> FindMacOSLibrary(string libraryName)
 		{
-			var result = IntPtr.Zero;
+			var names = new[] {
+				Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"),
+				Path.Combine(OsLibFolder, $"{libraryName}.dylib"),
+				Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"),
+				Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"),
+				$"lib{libraryName}.dylib",
+				$"{libraryName}.dylib",
+				libraryName
+			};
 
-			var loaded =
-                // Maybe it's in the brew native folder ?
-                NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"), out result) ||
-				NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"{libraryName}.dylib"), out result) ||
-				// Otherwise search in bundled libs (currently ony x64 libusb is provided)
-				NativeLibrary.TryLoad(Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"), out result) ||
-				NativeLibrary.TryLoad(Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"), out result) ||
-                // Othrwise pray dyld will find it
-                NativeLibrary.TryLoad($"lib{libraryName}.dylib", out result) ||
-				NativeLibrary.TryLoad(libraryName, out result);
+			return names;
+		}
 
-			if (!loaded)
+		static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+		{
+			IntPtr result = IntPtr.Zero;
+
+            foreach (var name in FindMacOSLibrary(libraryName))
+                if (NativeLibrary.TryLoad(name, out result))
+                    break;
+
+            if (result == IntPtr.Zero)
 				Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
 
 			return result;
 		}
 
-        static void Main(string[] args)
+
+		[DllImport("libdl", EntryPoint = "dlopen")]
+		public static extern IntPtr MacOSDlopen(string fileName, int flag);
+
+		static void Main(string[] args)
 		{
 			ffmpeg.RootPath = OsLibFolder;
 
 			// TODO: Add here future dependencies
 			if (OperatingSystem.IsMacOS())
 			{
-				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, OsXLibraryLoader);
+				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
+				
+				// Preload libusb from the right path so libusb doesn't die.
+				var libusb = FindMacOSLibrary("libusb-1.0").Where(File.Exists).FirstOrDefault();
+				if (libusb is null)
+					Console.Error.WriteLine("Warning: libusb was not found, you should install it via brew or usb streaming won't work");
+				else 
+					MacOSDlopen(FindMacOSLibrary("libusb-1.0").First(), 0x002);
 			}
 
 			try
