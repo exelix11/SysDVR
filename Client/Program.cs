@@ -13,14 +13,37 @@ namespace SysDVR.Client
 {
 	class Program
 	{
-		public static string BundledRuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes/");
+		public static string BundledRuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes");
 
-		public static string BundledOsNativeFolder => OperatingSystem.IsWindows() ?
-			Path.Combine(BundledRuntimesFolder, $"win-{(Environment.Is64BitProcess ? "x64" : "x86")}\\native")
-			: throw new NotImplementedException("Not needed");
+        static string ArchName => RuntimeInformation.ProcessArchitecture switch
+		{
+            Architecture.X64 => "-x64",
+            Architecture.X86 => "-x86",
+            Architecture.Arm => "-arm",
+            Architecture.Arm64 => "-arm64",
+            _ => ""
+        };
+
+        static string OsName {
+			get {
+				if (OperatingSystem.IsWindows())
+					return "win";
+                if (OperatingSystem.IsMacOS())
+                    return "mac";
+                // We don't currently support other OSes
+				else return "linux";
+			}
+		}
+
+		public static string BundledOsNativeFolder => Path.Combine(BundledRuntimesFolder, $"{OsName}{ArchName}", "native");
+
+		public static string? LibLoaderOverride = null;
 
 		public static string OsLibFolder { 
 			get {
+				if (LibLoaderOverride is not null)
+					return LibLoaderOverride;
+
 				if (OperatingSystem.IsWindows())
 					// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
 					return BundledOsNativeFolder;
@@ -31,7 +54,23 @@ namespace SysDVR.Client
                     // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
 					return "";
 			} 
-		}    
+		}
+
+		static IntPtr OsXLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+		{
+			var result = IntPtr.Zero;
+
+			var loaded =
+				NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"), out result) ||
+				NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"{libraryName}.dylib"), out result) ||
+				NativeLibrary.TryLoad($"lib{libraryName}.dylib", out result) ||
+				NativeLibrary.TryLoad(libraryName, out result);
+
+			if (!loaded)
+				Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
+
+			return result;
+		}
 
         static void Main(string[] args)
 		{
@@ -40,20 +79,8 @@ namespace SysDVR.Client
 			// TODO: Add here future dependencies
 			if (OperatingSystem.IsMacOS())
 			{
-				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, (string libraryName, Assembly assembly, DllImportSearchPath? searchPath) =>
-				{
-					var result = IntPtr.Zero;
-
-					var loaded =
-						NativeLibrary.TryLoad(Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"), out result) ||
-						NativeLibrary.TryLoad($"lib{libraryName}.dylib", out result) ||
-						NativeLibrary.TryLoad(libraryName, out result);
-
-					if (!loaded)
-						Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
-
-                    return result;
-				});
+				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, OsXLibraryLoader);
+				NativeLibrary.SetDllImportResolver(typeof(LibUsbDotNet.LibUsb.UsbContext).Assembly, OsXLibraryLoader);
 			}
 
 			try
@@ -76,15 +103,15 @@ namespace SysDVR.Client
 				{
 					Console.Error.WriteLine(
 						"If all libraries are properly installed ensure their path is set in your dynamic loader environment variable (PATH on Windows, LD_LIBRARY_PATH on Linux and DYLD_LIBRARY_PATH on MacOS)\r\n\r\n" +
-						
-						"In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --ffmpeg <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).");
+
+						"In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --libdir <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).");
 
 					if (OperatingSystem.IsLinux())
-						Console.Error.WriteLine("For example on x64 linux you can try --ffmpeg /lib/x86_64-linux-gnu/");
+						Console.Error.WriteLine("For example on x64 linux you can try --libdir /lib/x86_64-linux-gnu/");
                     else if (OperatingSystem.IsMacOS())
-						Console.Error.WriteLine("For example on MacOS you can try --ffmpeg $(brew --prefix)/lib/");
+						Console.Error.WriteLine("For example on MacOS you can try --libdir $(brew --prefix)/lib/");
                     else
-                        Console.Error.WriteLine("For example on Windows you can try --ffmpeg C:\\Program Files\\ffmpeg\\bin");
+                        Console.Error.WriteLine("For example on Windows you can try --libdir C:\\Program Files\\ffmpeg\\bin");
                 }
 
 				Console.Error.WriteLine("\r\nFull error message:\r\n" + ex);
@@ -135,10 +162,10 @@ namespace SysDVR.Client
 		void ProgramMain()
 		{
 			bool StreamStdout = HasArg("--stdout");
-			string ffmpegPath = ArgValue("--ffmpeg");
+			string libOverride = ArgValue("--libdir");
 
-			if (ffmpegPath is not null)
-				ffmpeg.RootPath = ffmpegPath;
+			if (libOverride is not null)
+				ffmpeg.RootPath = LibLoaderOverride = libOverride; 
 
 			if (StreamStdout)
 				Console.SetOut(Console.Error);
@@ -447,7 +474,8 @@ Extra options:
 	These options will not stream, they just print the output and then quit.
 	`--show-decoders` : Prints all video codecs available for the built-in video player
 	`--version` : Prints the version
-	`--ffmpeg` : Overrides the ffmpeg load path, use only if dotnet can't locate your ffmpeg/avcoded libraries automatically
+	`--libdir` : Overrides the dynami library loading path, use only if dotnet can't locate your ffmpeg/avcoded/SDL2 libraries automatically
+                 this option effect depend on your platform, some libraries may still be handled by dotnet, it's better to use your loader path environment variable.
 
 Command examples:
 	SysDVR-Client.exe usb
