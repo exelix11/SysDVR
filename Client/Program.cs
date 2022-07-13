@@ -49,7 +49,7 @@ namespace SysDVR.Client
 					// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
 					return BundledOsNativeFolder;
 				else if (OperatingSystem.IsMacOS())
-					// Should we really account for misconfigured end user PCs ? See https://github.com/exelix11/SysDVR/issues/192 , https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+					// Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
 					return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
 				else
                     // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
@@ -71,42 +71,49 @@ namespace SysDVR.Client
 
 			return names;
 		}
-
+        
 		static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
 		{
 			IntPtr result = IntPtr.Zero;
-
-            foreach (var name in FindMacOSLibrary(libraryName))
-                if (NativeLibrary.TryLoad(name, out result))
-                    break;
-
-            if (result == IntPtr.Zero)
+			foreach (var name in FindMacOSLibrary(libraryName))
+				if (NativeLibrary.TryLoad(name, out result))
+					break;
+			
+			if (result == IntPtr.Zero)
 				Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
-
+			
 			return result;
 		}
 
 
-		[DllImport("libdl", EntryPoint = "dlopen")]
-		public static extern IntPtr MacOSDlopen(string fileName, int flag);
+		static void SetupMacOSLibrarySymlinks() 
+		{
+            // This is a terrible hack but seems to work, we'll create symlinks to the OS libraries in the program folder
+            // The alternative is to fork libusbdotnet to add a way to load its native lib from a cusstom folder
+            // See https://github.com/exelix11/SysDVR/issues/192
+
+            var thisExePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			
+			// We only need to link libusb as ffmpeg has a global root path variable and for SDL we set the custom NativeLoader callback
+			var libNames = new[] { 
+				("libusb-1.0", "libusb-1.0.dylib")
+			};
+
+			foreach (var (libName, fileName) in libNames)
+			{
+				if (File.Exists(Path.Combine(thisExePath, fileName)))
+					continue;
+
+                var path = FindMacOSLibrary(libName).Where(File.Exists).FirstOrDefault();
+				if (string.IsNullOrWhiteSpace(path))
+					Console.Error.WriteLine($"Couldn't find a library to symlink: {libName} ({fileName}). You might need to install it with brew.");
+                else
+					File.CreateSymbolicLink(Path.Combine(thisExePath, fileName), path);
+			}
+        }
 
 		static void Main(string[] args)
 		{
-			ffmpeg.RootPath = OsLibFolder;
-
-			// TODO: Add here future dependencies
-			if (OperatingSystem.IsMacOS())
-			{
-				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
-				
-				// Preload libusb from the right path so libusb doesn't die.
-				var libusb = FindMacOSLibrary("libusb-1.0").Where(File.Exists).FirstOrDefault();
-				if (libusb is null)
-					Console.Error.WriteLine("Warning: libusb was not found, you should install it via brew or usb streaming won't work");
-				else 
-					MacOSDlopen(FindMacOSLibrary("libusb-1.0").First(), 0x002);
-			}
-
 			try
 			{
 				new Program(args).ProgramMain();
@@ -188,8 +195,17 @@ namespace SysDVR.Client
 			bool StreamStdout = HasArg("--stdout");
 			string libOverride = ArgValue("--libdir");
 
+            // Native library loading memes
 			if (libOverride is not null)
-				ffmpeg.RootPath = LibLoaderOverride = libOverride; 
+				LibLoaderOverride = libOverride;
+
+			ffmpeg.RootPath = OsLibFolder;
+
+			if (OperatingSystem.IsMacOS())
+			{
+				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
+				SetupMacOSLibrarySymlinks();
+			}
 
 			if (StreamStdout)
 				Console.SetOut(Console.Error);
