@@ -493,7 +493,7 @@ Output options:
 	If you don't specify any option the built-in video player will be used.
 	Built-in player options:
 	`--hw-acc` : Try to use hardware acceleration for decoding, this option uses the first detected decoder, it's recommended to manually specify the decoder name with --decoder
-	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-codecs
+	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-decoders
 	`--scale <quality>` : Use a specific quality for scaling, possible values are `nearest`, `linear` and `best`. `best` may not be available on all PCs, see SDL docs for SDL_HINT_RENDER_SCALE_QUALITY, `linear` is the default mode.
 	`--fullscreen` : Start in full screen mode. Press F11 to toggle manually
 	`--title <some text>` : Adds the argument string to the title of the player window
