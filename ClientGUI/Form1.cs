@@ -178,7 +178,6 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
                 string extra = CurrentControl.GetExtraCmd();
                 string commandLine = CurrentControl.GetCommandLine();
-
                 StringBuilder str = new StringBuilder();
 
                 if (!string.IsNullOrWhiteSpace(extra))
@@ -199,7 +198,6 @@ Pressing no will try to start streaming regardless but it will probably fail."
                     str.Append("--no-audio ");
 
                 str.Append(commandLine);
-
                 str.Append(GetExtraArgs());
 
                 if (!string.IsNullOrWhiteSpace(extra))
@@ -222,9 +220,8 @@ Pressing no will try to start streaming regardless but it will probably fail."
             var cmds = GetFinalCommand()?.Split('\n');
             if (cmds != null)
             {
-                string cmdArg = cmds.Length > 1 ? "/C" : "/K";
                 foreach (var cmd in cmds)
-                    System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
+                    System.Diagnostics.Process.Start("cmd", $"/C {cmd}");
                 this.Close();
             }
         }
