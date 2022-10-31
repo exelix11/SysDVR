@@ -1,4 +1,4 @@
-﻿namespace SysDVRClientGUI
+﻿namespace SysDVRClientGUI.ModesUI
 {
 	partial class RTSPStreamOptControl
 	{

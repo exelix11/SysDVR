@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SysDVRClientGUI
+namespace SysDVRClientGUI.ModesUI
 {
 	public partial class PlayStreamControl : UserControl, IStreamTargetControl
 	{
