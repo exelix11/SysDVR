@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SysDVRClientGUI.ModesUI;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -224,7 +225,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
             {
                 string cmdArg = cmds.Length > 1 ? "/C" : "/K";
                 foreach (var cmd in cmds)
-                    System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
+                    Process.Start("cmd", $"{cmdArg} {cmd}");
                 this.Close();
             }
         }
