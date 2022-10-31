@@ -275,7 +275,7 @@ namespace SysDVR.Client.RTSP
 						// Pass the Port of the two sockets back in the reply
 						transport_reply.LowerTransport = Rtsp.Messages.RtspTransport.LowerTransportType.UDP;
 						transport_reply.IsMulticast = false;
-						transport_reply.ClientPort = new Rtsp.Messages.PortCouple(udp_pair.data_port, udp_pair.control_port);
+						transport_reply.ClientPort = new Rtsp.Messages.PortCouple(udp_pair.dataPort, udp_pair.controlPort);
 					}
 					else
 					{
@@ -514,7 +514,7 @@ namespace SysDVR.Client.RTSP
 								// send the whole NAL. ** We could fragment the RTP packet into smaller chuncks that fit within the MTU
 								// Send to the IP address of the Client
 								// Send to the UDP Port the Client gave us in the SETUP command
-								connection[s].udp_pair.Write_To_Data_Port(rtp_packet, connection.client_hostname, connection[s].client_transport.ClientPort.First);
+								connection[s].udp_pair.WriteToDataPort(rtp_packet, connection.client_hostname, connection[s].client_transport.ClientPort.First);
 							}
 							catch (Exception e)
 							{
