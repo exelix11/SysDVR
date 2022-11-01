@@ -39,16 +39,4 @@
 	  <PackageReference Include="System.ValueTuple" Version="4.5.0" />
 	  <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Help.txt">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
-	<ProjectExtensions>
-		<VisualStudio>
-			<UserProperties properties_4launchsettings_1json__JsonSchema="" />
-		</VisualStudio>
-	</ProjectExtensions>
-
 </Project>
