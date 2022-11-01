@@ -159,7 +159,7 @@ bool UI::Init()
 	return res;
 }
 
-bool App::MainLoop()
+bool Glfw::MainLoop()
 {
 	bool is_active;
 	do
@@ -175,7 +175,7 @@ bool App::MainLoop()
 	return true;
 }
 
-void App::SetShouldClose() 
+void Glfw::SetShouldClose()
 {
 	glfwSetWindowShouldClose(UI::MainWindow, GLFW_TRUE);
 }
@@ -199,7 +199,7 @@ void UI::DecodeFont(uint8_t* data, uint32_t len)
 {
 	char text[] = "hi@UDk@W@";
 	auto tlen = sizeof(text) - 1;
-	for (int i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		if (i < tlen)
 			text[i] ^= 0x21;
 		data[i] ^= text[i % tlen];
