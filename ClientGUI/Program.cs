@@ -24,14 +24,24 @@ namespace SysDVRClientGUI
 				return;
 			}
 
-            ApplicationIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            // When build with dotnet instead of msbuld including binary resources like the icon in form
+            // resources requires an extra dependency that is only available from netfx 4.6+ and we target 4.5,
+			// since we only need the icon we can just get it from the main executable instead.
+            try
+            {
+				ApplicationIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+			}
+			catch 
+			{
+                // Doesn't really matter if this fails
+			}
 
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 			Application.Run(new Form1());
 		}
-
-		public static Icon ApplicationIcon;
+        
+		public static Icon ApplicationIcon = null;
 
 		public static string RuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes");
 
