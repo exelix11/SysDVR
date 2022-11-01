@@ -437,14 +437,11 @@ namespace SysDVR.Client
 			
 			void Quit()
 			{
-				lock (this)
-				{
-					Console.WriteLine("Terminating threads...");
-					streams.Stop();
-					if (streams is IDisposable d)
-						d.Dispose();
-					Environment.Exit(0);
-				}
+				Console.WriteLine("Terminating threads...");
+				streams.Stop();
+				if (streams is IDisposable d)
+					d.Dispose();
+				Environment.Exit(0);
 			}
 
 			Console.CancelKeyPress += delegate { Quit(); };
