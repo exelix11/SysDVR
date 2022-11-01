@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net4.5.2</TargetFramework>
+		<TargetFramework>net4.5.1</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
 		<AssemblyName>SysDVR-ClientGUI</AssemblyName>
 		<Description>https://github.com/exelix11/SysDVR</Description>

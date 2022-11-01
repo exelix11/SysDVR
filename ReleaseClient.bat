@@ -27,12 +27,11 @@ cd ..
 nuget restore
 
 cd ClientGUI
-msbuild ClientGUI.csproj /p:Configuration=Release || goto error
+dotnet publish -c Release || goto error
 
 cd ..
 
-move Client\bin\Release\net6.0\SysDVR-ClientGUI.exe Client\bin\Release\net6.0\publish\SysDVR-ClientGUI.exe 
-move Client\bin\Release\net6.0\*.dll Client\bin\Release\net6.0\publish\ 
+move ClientGUI\bin\Release\net4.5.1\publish\* Client\bin\Release\net6.0\publish\ 
 
 del Client\bin\Release\net6.0\publish\*.pdb
 

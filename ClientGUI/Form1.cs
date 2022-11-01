@@ -36,6 +36,7 @@ namespace SysDVRClientGUI
 
         public Form1()
         {
+            this.Icon = Program.ApplicationIcon;
             InitializeComponent();
         }
 
