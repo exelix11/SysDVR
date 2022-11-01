@@ -46,14 +46,14 @@ namespace SysDVR.Client
 					return LibLoaderOverride;
 
 				if (OperatingSystem.IsWindows())
-					// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
 					return BundledOsNativeFolder;
-				else if (OperatingSystem.IsMacOS())
-					// Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+
+				// Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+				if (OperatingSystem.IsMacOS())
 					return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
-				else
-                    // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
-					return "";
+
+				// On linux we have to rely on the dlopen implementation to find the libs wherever they are 
+				return string.Empty;
 			} 
 		}
 

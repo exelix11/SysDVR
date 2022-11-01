@@ -32,15 +32,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="5.0.0" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="5.1.1" />
     <PackageReference Include="LibUsbDotNet" Version="3.0.97-alpha" />
-    <PackageReference Include="SysDVR.Client.Native" Version="1.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>    <ProjectReference Include="..\Libs\SharpRTSP\RTSP\RTSP.csproj" />
+    <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
+    <PackageReference Include="SharpRTSP" Version="1.0.0" /> 
   </ItemGroup>
 
   <ItemGroup>
+	<ContentWithTargetPath Include="$(ProjectDir)\runtimes\**">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<TargetPath>runtimes\%(RecursiveDir)\native\%(Filename)%(Extension)</TargetPath>
+	</ContentWithTargetPath>
     <None Update="Help.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
