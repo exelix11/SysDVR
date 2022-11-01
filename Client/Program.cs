@@ -344,12 +344,12 @@ namespace SysDVR.Client
 				if (!NoAudio)
 					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
 			}
+#if DEBUG
 			else if (Args[0] == "stub")
 			{
 				StreamManager.VideoSource = new StubSource();
 				StreamManager.AudioSource = new StubSource();
 			}
-#if DEBUG
 			else if (Args[0] == "record")
 			{
 				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video);
@@ -434,9 +434,18 @@ namespace SysDVR.Client
 		void StartStreaming(BaseStreamManager streams)
 		{
 			streams.Begin();
+			bool terminating = false;
 			
 			void Quit()
 			{
+                // this may be called at the same time by CTRL+C and main thread returning, dispose everything only once.
+				lock (this)
+				{
+					if (terminating)
+						return;
+					terminating = true;
+				}
+
 				Console.WriteLine("Terminating threads...");
 				streams.Stop();
 				if (streams is IDisposable d)
