@@ -7,7 +7,7 @@ REM Extract binaries if this is a CI build
 if exist ffmpeg-master-latest-win64-lgpl-shared.zip (
 	echo extracting ffmpeg-master-latest-win64-lgpl-shared.zip
 	7z x ffmpeg-master-latest-win64-lgpl-shared.zip -offmpeg || goto error
-	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Client\FFmpeg\bin\x64\
+	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Client\runtimes\win-x64\
 )
 
 if exist wdi-simple.zip (
