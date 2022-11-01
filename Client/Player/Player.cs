@@ -366,7 +366,7 @@ namespace SysDVR.Client.Player
 					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
 					UpdateSDLTexture(Decoder.RenderFrame);
 					SDL_RenderClear(SDL.Renderer);
-					SDL_RenderCopy(SDL.Renderer, SDL.Texture, in SDL.TextureSize, in DisplayRect);
+					SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
 					SDL_RenderPresent(SDL.Renderer);
 #if DEBUG_FRAMERATE
 					consoleFrames++;
@@ -416,7 +416,7 @@ namespace SysDVR.Client.Player
 		{
 			if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
 			{
-				SDL_UpdateYUVTexture(SDL.Texture, in SDL.TextureSize,
+				SDL_UpdateYUVTexture(SDL.Texture, ref SDL.TextureSize,
 					(IntPtr)pic->data[0], pic->linesize[0],
 					(IntPtr)pic->data[1], pic->linesize[1],
 					(IntPtr)pic->data[2], pic->linesize[2]);
@@ -426,7 +426,7 @@ namespace SysDVR.Client.Player
 			else if (pic->linesize[0] < 0 && pic->linesize[1] < 0 && pic->linesize[2] < 0)
 			{
 				Console.WriteLine("Negative Linesize");
-				SDL_UpdateYUVTexture(SDL.Texture, in SDL.TextureSize,
+				SDL_UpdateYUVTexture(SDL.Texture, ref SDL.TextureSize,
 					(IntPtr)(pic->data[0] + pic->linesize[0] * (pic->height - 1)), -pic->linesize[0],
 					(IntPtr)(pic->data[1] + pic->linesize[1] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[1],
 					(IntPtr)(pic->data[2] + pic->linesize[2] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[2]);

@@ -28,13 +28,10 @@ namespace SysDVRClientGUI
 			Application.Run(new Form1());
 		}
 
-		public static string RuntimesFolder => 
-			Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes/");
+		public static string RuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes");
 
-		public static string OsArchGenericFolder =>
-			Path.Combine(RuntimesFolder, "win\\native");
+		public static string OsArchGenericFolder => Path.Combine(RuntimesFolder, "win");
 
-		public static string OsNativeFolder =>
-			Path.Combine(RuntimesFolder, $"win-{(Environment.Is64BitProcess ? "x64" : "x86")}\\native");
+		public static string OsNativeFolder => Path.Combine(RuntimesFolder, $"win-{(Environment.Is64BitProcess ? "x64" : "x86")}", "native");
 	}
 }

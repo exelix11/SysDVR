@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 
-namespace SysDVRClientGUI
+namespace SysDVRClientGUI.ModesUI
 {
 	public partial class MpvStreamControl : UserControl, IStreamTargetControl
 	{
