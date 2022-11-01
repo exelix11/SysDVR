@@ -1,6 +1,7 @@
 ﻿using SysDVRClientGUI.DriverInstall;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,10 +24,14 @@ namespace SysDVRClientGUI
 				return;
 			}
 
+            ApplicationIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 			Application.Run(new Form1());
 		}
+
+		public static Icon ApplicationIcon;
 
 		public static string RuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes");
 
