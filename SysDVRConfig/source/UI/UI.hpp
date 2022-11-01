@@ -26,7 +26,7 @@ namespace UI {
 	void DecodeFont(uint8_t* data, uint32_t len);
 }
 
-namespace App {
+namespace Glfw {
 	bool MainLoop();
 	void SetShouldClose();
 }
