@@ -8,11 +8,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\ipc.c" />
+    <ClCompile Include="source\Libs\zip\zip.c" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\Platform\fs.cpp" />
     <ClCompile Include="source\Platform\PlatformSwitch.cpp" />
     <ClCompile Include="source\Platform\PlatformWin.cpp" />
     <ClCompile Include="source\Platform\Windows\dirent.c" />
+    <ClCompile Include="source\Scenes\SceneGuide.cpp" />
+    <ClCompile Include="source\Scenes\SceneMain.cpp" />
+    <ClCompile Include="source\Scenes\ScenePatches.cpp" />
     <ClCompile Include="source\UI\glad.c" />
     <ClCompile Include="source\UI\Image.cpp" />
     <ClCompile Include="source\UI\imgui\imgui.cpp" />
@@ -24,10 +28,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ipc.h" />
+    <ClInclude Include="source\Libs\nlohmann\json.hpp" />
+    <ClInclude Include="source\Libs\zip\miniz.h" />
+    <ClInclude Include="source\Libs\zip\zip.h" />
     <ClInclude Include="source\Platform\fs.hpp" />
     <ClInclude Include="source\Platform\Platform.hpp" />
     <ClInclude Include="source\Platform\PlatformFs.hpp" />
     <ClInclude Include="source\Platform\Windows\dirent.h" />
+    <ClInclude Include="source\Scenes\Common.hpp" />
+    <ClInclude Include="source\Scenes\Scenes.hpp" />
     <ClInclude Include="source\UI\glad.h" />
     <ClInclude Include="source\UI\Image.hpp" />
     <ClInclude Include="source\UI\imgui\imconfig.h" />
@@ -102,7 +111,8 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)source\Libs;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>

@@ -75,4 +75,9 @@ void Platform::Sleep(float time)
 	_sleep((unsigned long)time);
 }
 
+void Platform::Reboot()
+{
+	exit(0);
+}
+
 #endif
