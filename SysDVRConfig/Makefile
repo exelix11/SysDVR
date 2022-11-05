@@ -39,9 +39,9 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	SysDVR-conf
 BUILD		:=	build.nx
-SOURCES		:=	source source/Platform source/UI source/UI/imgui 
+SOURCES		:=	source source/Platform source/UI source/UI/imgui source/Scenes source/Libs/zip
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include source/Libs/
 ROMFS		:=	romfs
 
 APP_TITLE	:=	SysDVR Settings
@@ -63,7 +63,7 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -std=gnu++17
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lglfw3 -lEGL -lglapi -ldrm_nouveau -lnx -lm -lstdc++fs
+LIBS	:= -lcurl -lz -lglfw3 -lEGL -lglapi -ldrm_nouveau -lnx -lm -lstdc++fs
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
