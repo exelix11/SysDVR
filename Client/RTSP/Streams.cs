@@ -35,12 +35,13 @@ namespace SysDVR.Client.RTSP
 	{
 		public delegate void DataAvailableFn(Span<byte> Data, ulong tsMsec);
 		public event DataAvailableFn DataAvailable;
+		public CancellationToken Cancellation;
 		
 		protected void InvokeEvent(Span<byte> Data, ulong tsMsec) => DataAvailable(Data, tsMsec);
 
 		public abstract void SendData(PoolBuffer block, ulong ts);
 
-		public void UseCancellationToken(CancellationToken tok) { }
+		public void UseCancellationToken(CancellationToken tok) { Cancellation = tok; }
 	}
 
 	class SysDVRAudioRTSPTarget : SysDvrRTSPTarget

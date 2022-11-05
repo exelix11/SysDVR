@@ -453,7 +453,11 @@ namespace SysDVR.Client
 				Environment.Exit(0);
 			}
 
-			Console.CancelKeyPress += delegate { Quit(); };
+			Console.CancelKeyPress += delegate(object instance, ConsoleCancelEventArgs args) 
+			{
+				args.Cancel = true;
+				Quit();
+			};
 
 			streams.MainThread();		
 
