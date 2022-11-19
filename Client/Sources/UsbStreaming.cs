@@ -183,19 +183,27 @@ namespace SysDVR.Client.Sources
 			context.MarkInterfaceClosed();
 		}
 
+		LibUsbDotNet.Error lastError = LibUsbDotNet.Error.Success;
 		public void WaitForConnection() 
 		{
 			while (!Token.IsCancellationRequested) 
 			{
 				//using var trace = BeginTrace();
-
-				var err = writer.Write(USBMagic, 1000, out int _);
+#if DEBUG
+				Console.WriteLine($"Sending {streamKind} connection request");
+#endif
+                var err = writer.Write(USBMagic, 1000, out int _);
 				if (err != LibUsbDotNet.Error.Success)
 				{
-					Thread.Sleep(1000);
-					Console.WriteLine($"Warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting SysDVR.");
+					if (err != lastError)
+					{
+						Console.WriteLine($"{streamKind} warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting it.");
+						lastError = err;
+					}
+					Thread.Sleep(3000);
 					continue;
 				}
+				lastError = err;
 
 				return;
 			}
@@ -204,7 +212,7 @@ namespace SysDVR.Client.Sources
 		public virtual void Flush() 
 		{
 			// Wait some time so the switch side timeouts
-			Thread.Sleep(2000);
+			Thread.Sleep(3000);
 			// Then attempt to connect again
 			WaitForConnection();
 		}

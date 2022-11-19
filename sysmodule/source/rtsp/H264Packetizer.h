@@ -59,7 +59,7 @@ static inline s32 FindNextNalHeaderOffset(const char* data, size_t len)
 	return -1;
 }
 
-static inline int PacketizeH264(const char* data, size_t len, uint32_t tsMs, H264SendPacketFn cb)
+static inline bool PacketizeH264(const char* data, size_t len, uint32_t tsMs, H264SendPacketFn cb)
 {
 	s32 CurrentOffset = FindNextNalHeaderOffset(data, len);
 	while (CurrentOffset >= 0)
