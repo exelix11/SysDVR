@@ -1,6 +1,6 @@
 #if !defined(USB_ONLY)
 #include "modes.h"
-#include "../grcd.h"
+#include "../capture.h"
 #include "../rtsp/RTSP.h"
 #include "../rtsp/H264Packetizer.h"
 #include "../rtsp/LE16Packetizer.h"
@@ -18,21 +18,27 @@ static void RTSP_StreamVideo(void* _)
 
 		while (!RTSP_ClientStreaming && IsThreadRunning) 
 			svcSleepThread(1E+8); // 1/10 of second
+		
 		if (!IsThreadRunning) break;
 		
-		VideoRequestSPSPPS();
+		CaptureOnClientConnected(&VideoProducer);
 
 		while (true)
-		{			
-			if (!ReadVideoStream()) 
-				TerminateOrContinue
+		{	
+			CaptureBeginConsume(&VideoProducer);
 
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
 			
-			int error = PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
-			if (error) break;
+			int success = IsThreadRunning && !PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
+			
+			CaptureEndConsume(&VideoProducer);
+			
+			if (!success) 
+				break;
 		}
+
+		CaptureOnClientDisconnected(&VideoProducer);
 	}
 }
 
@@ -45,27 +51,37 @@ static void RTSP_StreamAudio(void* _)
 	{
 		u64 firstTs = 0;
 
-		while (!RTSP_ClientStreaming && IsThreadRunning) svcSleepThread(1E+8); // 1/10 of second
-		if (!IsThreadRunning) break;
+		while (!RTSP_ClientStreaming && IsThreadRunning) 
+			svcSleepThread(1E+8); // 1/10 of second
+		
+		if (!IsThreadRunning) 
+			break;
 
-		while (true)
+		CaptureOnClientConnected(&AudioProducer);
+
+		while (IsThreadRunning)
 		{			
-			if (!ReadAudioStream()) 
-				TerminateOrContinue
+			CaptureBeginConsume(&AudioProducer);
 
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
 
-			int error = PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
-			if (error) break;
+			int success = IsThreadRunning && !PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
+			
+			CaptureEndConsume(&AudioProducer);
+
+			if (!success)
+				break;
 		}
+
+		CaptureOnClientDisconnected(&AudioProducer);
 	}
 }
 
 static void RTSP_Init()
 {
 	RTP_InitializeSequenceNumbers();
-	LaunchThread(&RTSPThread, RTSP_ServerThread, NULL);
+	LaunchExtraThread(&RTSPThread, RTSP_ServerThread, NULL);
 }
 
 static void RTSP_Exit()

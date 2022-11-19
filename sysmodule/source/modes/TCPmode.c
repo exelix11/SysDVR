@@ -1,6 +1,6 @@
 #if !defined(USB_ONLY)
 #include "modes.h"
-#include "../grcd.h"
+#include "../capture.h"
 #include "../sockUtil.h"
 
 static int VideoSock = -1, AudioSock = -1, VideoCurSock = -1, AudioCurSock = -1;
@@ -78,15 +78,19 @@ static void TCP_StreamVideo(void* _)
 		if (!GetClient(&VideoCurSock, &VideoSock, GrcStream_Video))
 			continue;
 
+		CaptureOnClientConnected(&VideoProducer);
+
 		while (true)
 		{
-			if (!ReadVideoStream())
-				TerminateOrContinue
+			CaptureBeginConsume(&VideoProducer);
+			bool success = IsThreadRunning && SendData(VideoCurSock, VPkt.Header, (const char*)&VPkt);
+			CaptureEndConsume(&VideoProducer);
 
-			if (!SendData(VideoCurSock, VPkt.Header, (const char*)&VPkt)) 
+			if (!success)
 				break;			
 		}
 
+		CaptureOnClientDisconnected(&VideoProducer);
 		close(VideoCurSock);
 		VideoCurSock = -1;
 		svcSleepThread(1E+9);
@@ -98,19 +102,24 @@ static void TCP_StreamAudio(void* _)
 	if (!IsThreadRunning)
 		fatalThrow(ERR_TCP_AUDIO);
 
-	while (IsThreadRunning) {
+	while (IsThreadRunning) 
+	{
 		if (!GetClient(&AudioCurSock, &AudioSock, GrcStream_Audio))
 			continue;
 
+		CaptureOnClientConnected(&AudioProducer);
+
 		while (true)
 		{
-			if (!ReadAudioStream())
-				TerminateOrContinue
-
-			if (!SendData(AudioCurSock, APkt.Header, (const char*)&APkt))
+			CaptureBeginConsume(&AudioProducer);
+			bool success = IsThreadRunning && SendData(AudioCurSock, APkt.Header, (const char*)&APkt);
+			CaptureEndConsume(&AudioProducer);
+			
+			if (!success)
 				break;
 		}
 
+		CaptureOnClientDisconnected(&AudioProducer);
 		close(AudioCurSock);
 		AudioCurSock = -1;
 		svcSleepThread(1E+9);

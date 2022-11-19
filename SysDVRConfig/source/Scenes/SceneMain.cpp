@@ -204,14 +204,9 @@ void scenes::ModeSelect()
 		break;
 	case 1:
 		if (!SetDefaultBootMode(CurrentMode))
-		{
-			// This is called while drawing, finish rendering the frame
-			ImGui::End();
-			UI::EndFrame();
 			app::FatalError("Couldn't set boot mode", "Try checking your SD card for corruption");
-			return;
-		}
-		BootMode = CurrentMode;
+		else
+			BootMode = CurrentMode;
 		break;
 	case 2:
 		app::SetNextScene(Scene::DvrPatches);

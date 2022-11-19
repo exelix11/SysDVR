@@ -31,6 +31,7 @@
     <ClCompile Include="source\ipc\ipc.c">
       <Filter>ipc</Filter>
     </ClCompile>
+    <ClCompile Include="source\capture.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -62,6 +63,7 @@
     <ClInclude Include="source\ipc\ipc.h">
       <Filter>ipc</Filter>
     </ClInclude>
+    <ClInclude Include="source\capture.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">
