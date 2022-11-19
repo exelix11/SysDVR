@@ -6,7 +6,7 @@
 
 #include "../UI/UI.hpp"
 #include "../UI/Image.hpp"
-#include "../Platform/platform.hpp"
+#include "../Platform/Platform.hpp"
 
 // Shared from main.coo
 extern Image::Img SysDVRLogo;
