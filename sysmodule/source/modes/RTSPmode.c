@@ -12,7 +12,7 @@ static void RTSP_StreamVideo(void* _)
 	if (!IsThreadRunning)
 		fatalThrow(ERR_RTSP_VIDEO);
 
-	while (IsThreadRunning)
+	while (true)
 	{
 		u64 firstTs = 0;
 
@@ -47,7 +47,7 @@ static void RTSP_StreamAudio(void* _)
 	if (!IsThreadRunning)
 		fatalThrow(ERR_RTSP_AUDIO);
 
-	while (IsThreadRunning)
+	while (true)
 	{
 		u64 firstTs = 0;
 
