@@ -52,7 +52,20 @@ namespace SysDVR.Client.Sources
 			DebugLevel = logLevel;
 		}
 
-		public unsafe IReadOnlyList<(IUsbDevice, string)> FindSysdvrDevices() 
+        static bool MatchSysdvrDevice(IUsbDevice device)
+        {
+			try
+			{
+				return device.VendorId == 0x057e && device.ProductId == 0x3006;
+			}
+			catch (Exception ex)
+			{
+                Console.WriteLine("Warning: failed to query device info " + ex);
+                return false;
+            }
+        }
+
+        public unsafe IReadOnlyList<(IUsbDevice, string)> FindSysdvrDevices() 
 		{
 			if (device != null)
 				throw new Exception("device has already been set");
@@ -62,7 +75,7 @@ namespace SysDVR.Client.Sources
 			var old = DebugLevel;
 			DebugLevel = LogLevel.None;
 
-			var res = LibUsbCtx.List().Where(d => d.ProductId == 0x3006 && d.VendorId == 0x057e).Select(x => {
+			var res = LibUsbCtx.List().Where(MatchSysdvrDevice).Select(x => {
 				if (!x.TryOpen())
 					return (null, null);
 
