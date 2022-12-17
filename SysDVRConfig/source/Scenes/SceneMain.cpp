@@ -145,7 +145,7 @@ void scenes::InitModeSelect()
 	}
 
 	if (CurrentMode == TYPE_MODE_SWITCHING)
-		app::FatalError("SysDVR is already switching modes", "Enter a game to complete the operation");
+		app::FatalError("SysDVR is already switching modes", "Enter a game to complete the operation, if you think SysDVR is stuck try rebooting");
 	else if (CurrentMode == TYPE_MODE_ERROR)
 		app::FatalError("Couldn't get the current SysDVR mode", "Try rebooting your console");
 
