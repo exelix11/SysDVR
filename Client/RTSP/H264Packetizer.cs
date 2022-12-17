@@ -84,7 +84,7 @@ namespace SysDVR.Client.RTSP
 			}
 		}
 
-		public static List<byte[]> PacketizeNALArray(Span<byte> raw_nal, ulong tsMsec)
+		public static List<byte[]> PacketizeSingleNAL(Span<byte> raw_nal, ulong tsMsec)
 		{
 			// Build a list of 1 or more RTP packets
 			// The last packet will have the M bit set to '1'
