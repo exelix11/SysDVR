@@ -352,8 +352,9 @@ namespace SysDVR.Client
 			}
 			else if (Args[0] == "record")
 			{
-				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video);
-				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio);
+				var path = ArgValue("--source");
+				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video, path);
+				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio, path);
 			}
 #endif
 			else
