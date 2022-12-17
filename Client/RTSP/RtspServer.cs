@@ -441,7 +441,7 @@ namespace SysDVR.Client.RTSP
 		void SysDVR_ReceivedVideoFrame(Span<byte> Data, ulong tsMsec)
 		{
 			if (GetPlayCountPerStream(StreamKind.Video) == 0) return;
-			var rtp_packets = H264Packetizer.PacketizeNALArray(Data, tsMsec);
+			var rtp_packets = H264Packetizer.PacketizeSingleNAL(Data, tsMsec);
 			PushRtspData(StreamKind.Video, rtp_packets, tsMsec);
 		}
 
