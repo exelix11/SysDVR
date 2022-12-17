@@ -254,7 +254,11 @@ namespace scenes {
 		SetupMainWindow("Dvr-patches");
 		
 		ImGui::SetCursorPosY(30);
-		CenterText("Dvr-patches manager");
+		
+		ImGui::PushFont(UI::font40);
+		CenterText("dvr-patches manager");
+		ImGui::PopFont();
+	
 		ImGui::NewLine();
 
 		if (scheduledAction)
@@ -275,13 +279,14 @@ namespace scenes {
 		else {
 
 			ImGui::TextWrapped(
-				"Dvr-patches are system patches that allow to stream most incompatible games with SysDVR.\n"
-				"Dvr-patches are not enabled by default as they may cause issues with certain games, you can read more on the GitHub repository https://github.com/exelix11/dvr-patches\n"
-				"From this page you can download latest version of dvr-patches from github or delete them in case you're facing issues."
+				"From this page you can download latest version of dvr-patches from github or uninstall them.\n"
+				"This feature requires an internet connection, you can download the zip file manually from the GitHub repository at https://github.com/exelix11/dvr-patches\n\n"
+				
+				"dvr-patches are system patches that allow to stream most incompatible games with SysDVR, a few games are reported to crash, you can read mone on the issue tracker on GitHub.\n"
 			);
 
 			ImGui::NewLine();
-			ImGui::Text("Dvr-patches status: ");
+			ImGui::Text("dvr-patches status:");
 			ImGui::SameLine();
 
 			if (patchStatus == PatchStatus::NotInstalled)
@@ -294,20 +299,18 @@ namespace scenes {
 				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.6f, 1.0f), "installed, version unknown");
 				ImGui::Text("Sdcard path: " DVRPATCHES_DIR "     ");
 				ImGui::SameLine();
+				
 				if (ImGui::Button("Uninstall"))
-				{
 					scheduledAction = UninstallPatches;
-				}
 			}
 			else
 			{
-				ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "commit %s installed", patchVersion.c_str());
+				ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "installed commit %s", patchVersion.c_str());
 				ImGui::Text("Sdcard path: " DVRPATCHES_DIR "     ");
 				ImGui::SameLine();
+
 				if (ImGui::Button("Uninstall"))
-				{
 					scheduledAction = UninstallPatches;
-				}
 			}
 			ImGui::NewLine();
 
