@@ -1,6 +1,6 @@
 #include "modes.h"
 #include "../USB/Serial.h"
-#include "../grcd.h"
+#include "../capture.h"
 
 static inline bool SerialWrite(UsbInterface interface, const VLAPacket* packet)
 {
@@ -18,7 +18,7 @@ typedef struct {
 	u32 CheckCode;
 	UsbInterface Pipe;
 	VLAPacket* Packet;
-	bool (*ReadStreamFunc)();
+	ConsumerProducer* Consumer;
 } UsbStreamBlock;
 
 static void USB_StreamThread(void* threadConf)
@@ -28,38 +28,64 @@ static void USB_StreamThread(void* threadConf)
 	if (!IsThreadRunning)
 		fatalThrow(info->CheckCode);
 
+	LOG("Usb:beginThread %x %p\n", info->CheckCode, armGetTls());
+
+	/* 
+		Since latest refactor there's a weird condition that now causes a crash in armDCacheFlush at the strb w1, [x0, #0x104] instruction
+		x0 points to TLS and this function is called inside SerialWrite by libnx itself, no clue what could be the issue or how to debug it.
+		
+		It seems to happen whenever the client sends multiple stream begin requests while sysdvr is already sending data.
+		With the previous implementations those transfers would just timeout and fail but now they don't.
+		The fix is to receive the stream begin request whenever we know it's coming so we don't run in this condition.
+		
+		There may be adeeper issue here but understanding it is probably going to require too much effort.
+	*/
+
 	while (IsThreadRunning)
 	{
 		// Wait for client
 		if (!WaitRequest(info->Pipe))
 			continue;
 
+		u64 lastConnection = armGetSystemTick();
+		CaptureOnClientConnected(info->Consumer);
+
 		// Once client is connected just continuously send data
 		while (true) {
-			if (!info->ReadStreamFunc())
-			{
-				if (IsThreadRunning) continue; else break;
-			}
+			CaptureBeginConsume(info->Consumer);
+			
+			// If we wasted too much time the client will try to reconnect
+			bool isTooLate = armGetSystemTick() - lastConnection > armNsToTicks(1.5E+9);
+			
+			bool success = 
+				!isTooLate && 
+				IsThreadRunning && 
+				SerialWrite(info->Pipe, info->Packet);
 
-			if (!SerialWrite(info->Pipe, info->Packet))
-			{
-				// If writing fails go back to waiting for client
+			lastConnection = armGetSystemTick();
+			CaptureEndConsume(info->Consumer);
+
+			// If writing fails go back to waiting for client
+			if (!success)
 				break;
-			}
 		}
+
+		CaptureOnClientDisconnected(info->Consumer);
 	}
+
+	LOG("Usb:endThread\n");
 }
 
 UsbStreamBlock VideoConfig = {
 	.CheckCode = ERR_USB_VIDEO,
 	.Packet = (VLAPacket*)&VPkt,
-	.ReadStreamFunc = ReadVideoStream
+	.Consumer = &VideoProducer
 };
 
 UsbStreamBlock AudioConfig = {
 	.CheckCode = ERR_USB_AUDIO,
 	.Packet = (VLAPacket*)&APkt,
-	.ReadStreamFunc = ReadAudioStream
+	.Consumer = &AudioProducer
 };
 
 static void USB_Init()

@@ -8,7 +8,7 @@ typedef int (*LE16SendPacketFn)(const void* header, const void* data, const size
 #define SamplesInRtpPacket(payloadSz) (payloadSz / 4.0)
 #define AudiolenRtpPackeMs(payloadSz) (SamplesInRtpPacket(payloadSz) / SampleRate * 1000.0)
 
-static inline int PacketizeLE16(char* data, size_t len, uint32_t tsMs, LE16SendPacketFn cb)
+static inline bool PacketizeLE16(char* data, size_t len, uint32_t tsMs, LE16SendPacketFn cb)
 {
 	char header[RTPHeaderSz];
 	double incrementalTs = 0;

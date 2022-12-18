@@ -109,9 +109,8 @@ namespace SysDVR.Client.FileOutput
 				AStream->codecpar->codec_id = AVCodecID.AV_CODEC_ID_MP2;
 				AStream->codecpar->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
 				AStream->codecpar->sample_rate = StreamInfo.AudioSampleRate;
-				AStream->codecpar->channels = StreamInfo.AudioChannels;
+				av_channel_layout_default(&AStream->codecpar->ch_layout, StreamInfo.AudioChannels);
 				AStream->codecpar->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
-				AStream->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
 				AStream->codecpar->frame_size = StreamInfo.AudioSamplesPerPayload;
 				AStream->codecpar->bit_rate = 128000;
 			}

@@ -13,9 +13,10 @@ namespace SysDVR.Client.Sources
 		public bool Logging { get; set; }
 		public BinaryReader Source { get; set; }
 
-		public RecordedSource(StreamKind kind)
+		public RecordedSource(StreamKind kind, string basePath)
 		{
-			Source = new BinaryReader(File.OpenRead(kind == StreamKind.Video ? "video.h264" : "audio.raw"));
+			var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
+			Source = new BinaryReader(File.OpenRead(Path.Combine(basePath, name)));
 		}
 
 		public void Flush()

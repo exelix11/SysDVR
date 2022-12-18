@@ -35,12 +35,13 @@ namespace SysDVR.Client.RTSP
 	{
 		public delegate void DataAvailableFn(Span<byte> Data, ulong tsMsec);
 		public event DataAvailableFn DataAvailable;
+		public CancellationToken Cancellation;
 		
 		protected void InvokeEvent(Span<byte> Data, ulong tsMsec) => DataAvailable(Data, tsMsec);
 
 		public abstract void SendData(PoolBuffer block, ulong ts);
 
-		public void UseCancellationToken(CancellationToken tok) { }
+		public void UseCancellationToken(CancellationToken tok) { Cancellation = tok; }
 	}
 
 	class SysDVRAudioRTSPTarget : SysDvrRTSPTarget
@@ -54,38 +55,44 @@ namespace SysDVR.Client.RTSP
 
 	class SysDVRVideoRTSPTarget : SysDvrRTSPTarget
 	{
-		static Span<byte> FindNalOffset(Span<byte> span)
+		static int FindNextNALHeader(Span<byte> span)
 		{
-			int nalOffset = -1;
-			int nextOffset = -1;
-
 			for (int i = 2; i < span.Length; i++)
-				if (span[i] == 1 && span[i - 1] == 0 && span[i - 2] == 0)
-				{
-					if (nalOffset == -1) nalOffset = i + 1;
-					else
-					{
-						nextOffset = i - 1;
-						while (nextOffset >= 0 && span[nextOffset] == 0) nextOffset--;
-						break;
-					}
-				}
+				if (span[i - 2] == 0 && span[i - 1] == 0 && span[i] == 1)
+					return i + 1;
 
-			if (nalOffset == -1) return null;
-			if (nextOffset == -1) return span.Slice(nalOffset);
-
-			return span.Slice(nalOffset, nextOffset - nalOffset);
+			return -1;
 		}
 
-		override public void SendData(PoolBuffer block, ulong ts)
+		static Span<byte> AdvanceToStart(Span<byte> span)
 		{
-			Span<byte> data = block;
-			var nal = FindNalOffset(data);
-			while (nal != null)
+            var offset = FindNextNALHeader(span);
+			if (offset == -1)
+				return Span<byte>.Empty;
+			else
+				return span.Slice(offset);
+        }
+
+		override public void SendData(PoolBuffer block, ulong ts)
+		{			
+			var tsMs = ts / 1000;
+
+			Span<byte> data = AdvanceToStart(block);
+			while (!data.IsEmpty)
 			{
-				InvokeEvent(nal, ts / 1000);
-				nal = FindNalOffset(nal);
-			}
+				var next = FindNextNALHeader(data);
+				if (next == -1)
+				{
+					InvokeEvent(data, tsMs);
+					break;
+				}
+
+				var sendSlice = data.Slice(0, next - 3);
+                InvokeEvent(sendSlice, tsMs);
+
+                data = data.Slice(next);
+            }
+            
 			block.Free();
 		}
 	}

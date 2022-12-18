@@ -7,13 +7,10 @@ REM Extract binaries if this is a CI build
 if exist ffmpeg-master-latest-win64-lgpl-shared.zip (
 	echo extracting ffmpeg-master-latest-win64-lgpl-shared.zip
 	7z x ffmpeg-master-latest-win64-lgpl-shared.zip -offmpeg || goto error
-	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Libs\Client.Native\binaries\win-x64\native\
-)
-
-if exist SDL2.zip (
-	echo extracting SDL2.zip
-	7z x SDL2.zip -oSDL2
-	copy SDL2\*.dll Libs\Client.Native\binaries\win-x64\native\
+	
+	mkdir Client\runtimes\win-x64\native
+	
+	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Client\runtimes\win-x64\native
 )
 
 if exist wdi-simple.zip (
@@ -21,14 +18,11 @@ if exist wdi-simple.zip (
 	7z x wdi-simple.zip -owdi-simple
 	
 	REM turns out we just need the 32bit version
-	copy wdi-simple\wdi-simple32.exe Libs\Client.Native\binaries\win\native\
+	mkdir Client\runtimes\win\
+	copy wdi-simple\wdi-simple32.exe Client\runtimes\win\
 )
 
-cd Libs\Client.Native
-dotnet build -c Release || goto error
-REM Client.Native is automatically copied to Libs\Built
-
-cd ..\..\Client
+cd Client
 dotnet publish -c Release || goto error
 
 call VsDevCmd.bat
@@ -37,12 +31,11 @@ cd ..
 nuget restore
 
 cd ClientGUI
-msbuild ClientGUI.csproj /p:Configuration=Release || goto error
+dotnet publish -c Release || goto error
 
 cd ..
 
-move Client\bin\Release\net6.0\SysDVR-ClientGUI.exe Client\bin\Release\net6.0\publish\SysDVR-ClientGUI.exe 
-move Client\bin\Release\net6.0\*.dll Client\bin\Release\net6.0\publish\ 
+move ClientGUI\bin\Release\net4.5.1\publish\* Client\bin\Release\net6.0\publish\ 
 
 del Client\bin\Release\net6.0\publish\*.pdb
 

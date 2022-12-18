@@ -52,7 +52,20 @@ namespace SysDVR.Client.Sources
 			DebugLevel = logLevel;
 		}
 
-		public unsafe IReadOnlyList<(IUsbDevice, string)> FindSysdvrDevices() 
+        static bool MatchSysdvrDevice(IUsbDevice device)
+        {
+			try
+			{
+				return device.VendorId == 0x057e && device.ProductId == 0x3006;
+			}
+			catch (Exception ex)
+			{
+                Console.WriteLine("Warning: failed to query device info " + ex);
+                return false;
+            }
+        }
+
+        public unsafe IReadOnlyList<(IUsbDevice, string)> FindSysdvrDevices() 
 		{
 			if (device != null)
 				throw new Exception("device has already been set");
@@ -62,7 +75,7 @@ namespace SysDVR.Client.Sources
 			var old = DebugLevel;
 			DebugLevel = LogLevel.None;
 
-			var res = LibUsbCtx.List().Where(d => d.ProductId == 0x3006 && d.VendorId == 0x057e).Select(x => {
+			var res = LibUsbCtx.List().Where(MatchSysdvrDevice).Select(x => {
 				if (!x.TryOpen())
 					return (null, null);
 
@@ -183,19 +196,27 @@ namespace SysDVR.Client.Sources
 			context.MarkInterfaceClosed();
 		}
 
+		LibUsbDotNet.Error lastError = LibUsbDotNet.Error.Success;
 		public void WaitForConnection() 
 		{
 			while (!Token.IsCancellationRequested) 
 			{
 				//using var trace = BeginTrace();
-
-				var err = writer.Write(USBMagic, 1000, out int _);
+#if DEBUG
+				Console.WriteLine($"Sending {streamKind} connection request");
+#endif
+                var err = writer.Write(USBMagic, 1000, out int _);
 				if (err != LibUsbDotNet.Error.Success)
 				{
-					Thread.Sleep(1000);
-					Console.WriteLine($"Warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting SysDVR.");
+					if (err != lastError)
+					{
+						Console.WriteLine($"{streamKind} warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting it.");
+						lastError = err;
+					}
+					Thread.Sleep(3000);
 					continue;
 				}
+				lastError = err;
 
 				return;
 			}
@@ -204,7 +225,7 @@ namespace SysDVR.Client.Sources
 		public virtual void Flush() 
 		{
 			// Wait some time so the switch side timeouts
-			Thread.Sleep(2000);
+			Thread.Sleep(3000);
 			// Then attempt to connect again
 			WaitForConnection();
 		}
