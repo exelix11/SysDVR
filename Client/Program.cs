@@ -344,12 +344,13 @@ namespace SysDVR.Client
 				if (!NoAudio)
 					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
 			}
-#if DEBUG
+            // UI Test mode: only load libavcodec and SDL without streaming anything
 			else if (Args[0] == "stub")
 			{
 				StreamManager.VideoSource = new StubSource();
 				StreamManager.AudioSource = new StubSource();
 			}
+#if DEBUG
 			else if (Args[0] == "record")
 			{
 				var path = ArgValue("--source");
