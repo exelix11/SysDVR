@@ -39,6 +39,21 @@
       <Filter>Platform\Windows</Filter>
     </ClCompile>
     <ClCompile Include="source\ipc.c" />
+    <ClCompile Include="source\Scenes\ScenePatches.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Scenes\SceneGuide.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Scenes\SceneMain.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Libs\zip\zip.c">
+      <Filter>Libs\zip</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Scenes\SceneNoConnection.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\UI\UI.hpp">
@@ -87,6 +102,21 @@
       <Filter>Platform\Windows</Filter>
     </ClInclude>
     <ClInclude Include="source\ipc.h" />
+    <ClInclude Include="source\Scenes\Scenes.hpp">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Scenes\Common.hpp">
+      <Filter>Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Libs\nlohmann\json.hpp">
+      <Filter>Libs\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Libs\zip\zip.h">
+      <Filter>Libs\zip</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Libs\zip\miniz.h">
+      <Filter>Libs\zip</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
@@ -103,6 +133,18 @@
     </Filter>
     <Filter Include="Platform\Windows">
       <UniqueIdentifier>{31cf3b43-bb24-4acb-87d3-d48c02902303}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scenes">
+      <UniqueIdentifier>{31b29572-fb14-45db-925f-60066e7153ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{2cd141a0-327a-4084-a4be-db7642b87085}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\nlohmann">
+      <UniqueIdentifier>{47200840-678c-4399-bb24-2f42d2a935f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\zip">
+      <UniqueIdentifier>{a295fbc4-b423-4c0e-8ca0-55c6d9e8482f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

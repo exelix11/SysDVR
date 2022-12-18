@@ -46,14 +46,14 @@ namespace SysDVR.Client
 					return LibLoaderOverride;
 
 				if (OperatingSystem.IsWindows())
-					// Although this is correct for x86 we don't provide 32-bit ffmpeg binaries
 					return BundledOsNativeFolder;
-				else if (OperatingSystem.IsMacOS())
-					// Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+
+				// Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+				if (OperatingSystem.IsMacOS())
 					return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
-				else
-                    // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
-					return "";
+
+				// On linux we have to rely on the dlopen implementation to find the libs wherever they are 
+				return string.Empty;
 			} 
 		}
 
@@ -344,6 +344,7 @@ namespace SysDVR.Client
 				if (!NoAudio)
 					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
 			}
+            // UI Test mode: only load libavcodec and SDL without streaming anything
 			else if (Args[0] == "stub")
 			{
 				StreamManager.VideoSource = new StubSource();
@@ -352,8 +353,9 @@ namespace SysDVR.Client
 #if DEBUG
 			else if (Args[0] == "record")
 			{
-				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video);
-				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio);
+				var path = ArgValue("--source");
+				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video, path);
+				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio, path);
 			}
 #endif
 			else
@@ -434,20 +436,30 @@ namespace SysDVR.Client
 		void StartStreaming(BaseStreamManager streams)
 		{
 			streams.Begin();
+			bool terminating = false;
 			
 			void Quit()
 			{
+                // this may be called at the same time by CTRL+C and main thread returning, dispose everything only once.
 				lock (this)
 				{
-					Console.WriteLine("Terminating threads...");
-					streams.Stop();
-					if (streams is IDisposable d)
-						d.Dispose();
-					Environment.Exit(0);
+					if (terminating)
+						return;
+					terminating = true;
 				}
+
+				Console.WriteLine("Terminating threads...");
+				streams.Stop();
+				if (streams is IDisposable d)
+					d.Dispose();
+				Environment.Exit(0);
 			}
 
-			Console.CancelKeyPress += delegate { Quit(); };
+			Console.CancelKeyPress += delegate(object instance, ConsoleCancelEventArgs args) 
+			{
+				args.Cancel = true;
+				Quit();
+			};
 
 			streams.MainThread();		
 

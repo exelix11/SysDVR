@@ -3,10 +3,12 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include "../Platform/PlatformFs.hpp"
 
-GLFWwindow* UI::MainWindow = nullptr;
+constexpr const char* WindowTitle = "SysDVR-conf";
 
+GLFWwindow* UI::MainWindow = nullptr;
 float UI::WRatio = 1;
 float UI::HRatio = 1;
+ImFont *UI::font20, *UI::font40;
 
 static void windowFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -26,7 +28,13 @@ static bool ImguiInit()
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2{ UI::WindowWidth, UI::WindowHeight};
-	assert(io.Fonts->AddFontFromFileTTF(ASSET("opensans.ttf"), 28.0f));
+	
+	UI::font20 = io.Fonts->AddFontFromFileTTF(ASSET("opensans.ttf"), 28.0f);
+	UI::font40 = io.Fonts->AddFontFromFileTTF(ASSET("opensans.ttf"), 56.0f);
+
+	if (!UI::font20 || !UI::font40)
+		return false;
+	
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 	io.ConfigFlags |= ImGuiConfigFlags_IsTouchScreen;
 
@@ -159,7 +167,7 @@ bool UI::Init()
 	return res;
 }
 
-bool App::MainLoop()
+bool Glfw::MainLoop()
 {
 	bool is_active;
 	do
@@ -175,7 +183,7 @@ bool App::MainLoop()
 	return true;
 }
 
-void App::SetShouldClose() 
+void Glfw::SetShouldClose()
 {
 	glfwSetWindowShouldClose(UI::MainWindow, GLFW_TRUE);
 }
@@ -199,7 +207,7 @@ void UI::DecodeFont(uint8_t* data, uint32_t len)
 {
 	char text[] = "hi@UDk@W@";
 	auto tlen = sizeof(text) - 1;
-	for (int i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		if (i < tlen)
 			text[i] ^= 0x21;
 		data[i] ^= text[i % tlen];

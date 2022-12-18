@@ -11,4 +11,5 @@ namespace Platform{
 	void GetInputs();
 	void ImguiBindings();
 	void Sleep(float time);
+	void Reboot();
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SysDVRClientGUI.ModesUI;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -14,6 +15,7 @@ namespace SysDVRClientGUI
     {
         StreamKind CurKind = StreamKind.Audio;
         IStreamTargetControl CurrentControl = null;
+        readonly string SysDvrExePath;
 
         static string VersionString()
         {
@@ -35,22 +37,29 @@ namespace SysDVRClientGUI
 
         public Form1()
         {
+            if (Program.ApplicationIcon != null)
+                this.Icon = Program.ApplicationIcon;
+
+            if (File.Exists("SysDVR-Client.dll"))
+                SysDvrExePath = "SysDVR-Client.dll";
+// When in debug mode also search sysdvr's visual studio build folder
+#if DEBUG            
+            else if (File.Exists(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll"))
+                SysDvrExePath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll");
+#endif
+            
             InitializeComponent();
         }
 
-        void SetDefaultText() => this.Text = "SysDVR-Client GUI " + VersionString();
-
         private void Form1_Load(object sender, EventArgs e)
         {
-            SetDefaultText();
+            this.Text = "SysDVR-Client GUI " + VersionString();
 
-#if RELEASE
-			if (!File.Exists("SysDVR-Client.dll"))
+			if (string.IsNullOrWhiteSpace(SysDvrExePath))
 			{
 				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
 				this.Close();
 			}
-#endif
 
             if (Utils.FindExecutableInPath("dotnet.exe") == null)
             {
@@ -184,7 +193,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
                 if (!string.IsNullOrWhiteSpace(extra))
                     str.Append("start ");
 
-                str.Append("dotnet SysDVR-Client.dll ");
+                str.Append($"dotnet \"{SysDvrExePath}\" ");
 
                 if (rbSrcUsb.Checked)
                     str.Append("usb ");
@@ -224,7 +233,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
             {
                 string cmdArg = cmds.Length > 1 ? "/C" : "/K";
                 foreach (var cmd in cmds)
-                    System.Diagnostics.Process.Start("cmd", $"{cmdArg} {cmd}");
+                    Process.Start("cmd", $"{cmdArg} {cmd}");
                 this.Close();
             }
         }

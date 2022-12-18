@@ -51,10 +51,9 @@ namespace SysDVR.Client.FileOutput
 			if (codecCtx == null) throw new Exception("Couldn't allocate MP2 encoder");
 
 			codecCtx->sample_rate = StreamInfo.AudioSampleRate;
-			codecCtx->channels = StreamInfo.AudioChannels;
+			av_channel_layout_default(&codecCtx->ch_layout, StreamInfo.AudioChannels);
 			codecCtx->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
 			codecCtx->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_S16;
-			codecCtx->channel_layout = AV_CH_LAYOUT_STEREO;
 			codecCtx->bit_rate = 128000;
 			codecCtx->time_base = new AVRational { num = 1, den = timebase_den };
 
@@ -64,7 +63,7 @@ namespace SysDVR.Client.FileOutput
 			if (frame == null) throw new Exception("Couldn't allocate AVFrame");
 			frame->nb_samples = Math.Min(StreamInfo.AudioSamplesPerPayload, codecCtx->frame_size);
 			frame->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
-			frame->channel_layout = AV_CH_LAYOUT_STEREO;
+			av_channel_layout_default(&frame->ch_layout, StreamInfo.AudioChannels);
 			frame->sample_rate = StreamInfo.AudioSampleRate;
 
 			av_frame_get_buffer(frame, 0);

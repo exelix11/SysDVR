@@ -20,10 +20,12 @@ namespace SysDVR.Client.RTSP
 		private ManualResetEvent _Stopping;
 		private Thread _ListenTread;
 
-		private SysDVRVideoRTSPTarget video_source = null;
-		private SysDVRAudioRTSPTarget audio_source = null;
+		readonly private SysDVRVideoRTSPTarget videoSource = null;
+		readonly private SysDVRAudioRTSPTarget audioSource = null;
 
-		enum StreamKind : int
+        private CancellationToken cancellationToken => (videoSource as SysDvrRTSPTarget ?? audioSource ?? throw new Exception()).Cancellation;
+
+        enum StreamKind : int
 		{
 			Video = 0,
 			Audio = 1
@@ -45,8 +47,8 @@ namespace SysDVR.Client.RTSP
 				throw new ArgumentOutOfRangeException("aPortNumber", portNumber, "Port number must be between System.Net.IPEndPoint.MinPort and System.Net.IPEndPoint.MaxPort");
 			Contract.EndContractBlock();
 
-			this.video_source = video_source;
-			this.audio_source = audio_source;
+			this.videoSource = video_source;
+			this.audioSource = audio_source;
 
 			if (video_source != null)
 				video_source.DataAvailable += SysDVR_ReceivedVideoFrame;
@@ -83,7 +85,7 @@ namespace SysDVR.Client.RTSP
 				while (!_Stopping.WaitOne(0))
 				{
 					// Wait for an incoming TCP Connection
-					TcpClient oneClient = _RTSPServerListener.AcceptTcpClient();
+					TcpClient oneClient = _RTSPServerListener.AcceptTcpClientAsync(cancellationToken).Result;
 					Console.WriteLine("Connection from " + oneClient.Client.RemoteEndPoint.ToString());
 
 					// Hand the incoming TCP connection over to the RTSP classes
@@ -118,14 +120,14 @@ namespace SysDVR.Client.RTSP
 
 		public void StopListen()
 		{
+			_RTSPServerListener.Stop();
+			_Stopping.Set();
+			_ListenTread.Join();
 			lock (rtsp_list) {
 				foreach (RTSPConnection connection in rtsp_list)
 					connection.Dispose();
 				rtsp_list.Clear();
 			}
-			_RTSPServerListener.Stop();
-			_Stopping.Set();
-			_ListenTread.Join();
 		}
 
 		#region IDisposable Membres
@@ -153,8 +155,6 @@ namespace SysDVR.Client.RTSP
 			// Cast the 'sender' and 'e' into the RTSP Listener (the Socket) and the RTSP Message
 			Rtsp.RtspListener listener = sender as Rtsp.RtspListener;
 			Rtsp.Messages.RtspMessage message = e.Message as Rtsp.Messages.RtspMessage;
-
-			Console.WriteLine("RTSP message received " + message);
 
 			// Update the RTSP Keepalive Timeout
 			// We could check that the message is GET_PARAMETER or OPTIONS for a keepalive but instead we will update the timer on any message
@@ -202,7 +202,7 @@ namespace SysDVR.Client.RTSP
 				sdp.Append("v=0\n");
 				sdp.Append("o=user 123 0 IN IP4 0.0.0.0\n");
 				sdp.Append($"s=SysDVR - https://github.com/exelix11/sysdvr - [PID {Process.GetCurrentProcess().Id}]\n");
-				if (video_source != null)
+				if (videoSource != null)
 				{
 					sdp.Append("m=video 0 RTP/AVP 96\n");
 					sdp.Append("c=IN IP4 0.0.0.0\n");
@@ -210,7 +210,7 @@ namespace SysDVR.Client.RTSP
 					sdp.Append("a=rtpmap:96 H264/90000\n");
 					sdp.Append("a=fmtp:96 profile-level-id=42A01E; sprop-parameter-sets=" + sps_str + "," + pps_str + ";\n");
 				}
-				if (audio_source != null)
+				if (audioSource != null)
 				{
 					sdp.Append("m=audio 0 RTP/AVP 97\n");
 					sdp.Append("a=rtpmap:97 L16/48000/2\n");
@@ -275,7 +275,7 @@ namespace SysDVR.Client.RTSP
 						// Pass the Port of the two sockets back in the reply
 						transport_reply.LowerTransport = Rtsp.Messages.RtspTransport.LowerTransportType.UDP;
 						transport_reply.IsMulticast = false;
-						transport_reply.ClientPort = new Rtsp.Messages.PortCouple(udp_pair.data_port, udp_pair.control_port);
+						transport_reply.ClientPort = new Rtsp.Messages.PortCouple(udp_pair.dataPort, udp_pair.controlPort);
 					}
 					else
 					{
@@ -348,6 +348,8 @@ namespace SysDVR.Client.RTSP
 			// Must have a Session ID
 			if (message is Rtsp.Messages.RtspRequestPlay)
 			{
+				Console.WriteLine("Received stream start command ! " + message);
+
 				lock (rtsp_list)
 				{
 					// Search for the Session in the Sessions List. Change the state to "PLAY"
@@ -439,7 +441,7 @@ namespace SysDVR.Client.RTSP
 		void SysDVR_ReceivedVideoFrame(Span<byte> Data, ulong tsMsec)
 		{
 			if (GetPlayCountPerStream(StreamKind.Video) == 0) return;
-			var rtp_packets = H264Packetizer.PacketizeNALArray(Data, tsMsec);
+			var rtp_packets = H264Packetizer.PacketizeSingleNAL(Data, tsMsec);
 			PushRtspData(StreamKind.Video, rtp_packets, tsMsec);
 		}
 
@@ -514,7 +516,7 @@ namespace SysDVR.Client.RTSP
 								// send the whole NAL. ** We could fragment the RTP packet into smaller chuncks that fit within the MTU
 								// Send to the IP address of the Client
 								// Send to the UDP Port the Client gave us in the SETUP command
-								connection[s].udp_pair.Write_To_Data_Port(rtp_packet, connection.client_hostname, connection[s].client_transport.ClientPort.First);
+								connection[s].udp_pair.WriteToDataPort(rtp_packet, connection.client_hostname, connection[s].client_transport.ClientPort.First);
 							}
 							catch (Exception e)
 							{

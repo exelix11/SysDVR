@@ -60,4 +60,10 @@ void Platform::Sleep(float time)
 	usleep(time * 1000);
 }
 
+void Platform::Reboot()
+{
+	spsmInitialize();
+	spsmShutdown(true);
+}
+
 #endif

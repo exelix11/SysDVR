@@ -10,12 +10,14 @@
 namespace UI {
 	constexpr uint32_t WindowWidth = 1280;
 	constexpr uint32_t WindowHeight = 720;
-	constexpr const char* WindowTitle = "SwitchApplication";
 	
 	extern GLFWwindow* MainWindow;
 	
 	extern float WRatio;
 	extern float HRatio;
+
+	extern ImFont* font20;
+	extern ImFont* font40;
 
 	bool Init();
 	void Exit();
@@ -26,7 +28,7 @@ namespace UI {
 	void DecodeFont(uint8_t* data, uint32_t len);
 }
 
-namespace App {
+namespace Glfw {
 	bool MainLoop();
 	void SetShouldClose();
 }
