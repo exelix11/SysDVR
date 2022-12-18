@@ -41,8 +41,9 @@
   <ItemGroup>
 	<ContentWithTargetPath Include="$(ProjectDir)\runtimes\**">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		<TargetPath>runtimes\%(RecursiveDir)\native\%(Filename)%(Extension)</TargetPath>
+		<TargetPath>runtimes\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
 	</ContentWithTargetPath>
+	  
     <None Update="Help.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

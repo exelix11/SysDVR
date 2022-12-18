@@ -7,7 +7,10 @@ REM Extract binaries if this is a CI build
 if exist ffmpeg-master-latest-win64-lgpl-shared.zip (
 	echo extracting ffmpeg-master-latest-win64-lgpl-shared.zip
 	7z x ffmpeg-master-latest-win64-lgpl-shared.zip -offmpeg || goto error
-	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Client\runtimes\win-x64\
+	
+	mkdir Client\runtimes\win-x64\native
+	
+	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Client\runtimes\win-x64\native
 )
 
 if exist wdi-simple.zip (
@@ -15,6 +18,7 @@ if exist wdi-simple.zip (
 	7z x wdi-simple.zip -owdi-simple
 	
 	REM turns out we just need the 32bit version
+	mkdir Client\runtimes\win\
 	copy wdi-simple\wdi-simple32.exe Client\runtimes\win\
 )
 
