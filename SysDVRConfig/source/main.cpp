@@ -14,11 +14,12 @@
 Image::Img SysDVRLogo;
 
 namespace {
-	Scene currentScene;
-	std::string_view statusMessage;
-	std::string_view errorSecondline;
+	Scene currentScene = Scene::FatalError;
+	Scene returnTo = Scene::FatalError;
 
-	Image::Img errorQrUrl;
+	std::string_view statusMessage = "Fatal error";
+	std::string_view errorSecondline = "This should never happen, try rebooting your console";
+
 	std::string formattedError;
 
 	void ImguiBindController()
@@ -58,6 +59,8 @@ namespace {
 }
 
 namespace scenes {
+	Image::Img errorQrUrl;
+	
 	void InitFatalError() 
 	{
 		errorQrUrl = Image::Img(ASSET("troubleshooting.png"));
@@ -88,7 +91,14 @@ namespace scenes {
 namespace app {
 	void SetNextScene(Scene s)
 	{
+		returnTo = currentScene;
 		currentScene = s;
+	}
+
+	void ReturnToPreviousScene() 
+	{
+		currentScene = returnTo;
+		returnTo = Scene::FatalError;
 	}
 	
 	void FatalErrorWithErrorCode(std::string_view message, uint32_t rc)
@@ -133,8 +143,8 @@ int main(int argc, char* argv[])
 	{
 		Result rc = ConnectToSysmodule();
 		if (R_FAILED(rc)) {
-			app::FatalError("Couldn't connect to SysDVR.", "If you just installed it reboot, otherwise wait a bit and try again.");
-			goto mainloop;
+			app::SetNextScene(Scene::NoConnection);
+			goto dvrNotConnected;
 		}
 
 		u32 version;
@@ -153,9 +163,12 @@ int main(int argc, char* argv[])
 			goto mainloop;
 		}
 	}
-	
+
 	scenes::InitModeSelect();
 	scenes::InitGuide();
+
+dvrNotConnected:
+
 	scenes::InitDvrPatches();
 
 mainloop:
@@ -183,6 +196,9 @@ mainloop:
 			break;
 		case Scene::DvrPatches:
 			scenes::DvrPatches();
+			break;
+		case Scene::NoConnection:
+			scenes::NoConnection();
 			break;
 		default:
 			Glfw::SetShouldClose();

@@ -347,7 +347,7 @@ namespace scenes {
 			switch (ImGuiCenterButtons({ "Go back", "Search for latest patches on GitHub" }))
 			{
 			case 0:
-				app::SetNextScene(Scene::ModeSelect);
+				app::ReturnToPreviousScene();
 				break;
 			case 1:
 				scheduledAction = SearchForUpdate;
