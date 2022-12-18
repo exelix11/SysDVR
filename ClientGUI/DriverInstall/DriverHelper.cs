@@ -65,9 +65,23 @@ namespace SysDVRClientGUI.DriverInstall
              return drvInfo.Contains("libwdi") ? DriverStatus.Installed : DriverStatus.NotInstalled;
         }
 
+        static string GetWdiSimplePath() 
+        {
+            var wdiExe = Path.Combine(Program.OsArchGenericFolder, "wdi-simple32.exe");
+            if (!File.Exists(wdiExe))
+            {
+                MessageBox.Show("wdi-simple32.exe is missing, did you download and extract SysDVR-Client properly ?");
+                return null;
+            }
+            return wdiExe;
+        }
+
         // if true sysdvr should quit
         public static bool InstallDriver()
         {
+            if (GetWdiSimplePath() == null)
+                return false;
+            
             if (IsUserAnAdmin())
             {
                 InstallDriverInternal();
@@ -131,12 +145,9 @@ namespace SysDVRClientGUI.DriverInstall
             Trace.WriteLine("Installing driver...");
 
             // It seems the 32-bit version can install 64-bit drivers as well
-            var wdiExe = Path.Combine(Program.OsArchGenericFolder, "wdi-simple32.exe");
-            if (!File.Exists(wdiExe))
-            {
-                MessageBox.Show("wdi-simple32.exe is missing, did you download and extract SysDVR-Client properly ?");
+            var wdiExe = GetWdiSimplePath();
+            if (wdiExe == null)
                 return false;
-            }
 
             string log = "";
 
