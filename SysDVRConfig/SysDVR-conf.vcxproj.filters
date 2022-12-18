@@ -51,6 +51,9 @@
     <ClCompile Include="source\Libs\zip\zip.c">
       <Filter>Libs\zip</Filter>
     </ClCompile>
+    <ClCompile Include="source\Scenes\SceneNoConnection.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\UI\UI.hpp">

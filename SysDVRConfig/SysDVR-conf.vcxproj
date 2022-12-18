@@ -16,6 +16,7 @@
     <ClCompile Include="source\Platform\Windows\dirent.c" />
     <ClCompile Include="source\Scenes\SceneGuide.cpp" />
     <ClCompile Include="source\Scenes\SceneMain.cpp" />
+    <ClCompile Include="source\Scenes\SceneNoConnection.cpp" />
     <ClCompile Include="source\Scenes\ScenePatches.cpp" />
     <ClCompile Include="source\UI\glad.c" />
     <ClCompile Include="source\UI\Image.cpp" />

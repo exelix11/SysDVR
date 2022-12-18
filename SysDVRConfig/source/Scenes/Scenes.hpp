@@ -7,7 +7,8 @@ enum class Scene {
 	ModeSelect,
 	Guide,
 	FatalError,
-	DvrPatches
+	DvrPatches,
+	NoConnection
 };
 
 // Each implemented in its own scenes cpp file
@@ -24,12 +25,17 @@ namespace scenes {
 
 	void InitFatalError();
 	void FatalError();
+	
+	void NoConnection();
 }
 
 // from main.cpp
 namespace app {
 	void FatalError(std::string_view message, std::string_view secondline);
 	void FatalErrorWithErrorCode(std::string_view message, uint32_t rc);
+	
 	void SetNextScene(Scene s);
+	void ReturnToPreviousScene(); 
+
 	void RequestExit();
 }
