@@ -310,18 +310,31 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         public static bool IsDotnet6Installed()
         {
-            Process proc = new Process();
-            proc.StartInfo = new ProcessStartInfo()
+            var stringBuilder = new StringBuilder();
+            var proc = new Process()
             {
-                FileName = "dotnet",
-                Arguments = "--info",
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false
+                StartInfo = new ProcessStartInfo()
+                {
+                    FileName = "dotnet",
+                    Arguments = "--info",
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false
+                }
+            };
+            proc.OutputDataReceived += (sender, eventArgs) =>
+            {
+                //read std output
+                if (string.IsNullOrEmpty(eventArgs.Data))
+                    return;
+
+                stringBuilder.AppendLine(eventArgs.Data);
             };
             proc.Start();
+            proc.BeginOutputReadLine();
+
             proc.WaitForExit();
-            var s = proc.StandardOutput.ReadToEnd();
+            var s = stringBuilder.ToString();
 
             // Find dotnet 6
             foreach (Match match in new Regex(@"NETCore\.App (\d+)\.").Matches(s))
