@@ -68,9 +68,9 @@ namespace SysDVRClientGUI
                     Process.Start("https://dotnet.microsoft.com/download");
                 this.Close();
             }
-            else if (!Utils.IsDotnet6Installed())
+            else if (!Utils.IsDotnetAtLeast6Installed())
             {
-                if (MessageBox.Show("It seems you're running an outdated version of .NET. Since SysDVR 5.0 the client app requires the .NET 6 runtime. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show("It seems you're running an outdated version of .NET. Since SysDVR 5.0 the client app requires the .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
                 else
                     MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.");
@@ -305,7 +305,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
                 .Select(x => Path.Combine(x, fileName))
                 .FirstOrDefault(x => File.Exists(x));
 
-        public static bool IsDotnet6Installed()
+        public static bool IsDotnetAtLeast6Installed()
         {
             var stringBuilder = new StringBuilder();
             var proc = new Process()
