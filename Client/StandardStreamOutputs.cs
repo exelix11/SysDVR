@@ -17,11 +17,11 @@ namespace SysDVR.Client
 		private static IOutStream GetATarget(StreamKind kind, string path) =>
 			kind == StreamKind.Audio ? new StdInTarget(path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
 
-		// This can only handle one stream
 		public MpvStdinManager(StreamKind kind, string path) :
 			base(GetVTarget(kind, path), GetATarget(kind, path))
 		{
-
+			if (kind == StreamKind.Both)
+				throw new Exception("MpvStdinManager can only handle one stream");
 		}
 	}
 
@@ -33,11 +33,11 @@ namespace SysDVR.Client
 		private static IOutStream GetATarget(StreamKind kind) =>
 			kind == StreamKind.Audio ? new StdOutTarget() : null;
 
-		// This can only handle one stream
 		public StdOutManager(StreamKind kind) :
 			base(GetVTarget(kind), GetATarget(kind))
 		{
-
+			if (kind == StreamKind.Both)
+				throw new Exception("StdOutManager can only handle one stream");
 		}
 	}
 

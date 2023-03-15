@@ -21,9 +21,12 @@ namespace SysDVR.Client
 			$"Len: {DataSize} Bytes - ts: {Timestamp}";
 
 		public const int StructLength = 16;
-		public const UInt32 DefaultMagic = 0xAAAAAAAA;
 
-		public const int MaxTransferSize = StreamInfo.VideoPayloadSize + StructLength;
+		// Note: to make the TCP implementation easier these should be composed of 4 identical bytes
+        public const UInt32 MagicResponseVideo = 0xDDDDDDDD;
+        public const UInt32 MagicResponseAudio = 0xEEEEEEEE;
+
+        public const int MaxTransferSize = StreamInfo.MaxPayloadSize + StructLength;
 
 		static PacketHeader()
 		{
@@ -34,6 +37,8 @@ namespace SysDVR.Client
 
 	interface IStreamingSource
 	{
+		StreamKind SourceKind { get; }
+
 		bool Logging { get; set; }
 		void UseCancellationToken(CancellationToken tok);
 		
@@ -52,9 +57,11 @@ namespace SysDVR.Client
 		Thread DeviceThread;
 		CancellationTokenSource Cancel;
 
-		public IStreamingSource Source { get; set; }
+		public IStreamingSource Source { get; private init; }
 
-		public IOutStream Target { get; private init; }
+		private IOutStream MainTarget { get; init; }
+		private IOutStream? SecondaryTarget { get; init; }
+
 		public StreamKind Kind { get; private init; }
 
 #if MEASURE_STATS
@@ -69,11 +76,34 @@ namespace SysDVR.Client
         }
 #endif
 
-		public StreamThread(StreamKind kind, IOutStream target)
+		private StreamThread(StreamKind kind)
 		{
 			Kind = kind;
-			Target = target;
 		}
+
+		public static StreamThread ForSingleStream(IStreamingSource source, IOutStream target)
+		{
+			var ret = new StreamThread(source.SourceKind) 
+			{ 
+				MainTarget = target,
+				Source = source
+			};
+            return ret;
+		}
+
+		public static StreamThread ForBothStreams(IStreamingSource source, IOutStream videoTarget, IOutStream audioTarget)
+		{
+			if (source.SourceKind != StreamKind.Both)
+				throw new Exception("Source must be able to provide both streams");
+
+            var ret = new StreamThread(StreamKind.Both) { 
+				MainTarget = videoTarget, 
+				SecondaryTarget = audioTarget ,
+				Source = source
+			};
+
+            return ret;
+        }
 
 		public void Start() 
 		{
@@ -103,7 +133,9 @@ namespace SysDVR.Client
 
 			Source.Logging = log;
 			Source.UseCancellationToken(token);
-			Target.UseCancellationToken(token);
+			
+			MainTarget.UseCancellationToken(token);
+			SecondaryTarget?.UseCancellationToken(token);
 
 			var HeaderData = new byte[PacketHeader.StructLength];
 			ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
@@ -122,7 +154,7 @@ namespace SysDVR.Client
 					if (log)
 						Console.WriteLine($"[{Kind}] {Header}");
 
-					if (Header.Magic != PacketHeader.DefaultMagic)
+					if (Header.Magic is not PacketHeader.MagicResponseAudio and not PacketHeader.MagicResponseVideo)
 					{
 						if (log)
 							Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
@@ -131,7 +163,7 @@ namespace SysDVR.Client
 						continue;
 					}
 
-					if (Header.DataSize > StreamInfo.VideoPayloadSize)
+					if (Header.DataSize > StreamInfo.MaxPayloadSize)
 					{
 						if (log)
 							Console.WriteLine($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
@@ -141,7 +173,7 @@ namespace SysDVR.Client
 					}
 
 					var Data = PoolBuffer.Rent(Header.DataSize);
-					if (!Source.ReadPayload(Data.Buffer, Header.DataSize))
+					if (!Source.ReadPayload(Data.RawBuffer, Header.DataSize))
 					{
 						Source.Flush();
 						Data.Free();
@@ -149,8 +181,27 @@ namespace SysDVR.Client
 						continue;
 					}
 
-					Target.SendData(Data, Header.Timestamp);
-				}
+					if (Kind == StreamKind.Both)
+					{
+						if (Header.Magic == PacketHeader.MagicResponseVideo)
+                            MainTarget.SendData(Data, Header.Timestamp);
+						else if (Header.Magic == PacketHeader.MagicResponseAudio)
+							SecondaryTarget!.SendData(Data, Header.Timestamp);
+                    }
+					else if (Kind == StreamKind.Video && Header.Magic == PacketHeader.MagicResponseVideo)
+						MainTarget.SendData(Data, Header.Timestamp);
+					else if (Kind == StreamKind.Audio && Header.Magic == PacketHeader.MagicResponseAudio)
+						MainTarget.SendData(Data, Header.Timestamp);
+					else {
+                        if (log)
+                            Console.WriteLine($"[{Kind}] Wrong header magic, expected different one: {Header.Magic:X}");
+                        
+						Source.Flush();
+                        Data.Free();
+                        Thread.Sleep(10);
+                        continue;
+                    }
+                }
 
 			}
 #if !EXCEPTION_DEBUG || RELEASE

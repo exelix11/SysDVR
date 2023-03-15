@@ -11,6 +11,7 @@ namespace SysDVR.Client
 {
 	enum StreamKind
 	{
+		Both,
 		Video,
 		Audio
 	};
@@ -22,11 +23,11 @@ namespace SysDVR.Client
 		public int Length { get; private set; }
 		private byte[] _buffer;		
 
-		public byte[] Buffer => _buffer ?? throw new Exception("The buffer has been freed");
+		public byte[] RawBuffer => _buffer ?? throw new Exception("The buffer has been freed");
 
 		public void Free() 
 		{
-			pool.Return(Buffer);
+			pool.Return(RawBuffer);
 			_buffer = null;
 		}
 
@@ -40,9 +41,12 @@ namespace SysDVR.Client
 		}
 
 		public Span<byte> Span =>
-			new Span<byte>(Buffer, 0, Length);
+			new Span<byte>(RawBuffer, 0, Length);
 
-		public static implicit operator Span<byte>(PoolBuffer o) => o.Span;
+        public ArraySegment<byte> ArraySegment =>
+            new ArraySegment<byte>(RawBuffer, 0, Length);
+
+        public static implicit operator Span<byte>(PoolBuffer o) => o.Span;
 	}
 
 	interface IOutStream
@@ -55,36 +59,72 @@ namespace SysDVR.Client
 
 	abstract class BaseStreamManager : IDisposable
 	{
-		protected StreamThread VideoThread, AudioThread;
 		private bool disposedValue;
 
-		public IStreamingSource VideoSource { get => VideoThread?.Source; set { if (VideoThread != null) VideoThread.Source = value; } }
-		public IStreamingSource AudioSource { get => AudioThread?.Source; set { if (AudioThread != null) AudioThread.Source = value; } }
+		// Usb streaming may require a single thread
+		private StreamThread Thread1;
+		private StreamThread? Thread2;
 
-		public IOutStream VideoTarget => VideoThread?.Target;
-		public IOutStream AudioTarget => AudioThread?.Target;
+		public IOutStream VideoTarget { get;  set; }
+		public IOutStream AudioTarget { get; set; }
 
-		public bool HasVideo => VideoThread != null;
-		public bool HasAudio => AudioThread != null;
+		public StreamKind? Streams { get; private set; }
 
-		public BaseStreamManager(IOutStream VideoTarget, IOutStream AudioTarget)
+		public bool HasVideo => Streams is StreamKind.Both or StreamKind.Video;
+		public bool HasAudio => Streams is StreamKind.Both or StreamKind.Audio;
+
+		public BaseStreamManager(IOutStream videoTarget, IOutStream audioTarget)
 		{
-			if (VideoTarget != null)
-				VideoThread = new StreamThread(StreamKind.Video, VideoTarget);
-			if (AudioTarget != null)
-				AudioThread = new StreamThread(StreamKind.Audio, AudioTarget);
+			VideoTarget = videoTarget;
+			AudioTarget = audioTarget;
 		}
+
+		public void AddSource(IStreamingSource source)
+		{
+			if (source.SourceKind == StreamKind.Video) 
+			{
+				if (HasVideo) throw new Exception("Already has a video source");
+				Thread1 = StreamThread.ForSingleStream(source, VideoTarget);
+
+                Streams = HasAudio ? StreamKind.Both : StreamKind.Video;
+            }
+            else if (source.SourceKind == StreamKind.Audio)
+            {
+                if (HasAudio) throw new Exception("Already has an audio source");
+                Thread2 = StreamThread.ForSingleStream(source, AudioTarget);
+
+                Streams = HasVideo ? StreamKind.Both : StreamKind.Audio;
+            }
+            else if (source.SourceKind == StreamKind.Both)
+            {
+                if (HasAudio || HasVideo) throw new Exception("Already has a multi source");
+                Thread1 = StreamThread.ForBothStreams(source, VideoTarget, AudioTarget);
+
+                Streams = StreamKind.Both;
+            }
+        }
 
 		public virtual void Begin()
 		{
-			VideoThread?.Start();
-			AudioThread?.Start();
+			// Sanity checks
+			if (Streams is null)
+				throw new Exception("No streams have been set");
+
+			if (Streams == StreamKind.Video && AudioTarget != null)
+                throw new Exception("There should be no audio target for a video only stream");
+            if (Streams == StreamKind.Audio && VideoTarget != null)
+                throw new Exception("There should be no video target for an audio only stream");
+			if (Streams == StreamKind.Both && (VideoTarget == null || AudioTarget == null))
+                throw new Exception("One or more targets are not set");
+
+            Thread1?.Start();
+			Thread2?.Start();
 		}
 
 		public virtual void Stop()
 		{
-			VideoThread?.Stop();
-			AudioThread?.Stop();
+			Thread1?.Stop();
+			Thread2?.Stop();
 
 #if MEASURE_STATS
 			var vDiff = DateTime.Now - VideoThread.FirstByteTs;
@@ -99,8 +139,8 @@ namespace SysDVR.Client
 			Console.WriteLine($"\tAudio: {AudioThread.ReceivedBytes} bytes in {aDiff.TotalSeconds} s, avg of {AudioThread.ReceivedBytes / aDiff.TotalSeconds} B/s");
 #endif
 
-			VideoThread?.Join();
-			AudioThread?.Join();
+			Thread1?.Join();
+			Thread2?.Join();
 		}
 
 		/*
@@ -119,8 +159,8 @@ namespace SysDVR.Client
 			{
 				if (disposing)
 				{
-					VideoThread?.Dispose();
-					AudioThread?.Dispose();
+					Thread1?.Dispose();
+					Thread2?.Dispose();
 
 					if (VideoTarget is IDisposable iv)
 						iv.Dispose();

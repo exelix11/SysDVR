@@ -21,8 +21,6 @@ namespace SysDVR.Client.Sources
 			None
 		}
 
-		int deviceReferences = 0;
-
 		readonly LibUsbDotNet.LibUsb.UsbContext LibUsbCtx = null;
 		readonly bool ForceLibUsb;
 
@@ -54,9 +52,9 @@ namespace SysDVR.Client.Sources
 
         static bool MatchSysdvrDevice(IUsbDevice device)
         {
-			try
-			{
-				return device.VendorId == 0x057e && device.ProductId == 0x3006;
+            try
+            {
+				return device.VendorId == 0x18D1 && device.ProductId == 0x4EE0;
 			}
 			catch (Exception ex)
 			{
@@ -98,44 +96,41 @@ namespace SysDVR.Client.Sources
 			this.device.Open();
 		}
 
-		public (UsbEndpointReader, UsbEndpointWriter) GetForInterface(StreamKind iface)
+		public (UsbEndpointReader, UsbEndpointWriter) OpenEndpointPair()
 		{
 			var dev = device;
 
-			if (!dev.ClaimInterface(iface == StreamKind.Video ? 0 : 1))
-				throw new Exception($"Couldn't claim interface for {iface}");
+			if (!dev.ClaimInterface(0))
+				throw new Exception($"Couldn't claim device interface");
 
-			var (epIn, epOut) = iface == StreamKind.Video ? (ReadEndpointID.Ep01, WriteEndpointID.Ep01) : (ReadEndpointID.Ep02, WriteEndpointID.Ep02);
+			var (epIn, epOut) = (ReadEndpointID.Ep01, WriteEndpointID.Ep01);
 
 			var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
 			var writer = dev.OpenEndpointWriter(epOut, EndpointType.Interrupt);
-			Interlocked.Increment(ref deviceReferences);
 
 			return (reader, writer);
 		}
 
-		public void MarkInterfaceClosed()
+		public void CloseDevice()
 		{
-			lock (this)
-			{
-				Interlocked.Decrement(ref deviceReferences);
-				if (deviceReferences == 0)
-				{
-					device.Close();
-					device = null;
-				}
-				else if (deviceReferences < 0)
-					throw new Exception("Interface refCount out of range");
-			}
-		}
+            device.Close();
+            device = null;
+        }
 
-		public UsbStreamingSourceBase MakeStreamingSource(StreamKind stream)
+		public UsbStreamingSourceBase CreateStreamingSource(bool HasVideo, bool HasAudio)
 		{
+			UsbStreamingSourceBase source;
+            
 			// LibUsb backend on linux and windows doesn't seem to buffer reads from the pipe, this causes issues and requires manually receiving everything and copying data
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !ForceLibUsb)
-				return new UsbStreamingSourceWinUsb(stream, this);
-			else 
-				return new UsbStreamingSourceLibUsb(stream, this);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !ForceLibUsb)
+                source = new UsbStreamingSourceWinUsb(this);
+			else
+                source = new UsbStreamingSourceLibUsb(this);
+
+			source.HasVideo = HasVideo;
+			source.HasAudio = HasAudio;
+
+			return source;
 		}
 
 		private bool disposedValue;
@@ -145,7 +140,6 @@ namespace SysDVR.Client.Sources
 			{
 				if (disposing)
 				{
-					deviceReferences = 0;
 					device?.Close();
 					LibUsbCtx.Dispose();
 				}
@@ -168,32 +162,51 @@ namespace SysDVR.Client.Sources
 
 	abstract class UsbStreamingSourceBase : IStreamingSource
 	{
-		protected static readonly byte[] USBMagic = { 0xAA, 0xAA, 0xAA, 0xAA };
+		protected static readonly byte[] MagicRequestVideo = { 0xBB, 0xBB, 0xBB, 0xBB };
+		protected static readonly byte[] MagicRequestAudio = { 0xCC, 0xCC, 0xCC, 0xCC };
+		protected static readonly byte[] MagicRequestBoth = { 0xAA, 0xAA, 0xAA, 0xAA };
 
 		public bool Logging { get; set; }
 		CancellationToken Token; 
 
 		// TODO: Remove tracing code
 		readonly private TimeTrace tracer = new();
-		protected readonly string streamKind;
 		
 		protected TimeTrace BeginTrace(string extra = "", [CallerMemberName] string funcName = null) => 
-			tracer.Begin(streamKind, extra, funcName);
+			tracer.Begin("usb", extra, funcName);
 
         protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
 		protected UsbContext context;
 
-		public UsbStreamingSourceBase(StreamKind kind, UsbContext context)
+		public bool HasAudio;
+		public bool HasVideo;
+
+		byte[] RequestMagic => (HasVideo, HasAudio) switch 
+		{
+			(true, true) => MagicRequestBoth,
+			(true, false) => MagicRequestVideo,
+			(false, true) => MagicRequestAudio,
+			_ => throw new Exception("Invalid state")
+		};
+
+        public StreamKind SourceKind => (HasVideo, HasAudio) switch
+        {
+            (true, true) => StreamKind.Both,
+            (true, false) => StreamKind.Video,
+            (false, true) => StreamKind.Audio,
+            _ => throw new Exception("Invalid state")
+        };
+
+        public UsbStreamingSourceBase(UsbContext context)
 		{
 			this.context = context;
-			this.streamKind = kind.ToString();
-			(reader, writer) = context.GetForInterface(kind);
+			(reader, writer) = context.OpenEndpointPair();
 		}
 
 		public void StopStreaming()
 		{
-			context.MarkInterfaceClosed();
+			context.CloseDevice();
 		}
 
 		LibUsbDotNet.Error lastError = LibUsbDotNet.Error.Success;
@@ -203,14 +216,14 @@ namespace SysDVR.Client.Sources
 			{
 				//using var trace = BeginTrace();
 #if DEBUG
-				Console.WriteLine($"Sending {streamKind} connection request");
+				Console.WriteLine($"Sending USB connection request");
 #endif
-                var err = writer.Write(USBMagic, 1000, out int _);
+                var err = writer.Write(RequestMagic, 1000, out int _);
 				if (err != LibUsbDotNet.Error.Success)
 				{
 					if (err != lastError)
 					{
-						Console.WriteLine($"{streamKind} warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting it.");
+						Console.WriteLine($"USB warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting it.");
 						lastError = err;
 					}
 					Thread.Sleep(3000);
@@ -226,8 +239,9 @@ namespace SysDVR.Client.Sources
 		{
 			// Wait some time so the switch side timeouts
 			Thread.Sleep(3000);
-			// Then attempt to connect again
-			WaitForConnection();
+
+            // Then attempt to connect again
+            WaitForConnection();
 		}
 
 		// Provided by the underlying implementation
@@ -242,7 +256,7 @@ namespace SysDVR.Client.Sources
 
 	class UsbStreamingSourceWinUsb : UsbStreamingSourceBase
 	{
-		public UsbStreamingSourceWinUsb(StreamKind kind, UsbContext context) : base(kind, context) { }
+		public UsbStreamingSourceWinUsb(UsbContext context) : base(context) { }
 
 		public override bool ReadHeader(byte[] buffer)
 		{
@@ -275,7 +289,7 @@ namespace SysDVR.Client.Sources
 
 	class UsbStreamingSourceLibUsb : UsbStreamingSourceBase
 	{
-		public UsbStreamingSourceLibUsb(StreamKind kind, UsbContext context) : base(kind, context) { }
+		public UsbStreamingSourceLibUsb(UsbContext context) : base(context) { }
 
 		public override void Flush()
 		{

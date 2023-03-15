@@ -131,7 +131,7 @@ namespace SysDVR.Client.FileOutput
 
 		public void SendData(PoolBuffer block, ulong ts)
 		{
-			SendData(block.Buffer, block.Length, ts);
+			SendData(block.RawBuffer, block.Length, ts);
 			block.Free();
 		}
 
@@ -236,7 +236,7 @@ namespace SysDVR.Client.FileOutput
 
 		public void SendData(PoolBuffer block, ulong ts)
 		{
-			SendData(block.Buffer, block.Length, ts);
+			SendData(block.RawBuffer, block.Length, ts);
 			block.Free();
 		}
 

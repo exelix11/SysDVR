@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,23 +9,30 @@ namespace SysDVR.Client.Sources
 	class TCPBridgeSource : IStreamingSource
 	{
 		public bool Logging { get; set; }
+        public StreamKind SourceKind { get; private init; }
 
-		const int MaxConnectionAttempts = 5;
+        const int MaxConnectionAttempts = 5;
 		const int ConnFailDelayMs = 2000;
 
-		readonly StreamKind Kind;
 		readonly string IpAddress;
 		readonly int Port;
+		readonly byte PacketMagicHeader;
 
 		CancellationToken Token;
 		Socket Sock;
 
 		public TCPBridgeSource(string ip, StreamKind kind)
 		{
-			Kind = kind;
+            if (kind == StreamKind.Both)
+                throw new Exception("Tcp bridge can't stream both channels over a single connection");
+
+            SourceKind = kind;
 			IpAddress = ip;
 			Port = kind == StreamKind.Video ? 9911 : 9922;
-		}
+
+			PacketMagicHeader = 
+				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
+        }
 
 		public void WaitForConnection()
 		{
@@ -45,7 +53,7 @@ namespace SysDVR.Client.Sources
 			for (int i = 0; i < MaxConnectionAttempts; i++) 
 			{
 				if (i != 0 || Logging) // Don't show error for the first attempt
-					Console.WriteLine($"[{Kind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
+					Console.WriteLine($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
 
 				try
 				{
@@ -62,7 +70,7 @@ namespace SysDVR.Client.Sources
 
 			if (!Sock.Connected)
 			{
-				Console.WriteLine($"Connection to {Kind} stream failed. Throwing exception.");
+				Console.WriteLine($"Connection to {SourceKind} stream failed. Throwing exception.");
 				throw ReportException ?? new Exception("No exception provided");
 			}
 		}
@@ -96,7 +104,7 @@ namespace SysDVR.Client.Sources
 				for (int i = 0; i < 4 && !Token.IsCancellationRequested; i++)
 				{
 					ReadExact(buffer.AsSpan().Slice(i, 1));
-					if (buffer[i] != 0xAA)
+					if (buffer[i] != PacketMagicHeader)
 						i = 0;
 				}
 				ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
