@@ -380,7 +380,7 @@ namespace SysDVR.Client
 			if (devices.Count == 0)
 			{
 				Console.WriteLine("ERROR: SysDVR usb device not found.\r\n" +
-					"Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver.");
+					"Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver. Launch SysDVR-Client GUI to install the driver.");
 				return null;
 			}
 			else if (devices.Count == 1)

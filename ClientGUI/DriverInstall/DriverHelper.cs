@@ -123,7 +123,7 @@ namespace SysDVRClientGUI.DriverInstall
                 Arguments = $"\"{Path.GetFullPath("usb_driver_r13-windows\\usb_driver\\android_winusb.inf")}\""
             };
 
-            Process.Start(info);
+            Process.Start(info).WaitForExit();
         }
     }
 }
