@@ -77,7 +77,7 @@ UsbStreamRequest UsbStreamingWaitConnection()
 	mutexLock(&UsbStreamingMutex);
 
 	u32 request;
-	size_t read = usbSerialRead(&request, sizeof(request));
+	size_t read = usbSerialRead(&request, sizeof(request), UINT64_MAX);
 
 	mutexUnlock(&UsbStreamingMutex);
 
@@ -97,7 +97,7 @@ bool UsbStreamingSend(const void* data, size_t length, UsbStreamChannel channel)
 
 	mutexLock(&UsbStreamingMutex);
 
-	size_t sent = usbSerialWrite(data, length);
+	size_t sent = usbSerialWrite(data, length, 1E+9);
 
 	mutexUnlock(&UsbStreamingMutex);
 

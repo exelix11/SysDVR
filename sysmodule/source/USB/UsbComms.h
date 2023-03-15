@@ -28,13 +28,13 @@ Result usbSerialInitialize(const UsbSerialInitializationInfo* info);
 void usbSerialExit(void);
 
 /// Read data with the default interface.
-size_t usbSerialRead(void* buffer, size_t size);
+size_t usbSerialRead(void* buffer, size_t size, u64 timeout);
 
 /// Write data with the default interface.
-size_t usbSerialWrite(const void* buffer, size_t size);
+size_t usbSerialWrite(const void* buffer, size_t size, u64 timeout);
 
 /// Same as usbSerialRead except with the specified interface.
-size_t usbSerialReadEx(void* buffer, size_t size, u32 interface);
+size_t usbSerialReadEx(void* buffer, size_t size, u32 interface, u64 timeout);
 
 /// Same as usbSerialWrite except with the specified interface.
-size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface);
+size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface, u64 timeout);
