@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -32,7 +36,7 @@ namespace SysDVRClientGUI.DriverInstall
         // See https://stackoverflow.com/questions/27144063/check-if-a-windows-driver-exists-for-a-given-device-id/
         public static DriverStatus GetDriverInfo()
         {
-            var hdevInfo = SetupDiGetClassDevs(null as Guid?, "USB\\VID_057E&PID_3006&MI_00", IntPtr.Zero, GetClassDevsFlags.DIGCF_ALLCLASSES);
+            var hdevInfo = SetupDiGetClassDevs(null as Guid?, "USB\\VID_18D1&PID_4EE0", IntPtr.Zero, GetClassDevsFlags.DIGCF_ALLCLASSES);
             if (hdevInfo.IsInvalid)
             {
                 Trace.WriteLine("Warning: GetDriverInfo SetupDiGetClassDevs failed");
@@ -62,116 +66,64 @@ namespace SysDVRClientGUI.DriverInstall
             
              Trace.WriteLine($"Current SysDVR driver: {drvInfo}");
 
-             return drvInfo.Contains("libwdi") ? DriverStatus.Installed : DriverStatus.NotInstalled;
+             return drvInfo.ToLower().Contains("android") ? DriverStatus.Installed : DriverStatus.NotInstalled;
         }
 
-        static string GetWdiSimplePath() 
+        public static async Task DownloadDriver() 
         {
-            var wdiExe = Path.Combine(Program.OsArchGenericFolder, "wdi-simple32.exe");
-            if (!File.Exists(wdiExe))
+            if (Directory.Exists("usb_driver_r13-windows"))
             {
-                MessageBox.Show("wdi-simple32.exe is missing, did you download and extract SysDVR-Client properly ?");
-                return null;
+                if (File.Exists("usb_driver_r13-windows\\usb_driver\\android_winusb.inf"))
+                    return;
+
+                Directory.Delete("usb_driver_r13-windows", true);
             }
-            return wdiExe;
+
+            byte[] driver, hash;
+
+            using (var cli = new HttpClient())
+                driver = await cli.GetByteArrayAsync("https://dl.google.com/android/repository/usb_driver_r13-windows.zip");
+
+            using (var sha = SHA256.Create())
+                hash = sha.ComputeHash(driver);
+
+            var str = BitConverter.ToString(hash).Replace("-", "").ToLower();
+
+            var expected = "360b01d3dfb6c41621a3a64ae570dfac2c9a40cca1b5a1f136ae90d02f5e9e0b";
+            if (str != expected)
+            {
+                throw new Exception($"The doenloaded driver hash doesn't match.");
+            }
+
+            File.WriteAllBytes("usb_driver_r13-windows.zip", driver);
+            
+            ZipFile.ExtractToDirectory("usb_driver_r13-windows.zip", "usb_driver_r13-windows");
+            File.Delete("usb_driver_r13-windows.zip");
+
+            if (!File.Exists("usb_driver_r13-windows\\usb_driver\\android_winusb.inf"))
+            {
+                throw new Exception($"The downloaded archive doesn't contain all the needed files.");
+            }
+        }
+
+        public static void DeleteTempDir() 
+        {
+            if (Directory.Exists("usb_driver_r13-windows"))
+            {
+                Directory.Delete("usb_driver_r13-windows", true);
+            }
         }
 
         // if true sysdvr should quit
-        public static bool InstallDriver()
+        public static void InstallDriver()
         {
-            if (GetWdiSimplePath() == null)
-                return false;
-            
-            if (IsUserAnAdmin())
+            var info = new ProcessStartInfo()
             {
-                InstallDriverInternal();
-                return false;
-            }
-            else
-            {
-                Trace.WriteLine("User is not admin");
-
-                var filePath = typeof(Program).Assembly.Location;
-                var args = "--install-driver";
-
-                if (filePath.EndsWith(".dll"))
-                {
-                    args = $"\"{filePath}\" {args}";
-                    filePath = "dotnet";
-                }
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = filePath,
-                    UseShellExecute = true,
-                    Verb = "runas",
-                    Arguments = args
-                };
-
-                try
-                {
-                    Process.Start(psi);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return false;
-                }
-
-                // Hopefully it worked
-                return true;
-            }
-        }
-
-        static (int, string) RunAndGetOutput(string name, string args) {
-            var psi = new ProcessStartInfo
-            {
-                FileName = name,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                Arguments = args
+                FileName = "infdefaultinstall",
+                Arguments = $"\"{Path.GetFullPath("usb_driver_r13-windows\\usb_driver\\android_winusb.inf")}\""
             };
 
-            var p = Process.Start(psi);
-            var log = p.StandardOutput.ReadToEnd();
-
-            p.WaitForExit();
-
-            return (p.ExitCode, log);
-        }
-
-        static bool InstallDriverInternal() 
-        {
-            Trace.WriteLine("Installing driver...");
-
-            // It seems the 32-bit version can install 64-bit drivers as well
-            var wdiExe = GetWdiSimplePath();
-            if (wdiExe == null)
-                return false;
-
-            string log = "";
-
-            var (ec, curlog) = RunAndGetOutput(wdiExe, "-n SysDVR -m exelix -v 0x057e -p 0x3006 -i 0 -t 0 -l 0");
-            log += $"Installing Video interface: {ec}\r\n" + curlog;
-
-            if (ec == 0)
-            {
-                (ec, curlog) = RunAndGetOutput(wdiExe, "-n SysDVR -m exelix -v 0x057e -p 0x3006 -i 1 -t 0 -l 0");
-                log += $"Installing Audio interface: {ec}\r\n" + curlog;
-            }
-
-            if (ec == 0)
-            {
-                if (MessageBox.Show("Driver installed successfully\r\n\r\nUnplug and plug back in your console now for the changes to take effect.\r\n\r\nDo you want to open the log page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    new DriverInstallResultForm(log).ShowDialog();
-            }
-            else 
-            {
-                MessageBox.Show("One or more errors occurred, the log will be shown");
-                new DriverInstallResultForm(log).ShowDialog();
-            }
-
-            return true;
+            Process.Start(info);
         }
     }
 }

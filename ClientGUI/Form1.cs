@@ -1,4 +1,5 @@
-﻿using SysDVRClientGUI.ModesUI;
+﻿using SysDVRClientGUI.DriverInstall;
+using SysDVRClientGUI.ModesUI;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -75,6 +76,8 @@ namespace SysDVRClientGUI
                     MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.");
             }
 
+            CheckUSBDriver();
+
             rbStreamRtsp.Checked = true;
             rbChannelsBoth.Checked = true;
             rbPlay.Checked = true;
@@ -131,7 +134,7 @@ namespace SysDVRClientGUI
             {
                 if (MessageBox.Show("You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    DriverInstall.DriverHelper.InstallDriver();
+                    new DriverInstallForm().ShowDialog();
                     return true;
                 }
                 else MessageBox.Show("Without installing the driver USB streaming may not work");
@@ -292,11 +295,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         private void button4_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show("In case of issues with USB streaming you can try to reinstall the driver. Do you want to do it now ? (SysDVR will be closed)", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                if (DriverInstall.DriverHelper.InstallDriver())
-                    Environment.Exit(0);
-            }
+            new DriverInstallForm().ShowDialog();
         }
     }
 

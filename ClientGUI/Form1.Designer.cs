@@ -28,7 +28,6 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
@@ -191,11 +190,11 @@
             this.rbSrcUsb.AutoSize = true;
             this.rbSrcUsb.Location = new System.Drawing.Point(10, 53);
             this.rbSrcUsb.Name = "rbSrcUsb";
-            this.rbSrcUsb.Size = new System.Drawing.Size(201, 17);
+            this.rbSrcUsb.Size = new System.Drawing.Size(245, 17);
             this.rbSrcUsb.TabIndex = 0;
             this.rbSrcUsb.TabStop = true;
             this.rbSrcUsb.Tag = "";
-            this.rbSrcUsb.Text = "USB (requires setting up USB drivers)";
+            this.rbSrcUsb.Text = "USB (Will automatically install driver, if needed)";
             this.rbSrcUsb.UseVisualStyleBackColor = true;
             // 
             // rbSrcTcp
@@ -219,8 +218,8 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(620, 70);
             this.label1.TabIndex = 0;
-            this.label1.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nFor st" +
-    "reaming via USB you need to setup drivers as explained in the guide.";
+            this.label1.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nIf you" +
+    "\'re not sure what to do here check out the guide on GitHub";
             this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // linkLabel1
@@ -228,7 +227,7 @@
             this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.linkLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.linkLabel1.Location = new System.Drawing.Point(6, 49);
+            this.linkLabel1.Location = new System.Drawing.Point(6, 48);
             this.linkLabel1.Name = "linkLabel1";
             this.linkLabel1.Size = new System.Drawing.Size(620, 20);
             this.linkLabel1.TabIndex = 0;

@@ -117,4 +117,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label1.Text" xml:space="preserve">
+    <value>This page allows you to install the USB driver.
+Since version 5.5 SysDVR uses the standard Android driver provided by Google.
+
+If you click install this setup will download latest driver provided by Google from the official link and prompt to install it
+This operation requires an internet connection
+
+</value>
+  </data>
 </root>
