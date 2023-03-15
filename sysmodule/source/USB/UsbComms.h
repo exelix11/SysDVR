@@ -1,33 +1,40 @@
 #pragma once
-
 #include <switch.h>
 
-typedef enum {
-	UsbDirection_Read = 0,
-	UsbDirection_Write = 1,
-} UsbDirection;
-
-typedef u32 UsbInterface;
+// Usb code mostly taken from libnx, can't use their usbcomms because we want custom VID/PID and device strings
 
 typedef struct {
-	struct usb_interface_descriptor* interface_desc;
-	struct usb_endpoint_descriptor* endpoint_in;
-	struct usb_endpoint_descriptor* endpoint_out;
-	const char* string_descriptor;
-} UsbInterfaceDesc;
+	u8 bInterfaceClass;
+	u8 bInterfaceSubClass;
+	u8 bInterfaceProtocol;
+} UsbSerailInterfaceInfo;
 
-Result UsbCommsInitialize(struct usb_device_descriptor* device_descriptor, u32 num_interfaces, const UsbInterfaceDesc* infos);
-void UsbCommsExit(void);
+typedef struct {
+	u16 VendorId;
+	u16 ProductId;
 
-size_t UsbCommsReadEx(void* buffer, size_t size, u32 interface, u64 timeout);
-size_t UsbCommsWriteEx(const void* buffer, size_t size, u32 interface, u64 timeout);
+	const char* DeviceName;
+	const char* DeviceManufacturer;
+	const char* DeviceSerialNumber;
 
-static inline size_t UsbSerialRead(UsbInterface interface, void* buf, u32 bufSize, u64 timeout)
-{
-	return UsbCommsReadEx(buf, bufSize, (u32)interface, timeout);
-}
+	u8 NumInterfaces;
+	UsbSerailInterfaceInfo Interfaces[1];
+} UsbSerialInitializationInfo;
 
-static inline size_t UsbSerialWrite(UsbInterface interface, const void* buf, u32 bufSize, u64 timeout)
-{
-	return UsbCommsWriteEx(buf, bufSize, (u32)interface, timeout);
-}
+/// Initializes usbComms with a specific number of interfaces.
+Result usbSerialInitialize(const UsbSerialInitializationInfo* info);
+
+/// Exits usbComms.
+void usbSerialExit(void);
+
+/// Read data with the default interface.
+size_t usbSerialRead(void* buffer, size_t size);
+
+/// Write data with the default interface.
+size_t usbSerialWrite(const void* buffer, size_t size);
+
+/// Same as usbSerialRead except with the specified interface.
+size_t usbSerialReadEx(void* buffer, size_t size, u32 interface);
+
+/// Same as usbSerialWrite except with the specified interface.
+size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface);

@@ -1,6 +1,9 @@
 #pragma once
 #include <switch.h>
 
+#define STREAM_PACKET_MAGIC_VIDEO 0xDDDDDDDD
+#define STREAM_PACKET_MAGIC_AUDIO 0xEEEEEEEE
+
 /*
 	This is higher than what suggested on switchbrw to fix https://github.com/exelix11/SysDVR/issues/91,
 	See the comment in ReadVideoStream()
@@ -59,7 +62,7 @@ extern AudioPacket APkt;
 Result CaptureStartThreads();
 
 typedef struct {
-	Semaphore Consumed, Produced;
+	UEvent Consumed, Produced;
 } ConsumerProducer;
 
 extern ConsumerProducer VideoProducer;
@@ -68,14 +71,37 @@ extern ConsumerProducer AudioProducer;
 void CaptureOnClientConnected(ConsumerProducer*);
 void CaptureOnClientDisconnected(ConsumerProducer*);
 
+static inline s32 CaptureWaitObjectsWrapper(UEvent* first, UEvent* second)
+{
+	Waiter w[2] =
+	{
+		waiterForUEvent(first),
+		second ? waiterForUEvent(second) : (Waiter){}
+	};
+
+	s32 out;
+	Result rc = waitObjects(&out, w, second ? 2 : 1, UINT64_MAX);
+
+	if (R_FAILED(rc))
+		fatalThrow(rc);
+
+	return out;
+}
+
+static inline ConsumerProducer* CaptureWaitBeginConsumeAny(ConsumerProducer* first, ConsumerProducer* second)
+{
+	s32 res = CaptureWaitObjectsWrapper(&first->Produced, second ? &second->Produced : NULL);
+	return res == 0 ? first : second;
+}
+
 static inline void CaptureBeginConsume(ConsumerProducer* prod)
 {
-	semaphoreWait(&prod->Produced);
+	CaptureWaitBeginConsumeAny(prod, NULL);
 }
 
 static inline void CaptureEndConsume(ConsumerProducer* prod)
 {
-	semaphoreSignal(&prod->Consumed);
+	ueventSignal(&prod->Consumed);
 }
 
 void CaptureForceUnlockConsumers();

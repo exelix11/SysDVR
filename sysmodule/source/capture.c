@@ -104,12 +104,15 @@ static bool ReadVideoStream()
 
 static inline void CaptureBeginProduceBlocking(ConsumerProducer* prod)
 {
-	semaphoreWait(&prod->Consumed);
+	Waiter w = waiterForUEvent(&prod->Consumed);
+	Result r = waitSingle(w, UINT64_MAX);
+	if (R_FAILED(r))
+		fatalThrow(r);
 }
 
 static inline void CaptureEndProduce(ConsumerProducer* prod)
 {
-	semaphoreSignal(&prod->Produced);
+	ueventSignal(&prod->Produced);
 }
 
 static void CaptureVideoThread(void*)
@@ -132,8 +135,8 @@ static void CaptureAudioThread(void*)
 
 static Result CaptureProducerConsumerInit(ConsumerProducer* prod)
 {
-	semaphoreInit(&prod->Consumed, 0);
-	semaphoreInit(&prod->Produced, 0);
+	ueventCreate(&prod->Consumed, true);
+	ueventCreate(&prod->Produced, true);
 
 	return 0;
 }
@@ -156,11 +159,9 @@ void CaptureOnClientConnected(ConsumerProducer* prod)
 {
 	forceSPSPPS = true;
 	
-	// Empty all semaphores
-	while (semaphoreTryWait(&VideoProducer.Consumed));
-	while (semaphoreTryWait(&VideoProducer.Produced));
-	while (semaphoreTryWait(&AudioProducer.Consumed));
-	while (semaphoreTryWait(&AudioProducer.Produced));
+	// Clear events
+	ueventClear(&prod->Consumed);
+	ueventClear(&prod->Produced);
 
 	// Signal capture thread to start
 	CaptureEndConsume(prod);
@@ -168,11 +169,11 @@ void CaptureOnClientConnected(ConsumerProducer* prod)
 
 void CaptureForceUnlockConsumers() 
 {
-	// Empty all semaphores
-	while (semaphoreTryWait(&VideoProducer.Consumed));
-	while (semaphoreTryWait(&VideoProducer.Produced));
-	while (semaphoreTryWait(&AudioProducer.Consumed));
-	while (semaphoreTryWait(&AudioProducer.Produced));
+	// Clear all events
+	ueventClear(&VideoProducer.Consumed);
+	ueventClear(&VideoProducer.Produced);
+	ueventClear(&AudioProducer.Consumed);
+	ueventClear(&AudioProducer.Produced);
 
 	// Signal consumers to unlock them
 	CaptureEndProduce(&VideoProducer);
