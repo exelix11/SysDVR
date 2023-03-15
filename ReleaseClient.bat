@@ -2,24 +2,15 @@
 
 set PATH=C:\Program Files\7zip;C:\Program Files\7-Zip\;C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\;%PATH%
 
-REM Extract binaries if this is a CI build
+curl -O ffmpeg.zip https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-02-28-12-37/ffmpeg-n5.1.2-39-g2953c6381a-win64-lgpl-shared-5.1.zip
 
-if exist ffmpeg-master-latest-win64-lgpl-shared.zip (
-	echo extracting ffmpeg-master-latest-win64-lgpl-shared.zip
-	7z x ffmpeg-master-latest-win64-lgpl-shared.zip -offmpeg || goto error
+if exist ffmpeg.zip (
+	echo extracting ffmpeg.zip
+	7z x ffmpeg.zip -offmpeg || goto error
 	
 	mkdir Client\runtimes\win-x64\native
 	
 	copy ffmpeg\ffmpeg-master-latest-win64-lgpl-shared\bin\*.dll Client\runtimes\win-x64\native
-)
-
-if exist wdi-simple.zip (
-	echo extracting wdi-simple.zip
-	7z x wdi-simple.zip -owdi-simple
-	
-	REM turns out we just need the 32bit version
-	mkdir Client\runtimes\win\
-	copy wdi-simple\wdi-simple32.exe Client\runtimes\win\
 )
 
 cd Client

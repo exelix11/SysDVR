@@ -76,8 +76,6 @@ namespace SysDVRClientGUI
                     MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.");
             }
 
-            CheckUSBDriver();
-
             rbStreamRtsp.Checked = true;
             rbChannelsBoth.Checked = true;
             rbPlay.Checked = true;

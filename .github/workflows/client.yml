@@ -23,18 +23,6 @@ jobs:
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
-    # Download ffmpeg for windows builds
-    - uses: robinraju/release-downloader@v1.3
-      with:
-        repository: "BtbN/FFmpeg-Builds"
-        latest: true
-        fileName: "ffmpeg-master-latest-win64-lgpl-shared.zip"
-    # Download releases from my libwdi fork for CI builds of Wdi-simple.exe, it's needd to install the USB driver
-    - uses: robinraju/release-downloader@v1.3
-      with:
-        repository: "exelix11/libwdi"
-        latest: true
-        fileName: "wdi-simple.zip"
     # SysDVR-Client uses .NET6
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
