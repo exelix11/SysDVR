@@ -149,8 +149,8 @@ void JoinThread(Thread* t)
 	if (R_FAILED(rc)) fatalThrow(rc);
 }
 
-static Thread AudioThread;
 #ifndef USB_ONLY
+static Thread AudioThread;
 static Thread VideoThread;
 
 const StreamMode* CurrentMode = NULL;
