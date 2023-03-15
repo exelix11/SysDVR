@@ -27,7 +27,7 @@ static Result _usbCommsInterfaceInit1x(u32 intf_ind, const UsbSerailInterfaceInf
 static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbSerailInterfaceInfo* info);
 static Result _usbCommsInterfaceInit(u32 intf_ind, const UsbSerailInterfaceInfo* info);
 
-static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, size_t size, size_t* transferredSize);
+static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, size_t size, size_t* transferredSize, u64 timeout);
 
 static void _usbCommsUpdateInterfaceDescriptor(struct usb_interface_descriptor* desc, const UsbSerailInterfaceInfo* info) {
     if (info != NULL) {
@@ -384,7 +384,7 @@ static Result _usbCommsInterfaceInit1x(u32 intf_ind, const UsbSerailInterfaceInf
     return rc;
 }
 
-static Result _usbSerialRead(usbCommsInterface* interface, void* buffer, size_t size, size_t* transferredSize)
+static Result _usbSerialRead(usbCommsInterface* interface, void* buffer, size_t size, size_t* transferredSize, u64 timeout)
 {
     Result rc = 0;
     u32 urbId = 0;
@@ -426,6 +426,9 @@ static Result _usbSerialRead(usbCommsInterface* interface, void* buffer, size_t 
         if (R_FAILED(rc)) return rc;
 
         //Wait for the transfer to finish.
+        if (R_FAILED(eventWait(&interface->endpoint_out->CompletionEvent, timeout)))
+            usbDsEndpoint_Cancel(interface->endpoint_out);
+
         eventWait(&interface->endpoint_out->CompletionEvent, UINT64_MAX);
         eventClear(&interface->endpoint_out->CompletionEvent);
 
@@ -450,7 +453,7 @@ static Result _usbSerialRead(usbCommsInterface* interface, void* buffer, size_t 
     return rc;
 }
 
-static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, size_t size, size_t* transferredSize)
+static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, size_t size, size_t* transferredSize, u64 timeout)
 {
     Result rc = 0;
     u32 urbId = 0;
@@ -489,6 +492,9 @@ static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, 
         if (R_FAILED(rc))return rc;
 
         //Wait for the transfer to finish.
+        if (R_FAILED(eventWait(&interface->endpoint_in->CompletionEvent, timeout)))
+            usbDsEndpoint_Cancel(interface->endpoint_in);
+        
         eventWait(&interface->endpoint_in->CompletionEvent, UINT64_MAX);
         eventClear(&interface->endpoint_in->CompletionEvent);
 
@@ -513,7 +519,7 @@ static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, 
     return rc;
 }
 
-size_t usbSerialReadEx(void* buffer, size_t size, u32 interface)
+size_t usbSerialReadEx(void* buffer, size_t size, u32 interface, u64 timeout)
 {
     size_t transferredSize = 0;
     u32 state = 0;
@@ -529,14 +535,14 @@ size_t usbSerialReadEx(void* buffer, size_t size, u32 interface)
     if (!initialized) return 0;
 
     rwlockWriteLock(&inter->lock_out);
-    rc = _usbSerialRead(inter, buffer, size, &transferredSize);
+    rc = _usbSerialRead(inter, buffer, size, &transferredSize, timeout);
     rwlockWriteUnlock(&inter->lock_out);
     if (R_FAILED(rc)) {
         rc2 = usbDsGetState(&state);
         if (R_SUCCEEDED(rc2)) {
             if (state != 5) {
                 rwlockWriteLock(&inter->lock_out);
-                rc = _usbSerialRead(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize); //If state changed during transfer, try again. usbDsWaitReady() will be called from this.
+                rc = _usbSerialRead(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize, timeout); //If state changed during transfer, try again. usbDsWaitReady() will be called from this.
                 rwlockWriteUnlock(&inter->lock_out);
             }
         }
@@ -544,12 +550,12 @@ size_t usbSerialReadEx(void* buffer, size_t size, u32 interface)
     return transferredSize;
 }
 
-size_t usbSerialRead(void* buffer, size_t size)
+size_t usbSerialRead(void* buffer, size_t size, u64 timeout)
 {
-    return usbSerialReadEx(buffer, size, 0);
+    return usbSerialReadEx(buffer, size, 0, timeout);
 }
 
-size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface)
+size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface, u64 timeout)
 {
     size_t transferredSize = 0;
     u32 state = 0;
@@ -565,14 +571,14 @@ size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface)
     if (!initialized) return 0;
 
     rwlockWriteLock(&inter->lock_in);
-    rc = _usbSerialWrite(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize);
+    rc = _usbSerialWrite(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize, timeout);
     rwlockWriteUnlock(&inter->lock_in);
     if (R_FAILED(rc)) {
         rc2 = usbDsGetState(&state);
         if (R_SUCCEEDED(rc2)) {
             if (state != 5) {
                 rwlockWriteLock(&inter->lock_in);
-                rc = _usbSerialWrite(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize); //If state changed during transfer, try again. usbDsWaitReady() will be called from this.
+                rc = _usbSerialWrite(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize, timeout); //If state changed during transfer, try again. usbDsWaitReady() will be called from this.
                 rwlockWriteUnlock(&inter->lock_in);
             }
         }
@@ -580,8 +586,8 @@ size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface)
     return transferredSize;
 }
 
-size_t usbSerialWrite(const void* buffer, size_t size)
+size_t usbSerialWrite(const void* buffer, size_t size, u64 timeout)
 {
-    return usbSerialWriteEx(buffer, size, 0);
+    return usbSerialWriteEx(buffer, size, 0, timeout);
 }
 
