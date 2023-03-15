@@ -45,8 +45,9 @@
     <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>make clean &amp;&amp; make</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <IncludePath>F:\include;C:\devkitPro\libnx\nx\external\bsd\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\nx-include;$(IncludePath)</IncludePath>
     <NMakeForcedIncludes>$(ProjectDir)cpp.nx.hint;$(NMakeForcedIncludes)</NMakeForcedIncludes>
+    <AdditionalOptions>/std:c17</AdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug USB_ONLY|Win32'">
     <NMakeBuildCommandLine>make</NMakeBuildCommandLine>
@@ -57,6 +58,7 @@
     <NMakeForcedIncludes>$(ProjectDir)cpp.nx.hint;$(NMakeForcedIncludes)</NMakeForcedIncludes>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="source\capture.c" />
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\ipc\ipc.c" />
     <ClCompile Include="source\main.c" />
@@ -75,6 +77,7 @@
     <None Include="sysmodule.json" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\capture.h" />
     <ClInclude Include="source\grcd.h" />
     <ClInclude Include="source\ipc\ipc.h" />
     <ClInclude Include="source\modes\defines.h" />

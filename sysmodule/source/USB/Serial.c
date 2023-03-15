@@ -1,109 +1,105 @@
 #include <string.h>
+#include <stdatomic.h>
+#include <stdio.h>
+
 #include "Serial.h"
+#include "UsbComms.h"
 
-static struct usb_interface_descriptor Viface;
-static struct usb_interface_descriptor Aiface;
+static Mutex UsbStreamingMutex;
+static atomic_bool CancelOperation;
 
-static struct usb_endpoint_descriptor VInt;
-static struct usb_endpoint_descriptor VBulk;
-
-static struct usb_endpoint_descriptor AInt;
-static struct usb_endpoint_descriptor ABulk;
-
-void ClearState()
+static const char* GetDeviceSerial() 
 {
-#define clearVal(x) memset(&x, 0, sizeof(x))
-	clearVal(Viface);
-	clearVal(Aiface);
-	clearVal(VInt);
-	clearVal(VBulk);
-	clearVal(AInt);
-	clearVal(ABulk);
-#undef clearVal
+	static char serialStr[50] = "SysDVR:Unknown serial";
+	static bool initialized = false;
+
+	if (!initialized) {
+		initialized = true;
+
+		Result rc = setsysInitialize();
+		if (R_SUCCEEDED(rc))
+		{
+			SetSysSerialNumber serial;
+			rc = setsysGetSerialNumber(&serial);
+			
+			if (R_SUCCEEDED(rc))
+				snprintf(serialStr, sizeof(serialStr), "SysDVR:%s", serial.number);
+			
+			setsysExit();
+		}		
+	}
+
+	return serialStr;
 }
 
-void UsbSerialExit()
+Result UsbStreamingInitialize()
 {
-	UsbCommsExit();
-	ClearState();
-}
+	mutexInit(&UsbStreamingMutex);
+	CancelOperation = false;
 
-Result UsbSerialInitializeForStreaming(UsbInterface* video, UsbInterface* audio)
-{
-	ClearState();
-
-	struct usb_device_descriptor device_descriptor = {
-		.bLength = USB_DT_DEVICE_SIZE,
-		.bDescriptorType = USB_DT_DEVICE,
-		.bcdUSB = 0x0200,
-		.bDeviceClass = 0,
-		.bDeviceSubClass = 0,
-		.bDeviceProtocol = 0,
-		.bMaxPacketSize0 = 0x40,
-		.idVendor = 0x057e,
-		.idProduct = 0x3006,
-		.bcdDevice = 0x0100,
-		.bNumConfigurations = 0x01
-	};
-
-	Aiface = Viface = (struct usb_interface_descriptor){
-		.bLength = USB_DT_INTERFACE_SIZE,
-		.bDescriptorType = USB_DT_INTERFACE,
-		.bInterfaceNumber = 0,
-		.bNumEndpoints = 2,
+	UsbSerailInterfaceInfo interfaces = {
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC,
-		.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC,
-		.iInterface = 0,
+		.bInterfaceProtocol = USB_CLASS_VENDOR_SPEC
 	};
 
-	Aiface.bInterfaceNumber = 1;
+	UsbSerialInitializationInfo info = {
+		// Google Nexus (generic) so we can use Google's signed WinUSB drivers instead of needing zadig
+		.VendorId = 0x18D1,
+		.ProductId = 0x4EE0,
 
-	AInt = VInt = (struct usb_endpoint_descriptor){
-		.bLength = USB_DT_ENDPOINT_SIZE,
-		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_OUT,
-		.bmAttributes = USB_TRANSFER_TYPE_INTERRUPT,
-		.wMaxPacketSize = 4,
-		.bInterval = 1
+		.DeviceName = "SysDVR",
+		.DeviceManufacturer = "https://github.com/exelix11/SysDVR",
+		.DeviceSerialNumber = GetDeviceSerial(),
+
+		.NumInterfaces = 1,
+		.Interfaces = { interfaces }
 	};
 
-	ABulk = VBulk = (struct usb_endpoint_descriptor){
-		.bLength = USB_DT_ENDPOINT_SIZE,
-		.bDescriptorType = USB_DT_ENDPOINT,
-		.bEndpointAddress = USB_ENDPOINT_IN,
-		.bmAttributes = USB_TRANSFER_TYPE_BULK,
-		.wMaxPacketSize = 0x200,
-		.bInterval = 1 //Max nak rate
-	};
+	return usbSerialInitialize(&info);
+}
 
-	VInt.bEndpointAddress |= 1;
-	VBulk.bEndpointAddress |= 1;
+void UsbStreamingExit()
+{
+	CancelOperation = true;
+	
+	usbSerialExit();
 
-	AInt.bEndpointAddress |= 2;
-	ABulk.bEndpointAddress |= 2;
+	// Wait for all other threads to finish
+	// TODO: Maybe fatal after a timeout ?
+	mutexLock(&UsbStreamingMutex);
+	mutexUnlock(&UsbStreamingMutex);
+}
 
-	UsbInterfaceDesc iface[2] = {
-		{
-			.interface_desc = &Viface,
-			.endpoint_in = &VBulk,
-			.endpoint_out = &VInt,
-			.string_descriptor = "SysDVR - Video"
-		},
-		{
-			.interface_desc = &Aiface,
-			.endpoint_in = &ABulk,
-			.endpoint_out = &AInt,
-			.string_descriptor = "SysDVR - Audio"
-		}
-	};
+UsbStreamRequest UsbStreamingWaitConnection()
+{
+	// In theory nothing else should be going on over usb at this point
+	mutexLock(&UsbStreamingMutex);
 
-	Result rc = UsbCommsInitialize(&device_descriptor, 2, iface);
-	if (R_FAILED(rc))
-		return rc;
+	u32 request;
+	size_t read = usbSerialRead(&request, sizeof(request));
 
-	*video = Viface.bInterfaceNumber;
-	*audio = Aiface.bInterfaceNumber;
+	mutexUnlock(&UsbStreamingMutex);
 
-	return 0;
+	if (read != sizeof(request))
+		return UsbStreamRequestFailed;
+
+	if (request == UsbStreamRequestVideo || request == UsbStreamRequestAudio || request == UsbStreamRequestBoth)
+		return (UsbStreamRequest)request;
+
+	return UsbStreamRequestFailed;
+}
+
+bool UsbStreamingSend(const void* data, size_t length, UsbStreamChannel channel)
+{
+	// Since switching to a single interface this does the same as UsbStreamingSendVideo now
+	(void)channel;
+
+	mutexLock(&UsbStreamingMutex);
+
+	size_t sent = usbSerialWrite(data, length);
+
+	mutexUnlock(&UsbStreamingMutex);
+
+	return sent == length;
 }

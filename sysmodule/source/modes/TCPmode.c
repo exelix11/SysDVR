@@ -128,8 +128,8 @@ static void TCP_StreamAudio(void* _)
 
 static void TCP_Init() 
 {
-	VPkt.Header.Magic = 0xAAAAAAAA;
-	APkt.Header.Magic = 0xAAAAAAAA;
+	VPkt.Header.Magic = STREAM_PACKET_MAGIC_VIDEO;
+	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
 	TCP_InitSockets(GrcStream_Video);
 	TCP_InitSockets(GrcStream_Audio);
 }

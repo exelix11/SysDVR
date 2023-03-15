@@ -13,6 +13,10 @@
 //#define USB_ONLY
 #endif
 
+#ifdef USE_LOGGING
+#pragma message "Logging is enabled"
+#endif
+
 /*
 	Build with USB_ONLY to have a smaller impact on memory,
 	it will only stream via USB and won't support the config app.
@@ -53,9 +57,7 @@ void __libnx_initheap(void)
 
 void __attribute__((weak)) __appInit(void)
 {
-#ifdef RELEASE
-	svcSleepThread(2E+10); // 20 seconds
-#endif
+	svcSleepThread(20E+9); // 20 seconds
 
 	Result rc;
 
@@ -170,7 +172,12 @@ static void SetModeInternal(const void* argmode)
 
 		LOG("Unlocking consumers\n");
 		CaptureForceUnlockConsumers();
-		
+	
+		svcSleepThread(5E+8);
+		LOG("Calling exit fn\n");
+		if (CurrentMode->ExitFn)
+			CurrentMode->ExitFn();
+
 		LOG("Waiting video thread\n");
 		if (CurrentMode->VThread)
 			JoinThread(&VideoThread);
@@ -178,10 +185,6 @@ static void SetModeInternal(const void* argmode)
 		LOG("Waiting audio thread\n");
 		if (CurrentMode->AThread)
 			JoinThread(&AudioThread);
-
-		LOG("Calling exit fn\n");
-		if (CurrentMode->ExitFn)
-			CurrentMode->ExitFn();
 
 		LOG("Terminated\n");
 	}
@@ -269,7 +272,7 @@ int main(int argc, char* argv[])
 
 #ifdef USB_ONLY
 	USB_MODE.InitFn();
-	LaunchInternalThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs);
+	// There is no USB thread dedicated to audio anymore
 	USB_MODE.VThread(USB_MODE.Vargs);
 	USB_MODE.ExitFn();
 #else
