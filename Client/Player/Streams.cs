@@ -28,7 +28,7 @@ namespace SysDVR.Client.Player
 				if (currentOffset != -1)
 				{
 					int toCopy = Math.Min(currentBlock.Length - currentOffset, buffer.Length);
-					currentBlock.Buffer.AsSpan().Slice(currentOffset, toCopy).CopyTo(buffer);
+					currentBlock.RawBuffer.AsSpan().Slice(currentOffset, toCopy).CopyTo(buffer);
 
 					buffer = buffer.Slice(toCopy);
 					currentOffset += toCopy;
@@ -96,7 +96,7 @@ namespace SysDVR.Client.Player
 		long firstTs = -1;
 		public unsafe void SendData(PoolBuffer data, ulong ts)
 		{
-			byte[] buffer = data.Buffer;
+			byte[] buffer = data.RawBuffer;
 			int size = data.Length;
 		
 			if (firstTs == -1)

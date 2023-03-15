@@ -13,9 +13,16 @@ namespace SysDVR.Client.Sources
 		public bool Logging { get; set; }
 		public BinaryReader Source { get; set; }
 
-		public RecordedSource(StreamKind kind, string basePath)
+        public StreamKind SourceKind { get; private init; }
+
+        public RecordedSource(StreamKind kind, string basePath)
 		{
-			var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
+			if (kind == StreamKind.Both)
+				throw new Exception("Can't use both streams in RecordedSource");
+
+			SourceKind = kind;
+
+            var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
 			Source = new BinaryReader(File.OpenRead(Path.Combine(basePath, name)));
 		}
 
@@ -30,7 +37,9 @@ namespace SysDVR.Client.Sources
 			if (Source.PeekChar() < 0)
 				return false;
 
-			if (Source.ReadUInt32() != 0xAAAAAAAA)
+			var sourceMagic = Source.ReadUInt32();
+
+			if (sourceMagic != PacketHeader.MagicResponseAudio && sourceMagic != PacketHeader.MagicResponseVideo)
 				throw new Exception("");
 
 			var header = MemoryMarshal.Cast<byte, PacketHeader>(buffer.AsSpan());
@@ -39,7 +48,7 @@ namespace SysDVR.Client.Sources
 			sw.Restart();
 
 			ms = Source.ReadInt64();
-			h.Magic = PacketHeader.DefaultMagic;
+			h.Magic = sourceMagic;
 			h.Timestamp = Source.ReadUInt64();
 			h.DataSize = Source.ReadInt32();
 

@@ -62,7 +62,13 @@ namespace SysDVR.Client.Player
 			HasVideo ? new H264StreamTarget() : null,
 			HasAudio ? new AudioStreamTarget() : null)
 		{
-			player = new Player(this, hwAcc, codecName, quality);
+			player = new Player(
+				VideoTarget as H264StreamTarget,
+				AudioTarget as AudioStreamTarget,
+				hwAcc, 
+				codecName, 
+				quality
+			);
 		}
 
 		public override void Begin()
@@ -510,10 +516,10 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		public Player(PlayerManager owner, bool hwAcc, string codecName, string scaleQuality)
+		public Player(H264StreamTarget? videoTarget, AudioStreamTarget? audioTarget, bool hwAcc, string codecName, string scaleQuality)
 		{
-			HasAudio = owner.HasAudio;
-			HasVideo = owner.HasVideo;
+			HasVideo = videoTarget is not null;
+			HasAudio = audioTarget is not null;
 			ScaleQuality = scaleQuality;
 
 			if (!HasAudio && !HasVideo)
@@ -524,12 +530,12 @@ namespace SysDVR.Client.Player
 			if (HasVideo)
 			{
 				Decoder = codecName == null ? InitDecoder(hwAcc) : InitDecoder(codecName);
-				((H264StreamTarget)owner.VideoTarget).UseContext(Decoder);
+				videoTarget.UseContext(Decoder);
 			}
 
 			if (HasAudio)
 			{
-				SDLAudio = InitSDLAudio((AudioStreamTarget)owner.AudioTarget);
+				SDLAudio = InitSDLAudio(audioTarget);
 			}
 		}
 

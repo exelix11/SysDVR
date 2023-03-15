@@ -324,10 +324,7 @@ namespace SysDVR.Client
 				if (ctx == null)
 					return null;
 
-				if (!NoVideo)
-					StreamManager.VideoSource = ctx.MakeStreamingSource(StreamKind.Video);
-				if (!NoAudio)
-					StreamManager.AudioSource = ctx.MakeStreamingSource(StreamKind.Audio);
+				StreamManager.AddSource(ctx.CreateStreamingSource(!NoVideo, !NoAudio));
 			}
 			else if (Args[0] == "bridge")
 			{
@@ -340,22 +337,24 @@ namespace SysDVR.Client
 				string ip = Args[1];
 
 				if (!NoVideo)
-					StreamManager.VideoSource = new TCPBridgeSource(ip, StreamKind.Video);
+					StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Video));
 				if (!NoAudio)
-					StreamManager.AudioSource = new TCPBridgeSource(ip, StreamKind.Audio);
+					StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Audio));
 			}
             // UI Test mode: only load libavcodec and SDL without streaming anything
 			else if (Args[0] == "stub")
 			{
-				StreamManager.VideoSource = new StubSource();
-				StreamManager.AudioSource = new StubSource();
+				StreamManager.AddSource(new StubSource());
 			}
 #if DEBUG
 			else if (Args[0] == "record")
 			{
 				var path = ArgValue("--source");
-				StreamManager.VideoSource = NoVideo ? null : new RecordedSource(StreamKind.Video, path);
-				StreamManager.AudioSource = NoAudio ? null : new RecordedSource(StreamKind.Audio, path);
+
+				if (!NoVideo)
+					StreamManager.AddSource(new RecordedSource(StreamKind.Video, path));
+				if (!NoAudio)
+					StreamManager.AddSource(new RecordedSource(StreamKind.Audio, path));
 			}
 #endif
 			else

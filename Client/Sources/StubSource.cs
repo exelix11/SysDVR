@@ -7,7 +7,10 @@ namespace SysDVR.Client.Sources
     class StubSource : IStreamingSource
 	{
 		public bool Logging { get; set; }
-		CancellationToken Cancellation;
+
+		public StreamKind SourceKind => StreamKind.Both;
+
+        CancellationToken Cancellation;
 
 		public void Flush() { }
         
