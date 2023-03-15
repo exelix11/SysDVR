@@ -53,15 +53,30 @@ namespace SysDVRClientGUI.DriverInstall
                 error = true;
             }
 
-            button1.Text = "Installing...";
-            try 
+            if (!error)
             {
-                DriverHelper.InstallDriver();
+                button1.Text = "Installing...";
+                try
+                {
+                    DriverHelper.InstallDriver();
+                }
+                catch (Exception ex)
+                {
+                    ShowError("Driver installation failed: " + ex.Message);
+                    error = true;
+                }
             }
-            catch (Exception ex)
+
+            if (!error)
             {
-                ShowError("Driver installation failed: " + ex.Message);
-                error = true;
+                try 
+                {
+                    DriverHelper.DeleteTempDir();
+                }
+                catch 
+                {
+                    // No need to catch this
+                }
             }
 
             if (!error)
