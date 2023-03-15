@@ -2,7 +2,7 @@
 
 set PATH=C:\Program Files\7zip;C:\Program Files\7-Zip\;C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\;%PATH%
 
-curl -L https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-02-28-12-37/ffmpeg-n5.1.2-39-g2953c6381a-win64-lgpl-shared-5.1.zip -O ffmpeg.zip
+curl -L https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-02-28-12-37/ffmpeg-n5.1.2-39-g2953c6381a-win64-lgpl-shared-5.1.zip --output ffmpeg.zip
 
 if exist ffmpeg.zip (
 	echo extracting ffmpeg.zip
