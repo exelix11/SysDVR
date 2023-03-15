@@ -78,10 +78,13 @@ namespace SysDVR.Client.Sources
 					return (null, null);
 
 				var serial = x.Info.SerialNumber.ToLower().Trim();
-				x.Close();
+                x.Close();
 
-				return (x, serial);
-			}).Where(x => x.serial != null).ToArray();
+				if (!serial.StartsWith("sysdvr:"))
+					return (null, null);
+
+				return (x, serial[7..]);
+			}).Where(x => x.Item2 != null).ToArray();
 			
 			DebugLevel = old;
 			return res;
