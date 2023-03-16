@@ -132,7 +132,7 @@ namespace SysDVRClientGUI
             {
                 if (MessageBox.Show("You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    new DriverInstallForm().ShowDialog();
+                    new DriverInstallForm(false).ShowDialog();
                     return true;
                 }
                 else MessageBox.Show("Without installing the driver USB streaming may not work");
@@ -293,7 +293,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         private void button4_Click(object sender, EventArgs e)
         {
-            new DriverInstallForm().ShowDialog();
+            new DriverInstallForm(false).ShowDialog();
         }
     }
 

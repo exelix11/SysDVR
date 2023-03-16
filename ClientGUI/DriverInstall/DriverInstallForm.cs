@@ -12,9 +12,12 @@ namespace SysDVRClientGUI.DriverInstall
 {
     public partial class DriverInstallForm : Form
     {
-        public DriverInstallForm()
+        readonly bool fromCommandLine;
+
+        public DriverInstallForm(bool fromCommandLine)
         {
             InitializeComponent();
+            this.fromCommandLine = fromCommandLine;
         }
 
         private void DriverInstallResultForm_Load(object sender, EventArgs e)
@@ -27,6 +30,11 @@ namespace SysDVRClientGUI.DriverInstall
                 label1.Text += "It seems the driver is not installed, you need to install it to use SysDVR.";
             else
                 label1.Text += "It seems Windows has never detected the SysDVR device ID, enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
+        
+            if (fromCommandLine && info == DriverStatus.Installed)
+            {
+                MessageBox.Show("The correct driver seems to be already installed, you don't need to install it again.");
+            }
         }
 
         void ShowError(string message) 
