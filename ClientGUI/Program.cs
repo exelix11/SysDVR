@@ -17,13 +17,6 @@ namespace SysDVRClientGUI
 		[STAThread]
 		static void Main(string[] args)
 		{
-            // Used when self-launching elevated
-			if (args.Length > 0 && args[0] == "--install-driver")
-			{
-				DriverHelper.InstallDriver();
-				return;
-			}
-
             // When build with dotnet instead of msbuld including binary resources like the icon in form
             // resources requires an extra dependency that is only available from netfx 4.6+ and we target 4.5,
 			// since we only need the icon we can just get it from the main executable instead.
@@ -36,9 +29,21 @@ namespace SysDVRClientGUI
                 // Doesn't really matter if this fails
 			}
 
-			Application.EnableVisualStyles();
-			Application.SetCompatibleTextRenderingDefault(false);
-			Application.Run(new Form1());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Form mainForm;
+
+            // Used when self-launching elevated
+            if (args.Length > 0 && args[0] == "--install-driver")
+            {
+                mainForm = new DriverInstallForm(true);
+            }
+			else
+			{
+				mainForm = new Form1();
+			}
+
+			Application.Run(mainForm);
 		}
         
 		public static Icon ApplicationIcon = null;

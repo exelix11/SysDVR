@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using FFmpeg.AutoGen;
 using SysDVR.Client.FileOutput;
 using SysDVR.Client.Sources;
@@ -116,7 +117,7 @@ namespace SysDVR.Client
 		{
 			try
 			{
-				new Program(args).ProgramMain();
+                new Program(args).ProgramMain();
 			}
 			catch (DllNotFoundException ex)
 			{
@@ -124,11 +125,20 @@ namespace SysDVR.Client
 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !Environment.Is64BitProcess)
 				{
-					Console.WriteLine(
-						"You are running the 32-bit version of .NET, on Windows this is NOT supported due to ffmpeg not providing official 32-bit versions of their libs.\r\n" +
-						"If you're on 64-bit Windows (check your pc info) uninstall .NET and install the x64 version from Microsoft's website.\r\n" +
-						"If you're on 32-bit Windows you should upgrade your PC. Alternatively you need to find a 32-bit build of ffmpeg libs and copy them in the SysDVR-Client folder"
-					);
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine("You are running the 32-bit version of .NET, on Windows this is NOT supported due to ffmpeg not providing official 32-bit versions of their libs.");
+
+					if (Environment.Is64BitOperatingSystem)
+					{
+						Console.Error.WriteLine("Since you are using 64-bit Windows, uninstall x86 or 32-bit .NET and install the x64 version from Microsoft's website.");
+					}
+					else
+					{
+						Console.Error.WriteLine("It seems you're using 32-bit Windows, this is not supported and you should upgrade your PC.");
+                        Console.Error.WriteLine("However, you can try to make SysDVR work by downloading 32-bit ffmpeg builds and copying them to the SysDVR-client folder.");
+					}
+					
+					Console.ResetColor();
 				}
 				else
 				{
@@ -149,7 +159,12 @@ namespace SysDVR.Client
 			}
 			catch (Exception ex)
 			{
-				Console.Error.WriteLine(ex);
+                Console.Error.WriteLine("There was an error in SysDVR-Client.");
+                Console.Error.WriteLine("Make sure the SysDVR version on your console is the same as SysDVR-Client on your pc.");
+                Console.Error.WriteLine("After updating SysDVR on your console you should reboot.");
+
+                Console.Error.WriteLine("\r\nFull error message:");
+                Console.Error.WriteLine(ex);
 			}
 		}
 
@@ -380,8 +395,11 @@ namespace SysDVR.Client
 			if (devices.Count == 0)
 			{
 				Console.WriteLine("ERROR: SysDVR usb device not found.\r\n" +
-					"Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver. Launch SysDVR-Client GUI to install the driver.");
-				return null;
+					"Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver.\r\n" +
+					"SysDVR protocol may change with updates, SysDVR on your console must be the same version as the client !");
+
+				UsbDriverSuggest();
+                return null;
 			}
 			else if (devices.Count == 1)
 			{
@@ -431,6 +449,19 @@ namespace SysDVR.Client
 				return ctx;
 			}
 		}
+
+		static void UsbDriverSuggest() 
+		{
+			if (!OperatingSystem.IsWindows())
+				return;
+
+			Console.WriteLine();
+			Console.ForegroundColor = ConsoleColor.Yellow;
+			Console.WriteLine("Note that version 5.5 changed the required driver, if you installed the driver in the past you need to update it");
+			Console.Write("Open SysDVR-ClientGUI.exe and click on the install driver button. ");
+			Console.ResetColor();
+            Console.WriteLine();
+        }
 
 		void StartStreaming(BaseStreamManager streams)
 		{
