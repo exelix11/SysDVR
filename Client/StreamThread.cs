@@ -50,19 +50,18 @@ namespace SysDVR.Client
 		bool ReadPayload(byte[] buffer, int length);
 	}
 
-	class StreamThread : IDisposable
+	abstract class StreamThread : IDisposable
 	{
 		public static bool Logging;
 
 		Thread DeviceThread;
 		CancellationTokenSource Cancel;
 
-		public IStreamingSource Source { get; private init; }
+		readonly public IStreamingSource Source;
+		readonly public StreamKind Kind;
 
-		private IOutStream MainTarget { get; init; }
-		private IOutStream? SecondaryTarget { get; init; }
-
-		public StreamKind Kind { get; private init; }
+		protected abstract void SetCancellationToken(CancellationToken token);
+		protected abstract bool DataReceived(in PacketHeader header, PoolBuffer body);
 
 #if MEASURE_STATS
 		public ulong ReceivedBytes { get; private set; }
@@ -76,34 +75,11 @@ namespace SysDVR.Client
         }
 #endif
 
-		private StreamThread(StreamKind kind)
+		protected StreamThread(IStreamingSource source)
 		{
-			Kind = kind;
+			Source = source;
+			Kind = Source.SourceKind;
 		}
-
-		public static StreamThread ForSingleStream(IStreamingSource source, IOutStream target)
-		{
-			var ret = new StreamThread(source.SourceKind) 
-			{ 
-				MainTarget = target,
-				Source = source
-			};
-            return ret;
-		}
-
-		public static StreamThread ForBothStreams(IStreamingSource source, IOutStream videoTarget, IOutStream audioTarget)
-		{
-			if (source.SourceKind != StreamKind.Both)
-				throw new Exception("Source must be able to provide both streams");
-
-            var ret = new StreamThread(StreamKind.Both) { 
-				MainTarget = videoTarget, 
-				SecondaryTarget = audioTarget ,
-				Source = source
-			};
-
-            return ret;
-        }
 
 		public void Start() 
 		{
@@ -134,8 +110,7 @@ namespace SysDVR.Client
 			Source.Logging = log;
 			Source.UseCancellationToken(token);
 			
-			MainTarget.UseCancellationToken(token);
-			SecondaryTarget?.UseCancellationToken(token);
+			SetCancellationToken(token);
 
 			var HeaderData = new byte[PacketHeader.StructLength];
 			ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
@@ -181,18 +156,8 @@ namespace SysDVR.Client
 						continue;
 					}
 
-					if (Kind == StreamKind.Both)
+					if (!DataReceived(Header, Data)) 
 					{
-						if (Header.Magic == PacketHeader.MagicResponseVideo)
-                            MainTarget.SendData(Data, Header.Timestamp);
-						else if (Header.Magic == PacketHeader.MagicResponseAudio)
-							SecondaryTarget!.SendData(Data, Header.Timestamp);
-                    }
-					else if (Kind == StreamKind.Video && Header.Magic == PacketHeader.MagicResponseVideo)
-						MainTarget.SendData(Data, Header.Timestamp);
-					else if (Kind == StreamKind.Audio && Header.Magic == PacketHeader.MagicResponseAudio)
-						MainTarget.SendData(Data, Header.Timestamp);
-					else {
                         if (log)
                             Console.WriteLine($"[{Kind}] Wrong header magic, expected different one: {Header.Magic:X}");
                         
@@ -221,4 +186,66 @@ namespace SysDVR.Client
 			Cancel.Dispose();
 		}
 	}
+
+    class SingleStreamThread : StreamThread
+    {
+		readonly IOutStream Target;
+
+        public SingleStreamThread(IStreamingSource source, IOutStream target) : base(source)
+        {
+			Target = target;
+        }
+
+        protected override void SetCancellationToken(CancellationToken token)
+        {
+            Target.UseCancellationToken(token);
+        }
+
+        protected override bool DataReceived(in PacketHeader header, PoolBuffer body)
+        {
+			var valid =
+				(Kind == StreamKind.Video && header.Magic == PacketHeader.MagicResponseVideo) ||
+				(Kind == StreamKind.Audio && header.Magic == PacketHeader.MagicResponseAudio);
+
+			if (!valid)
+				return false;
+
+			Target.SendData(body, header.Timestamp);
+
+			return true;
+        }
+    }
+
+    class MultiStreamThread : StreamThread
+    {
+        readonly IOutStream VideoTarget;
+        readonly IOutStream AudioTarget;
+
+        public MultiStreamThread(IStreamingSource source, IOutStream videoTarget, IOutStream audioTarget) : base(source)
+        {
+            if (source.SourceKind != StreamKind.Both)
+                throw new Exception("Source must be able to provide both streams");
+
+            VideoTarget = videoTarget;
+			AudioTarget = audioTarget;
+        }
+
+        protected override void SetCancellationToken(CancellationToken token)
+        {
+			VideoTarget.UseCancellationToken(token);
+			AudioTarget.UseCancellationToken(token);
+        }
+
+        protected override bool DataReceived(in PacketHeader header, PoolBuffer body)
+        {
+			if (header.Magic == PacketHeader.MagicResponseVideo)
+				VideoTarget.SendData(body, header.Timestamp);
+			else if (header.Magic == PacketHeader.MagicResponseAudio)
+				AudioTarget.SendData(body, header.Timestamp);
+			else 
+				return false;
+
+			return true;
+        }
+    }
 }

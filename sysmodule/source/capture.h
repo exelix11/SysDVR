@@ -88,6 +88,7 @@ static inline s32 CaptureWaitObjectsWrapper(UEvent* first, UEvent* second)
 	return out;
 }
 
+// USB Thread relies on this never returning NULL (if second is NULL then this only returns first when the event fires)
 static inline ConsumerProducer* CaptureWaitBeginConsumeAny(ConsumerProducer* first, ConsumerProducer* second)
 {
 	s32 res = CaptureWaitObjectsWrapper(&first->Produced, second ? &second->Produced : NULL);
@@ -105,3 +106,4 @@ static inline void CaptureEndConsume(ConsumerProducer* prod)
 }
 
 void CaptureForceUnlockConsumers();
+void CaptureClearPendingData();

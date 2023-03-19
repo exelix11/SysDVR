@@ -84,21 +84,21 @@ namespace SysDVR.Client
 			if (source.SourceKind == StreamKind.Video) 
 			{
 				if (HasVideo) throw new Exception("Already has a video source");
-				Thread1 = StreamThread.ForSingleStream(source, VideoTarget);
+				Thread1 = new SingleStreamThread(source, VideoTarget);
 
                 Streams = HasAudio ? StreamKind.Both : StreamKind.Video;
             }
             else if (source.SourceKind == StreamKind.Audio)
             {
                 if (HasAudio) throw new Exception("Already has an audio source");
-                Thread2 = StreamThread.ForSingleStream(source, AudioTarget);
+                Thread2 = new SingleStreamThread(source, AudioTarget);
 
                 Streams = HasVideo ? StreamKind.Both : StreamKind.Audio;
             }
             else if (source.SourceKind == StreamKind.Both)
             {
                 if (HasAudio || HasVideo) throw new Exception("Already has a multi source");
-                Thread1 = StreamThread.ForBothStreams(source, VideoTarget, AudioTarget);
+                Thread1 = new MultiStreamThread(source, VideoTarget, AudioTarget);
 
                 Streams = StreamKind.Both;
             }
