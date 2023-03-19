@@ -329,13 +329,17 @@ namespace SysDVR.Client
             // Stream sources
 			if (Args.Length == 0 || Args[0] == "usb")
 			{
-				var forceLibUsb = HasArg("--no-winusb");
+				if (HasArg("--no-winusb"))
+				{
+					Console.WriteLine("Note: the --no-winusb argument has been deprecated, it's now the default. You can remove it from the command line.");
+				}
+				
 				var warnLevel = UsbContext.LogLevel.Error;
 
 				if (HasArg("--usb-warn")) warnLevel = UsbContext.LogLevel.Warning;
 				if (HasArg("--usb-debug")) warnLevel = UsbContext.LogLevel.Debug;
 
-				var ctx = OpenUsbSource(warnLevel, forceLibUsb, ArgValue("--usb-serial"));
+				var ctx = OpenUsbSource(warnLevel, ArgValue("--usb-serial"));
 				if (ctx == null)
 					return null;
 
@@ -381,9 +385,9 @@ namespace SysDVR.Client
 			return StreamManager;
 		}
 
-		static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, bool forceLibUsb, string? preferredSerial)
+		static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, string? preferredSerial)
 		{
-			var ctx = new UsbContext(usbLogLeve, forceLibUsb);
+			var ctx = new UsbContext(usbLogLeve);
 
 			var devices = ctx.FindSysdvrDevices();
 
@@ -521,7 +525,6 @@ Stream sources:
 
 Source options:
 	`--print-stats` : Logs received data size and errors
-	`--no-winusb` : Forces the LibUsb backend on windows, you must use this option in case you installed LibUsb-win32 as the SysDVR driver (it's recommended to use WinUsb)
 	`--usb-warn` : Enables printing warnings from the usb stack, use it to debug USB issues
 	`--usb-debug` : Same as `--usb-warn` but more detailed
 	`--usb-serial NX0000000` : When multiple consoles are plugged in via USB use this option to automatically select one by serial number. 

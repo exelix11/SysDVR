@@ -49,7 +49,6 @@
             this.rbStreamRtsp = new System.Windows.Forms.RadioButton();
             this.rbPlayMpv = new System.Windows.Forms.RadioButton();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.cbForceLibusb = new System.Windows.Forms.CheckBox();
             this.cbStats = new System.Windows.Forms.CheckBox();
             this.cbUsbLog = new System.Windows.Forms.CheckBox();
             this.cbUsbWarn = new System.Windows.Forms.CheckBox();
@@ -319,7 +318,6 @@
             // 
             this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox3.Controls.Add(this.cbForceLibusb);
             this.groupBox3.Controls.Add(this.cbStats);
             this.groupBox3.Controls.Add(this.cbUsbLog);
             this.groupBox3.Controls.Add(this.cbUsbWarn);
@@ -329,16 +327,6 @@
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Advanced/Debug options";
-            // 
-            // cbForceLibusb
-            // 
-            this.cbForceLibusb.AutoSize = true;
-            this.cbForceLibusb.Location = new System.Drawing.Point(140, 21);
-            this.cbForceLibusb.Name = "cbForceLibusb";
-            this.cbForceLibusb.Size = new System.Drawing.Size(134, 17);
-            this.cbForceLibusb.TabIndex = 1;
-            this.cbForceLibusb.Text = "Force LibUsb backend";
-            this.cbForceLibusb.UseVisualStyleBackColor = true;
             // 
             // cbStats
             // 
@@ -478,7 +466,6 @@
 		private System.Windows.Forms.RadioButton rbStreamRtsp;
 		private System.Windows.Forms.RadioButton rbPlayMpv;
 		private System.Windows.Forms.GroupBox groupBox3;
-		private System.Windows.Forms.CheckBox cbForceLibusb;
 		private System.Windows.Forms.CheckBox cbStats;
 		private System.Windows.Forms.CheckBox cbUsbLog;
 		private System.Windows.Forms.CheckBox cbUsbWarn;

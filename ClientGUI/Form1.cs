@@ -171,7 +171,6 @@ Pressing no will try to start streaming regardless but it will probably fail."
             if (cbStats.Checked) append("--print-stats");
             if (cbUsbLog.Checked) append("--usb-debug");
             if (cbUsbWarn.Checked) append("--usb-warn");
-            if (cbForceLibusb.Checked) append("--no-winusb");
             return str.ToString();
         }
 
