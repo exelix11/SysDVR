@@ -9,6 +9,7 @@ namespace {
 	Image::Img ModeTcp;
 	Image::Img ModeUsb;
 
+	u32 InitialMode;
 	u32 BootMode;
 	u32 CurrentMode;
 	
@@ -150,10 +151,12 @@ void scenes::InitModeSelect()
 		app::FatalError("Couldn't get the current SysDVR mode", "Try rebooting your console");
 
 	BootMode = GetBootMode();
+	InitialMode = CurrentMode;
 }
 
 void scenes::ModeSelect() 
 {
+
 	constexpr auto SetMode = [](u32 mode) -> bool
 	{
 		Result rc = SysDvrSetMode(mode);
@@ -212,6 +215,12 @@ void scenes::ModeSelect()
 		app::SetNextScene(Scene::DvrPatches);
 		break;
 	case 3:
+		// Mode was changed, after deinitializing the sysdvr port wait a little
+		// This fixes a possible race condition when the user opens the settings app
+		// right after closing it and sysdvr will miss the request causing the app to hang
+		if (InitialMode != CurrentMode)
+			app::SetWaitOnExit(true);
+		
 		app::RequestExit();
 		break;
 	default:
