@@ -37,5 +37,6 @@ namespace app {
 	void SetNextScene(Scene s);
 	void ReturnToPreviousScene(); 
 
+	void SetWaitOnExit(bool shouldWait);
 	void RequestExit();
 }

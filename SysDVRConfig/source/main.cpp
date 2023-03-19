@@ -22,6 +22,8 @@ namespace {
 
 	std::string formattedError;
 
+	bool waitOnExit = false;
+
 	void ImguiBindController()
 	{
 		ImGuiIO& io = ImGui::GetIO();
@@ -118,6 +120,11 @@ namespace app {
 		errorSecondline = secondline;
 	}
 
+	void SetWaitOnExit(bool shouldWait)
+	{
+		waitOnExit = shouldWait;
+	}
+
 	void RequestExit()
 	{
 		Glfw::SetShouldClose();
@@ -212,6 +219,10 @@ mainloop:
 	scenes::DeinitDvrPatches();
 
 	SysDvrClose();
+
+	if (waitOnExit)
+		Platform::Sleep(2000);
+
 	UI::Exit();
 	Platform::Exit();
 	return EXIT_SUCCESS;
