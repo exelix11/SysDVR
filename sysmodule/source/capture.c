@@ -184,3 +184,10 @@ void CaptureOnClientDisconnected(ConsumerProducer*)
 {
 	// Nothing to do here
 }
+
+void CaptureClearPendingData() 
+{
+	// Clear all produced events
+	ueventClear(&VideoProducer.Produced);
+	ueventClear(&AudioProducer.Produced);
+}

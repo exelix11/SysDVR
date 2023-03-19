@@ -21,4 +21,5 @@ void UsbStreamingExit();
 
 UsbStreamRequest UsbStreamingWaitConnection();
 
-bool UsbStreamingSend(const void* data, size_t length, UsbStreamChannel channel);
+// Since switching to a single interface there's no need for two different send functions
+bool UsbStreamingSend(const void* data, size_t length);

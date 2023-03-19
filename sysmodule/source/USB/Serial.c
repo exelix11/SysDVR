@@ -5,8 +5,10 @@
 #include "Serial.h"
 #include "UsbComms.h"
 
+// We need the thread running flag
+#include "../modes/modes.h"
+
 static Mutex UsbStreamingMutex;
-static atomic_bool CancelOperation;
 
 static const char* GetDeviceSerial() 
 {
@@ -35,7 +37,6 @@ static const char* GetDeviceSerial()
 Result UsbStreamingInitialize()
 {
 	mutexInit(&UsbStreamingMutex);
-	CancelOperation = false;
 
 	UsbSerailInterfaceInfo interfaces = {
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
@@ -60,9 +61,7 @@ Result UsbStreamingInitialize()
 }
 
 void UsbStreamingExit()
-{
-	CancelOperation = true;
-	
+{	
 	usbSerialExit();
 
 	// Wait for all other threads to finish
@@ -73,28 +72,30 @@ void UsbStreamingExit()
 
 UsbStreamRequest UsbStreamingWaitConnection()
 {
-	// In theory nothing else should be going on over usb at this point
+	// Since USB is single-threaded now, in theory nothing else should be going on over usb at this point
 	mutexLock(&UsbStreamingMutex);
 
-	u32 request;
-	size_t read = usbSerialRead(&request, sizeof(request), UINT64_MAX);
+	u32 request = 0;
+	size_t read = 0;
+
+	do
+		read = usbSerialRead(&request, sizeof(request), 1E+9);
+	while (read == 0 && IsThreadRunning);
 
 	mutexUnlock(&UsbStreamingMutex);
 
-	if (read != sizeof(request))
+	if (read != sizeof(request) || !IsThreadRunning)
 		return UsbStreamRequestFailed;
 
+	LOG("USB request received: %x\n", request);
 	if (request == UsbStreamRequestVideo || request == UsbStreamRequestAudio || request == UsbStreamRequestBoth)
 		return (UsbStreamRequest)request;
 
 	return UsbStreamRequestFailed;
 }
 
-bool UsbStreamingSend(const void* data, size_t length, UsbStreamChannel channel)
+bool UsbStreamingSend(const void* data, size_t length)
 {
-	// Since switching to a single interface this does the same as UsbStreamingSendVideo now
-	(void)channel;
-
 	mutexLock(&UsbStreamingMutex);
 
 	size_t sent = usbSerialWrite(data, length, 1E+9);
