@@ -92,7 +92,7 @@ namespace SysDVRClientGUI.DriverInstall
             var expected = "360b01d3dfb6c41621a3a64ae570dfac2c9a40cca1b5a1f136ae90d02f5e9e0b";
             if (str != expected)
             {
-                throw new Exception($"The doenloaded driver hash doesn't match.");
+                throw new Exception($"The downloaded driver hash doesn't match, try again or open an issue on GitHub.");
             }
 
             File.WriteAllBytes("usb_driver_r13-windows.zip", driver);
@@ -114,7 +114,6 @@ namespace SysDVRClientGUI.DriverInstall
             }
         }
 
-        // if true sysdvr should quit
         public static void InstallDriver()
         {
             var info = new ProcessStartInfo()
