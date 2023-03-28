@@ -149,10 +149,15 @@ namespace SysDVR.Client
 
 					if (OperatingSystem.IsLinux())
 						Console.Error.WriteLine("For example on x64 linux you can try --libdir /lib/x86_64-linux-gnu/");
-                    else if (OperatingSystem.IsMacOS())
+					else if (OperatingSystem.IsMacOS())
+					{
 						Console.Error.WriteLine("For example on MacOS you can try --libdir $(brew --prefix)/lib/");
-                    else
-                        Console.Error.WriteLine("For example on Windows you can try --libdir C:\\Program Files\\ffmpeg\\bin");
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Error.WriteLine("If you're using an arm based mac make sure you're using native arm dotnet and not the intel one.");
+                        Console.ResetColor();
+                    }
+					else
+						Console.Error.WriteLine("For example on Windows you can try --libdir C:\\Program Files\\ffmpeg\\bin");
                 }
 
 				Console.Error.WriteLine("\r\nFull error message:\r\n" + ex);
