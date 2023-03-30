@@ -51,7 +51,8 @@ namespace {
 		CenterText("Connecting to SysDVR.");
 		CenterText("If you just turned on your console this may take up to 20 seconds.");
 		ImGui::NewLine();
-		CenterText("If you can't get past this screen SysDVR is probably not running, make sure your setup is correct.");
+		CenterText("If you can't get past this screen SysDVR not running");
+		CenterText("Make sure your setup is correct and reboot your console.");
 
 		ImGui::End();
 		UI::EndFrame();
