@@ -26,7 +26,7 @@
 	#pragma message "Building USB-only version"
 #else
 	// Memory is carefully calculated, for development and logging it should be increased
-	#define INNER_HEAP_SIZE 1.2 * 1024 * 1024
+	#define INNER_HEAP_SIZE 1024 * 1024 + 200 * 1024
 	#pragma message "Building full version"
 	
 	#include "rtsp/RTP.h"

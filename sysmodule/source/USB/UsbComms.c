@@ -398,7 +398,7 @@ static Result _usbSerialRead(usbCommsInterface* interface, void* buffer, size_t 
     UsbDsReportData reportdata;
 
     //Makes sure endpoints are ready for data-transfer / wait for init if needed.
-    rc = usbDsWaitReady(UINT64_MAX);
+    rc = usbDsWaitReady(timeout);
     if (R_FAILED(rc)) return rc;
 
     while (size)
@@ -430,7 +430,7 @@ static Result _usbSerialRead(usbCommsInterface* interface, void* buffer, size_t 
         if (R_FAILED(eventWait(&interface->endpoint_out->CompletionEvent, timeout)))
             usbDsEndpoint_Cancel(interface->endpoint_out);
 
-        eventWait(&interface->endpoint_out->CompletionEvent, UINT64_MAX);
+        eventWait(&interface->endpoint_out->CompletionEvent, 3E+9);
         eventClear(&interface->endpoint_out->CompletionEvent);
 
         rc = usbDsEndpoint_GetReportData(interface->endpoint_out, &reportdata);
@@ -466,7 +466,7 @@ static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, 
     UsbDsReportData reportdata;
 
     //Makes sure endpoints are ready for data-transfer / wait for init if needed.
-    rc = usbDsWaitReady(UINT64_MAX);
+    rc = usbDsWaitReady(timeout);
     if (R_FAILED(rc)) return rc;
 
     while (size)
@@ -496,7 +496,7 @@ static Result _usbSerialWrite(usbCommsInterface* interface, const void* buffer, 
         if (R_FAILED(eventWait(&interface->endpoint_in->CompletionEvent, timeout)))
             usbDsEndpoint_Cancel(interface->endpoint_in);
         
-        eventWait(&interface->endpoint_in->CompletionEvent, UINT64_MAX);
+        eventWait(&interface->endpoint_in->CompletionEvent, 3E+9);
         eventClear(&interface->endpoint_in->CompletionEvent);
 
         rc = usbDsEndpoint_GetReportData(interface->endpoint_in, &reportdata);
@@ -538,7 +538,7 @@ size_t usbSerialReadEx(void* buffer, size_t size, u32 interface, u64 timeout)
     rwlockWriteLock(&inter->lock_out);
     rc = _usbSerialRead(inter, buffer, size, &transferredSize, timeout);
     rwlockWriteUnlock(&inter->lock_out);
-    if (R_FAILED(rc)) {
+    if (R_FAILED(rc) && rc != KernelError_TimedOut) {
         rc2 = usbDsGetState(&state);
         if (R_SUCCEEDED(rc2)) {
             if (state != 5) {
@@ -574,7 +574,7 @@ size_t usbSerialWriteEx(const void* buffer, size_t size, u32 interface, u64 time
     rwlockWriteLock(&inter->lock_in);
     rc = _usbSerialWrite(&g_usbCommsInterfaces[interface], buffer, size, &transferredSize, timeout);
     rwlockWriteUnlock(&inter->lock_in);
-    if (R_FAILED(rc)) {
+    if (R_FAILED(rc) && rc != KernelError_TimedOut) {
         rc2 = usbDsGetState(&state);
         if (R_SUCCEEDED(rc2)) {
             if (state != 5) {
