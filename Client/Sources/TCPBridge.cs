@@ -119,6 +119,10 @@ namespace SysDVR.Client.Sources
 			while (data.Length > 0) 
 			{
 				int r = Sock.Receive(data);
+
+				if (r == 0) 
+					throw new Exception("No data received");
+
 				data = data.Slice(r);
 			}
 		}

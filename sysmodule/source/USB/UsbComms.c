@@ -185,16 +185,17 @@ void usbSerialExit(void)
 
     rwlockWriteLock(&g_usbCommsLock);
 
+    for (i = 0; i < TOTAL_INTERFACES; i++)
+    {
+        usbDsInterface_Close(g_usbCommsInterfaces[i].interface);
+        _usbCommsInterfaceFree(&g_usbCommsInterfaces[i]);
+    }
+
     usbDsExit();
 
     g_usbSerialInitialized = false;
 
     rwlockWriteUnlock(&g_usbCommsLock);
-
-    for (i = 0; i < TOTAL_INTERFACES; i++)
-    {
-        _usbCommsInterfaceFree(&g_usbCommsInterfaces[i]);
-    }
 }
 
 static Result _usbCommsInterfaceInit(u32 intf_ind, const UsbSerailInterfaceInfo* info)

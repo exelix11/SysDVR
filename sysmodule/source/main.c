@@ -26,7 +26,7 @@
 	#pragma message "Building USB-only version"
 #else
 	// Memory is carefully calculated, for development and logging it should be increased
-	#define INNER_HEAP_SIZE 1024 * 1024
+	#define INNER_HEAP_SIZE 1.2 * 1024 * 1024
 	#pragma message "Building full version"
 	
 	#include "rtsp/RTP.h"
@@ -168,15 +168,9 @@ static void SetModeInternal(const void* argmode)
 	{
 		LOG("Terminating mode\n");
 		IsThreadRunning = false;
-		svcSleepThread(5E+8);
 
 		LOG("Unlocking consumers\n");
 		CaptureForceUnlockConsumers();
-	
-		svcSleepThread(5E+8);
-		LOG("Calling exit fn\n");
-		if (CurrentMode->ExitFn)
-			CurrentMode->ExitFn();
 
 		LOG("Waiting video thread\n");
 		if (CurrentMode->VThread)
@@ -185,6 +179,10 @@ static void SetModeInternal(const void* argmode)
 		LOG("Waiting audio thread\n");
 		if (CurrentMode->AThread)
 			JoinThread(&AudioThread);
+
+		LOG("Calling exit fn\n");
+		if (CurrentMode->ExitFn)
+			CurrentMode->ExitFn();
 
 		LOG("Terminated\n");
 	}

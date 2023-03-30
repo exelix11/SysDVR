@@ -61,13 +61,8 @@ Result UsbStreamingInitialize()
 }
 
 void UsbStreamingExit()
-{	
+{
 	usbSerialExit();
-
-	// Wait for all other threads to finish
-	// TODO: Maybe fatal after a timeout ?
-	mutexLock(&UsbStreamingMutex);
-	mutexUnlock(&UsbStreamingMutex);
 }
 
 UsbStreamRequest UsbStreamingWaitConnection()
