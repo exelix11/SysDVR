@@ -93,7 +93,7 @@ static void TCP_StreamVideo(void* _)
 		CaptureOnClientDisconnected(&VideoProducer);
 		close(VideoCurSock);
 		VideoCurSock = -1;
-		svcSleepThread(1E+9);
+		svcSleepThread(2E+8);
 	}
 }
 
@@ -122,7 +122,7 @@ static void TCP_StreamAudio(void* _)
 		CaptureOnClientDisconnected(&AudioProducer);
 		close(AudioCurSock);
 		AudioCurSock = -1;
-		svcSleepThread(1E+9);
+		svcSleepThread(2E+8);
 	}
 }
 
