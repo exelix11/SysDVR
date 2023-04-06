@@ -181,8 +181,6 @@ static inline int RTSP_SendInternal(const char* data, size_t len)
 	return 0;
 }
 
-#define RTSPBinHeaderSize 4
-
 //Send data over the data channel, RTCP is not used currently
 static inline void RTSP_PrepareBinaryheader(char header[4], const size_t totalLen, unsigned int stream)
 {
@@ -192,59 +190,62 @@ static inline void RTSP_PrepareBinaryheader(char header[4], const size_t totalLe
 	header[3] = totalLen & 0x00FF;
 }
 
-static inline int RTSP_SendRawData(const void* const data, const size_t len)
+static inline int RTSP_SendRawData(const char* const data, const size_t len)
 {
 	return RTSP_SendInternal(data, len);
 }
 
-static char VideoSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 int RTSP_H264SendPacket(const void* header, const size_t headerLen, const void* data, const size_t len)
 {
 	int res = 0;
 
+	char* vBuffer = Buffers.RTSPMode.VideoSendBuffer;
+	if (len > sizeof(Buffers.RTSPMode.VideoSendBuffer) - RTSPBinHeaderSize)
+		return -1;
+
 	if (RTSP_Transfer_interleaved) {
 #ifdef INTERLEAVED_SUPPORT
-		RTSP_PrepareBinaryheader(VideoSendBuffer, headerLen + len, STREAM_VIDEO);
-		memcpy(VideoSendBuffer + RTSPBinHeaderSize, header, headerLen);
-		memcpy(VideoSendBuffer + RTSPBinHeaderSize + headerLen, data, len);
-		res = RTSP_SendRawData(VideoSendBuffer, RTSPBinHeaderSize + headerLen + len);
+		RTSP_PrepareBinaryheader(vBuffer, headerLen + len, STREAM_VIDEO);
+		memcpy(vBuffer + RTSPBinHeaderSize, header, headerLen);
+		memcpy(vBuffer + RTSPBinHeaderSize + headerLen, data, len);
+		res = RTSP_SendRawData(vBuffer, RTSPBinHeaderSize + headerLen + len);
 #endif
 	}
 	else
 	{
 #ifdef UDP_SUPPORT
-		memcpy(VideoSendBuffer, header, headerLen);
-		memcpy(VideoSendBuffer + headerLen, data, len);
-		res = sendto(clientVideo, VideoSendBuffer, headerLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr)) < 0;
+		memcpy(vBuffer, header, headerLen);
+		memcpy(vBuffer + headerLen, data, len);
+		res = sendto(clientVideo, vBuffer, headerLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr)) < 0;
 #endif
 	}
 
 	return res;
 }
 
-
-static char AudioSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 {
 	int res = 0;
 
-	printl("RTSP_LE16SendPacket %llx %llx %x\n", header, data, len);
+	char* aBuffer = Buffers.RTSPMode.AudioSendBuffer;
+	if (len > sizeof(Buffers.RTSPMode.AudioSendBuffer) - RTSPBinHeaderSize)
+		return -1;
 
 	if (RTSP_Transfer_interleaved)
 	{
 #ifdef INTERLEAVED_SUPPORT
-		RTSP_PrepareBinaryheader(AudioSendBuffer, RTPHeaderSz + len, STREAM_AUDIO);
-		memcpy(AudioSendBuffer + RTSPBinHeaderSize, header, RTPHeaderSz);
-		memcpy(AudioSendBuffer + RTSPBinHeaderSize + RTPHeaderSz, data, len);
-		res = RTSP_SendRawData(AudioSendBuffer, RTSPBinHeaderSize + RTPHeaderSz + len);
+		RTSP_PrepareBinaryheader(aBuffer, RTPHeaderSz + len, STREAM_AUDIO);
+		memcpy(aBuffer + RTSPBinHeaderSize, header, RTPHeaderSz);
+		memcpy(aBuffer + RTSPBinHeaderSize + RTPHeaderSz, data, len);
+		res = RTSP_SendRawData(aBuffer, RTSPBinHeaderSize + RTPHeaderSz + len);
 #endif
 	}
 	else
 	{
 #ifdef UDP_SUPPORT
-		memcpy(AudioSendBuffer, header, RTPHeaderSz);
-		memcpy(AudioSendBuffer + RTPHeaderSz, data, len);
-		res = sendto(clientVideo, AudioSendBuffer, RTPHeaderSz + len, 0, (struct sockaddr*) & clientAAddr, sizeof(clientAAddr)) < 0;
+		memcpy(aBuffer, header, RTPHeaderSz);
+		memcpy(aBuffer + RTPHeaderSz, data, len);
+		res = sendto(clientVideo, aBuffer, RTPHeaderSz + len, 0, (struct sockaddr*) & clientAAddr, sizeof(clientAAddr)) < 0;
 #endif
 	}
 

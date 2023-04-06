@@ -30,7 +30,7 @@ static void RTSP_StreamVideo(void* _)
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
 			
-			int success = IsThreadRunning && !PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
+			bool success = IsThreadRunning && !PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
 			
 			CaptureEndConsume(&VideoProducer);
 			
