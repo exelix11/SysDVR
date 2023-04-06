@@ -26,7 +26,10 @@
 	#pragma message "Building USB-only version"
 #else
 	// Memory is carefully calculated, for development and logging it should be increased
-	#define INNER_HEAP_SIZE 1024 * 1024 + 200 * 1024
+	// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
+	// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
+	// For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
+	#define INNER_HEAP_SIZE 1024 * 1024
 	#pragma message "Building full version"
 	
 	#include "rtsp/RTP.h"
@@ -41,6 +44,9 @@ u32 __nx_applet_type = AppletType_None;
 
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
 char nx_inner_heap[INNER_HEAP_SIZE];
+
+// Statically allocate all needed buffers
+StaticBuffers Buffers;
 
 void __libnx_initheap(void)
 {
@@ -73,13 +79,13 @@ void __attribute__((weak)) __appInit(void)
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
 	
-		.tcp_tx_buf_size = MaxRTPPacket,
-		.tcp_rx_buf_size = MaxRTPPacket,
-		.tcp_tx_buf_max_size = sizeof(VideoPacket) + sizeof(AudioPacket),
+		.tcp_tx_buf_size = MaxRTPPacket + 128,
+		.tcp_rx_buf_size = MaxRTPPacket + 128,
+		.tcp_tx_buf_max_size = sizeof(VideoPacket) + sizeof(AudioPacket) + 128,
 		.tcp_rx_buf_max_size = 0,
 	
-		.udp_tx_buf_size = MaxRTPPacket,
-		.udp_rx_buf_size = MaxRTPPacket,
+		.udp_tx_buf_size = MaxRTPPacket + 128,
+		.udp_rx_buf_size = MaxRTPPacket + 128,
 	
 		.sb_efficiency = 2,
 	
@@ -191,7 +197,7 @@ static void SetModeInternal(const void* argmode)
 	{
 		LOG("Starting mode\n");
 		IsThreadRunning = true;
-		svcSleepThread(5E+8);
+		memset(&Buffers, 0, sizeof(Buffers));
 		
 		LOG("Calling init fn\n");
 		if (mode->InitFn)

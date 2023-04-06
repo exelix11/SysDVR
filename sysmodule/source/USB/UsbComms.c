@@ -1,11 +1,8 @@
 #include <string.h>
 #include "UsbComms.h"
+#include "../modes/modes.h"
 
 #define TOTAL_INTERFACES 1
-
-void* __libnx_alloc(size_t size);
-void* __libnx_aligned_alloc(size_t alignment, size_t size);
-void __libnx_free(void* p);
 
 typedef struct {
     RwLock lock, lock_in, lock_out;
@@ -168,8 +165,7 @@ static void _usbCommsInterfaceFree(usbCommsInterface* interface)
     interface->endpoint_out = NULL;
     interface->interface = NULL;
 
-    __libnx_free(interface->endpoint_in_buffer);
-    __libnx_free(interface->endpoint_out_buffer);
+    Buffers.UsbMode.IsInUse = false;
     interface->endpoint_in_buffer = NULL;
     interface->endpoint_out_buffer = NULL;
 
@@ -250,13 +246,14 @@ static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbSerailInterfaceInf
 
     interface->initialized = 1;
 
-    //The buffer for PostBufferAsync commands must be 0x1000-byte aligned.
-    interface->endpoint_in_buffer = __libnx_aligned_alloc(0x1000, 0x1000);
-    if (interface->endpoint_in_buffer == NULL) rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
-
-    if (R_SUCCEEDED(rc)) {
-        interface->endpoint_out_buffer = __libnx_aligned_alloc(0x1000, 0x1000);
-        if (interface->endpoint_out_buffer == NULL) rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+    // The buffer for PostBufferAsync commands must be 0x1000-byte aligned.
+    // Since we have a single interface, statically allocate the endpoint buffer 
+    if (Buffers.UsbMode.IsInUse)
+        rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+    else {
+        Buffers.UsbMode.IsInUse = true;
+        interface->endpoint_in_buffer = Buffers.UsbMode.EndpointIn;
+        interface->endpoint_out_buffer = Buffers.UsbMode.EndpointOut;
     }
 
     if (R_SUCCEEDED(rc)) {
@@ -353,12 +350,13 @@ static Result _usbCommsInterfaceInit1x(u32 intf_ind, const UsbSerailInterfaceInf
     interface->initialized = 1;
 
     //The buffer for PostBufferAsync commands must be 0x1000-byte aligned.
-    interface->endpoint_in_buffer = __libnx_aligned_alloc(0x1000, 0x1000);
-    if (interface->endpoint_in_buffer == NULL) rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
-
-    if (R_SUCCEEDED(rc)) {
-        interface->endpoint_out_buffer = __libnx_aligned_alloc(0x1000, 0x1000);
-        if (interface->endpoint_out_buffer == NULL) rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+    // Since we have a single interface, statically allocate the endpoint buffer 
+    if (Buffers.UsbMode.IsInUse)
+        rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+    else {
+        Buffers.UsbMode.IsInUse = true;
+        interface->endpoint_in_buffer = Buffers.UsbMode.EndpointIn;
+        interface->endpoint_out_buffer = Buffers.UsbMode.EndpointOut;
     }
 
     if (R_SUCCEEDED(rc)) {

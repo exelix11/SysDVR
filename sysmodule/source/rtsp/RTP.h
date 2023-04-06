@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "../modes/modes.h"
 
 #if defined(USB_ONLY)
 #pragma error This should not be included
@@ -8,10 +9,7 @@
 #define STREAM_VIDEO 0
 #define STREAM_AUDIO 1
 
-//8KB
-#define MaxRTPPacket 0x2000
 #define RTPHeaderSz 12
-
 #define MaxRTPPayload (MaxRTPPacket - RTPHeaderSz)
 
 extern uint16_t SequenceNumbers[2];
