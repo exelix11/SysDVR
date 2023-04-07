@@ -7,6 +7,9 @@
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
+static u8 alignas(0x1000) VCapThreadStackArea[0x1000];
+static u8 alignas(0x1000) ACapThreadStackArea[0x1000];
+
 ConsumerProducer VideoProducer;
 ConsumerProducer AudioProducer;
 
@@ -147,8 +150,8 @@ Result CaptureStartThreads()
 	R_RET_ON_FAIL(CaptureProducerConsumerInit(&AudioProducer));
 	R_RET_ON_FAIL(GrcInitialize());
 	
-	R_RET_ON_FAIL(threadCreate(&videoThread, CaptureVideoThread, NULL, NULL, 0x500, 0x26, 3));
-	R_RET_ON_FAIL(threadCreate(&audioThread, CaptureAudioThread, NULL, NULL, 0x500, 0x26, 3));
+	R_RET_ON_FAIL(threadCreate(&videoThread, CaptureVideoThread, NULL, VCapThreadStackArea, sizeof(VCapThreadStackArea), 0x26, 3));
+	R_RET_ON_FAIL(threadCreate(&audioThread, CaptureAudioThread, NULL, ACapThreadStackArea, sizeof(ACapThreadStackArea), 0x26, 3));
 	R_RET_ON_FAIL(threadStart(&videoThread));
 	R_RET_ON_FAIL(threadStart(&audioThread));
 	

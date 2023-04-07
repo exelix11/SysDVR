@@ -22,14 +22,14 @@
 	it will only stream via USB and won't support the config app.
 */
 #ifdef USB_ONLY
-	#define INNER_HEAP_SIZE 40 * 1024
+	#define INNER_HEAP_SIZE 10 * 1024
 	#pragma message "Building USB-only version"
 #else
 	// Memory is carefully calculated, for development and logging it is increased
 	// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
 	// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
 	// For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
-	#define INNER_HEAP_SIZE 1024 * 1024
+	#define INNER_HEAP_SIZE 256 * 1024
 	#pragma message "Building full version"
 	
 	#include "ipc/ipc.h"
@@ -84,15 +84,15 @@ void __attribute__((weak)) __appInit(void)
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
 	
-		.tcp_tx_buf_size = MaxRTPPacket,
+		.tcp_tx_buf_size = MaxRTPPacket + 128,
 		.tcp_rx_buf_size = 1024,
 		.tcp_tx_buf_max_size = 0,
 		.tcp_rx_buf_max_size = 0,
 	
-		.udp_tx_buf_size = MaxRTPPacket,
+		.udp_tx_buf_size = MaxRTPPacket + 128,
 		.udp_rx_buf_size = 1024,
 	
-		.sb_efficiency = 1,
+		.sb_efficiency = 2,
 	
 		.num_bsd_sessions = 2,
 		.bsd_service_type = BsdServiceType_User,
@@ -131,25 +131,17 @@ void __attribute__((weak)) __appExit(void)
 
 #ifndef USB_ONLY
 atomic_bool IsThreadRunning = false;
+
+static u8 alignas(0x1000) VStreamStackArea[0x1000];
+static u8 alignas(0x1000) AStreamStackArea[0x1000];
 #endif
 
-static inline void LaunchThreadEx(Thread* t, ThreadFunc f, void* arg, u32 stack, u32 prio)
+void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)
 {
-	Result rc = threadCreate(t, f, arg, NULL, stack, prio, 3);
+	Result rc = threadCreate(t, f, arg, stackLocation, stackSize, prio, 3);
 	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = threadStart(t);
 	if (R_FAILED(rc)) fatalThrow(rc);
-}
-
-static inline void LaunchInternalThread(Thread* t, ThreadFunc f, void* arg)
-{
-	LaunchThreadEx(t, f, arg, 0x800, 0x26);
-}
-
-// Only used by rtsp
-void LaunchExtraThread(Thread* t, ThreadFunc f, void* arg)
-{
-	LaunchThreadEx(t, f, arg, 0x800, 0x2D);
 }
 
 void JoinThread(Thread* t)
@@ -210,11 +202,11 @@ static void SetModeInternal(const void* argmode)
 		
 		LOG("Starting video thread\n");
 		if (mode->VThread)
-			LaunchInternalThread(&VideoThread, mode->VThread, mode->Vargs);
+			LaunchThread(&VideoThread, mode->VThread, mode->Vargs, VStreamStackArea, sizeof(VStreamStackArea), 0x2C);
 		
 		LOG("Starting audio thread\n");
 		if (mode->AThread)
-			LaunchInternalThread(&AudioThread, mode->AThread, mode->Aargs);
+			LaunchThread(&AudioThread, mode->AThread, mode->Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
 	}
 	IsSwitchingModes = false;
 	LOG("Done\n");

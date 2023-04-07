@@ -66,7 +66,7 @@ static void RTSP_StreamAudio(void* _)
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
 
-			int success = IsThreadRunning && !PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
+			bool success = IsThreadRunning && !PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
 			
 			CaptureEndConsume(&AudioProducer);
 
@@ -81,7 +81,7 @@ static void RTSP_StreamAudio(void* _)
 static void RTSP_Init()
 {
 	RTP_InitializeSequenceNumbers();
-	LaunchExtraThread(&RTSPThread, RTSP_ServerThread, NULL);
+	LaunchThread(&RTSPThread, RTSP_ServerThread, NULL, Buffers.RTSPMode.ServerThreadStackArea, sizeof(Buffers.RTSPMode.ServerThreadStackArea), 0x2D);
 }
 
 static void RTSP_Exit()
