@@ -22,17 +22,16 @@
 	it will only stream via USB and won't support the config app.
 */
 #ifdef USB_ONLY
-	#define INNER_HEAP_SIZE 100 * 1024
+	#define INNER_HEAP_SIZE 40 * 1024
 	#pragma message "Building USB-only version"
 #else
-	// Memory is carefully calculated, for development and logging it should be increased
+	// Memory is carefully calculated, for development and logging it is increased
 	// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
 	// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
 	// For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
 	#define INNER_HEAP_SIZE 1024 * 1024
 	#pragma message "Building full version"
 	
-	#include "rtsp/RTP.h"
 	#include "ipc/ipc.h"
 #endif
 
@@ -40,6 +39,12 @@ u32 __nx_applet_type = AppletType_None;
 #ifndef USE_LOGGING
 	u32 __nx_fs_num_sessions = 1;
 	u32 __nx_fsdev_direntry_cache_size = 1;
+#endif
+
+#ifdef USE_LOGGING
+	#pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
+	#undef INNER_HEAP_SIZE
+	#define INNER_HEAP_SIZE 1024 * 1024 + 512 * 1024
 #endif
 
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
@@ -79,17 +84,17 @@ void __attribute__((weak)) __appInit(void)
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
 	
-		.tcp_tx_buf_size = MaxRTPPacket + 128,
-		.tcp_rx_buf_size = MaxRTPPacket + 128,
-		.tcp_tx_buf_max_size = sizeof(VideoPacket) + sizeof(AudioPacket) + 128,
+		.tcp_tx_buf_size = MaxRTPPacket,
+		.tcp_rx_buf_size = 1024,
+		.tcp_tx_buf_max_size = 0,
 		.tcp_rx_buf_max_size = 0,
 	
-		.udp_tx_buf_size = MaxRTPPacket + 128,
-		.udp_rx_buf_size = MaxRTPPacket + 128,
+		.udp_tx_buf_size = MaxRTPPacket,
+		.udp_rx_buf_size = 1024,
 	
-		.sb_efficiency = 2,
+		.sb_efficiency = 1,
 	
-		.num_bsd_sessions = 3,
+		.num_bsd_sessions = 2,
 		.bsd_service_type = BsdServiceType_User,
 	};
 	rc = socketInitialize(&initConfig);
@@ -107,7 +112,7 @@ void __attribute__((weak)) __appInit(void)
 	}
 
 	if (R_FAILED(rc))
-		fatalThrow(MAKERESULT(SYSDVR_CRASH_MODULEID, 10));
+		fatalThrow(ERR_INIT_FAILED);
 
 #ifndef USB_ONLY
 	fsdevMountSdmc();
@@ -138,13 +143,13 @@ static inline void LaunchThreadEx(Thread* t, ThreadFunc f, void* arg, u32 stack,
 
 static inline void LaunchInternalThread(Thread* t, ThreadFunc f, void* arg)
 {
-	LaunchThreadEx(t, f, arg, 0x1000, 0x26);
+	LaunchThreadEx(t, f, arg, 0x800, 0x26);
 }
 
 // Only used by rtsp
 void LaunchExtraThread(Thread* t, ThreadFunc f, void* arg)
 {
-	LaunchThreadEx(t, f, arg, 0x1000, 0x2D);
+	LaunchThreadEx(t, f, arg, 0x800, 0x2D);
 }
 
 void JoinThread(Thread* t)

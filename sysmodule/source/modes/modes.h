@@ -44,10 +44,13 @@ typedef union {
 		u8 alignas(0x1000) EndpointIn[0x1000];
 		u8 alignas(0x1000) EndpointOut[0x1000];
 	} UsbMode;
+// Since this is the biggest contributor ifdef it out when not needed
+#ifndef USB_ONLY
 	struct {
 		char VideoSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 		char AudioSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 	} RTSPMode;
+#endif
 } StaticBuffers;
 
 extern StaticBuffers Buffers;
