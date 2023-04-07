@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#include "../third_party/nanoprintf.h"
 #include "../sockUtil.h"
 #include "RTSP.h"
 
@@ -273,7 +274,7 @@ static inline void RTSP_SendFormat(int buf, const char* format, ...)
 
 	va_list args;
 	va_start(args, format);
-	vsnprintf(toSend, buf, format, args);
+	npf_vsnprintf(toSend, buf, format, args);
 	va_end(args);
 
 	RTSP_SendText(toSend);
@@ -373,12 +374,12 @@ static inline int recvAll(int sock, char* data, int size)
 //Don't use RTSP_Send* functions here !
 static inline void RTSP_MainLoop()
 {
-	char rtspBuf[512];
-
 	while (client > 0 && RTSP_Running)
 	{
-		int len = recvAll(client, rtspBuf, sizeof(rtspBuf));
+		int len = recvAll(client, Buffers.RTSPMode.RtspRecevBuf, sizeof(Buffers.RTSPMode.RtspRecevBuf));
 		if (len <= 0) break;
+
+		char* rtspBuf = Buffers.RTSPMode.RtspRecevBuf;
 
 		rtspBuf[len] = '\0';
 
@@ -399,7 +400,7 @@ static inline void RTSP_MainLoop()
 			*arg1End = '\0';
 
 			char contBase[80];
-			snprintf(contBase, sizeof(contBase), "Content-Base: %.63s\r\n", arg1);
+			npf_snprintf(contBase, sizeof(contBase), "Content-Base: %.63s\r\n", arg1);
 			*arg1End = original;
 
 			RTSP_AnswerTextSDPContent(rtspBuf, contBase, SDP);
@@ -512,7 +513,7 @@ static inline void RTSP_MainLoop()
 				}
 
 				char transportRespnse[150];
-				snprintf(transportRespnse, sizeof(transportRespnse), "Transport: %s\r\nSession: 69\r\n", transport);
+				npf_snprintf(transportRespnse, sizeof(transportRespnse), "Transport: %s\r\nSession: 69\r\n", transport);
 				RTSP_AnswerText(rtspBuf, transportRespnse);
 			}
 			else RTSP_AnswerError("461 Unsupported transport");

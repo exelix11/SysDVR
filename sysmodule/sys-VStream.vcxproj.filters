@@ -32,6 +32,9 @@
       <Filter>ipc</Filter>
     </ClCompile>
     <ClCompile Include="source\capture.c" />
+    <ClCompile Include="source\third_party\nanoprintf.c">
+      <Filter>third_party</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -64,6 +67,9 @@
       <Filter>ipc</Filter>
     </ClInclude>
     <ClInclude Include="source\capture.h" />
+    <ClInclude Include="source\third_party\nanoprintf.h">
+      <Filter>third_party</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">
@@ -77,6 +83,9 @@
     </Filter>
     <Filter Include="ipc">
       <UniqueIdentifier>{6e251262-6ebd-49a8-a634-a317bc8d7640}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third_party">
+      <UniqueIdentifier>{eaca899c-4b27-49c1-8421-26eb10f76723}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -14,7 +14,7 @@ static const bool IsThreadRunning = true;
 extern atomic_bool IsThreadRunning;
 #endif
 
-void LaunchExtraThread(Thread* t, ThreadFunc f, void* arg);
+void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio);
 void JoinThread(Thread* t);
 
 typedef struct
@@ -49,6 +49,8 @@ typedef union {
 	struct {
 		char VideoSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 		char AudioSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
+		char RtspRecevBuf[512];
+		u8 alignas(0x1000) ServerThreadStackArea[0x1000];
 	} RTSPMode;
 #endif
 } StaticBuffers;

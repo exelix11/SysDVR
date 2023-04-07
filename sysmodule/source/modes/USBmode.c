@@ -49,7 +49,7 @@ static void USB_StreamThread(void*)
 			// Wait for one of the two streams to be available
 			// Target will never be NULL, CaptureWaitBeginConsumeAny will fatal
 			// in case something interrupts the wait (exiting mode cleanly unlocks simulating a produce)
-			ConsumerProducer* target = CaptureWaitBeginConsumeAny(&VideoProducer, &AudioProducer);
+			ConsumerProducer* target = CaptureWaitBeginConsumeAny(&AudioProducer, &VideoProducer);
 
 			// If we wasted too much time the client will try to reconnect
 			bool isTooLate = armGetSystemTick() - lastConnection > armNsToTicks(1.5E+9);
