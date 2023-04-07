@@ -132,8 +132,8 @@ void __attribute__((weak)) __appExit(void)
 #ifndef USB_ONLY
 atomic_bool IsThreadRunning = false;
 
-static u8 alignas(0x1000) VStreamStackArea[0x1200];
-static u8 alignas(0x1000) AStreamStackArea[0x1200];
+static u8 alignas(0x1000) VStreamStackArea[0x2000];
+static u8 alignas(0x1000) AStreamStackArea[0x2000];
 #endif
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)

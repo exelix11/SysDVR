@@ -374,12 +374,12 @@ static inline int recvAll(int sock, char* data, int size)
 //Don't use RTSP_Send* functions here !
 static inline void RTSP_MainLoop()
 {
+	char rtspBuf[512];
+
 	while (client > 0 && RTSP_Running)
 	{
-		int len = recvAll(client, Buffers.RTSPMode.RtspRecevBuf, sizeof(Buffers.RTSPMode.RtspRecevBuf));
+		int len = recvAll(client, rtspBuf, sizeof(rtspBuf));
 		if (len <= 0) break;
-
-		char* rtspBuf = Buffers.RTSPMode.RtspRecevBuf;
 
 		rtspBuf[len] = '\0';
 
