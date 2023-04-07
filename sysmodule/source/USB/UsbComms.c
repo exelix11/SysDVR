@@ -43,7 +43,7 @@ Result usbSerialInitialize(const UsbSerialInitializationInfo* info)
         rc = MAKERESULT(Module_Libnx, LibnxError_AlreadyInitialized);
     }
     else if (info->NumInterfaces > TOTAL_INTERFACES) {
-        rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+        rc = ERR_USB_OUT_OF_MEMORY;
     }
     else {
         rc = usbDsInitialize();
@@ -249,7 +249,7 @@ static Result _usbCommsInterfaceInit5x(u32 intf_ind, const UsbSerailInterfaceInf
     // The buffer for PostBufferAsync commands must be 0x1000-byte aligned.
     // Since we have a single interface, statically allocate the endpoint buffer 
     if (Buffers.UsbMode.IsInUse)
-        rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+        rc = ERR_USB_OUT_OF_MEMORY;
     else {
         Buffers.UsbMode.IsInUse = true;
         interface->endpoint_in_buffer = Buffers.UsbMode.EndpointIn;
@@ -352,7 +352,7 @@ static Result _usbCommsInterfaceInit1x(u32 intf_ind, const UsbSerailInterfaceInf
     //The buffer for PostBufferAsync commands must be 0x1000-byte aligned.
     // Since we have a single interface, statically allocate the endpoint buffer 
     if (Buffers.UsbMode.IsInUse)
-        rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+        rc = ERR_USB_OUT_OF_MEMORY;
     else {
         Buffers.UsbMode.IsInUse = true;
         interface->endpoint_in_buffer = Buffers.UsbMode.EndpointIn;
