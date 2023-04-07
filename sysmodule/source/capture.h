@@ -25,7 +25,7 @@
 	This is acceptable as grc:d already doesn't provide real time audio.
 	To remove set the following to 1
 */
-#define ABatching 2
+#define ABatching 3
 
 typedef struct {
 	u32 Magic;
