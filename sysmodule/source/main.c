@@ -132,8 +132,8 @@ void __attribute__((weak)) __appExit(void)
 #ifndef USB_ONLY
 atomic_bool IsThreadRunning = false;
 
-static u8 alignas(0x1000) VStreamStackArea[0x1000];
-static u8 alignas(0x1000) AStreamStackArea[0x1000];
+static u8 alignas(0x1000) VStreamStackArea[0x1200];
+static u8 alignas(0x1000) AStreamStackArea[0x1200];
 #endif
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)
@@ -201,12 +201,16 @@ static void SetModeInternal(const void* argmode)
 			mode->InitFn();
 		
 		LOG("Starting video thread\n");
-		if (mode->VThread)
+		if (mode->VThread) {
+			memset(VStreamStackArea, 0, sizeof(VStreamStackArea));
 			LaunchThread(&VideoThread, mode->VThread, mode->Vargs, VStreamStackArea, sizeof(VStreamStackArea), 0x2C);
-		
+		}
+
 		LOG("Starting audio thread\n");
-		if (mode->AThread)
+		if (mode->AThread) {
+			memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
 			LaunchThread(&AudioThread, mode->AThread, mode->Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
+		}
 	}
 	IsSwitchingModes = false;
 	LOG("Done\n");
