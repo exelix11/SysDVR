@@ -31,7 +31,7 @@ static inline int AttemptOpenTCPListener(int port, bool LocalOnly, int DebugFlag
 	if (err)
 		ReturnFail(3);
 
-	err = listen(sock, 1);
+	err = listen(sock, 3);
 	if (err)
 		ReturnFail(4);
 

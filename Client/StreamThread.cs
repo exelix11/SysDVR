@@ -117,13 +117,14 @@ namespace SysDVR.Client
 			try
 			{
 				Source.WaitForConnection();
+			loop_again:
 				while (!token.IsCancellationRequested)
 				{
 					while (!Source.ReadHeader(HeaderData))
 					{
 						Source.Flush();
 						Thread.Sleep(10);
-						continue;
+						goto loop_again;
 					}
 
 					if (log)

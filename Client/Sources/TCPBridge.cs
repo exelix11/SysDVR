@@ -94,24 +94,37 @@ namespace SysDVR.Client.Sources
 		bool InSync = false;
 		public bool ReadHeader(byte[] buffer)
 		{
-			if (InSync)
+			try
 			{
-				return ReadPayload(buffer, PacketHeader.StructLength);
-			}
-			else 
-			{
-				// TCPBridge is a raw stream of data, search for an header
-				for (int i = 0; i < 4 && !Token.IsCancellationRequested; i++)
+				if (InSync)
 				{
-					ReadExact(buffer.AsSpan().Slice(i, 1));
-					if (buffer[i] != PacketMagicHeader)
-						i = 0;
+					return ReadPayload(buffer, PacketHeader.StructLength);
 				}
-				ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
-				InSync = true;
-			}
+				else
+				{
+					// TCPBridge is a raw stream of data, search for an header
+					for (int i = 0; i < 4 && !Token.IsCancellationRequested; i++)
+					{
+						ReadExact(buffer.AsSpan().Slice(i, 1));
+						if (buffer[i] != PacketMagicHeader)
+							i = 0;
+					}
+					ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
+					InSync = true;
+				}
 
-			return true;
+                return true;
+            }
+			catch
+			{
+				// Since two different threads handle the two listeners some times connection may fail for one of the two sockets right after accept(), silently swallow the exception and try to reconnect
+				// This is done only in read header and not read payload because if this happens then the very first read fails and not the subsequent ones
+				if (Token.IsCancellationRequested)
+					return false;
+
+				WaitForConnection();
+				return ReadHeader(buffer);
+            }
 		}
 
 		void ReadExact(Span<byte> data)
