@@ -7,6 +7,7 @@
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
+// These threads have smaller stack than normal, may cause issues if more code is added
 static u8 alignas(0x1000) VCapThreadStackArea[0x1000];
 static u8 alignas(0x1000) ACapThreadStackArea[0x1000];
 
