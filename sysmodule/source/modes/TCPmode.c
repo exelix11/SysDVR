@@ -50,7 +50,6 @@ static inline int TCP_Accept(GrcStream stream)
 static inline bool SendData(int sock, const PacketHeader* header, const char* FullPacket)
 {
 	u32 toSend = sizeof(PacketHeader) + header->DataSize; 
-	int errorCount = 0;
 
 	while (toSend)
 	{
@@ -60,11 +59,10 @@ static inline bool SendData(int sock, const PacketHeader* header, const char* Fu
 		{
 			if (errno == EWOULDBLOCK || errno == EAGAIN)
 			{
-				// The client is not flushing the buffer fast enough, it probably disconnected
-				if (++errorCount > 9)
+				if (!IsThreadRunning)
 					return false;
 
-				svcSleepThread(1);
+				svcSleepThread(YieldType_WithoutCoreMigration);
 				continue;
 			}
 			else return false;
@@ -77,38 +75,55 @@ static inline bool SendData(int sock, const PacketHeader* header, const char* Fu
 	return true;
 }
 
-static void TCP_StreamThread(void* argStreamType)
+typedef struct 
+{
+	GrcStream Type;
+	ConsumerProducer* Target;
+	PacketHeader* Pkt;
+} StreamConf;
+
+const StreamConf VideoConfig = {
+	GrcStream_Video,
+	&VideoProducer,
+	&VPkt.Header
+};
+
+const StreamConf AudioConfig = {
+	GrcStream_Audio,
+	&AudioProducer,
+	&APkt.Header
+};
+
+static void TCP_StreamThread(void* argConfig)
 {
 	if (!IsThreadRunning)
 		fatalThrow(ERR_TCP_VIDEO);
 
-	const GrcStream type = (GrcStream)argStreamType;
-	ConsumerProducer* const target = type == GrcStream_Video ? &VideoProducer : &AudioProducer;
-	PacketHeader* const pkt = type == GrcStream_Video ? &VPkt.Header : &APkt.Header;
+	StreamConf config = *(const StreamConf*)argConfig;
 
 	while (IsThreadRunning) {
-		int client = TCP_Accept(type);
+		int client = TCP_Accept(config.Type);
 		if (client < 0)
 			continue;
 
-		CaptureOnClientConnected(target);
+		CaptureOnClientConnected(config.Target);
 
 		while (true)
 		{
-			CaptureBeginConsume(target);
+			CaptureBeginConsume(config.Target);
 
 			if (!IsThreadRunning)
 				break;
 
-			bool success = SendData(client, pkt, (const char*)pkt);
+			bool success = SendData(client, config.Pkt, (const char*)config.Pkt);
 
-			CaptureEndConsume(target);
+			CaptureEndConsume(config.Target);
 
 			if (!success)
 				break;			
 		}
 
-		CaptureOnClientDisconnected(target);
+		CaptureOnClientDisconnected(config.Target);
 
 		close(client);
 		svcSleepThread(2E+8);
@@ -121,11 +136,6 @@ static void TCP_Init()
 	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
 }
 
-static void TCP_Exit()
-{
-
-}
-
-const StreamMode TCP_MODE = { TCP_Init, TCP_Exit, TCP_StreamThread, TCP_StreamThread, (void*)GrcStream_Video, (void*)GrcStream_Audio };
+const StreamMode TCP_MODE = { TCP_Init, NULL, TCP_StreamThread, TCP_StreamThread, (void*)&VideoConfig, (void*)&AudioConfig};
 
 #endif
