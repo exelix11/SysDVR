@@ -84,17 +84,17 @@ void __attribute__((weak)) __appInit(void)
 	const SocketInitConfig initConfig = {
 		.bsdsockets_version = 1,
 	
-		.tcp_tx_buf_size = MaxRTPPacket + 128,
-		.tcp_rx_buf_size = 1024,
+		.tcp_tx_buf_size = 12 * 1024,
+		.tcp_rx_buf_size = 2 * 1024,
 		.tcp_tx_buf_max_size = 0,
 		.tcp_rx_buf_max_size = 0,
 	
-		.udp_tx_buf_size = MaxRTPPacket + 128,
+		.udp_tx_buf_size = 9 * 1024,
 		.udp_rx_buf_size = 1024,
 	
 		.sb_efficiency = 2,
 	
-		.num_bsd_sessions = 2,
+		.num_bsd_sessions = 3,
 		.bsd_service_type = BsdServiceType_User,
 	};
 	rc = socketInitialize(&initConfig);
