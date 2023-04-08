@@ -8,8 +8,8 @@ VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
 // These threads have smaller stack than normal, may cause issues if more code is added
-static u8 alignas(0x1000) VCapThreadStackArea[0x1000];
-static u8 alignas(0x1000) ACapThreadStackArea[0x1000];
+static u8 alignas(0x1000) VCapThreadStackArea[0x1000 + LOGGING_HEAP_BOOST];
+static u8 alignas(0x1000) ACapThreadStackArea[0x1000 + LOGGING_HEAP_BOOST];
 
 ConsumerProducer VideoProducer;
 ConsumerProducer AudioProducer;
@@ -24,8 +24,6 @@ static const uint8_t SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0
 static const uint8_t PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 static bool forceSPSPPS = false;
-
-#define R_RET_ON_FAIL(x) do { Result rc = x; if (R_FAILED(rc)) return rc; } while (0)
 
 static Result GrcInitialize()
 {
@@ -161,7 +159,8 @@ Result CaptureStartThreads()
 
 void CaptureOnClientConnected(ConsumerProducer* prod)
 {
-	forceSPSPPS = true;
+	if (prod == &VideoProducer)
+		forceSPSPPS = true;
 	
 	// Clear events
 	ueventClear(&prod->Consumed);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LibUsbDotNet;
+using System;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -37,6 +38,11 @@ namespace SysDVR.Client.Sources
 		public void WaitForConnection()
 		{
 			Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+			try {
+				Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+			}
+			catch { }
 
 			Exception ReportException = null;
 			for (int i = 0; i < MaxConnectionAttempts; i++) 

@@ -65,8 +65,8 @@
     <ClCompile Include="source\modes\RTSPmode.c" />
     <ClCompile Include="source\modes\TCPmode.c" />
     <ClCompile Include="source\modes\USBmode.c" />
+    <ClCompile Include="source\net\sockets.c" />
     <ClCompile Include="source\rtsp\RTSP.c" />
-    <ClCompile Include="source\sockUtil.c" />
     <ClCompile Include="source\third_party\nanoprintf.c" />
     <ClCompile Include="source\USB\Serial.c" />
     <ClCompile Include="source\USB\UsbComms.c" />
@@ -83,11 +83,11 @@
     <ClInclude Include="source\ipc\ipc.h" />
     <ClInclude Include="source\modes\defines.h" />
     <ClInclude Include="source\modes\modes.h" />
+    <ClInclude Include="source\net\sockets.h" />
     <ClInclude Include="source\rtsp\H264Packetizer.h" />
     <ClInclude Include="source\rtsp\LE16Packetizer.h" />
     <ClInclude Include="source\rtsp\RTP.h" />
     <ClInclude Include="source\rtsp\RTSP.h" />
-    <ClInclude Include="source\sockUtil.h" />
     <ClInclude Include="source\third_party\nanoprintf.h" />
     <ClInclude Include="source\USB\Serial.h" />
     <ClInclude Include="source\USB\UsbComms.h" />
