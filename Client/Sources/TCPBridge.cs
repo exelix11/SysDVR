@@ -30,24 +30,13 @@ namespace SysDVR.Client.Sources
 			IpAddress = ip;
 			Port = kind == StreamKind.Video ? 9911 : 9922;
 
-			PacketMagicHeader = 
+			PacketMagicHeader =		
 				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
         }
 
 		public void WaitForConnection()
 		{
 			Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-			try
-			{
-				Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize * 2;
-				Sock.NoDelay = true;
-			}
-			catch (Exception ex)
-			{
-				if (Logging)
-					Console.WriteLine("Info: Failed to set TcpClient options: " + ex);
-			}
 
 			Exception ReportException = null;
 			for (int i = 0; i < MaxConnectionAttempts; i++) 
@@ -88,62 +77,46 @@ namespace SysDVR.Client.Sources
 
 		public void Flush()
 		{
-			InSync = false;
-		}
+			Console.WriteLine($"{SourceKind} needs reconnection");
+			Sock?.Close();
 
-		bool InSync = false;
+			if (Token.IsCancellationRequested)
+				return;
+
+            Thread.Sleep(1000);
+            WaitForConnection();
+        }
+
 		public bool ReadHeader(byte[] buffer)
 		{
 			try
 			{
-				if (InSync)
-				{
-					return ReadPayload(buffer, PacketHeader.StructLength);
-				}
-				else
-				{
-					// TCPBridge is a raw stream of data, search for an header
-					for (int i = 0; i < 4 && !Token.IsCancellationRequested; i++)
-					{
-						ReadExact(buffer.AsSpan().Slice(i, 1));
-						if (buffer[i] != PacketMagicHeader)
-							i = 0;
-					}
-					ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
-					InSync = true;
-				}
-
-                return true;
+                return ReadPayload(buffer, PacketHeader.StructLength);
             }
 			catch
 			{
-				// Since two different threads handle the two listeners some times connection may fail for one of the two sockets right after accept(), silently swallow the exception and try to reconnect
-				// This is done only in read header and not read payload because if this happens then the very first read fails and not the subsequent ones
-				if (Token.IsCancellationRequested)
-					return false;
-
-				WaitForConnection();
-				return ReadHeader(buffer);
+                return false;
             }
 		}
 
-		void ReadExact(Span<byte> data)
+		bool ReadExact(Span<byte> data)
 		{
 			while (data.Length > 0) 
 			{
 				int r = Sock.Receive(data);
 
-				if (r == 0) 
-					throw new Exception("No data received");
+				if (r == 0)
+					return false;
 
 				data = data.Slice(r);
 			}
+
+			return true;
 		}
 
 		public bool ReadPayload(byte[] buffer, int length)
 		{
-			ReadExact(buffer.AsSpan().Slice(0, length));
-			return true;
+			return ReadExact(buffer.AsSpan().Slice(0, length));
 		}
 	}
 

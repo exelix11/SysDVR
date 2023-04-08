@@ -18,7 +18,7 @@ namespace SysDVR.Client
 		public UInt64 Timestamp;
 
 		public override string ToString() =>
-			$"Len: {DataSize} Bytes - ts: {Timestamp}";
+			$"Magic: {Magic:X8} Len: {DataSize + StructLength} Bytes - ts: {Timestamp}";
 
 		public const int StructLength = 16;
 
