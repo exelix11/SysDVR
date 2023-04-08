@@ -1,78 +1,47 @@
 #if !defined(USB_ONLY)
 #include "modes.h"
+#include "../net/sockets.h"
 #include "../capture.h"
-#include "../sockUtil.h"
 
 static inline int TCP_BeginListen(GrcStream stream)
 {
+	LOG("TCP %d Begin listen\n", (int)stream);
 	if (stream == GrcStream_Video)
 	{
-		return CreateTCPListener(9911, false, ERR_SOCK_TCP_1);
+		return SocketTcpListen(9911, true);
 	}
 	else
 	{
-		return CreateTCPListener(9922, false, ERR_SOCK_TCP_2);
+		return SocketTcpListen(9922, true);
 	}
 }
 
 static inline int TCP_Accept(GrcStream stream)
 {
+restart:
 	int listen = TCP_BeginListen(stream);
-
-	/*
-		This is needed because when resuming from sleep mode accept won't work anymore and errno value is not useful
-		in detecting it, as we're using non-blocking mode the counter will reset the socket every 8 seconds
-	*/
-	int fails = 0;
 
 	while (IsThreadRunning)
 	{
-		int client = accept(listen, NULL, NULL);
-		if (client != -1)
+		int client = SocketTcpAccept(listen, NULL, NULL);
+		if (client != SOCKET_INVALID)
 		{
-			close(listen);
+			LOG("TCP %d Accepted client\n", (int)stream);
+			SocketClose(&listen);
 			return client;
 		}
 
 		svcSleepThread(1E+9);
-		if (++fails >= 8)
+		if (SocketIsErrnoNetDown())
 		{
-			fails = 0;
-			close(listen);
-			listen = TCP_BeginListen(stream);
+			LOG("TCP %d Network change detected\n", (int)stream);
+			SocketClose(&listen);
+			goto restart;
 		}
 	}
 
-	close(listen);
-	return -1;
-}
-
-static inline bool SendData(int sock, const PacketHeader* header, const char* FullPacket)
-{
-	u32 toSend = sizeof(PacketHeader) + header->DataSize; 
-
-	while (toSend)
-	{
-		int res = send(sock, FullPacket, toSend, 0);
-
-		if (res < 0)
-		{
-			if (errno == EWOULDBLOCK || errno == EAGAIN)
-			{
-				if (!IsThreadRunning)
-					return false;
-
-				svcSleepThread(YieldType_WithoutCoreMigration);
-				continue;
-			}
-			else return false;
-		}
-		
-		toSend -= res;
-		FullPacket += res;
-	}
-
-	return true;
+	SocketClose(&listen);
+	return SOCKET_INVALID;
 }
 
 typedef struct 
@@ -80,18 +49,21 @@ typedef struct
 	GrcStream Type;
 	ConsumerProducer* Target;
 	PacketHeader* Pkt;
+	const char* FullPacket;
 } StreamConf;
 
 const StreamConf VideoConfig = {
 	GrcStream_Video,
 	&VideoProducer,
-	&VPkt.Header
+	&VPkt.Header,
+	(const char*)&VPkt
 };
 
 const StreamConf AudioConfig = {
 	GrcStream_Audio,
 	&AudioProducer,
-	&APkt.Header
+	&APkt.Header,
+	(const char*)&APkt
 };
 
 static void TCP_StreamThread(void* argConfig)
@@ -101,10 +73,14 @@ static void TCP_StreamThread(void* argConfig)
 
 	StreamConf config = *(const StreamConf*)argConfig;
 
+	LOG("TCP %d Thread started\n", (int)config.Type);
+
 	while (IsThreadRunning) {
 		int client = TCP_Accept(config.Type);
-		if (client < 0)
+		if (client == SOCKET_INVALID) {
+			LOG("TCP %d Accept failed\n", (int)config.Type);
 			continue;
+		}
 
 		CaptureOnClientConnected(config.Target);
 
@@ -112,22 +88,31 @@ static void TCP_StreamThread(void* argConfig)
 		{
 			CaptureBeginConsume(config.Target);
 
-			if (!IsThreadRunning)
-				break;
+			bool success = IsThreadRunning;
 
-			bool success = SendData(client, config.Pkt, (const char*)config.Pkt);
+			if (success)
+			{
+				//LOG("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
+				success = SocketSendAll(&client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
+			}
 
 			CaptureEndConsume(config.Target);
 
 			if (!success)
-				break;			
+			{
+				LOG("TCP %d send failed %d %d\n", (int)config.Type, g_bsdErrno, IsThreadRunning);
+				break;
+			}
 		}
 
 		CaptureOnClientDisconnected(config.Target);
 
-		close(client);
+		LOG("TCP %d Closing client\n", (int)config.Type);
+		SocketClose(&client);
 		svcSleepThread(2E+8);
 	}
+
+	LOG("TCP %d Thread terminating\n", (int)config.Type);
 }
 
 static void TCP_Init() 

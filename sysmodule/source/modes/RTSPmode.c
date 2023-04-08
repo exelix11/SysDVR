@@ -4,6 +4,7 @@
 #include "../rtsp/RTSP.h"
 #include "../rtsp/H264Packetizer.h"
 #include "../rtsp/LE16Packetizer.h"
+#include "../net/sockets.h"
 
 static Thread RTSPThread;
 
@@ -21,6 +22,7 @@ static void RTSP_StreamVideo(void* _)
 		
 		if (!IsThreadRunning) break;
 		
+		LOG("RTSP VIDEO STREAMING\n");
 		CaptureOnClientConnected(&VideoProducer);
 
 		while (true)
@@ -30,6 +32,7 @@ static void RTSP_StreamVideo(void* _)
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
 			
+			//LOG("RTSP VIDEO TS %lu BYTES %lu\n", VPkt.Header.Timestamp, VPkt.Header.DataSize + sizeof(PacketHeader));
 			bool success = IsThreadRunning && !PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
 			
 			CaptureEndConsume(&VideoProducer);
@@ -57,6 +60,7 @@ static void RTSP_StreamAudio(void* _)
 		if (!IsThreadRunning) 
 			break;
 
+		LOG("RTSP AUDIO STREAMING\n");
 		CaptureOnClientConnected(&AudioProducer);
 
 		while (IsThreadRunning)
@@ -65,7 +69,8 @@ static void RTSP_StreamAudio(void* _)
 
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
-
+			
+			//LOG("RTSP AUDIO TS %lu BYTES %lu\n", APkt.Header.Timestamp, APkt.Header.DataSize + sizeof(PacketHeader));
 			bool success = IsThreadRunning && !PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
 			
 			CaptureEndConsume(&AudioProducer);

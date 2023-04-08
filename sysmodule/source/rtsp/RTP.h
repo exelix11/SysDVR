@@ -3,7 +3,7 @@
 #include "../modes/modes.h"
 
 #if defined(USB_ONLY)
-#pragma error This should not be included
+#pragma error "This should not be included"
 #endif
 
 #define STREAM_VIDEO 0

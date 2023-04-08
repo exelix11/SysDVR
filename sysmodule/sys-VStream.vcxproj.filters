@@ -12,7 +12,6 @@
     <ClCompile Include="source\rtsp\RTSP.c">
       <Filter>rtsp</Filter>
     </ClCompile>
-    <ClCompile Include="source\sockUtil.c" />
     <ClCompile Include="source\modes\RTSPmode.c">
       <Filter>modes</Filter>
     </ClCompile>
@@ -35,6 +34,9 @@
     <ClCompile Include="source\third_party\nanoprintf.c">
       <Filter>third_party</Filter>
     </ClCompile>
+    <ClCompile Include="source\net\sockets.c">
+      <Filter>net</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -50,7 +52,6 @@
     <ClInclude Include="source\rtsp\LE16Packetizer.h">
       <Filter>rtsp</Filter>
     </ClInclude>
-    <ClInclude Include="source\sockUtil.h" />
     <ClInclude Include="source\modes\modes.h">
       <Filter>modes</Filter>
     </ClInclude>
@@ -70,6 +71,9 @@
     <ClInclude Include="source\third_party\nanoprintf.h">
       <Filter>third_party</Filter>
     </ClInclude>
+    <ClInclude Include="source\net\sockets.h">
+      <Filter>net</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">
@@ -86,6 +90,9 @@
     </Filter>
     <Filter Include="third_party">
       <UniqueIdentifier>{eaca899c-4b27-49c1-8421-26eb10f76723}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="net">
+      <UniqueIdentifier>{8a2d9a3c-40c8-41c2-b308-ce3638475481}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

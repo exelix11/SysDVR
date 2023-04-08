@@ -16,8 +16,6 @@ static Handle* const clientHandle = &handles[1];
 
 static bool isClientConnected = false;
 
-#define R_THROW(x) do { Result r = x; if (R_FAILED(r)) { fatalThrow(r); }  } while(0)
-
 static void StartServer()
 {
 	isClientConnected = false;

@@ -17,34 +17,31 @@
 #pragma message "Logging is enabled"
 #endif
 
+// Memory is carefully calculated, for development and logging it is increased
+// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
+// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
+// For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
+#define INNER_HEAP_SIZE (10 * 1024 + LOGGING_HEAP_BOOST)
+
 /*
 	Build with USB_ONLY to have a smaller impact on memory,
 	it will only stream via USB and won't support the config app.
+	Note that memory savings don't come from the INNER_HEAP_SIZE variable
+	but from the statically allocated stacks and buffers needed for network modes
 */
 #ifdef USB_ONLY
-	#define INNER_HEAP_SIZE 10 * 1024
 	#pragma message "Building USB-only version"
 #else
-	// Memory is carefully calculated, for development and logging it is increased
-	// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
-	// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
-	// For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
-	#define INNER_HEAP_SIZE 256 * 1024
 	#pragma message "Building full version"
 	
 	#include "ipc/ipc.h"
+	#include "net/sockets.h"
 #endif
 
 u32 __nx_applet_type = AppletType_None;
 #ifndef USE_LOGGING
 	u32 __nx_fs_num_sessions = 1;
 	u32 __nx_fsdev_direntry_cache_size = 1;
-#endif
-
-#ifdef USE_LOGGING
-	#pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
-	#undef INNER_HEAP_SIZE
-	#define INNER_HEAP_SIZE 1024 * 1024 + 512 * 1024
 #endif
 
 size_t nx_inner_heap_size = INNER_HEAP_SIZE;
@@ -76,30 +73,14 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
-#ifndef USB_ONLY
+#if !defined(USB_ONLY) && !defined(USE_LOGGING)
 	rc = fsInitialize();
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+#endif
 
-	const SocketInitConfig initConfig = {
-		.bsdsockets_version = 1,
-	
-		.tcp_tx_buf_size = 12 * 1024,
-		.tcp_rx_buf_size = 2 * 1024,
-		.tcp_tx_buf_max_size = 0,
-		.tcp_rx_buf_max_size = 0,
-	
-		.udp_tx_buf_size = 9 * 1024,
-		.udp_rx_buf_size = 1024,
-	
-		.sb_efficiency = 2,
-	
-		.num_bsd_sessions = 3,
-		.bsd_service_type = BsdServiceType_User,
-	};
-	rc = socketInitialize(&initConfig);
-	if (R_FAILED(rc))
-		fatalThrow(rc);
+#if !defined(USB_ONLY)
+	SocketInit();
 #endif
 
 	rc = setsysInitialize();
@@ -114,16 +95,18 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(ERR_INIT_FAILED);
 
-#ifndef USB_ONLY
+#if !defined(USB_ONLY) && !defined(USE_LOGGING)
 	fsdevMountSdmc();
 #endif
 }
 
 void __attribute__((weak)) __appExit(void)
 {
-#ifndef USB_ONLY
+#if !defined(USB_ONLY)
+	SocketDeinit();
+#endif
+#if !defined(USB_ONLY) && !defined(USE_LOGGING)
 	fsdevUnmountAll();
-	socketExit();
 	fsExit();
 #endif
 	smExit();
@@ -132,8 +115,8 @@ void __attribute__((weak)) __appExit(void)
 #ifndef USB_ONLY
 atomic_bool IsThreadRunning = false;
 
-static u8 alignas(0x1000) VStreamStackArea[0x2000];
-static u8 alignas(0x1000) AStreamStackArea[0x2000];
+static u8 alignas(0x1000) VStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
+static u8 alignas(0x1000) AStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
 #endif
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)

@@ -8,11 +8,13 @@
 #include <assert.h>
 
 #include "../third_party/nanoprintf.h"
-#include "../sockUtil.h"
+#include "../net/sockets.h"
 #include "RTSP.h"
 
 //For RTP.h
 uint16_t SequenceNumbers[2];
+
+#define RTSP_PORT 6666
 
 #define INTERLEAVED_SUPPORT
 #define UDP_SUPPORT
@@ -21,26 +23,25 @@ uint16_t SequenceNumbers[2];
 #pragma error no streaming mode is supported
 #endif
 
-static const char SDP[] =	"s=SysDVR - https://github.com/exelix11/sysdvr \r\n"
-							"m=video 0 RTP/AVP 96\r\n"
-							"a=rtpmap:96 H264/90000\r\n"
-							"a=fmtp:96 profile-level-id=42A01E; sprop-parameter-sets=Z2QMIKwrQCgC3TUBDQHggA==,aO48sA==;\r\n" /* Hardcoded SPS and PPS*/
-							"a=StreamName:string;\"Video\"\r\n"
-							"a=control:video\r\n"
-							"m=audio 0 RTP/AVP 97\r\n"
-							"a=rtpmap:97 L16/48000/2\r\n"
-							"a=StreamName:string;\"Audio\"\r\n"
-							"a=control:audio\r\n";
+static const char SDP[] = "s=SysDVR - https://github.com/exelix11/sysdvr \r\n"
+"m=video 0 RTP/AVP 96\r\n"
+"a=rtpmap:96 H264/90000\r\n"
+"a=fmtp:96 profile-level-id=42A01E; sprop-parameter-sets=Z2QMIKwrQCgC3TUBDQHggA==,aO48sA==;\r\n" /* Hardcoded SPS and PPS*/
+"a=StreamName:string;\"Video\"\r\n"
+"a=control:video\r\n"
+"m=audio 0 RTP/AVP 97\r\n"
+"a=rtpmap:97 L16/48000/2\r\n"
+"a=StreamName:string;\"Audio\"\r\n"
+"a=control:audio\r\n";
 
-static int RTSPSock = -1;
-static int client = -1;
+static int client = SOCKET_INVALID;
 
 struct sockaddr_in clientAddress;
 #ifdef UDP_SUPPORT
 struct sockaddr_in clientVAddr;
 struct sockaddr_in clientAAddr;
-static int clientAudio = -1;
-static int clientVideo = -1;
+static int clientAudio = SOCKET_INVALID;
+static int clientVideo = SOCKET_INVALID;
 #endif
 
 #ifdef INTERLEAVED_SUPPORT
@@ -72,72 +73,72 @@ static const bool RTSP_Transfer_interleaved = INTERLEAVED_FLAG_CONST;
 static bool RTSP_Transfer_interleaved = false;
 #endif
 
-#define printl(...) 
-//#define printl(...) do {printf(__VA_ARGS__); fflush(stdout);} while(0)
+#define printl(...) LOG(__VA_ARGS__)
 
 static atomic_bool RTSP_Running = false;
 atomic_bool RTSP_ClientStreaming = false;
-
-static inline void CloseSocket(int* sptr)
-{
-	int sock = *sptr;
-	*sptr = -1;
-	if (sock != -1)
-		close(sock);
-}
 
 static inline void RTSP_MainLoop();
 
 void RTSP_ServerThread(void* _)
 {
-	RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_1);
-
-#ifdef USE_LOCKS
+#ifdef INTERLEAVED_SUPPORT
 	mutexInit(&RTSP_operation_lock);
 #endif
-	int sockFails = 0;
 	RTSP_Running = true;
+
+reconnect:
+	int listener= SocketTcpListen(RTSP_PORT, false);
 	while (RTSP_Running)
 	{
 		unsigned int clientAddRlen = sizeof(clientAddress);
-		client = accept(RTSPSock, (struct sockaddr*)&clientAddress, &clientAddRlen);
-		if (client < 0)
+		client = SocketTcpAccept(listener, (struct sockaddr*)&clientAddress, &clientAddRlen);
+		if (client == SOCKET_INVALID)
 		{
-			// Workaround for a libnx issue explained in TCPMode.c
-			if (++sockFails >= 8 && RTSP_Running)
-			{
-				CloseSocket(&RTSPSock);
-				RTSPSock = CreateTCPListener(6666, false, ERR_SOCK_RTSP_2);
-			}
+			if (!RTSP_Running)
+				break;
+
 			svcSleepThread(1E+9);
+			if (SocketIsErrnoNetDown())
+			{
+				SocketClose(&listener);
+				listener = SocketTcpListen(RTSP_PORT, false);
+				SocketMakeNonBlocking(listener);
+			}
+
 			continue;
 		}
-		
+
+		SocketClose(&listener);
 		RTSP_MainLoop();
 
 		//MainLoop returns on TEARDOWN or error, wait for all the socketing operation to finish
 		LOCK_SOCKETING;
 		RTSP_ClientStreaming = false;
-		CloseSocket(&client);
+		SocketClose(&client);
 #ifdef UDP_SUPPORT
-		CloseSocket(&clientAudio);
-		CloseSocket(&clientVideo);
+		SocketClose(&clientAudio);
+		SocketClose(&clientVideo);
 #endif
 		UNLOCK_SOCKETING;
-		
+
 		svcSleepThread(1E+9);
+
+		goto reconnect;
 	}
+
+	SocketClose(&listener);
 }
 
 void RTSP_StopServer()
 {
 	RTSP_Running = false;
 	RTSP_ClientStreaming = false;
-	CloseSocket(&RTSPSock);
-	CloseSocket(&client);
+
+	SocketClose(&client);
 #ifdef UDP_SUPPORT
-	CloseSocket(&clientAudio);
-	CloseSocket(&clientVideo);
+	SocketClose(&clientAudio);
+	SocketClose(&clientVideo);
 #endif
 }
 
@@ -150,36 +151,22 @@ static RtspPorts ports[2];
 
 static inline int RTSP_SendInternal(const char* data, size_t len)
 {
-	if (client < 0) return 1;
-	
+	if (client < 0)
+		return 1;
+
+	int error = 0;
+
 	LOCK_SOCKETING;
-	while (len)
+	if (!SocketSendAll(&client, data, len))
 	{
-		int res = send(client, data, len, 0);
-
-		if (res < 0)
-		{
-			if (errno == EWOULDBLOCK || errno == EAGAIN)
-			{
-				svcSleepThread(1);
-				continue;
-			}
-			else
-			{
-				printl("RTSP_Send error %s %d \n", strerror(errno), errno);
-				CloseSocket(&client);
-				RTSP_ClientStreaming = false;
-				UNLOCK_SOCKETING;
-				return 1;
-			}
-		}
-
-		data += res;
-		len -= res;
+		printl("RTSP_Send error %d \n", g_bsdErrno);
+		SocketClose(&client);
+		RTSP_ClientStreaming = false;
+		error = 1;
 	}
 	UNLOCK_SOCKETING;
 
-	return 0;
+	return error;
 }
 
 //Send data over the data channel, RTCP is not used currently
@@ -217,7 +204,7 @@ int RTSP_H264SendPacket(const void* header, const size_t headerLen, const void* 
 #ifdef UDP_SUPPORT
 		memcpy(vBuffer, header, headerLen);
 		memcpy(vBuffer + headerLen, data, len);
-		res = sendto(clientVideo, vBuffer, headerLen + len, 0, (struct sockaddr*) & clientVAddr, sizeof(clientVAddr)) < 0;
+		res = SocketUDPSendTo(clientVideo, vBuffer, headerLen + len, (struct sockaddr*)&clientVAddr, sizeof(clientVAddr)) == false;
 #endif
 	}
 
@@ -246,7 +233,7 @@ int RTSP_LE16SendPacket(const void* header, const void* data, const size_t len)
 #ifdef UDP_SUPPORT
 		memcpy(aBuffer, header, RTPHeaderSz);
 		memcpy(aBuffer + RTPHeaderSz, data, len);
-		res = sendto(clientVideo, aBuffer, RTPHeaderSz + len, 0, (struct sockaddr*) & clientAAddr, sizeof(clientAAddr)) < 0;
+		res = SocketUDPSendTo(clientVideo, aBuffer, RTPHeaderSz + len, (struct sockaddr*)&clientAAddr, sizeof(clientAAddr)) == false;
 #endif
 	}
 
@@ -294,7 +281,7 @@ static inline void RTSP_SendFormat(int buf, const char* format, ...)
 static inline int RTSP_ParseCseq(const char* source)
 {
 	const char* cseq = strstr(source, "CSeq:");
-	if (!cseq) 
+	if (!cseq)
 		return 0;
 
 	return atoi(cseq + sizeof("CSeq:"));
@@ -303,15 +290,15 @@ static inline int RTSP_ParseCseq(const char* source)
 static inline void RTSP_AnswerError(const char* error)
 {
 	RTSP_SendFormat(85,
-		FMT_HEADER_S 
+		FMT_HEADER_S
 		FMT_TERMINATOR, error);
 }
 
 static inline void RTSP_AnswerEmpty(char* source)
 {
 	int Cseq = RTSP_ParseCseq(source);
-	RTSP_SendFormat(200, 
-		FMT_HEADER_OK 
+	RTSP_SendFormat(200,
+		FMT_HEADER_OK
 		FMT_CSEQ_D
 		FMT_TERMINATOR, Cseq);
 }
@@ -320,8 +307,8 @@ static inline void RTSP_AnswerText(char* source, const char* text)
 {
 	int Cseq = RTSP_ParseCseq(source);
 
-	RTSP_SendFormat(200, 
-		FMT_HEADER_OK 
+	RTSP_SendFormat(200,
+		FMT_HEADER_OK
 		FMT_CSEQ_D
 		"%s"
 		FMT_TERMINATOR, Cseq, text);
@@ -345,30 +332,25 @@ static inline void RTSP_AnswerTextSDPContent(char* source, char* text, const cha
 //recev in non blocking mode
 static inline int recvAll(int sock, char* data, int size)
 {
-	fd_set read;
-	FD_ZERO(&read);
-	FD_SET(sock, &read);
-
-	int res = select(sock + 1, &read, NULL, NULL, NULL);
-
-	if (res <= 0)
-		return -1;
-
-	int readsz = 0;
-
-	if (FD_ISSET(sock, &read))
-		while (size > 0)
+	s32 read = 0;
+	while (read < size)
+	{
+		s32 res = SocketRecv(&sock, data + read, size - read);
+		if (res == 0) // EAGAIN 
 		{
-			int res = recv(sock, data, size, MSG_DONTWAIT);
-			if (res <= 0)
-				return readsz;
+			// On avalid RTSP terminator we can stop reading
+			if (read > 10 && !strncmp(data + read - 4, "\r\n\r\n", 4))
+				return read;
 
-			data += res;
-			size -= res;
-			readsz += res;
+			svcSleepThread(1);
+			continue;
 		}
+		else if (res < 0)
+			return -1;
 
-	return readsz;
+		read += res;
+	}
+	return read;
 }
 
 //Don't use RTSP_Send* functions here !
@@ -490,15 +472,15 @@ static inline void RTSP_MainLoop()
 					struct sockaddr_in* updateAddr;
 					if (targetStream == STREAM_VIDEO)
 					{
-						CloseSocket(&clientVideo);
-						clientVideo = socket(AF_INET, SOCK_DGRAM, 0);
+						SocketClose(&clientVideo);
+						clientVideo = SocketUdp();
 						updateAddr = &clientVAddr;
 						assert(clientVideo >= 0);
 					}
 					else
 					{
-						CloseSocket(&clientAudio);
-						clientAudio = socket(AF_INET, SOCK_DGRAM, 0);
+						SocketClose(&clientAudio);
+						clientAudio = SocketUdp();
 						updateAddr = &clientAAddr;
 						assert(clientAudio >= 0);
 					}
