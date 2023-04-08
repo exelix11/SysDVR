@@ -16,7 +16,7 @@
 static bool SocketReady;
 
 // Libnx defaults but tweaked for our use case
-#define TCP_TX_SZ 0x45000
+#define TCP_TX_SZ 0x44000
 #define TCP_RX_SZ 0x1000
 
 #define UDP_TX_SZ 0x2000
@@ -42,7 +42,7 @@ void SocketInit()
 		.tmem_buffer = TmemBackingBuffer,
 		.tmem_buffer_size = TMEM_SIZE,
 
-		.tcp_tx_buf_size = 0x8000,
+		.tcp_tx_buf_size = 0x4000,
 		.tcp_rx_buf_size = 0x1000,
 		.tcp_tx_buf_max_size = TCP_TX_SZ,
 		.tcp_rx_buf_max_size = TCP_RX_SZ,
@@ -180,7 +180,7 @@ bool SocketSendAll(int* socket, const void* buffer, u32 size)
 
 s32 SocketRecv(int* socket, void* buffer, u32 size)
 {
-	ssize_t r = bsdRecv(*socket, buffer, size, 0);
+	ssize_t r = bsdRecv(*socket, buffer, size, MSG_DONTWAIT);
 	if (r == -1)
 	{
 		if (g_bsdErrno == NX_EAGAIN)
