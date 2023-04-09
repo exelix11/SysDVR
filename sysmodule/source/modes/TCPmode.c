@@ -88,7 +88,6 @@ static void TCP_StreamThread(void* argConfig)
 		u64 total = 0;
 
 		SocketCloseReceivingEnd(client);
-		SocketMakeNonBlocking(client);
 
 		CaptureOnClientConnected(config.Target);
 
@@ -104,7 +103,7 @@ static void TCP_StreamThread(void* argConfig)
 			if (success)
 			{
 				LOG_V("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
-				success = SocketSendAll(&client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
+				success = SocketSendAll(client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
 			}
 
 			if (success)

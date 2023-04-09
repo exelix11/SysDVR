@@ -23,14 +23,14 @@ static bool SocketReady;
 // This is our biggest offender in memory usage but lower values may cause random hanging over long streaming sessions.
 // They can be workarounded with auto reconnection and non-blocking sockets but i prefer keeping the connection stable
 // Having enough capacity ensures that we can handle any packet size without dropping frames.
-#define TCP_TX_SZ MaxRTPPacket
-#define TCP_RX_SZ 0x2000
+#define TCP_TX_SZ (16 * 1024)
+#define TCP_RX_SZ (8 * 1024)
 
-#define TCP_TX_MAX_SZ (PAGE_ALIGN(sizeof(VideoPacket)) + PAGE_ALIGN(sizeof(AudioPacket)))
+#define TCP_TX_MAX_SZ (128 * 1024)
 #define TCP_RX_MAX_SZ 0
 
-#define UDP_TX_SZ 0x4000
-#define UDP_RX_SZ 0x1000
+#define UDP_TX_SZ (8 * 1024)
+#define UDP_RX_SZ (4 * 1024)
 
 #define SOCK_EFFICIENCY 2
 
@@ -137,20 +137,55 @@ bool SocketIsErrnoNetDown()
 	return g_bsdErrno == NX_EAGAIN;
 }
 
-int SocketTcpAccept(int listenerHandle, struct sockaddr* addr, socklen_t* addrlen)
+typedef enum {
+	PollResult_Timeout,
+	PollResult_Disconnected,
+	PollResult_CanWrite,
+	PollResult_CanRead,
+} PollResult;
+
+static PollResult PolLScoket(int socket, int timeoutMs)
 {
 	struct pollfd pollinfo;
-	pollinfo.fd = listenerHandle;
-	pollinfo.events = POLLIN;
+	pollinfo.fd = socket;
+	pollinfo.events = POLLOUT | POLLHUP;
 	pollinfo.revents = 0;
 
-	int rc = bsdPoll(&pollinfo, 1, 0);
+	int rc = bsdPoll(&pollinfo, 1, timeoutMs);
 	if (rc > 0)
 	{
-		if (pollinfo.revents & POLLIN)
+		if (pollinfo.revents & POLLOUT)
+			return PollResult_CanWrite;
+		else if (pollinfo.revents & POLLHUP)
+			return PollResult_Disconnected;
+		// This is not exactly correct but we use this function in the context of writing, if we can read it means the socket is closed
+		else if (pollinfo.revents & POLLIN)
+			return PollResult_CanRead;
+		else if (pollinfo.revents & POLLERR)
+			return PollResult_Disconnected;
+	}
+
+	return PollResult_Timeout;
+}
+
+int SocketTcpAccept(int listenerHandle, struct sockaddr* addr, socklen_t* addrlen)
+{
+	PollResult rc = PolLScoket(listenerHandle, 0);
+
+	if (rc == PollResult_CanRead)
+	{
+		int accepted = bsdAccept(listenerHandle, addr, addrlen);
+
+		if (accepted != SOCKET_INVALID)
 		{
-			return bsdAccept(listenerHandle, addr, addrlen);
+			// Cap the socket send timeout even in blocking mode
+			struct timeval tv;
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+			bsdSetSockOpt(accepted, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 		}
+
+		return accepted;
 	}
 
 	return SOCKET_INVALID;
@@ -161,25 +196,40 @@ bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* ad
 	return bsdSendTo(socket, data, size, 0, addr, addrlen) == size;
 }
 
-bool SocketSendAll(int* socket, const void* buffer, u32 size)
+bool SocketSendAll(int sock, const void* buffer, u32 size)
 {
 	u32 sent = 0;
 	while (sent < size)
 	{
-		int sock = *socket;
 		if (sock == SOCKET_INVALID)
 			return false;
 
-		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, MSG_DONTWAIT);
+		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, 0);
 		if (res == -1)
 		{
 			if (g_bsdErrno == NX_EAGAIN)
 			{
-				// Avoid endless loops
-				if (!IsThreadRunning)
-					return false;
+				int poll = 0;
+			poll_again:
+				PollResult pollRes = PolLScoket(sock, 1000);
 
-				svcSleepThread(1);
+				// If can write, we can retry
+				if (pollRes == PollResult_CanWrite)
+					continue;
+				// after 10 seconds we give up (and the user probably did too)
+				else if (pollRes == PollResult_Timeout)
+				{
+					// Leave quickly if we're changing modes
+					if (!IsThreadRunning)
+						return false;
+
+					if (++poll < 8)
+						goto poll_again;
+					else
+						return false;
+				}
+				// Any other result is probably an error and we close the socket on our end
+				else return false;
 			}
 			else
 				return false;
@@ -191,9 +241,9 @@ bool SocketSendAll(int* socket, const void* buffer, u32 size)
 	return true;
 }
 
-s32 SocketRecv(int* socket, void* buffer, u32 size)
+s32 SocketRecv(int socket, void* buffer, u32 size)
 {
-	ssize_t r = bsdRecv(*socket, buffer, size, MSG_DONTWAIT);
+	ssize_t r = bsdRecv(socket, buffer, size, MSG_DONTWAIT);
 	if (r == -1)
 	{
 		if (g_bsdErrno == NX_EAGAIN)
