@@ -137,6 +137,41 @@ bool SocketIsErrnoNetDown()
 	return g_bsdErrno == NX_EAGAIN;
 }
 
+int SocketTcpAccept(int listenerHandle, struct sockaddr* addr, socklen_t* addrlen)
+{
+	struct pollfd pollinfo;
+	pollinfo.fd = listenerHandle;
+	pollinfo.events = POLLIN;
+	pollinfo.revents = 0;
+
+	int rc = bsdPoll(&pollinfo, 1, 0);
+	if (rc > 0)
+	{
+		if (pollinfo.revents & POLLIN)
+		{
+			int accepted = bsdAccept(listenerHandle, addr, addrlen);
+
+			if (accepted != SOCKET_INVALID)
+			{
+				// Cap the socket send timeout even in blocking mode
+				struct timeval tv;
+				tv.tv_sec = 1;
+				tv.tv_usec = 0;
+				bsdSetSockOpt(accepted, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+			}
+
+			return accepted;
+		}
+	}
+
+	return SOCKET_INVALID;
+}
+
+bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* addr, socklen_t addrlen)
+{
+	return bsdSendTo(socket, data, size, 0, addr, addrlen) == size;
+}
+
 typedef enum {
 	PollResult_Timeout,
 	PollResult_Disconnected,
@@ -168,34 +203,6 @@ static PollResult PolLScoket(int socket, int timeoutMs)
 	return PollResult_Timeout;
 }
 
-int SocketTcpAccept(int listenerHandle, struct sockaddr* addr, socklen_t* addrlen)
-{
-	PollResult rc = PolLScoket(listenerHandle, 0);
-
-	if (rc == PollResult_CanRead)
-	{
-		int accepted = bsdAccept(listenerHandle, addr, addrlen);
-
-		if (accepted != SOCKET_INVALID)
-		{
-			// Cap the socket send timeout even in blocking mode
-			struct timeval tv;
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
-			bsdSetSockOpt(accepted, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-		}
-
-		return accepted;
-	}
-
-	return SOCKET_INVALID;
-}
-
-bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* addr, socklen_t addrlen)
-{
-	return bsdSendTo(socket, data, size, 0, addr, addrlen) == size;
-}
-
 bool SocketSendAll(int sock, const void* buffer, u32 size)
 {
 	u32 sent = 0;
@@ -213,21 +220,19 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 			poll_again:
 				PollResult pollRes = PolLScoket(sock, 1000);
 
+				// Leave early if we're switching modes
+				if (!IsThreadRunning)
+					return false;
+
+				// after 10 seconds we give up (and the user probably did too)
+				if (++poll >= 10)
+					return false;
+
 				// If can write, we can retry
 				if (pollRes == PollResult_CanWrite)
 					continue;
-				// after 10 seconds we give up (and the user probably did too)
 				else if (pollRes == PollResult_Timeout)
-				{
-					// Leave quickly if we're changing modes
-					if (!IsThreadRunning)
-						return false;
-
-					if (++poll < 8)
-						goto poll_again;
-					else
-						return false;
-				}
+					goto poll_again;
 				// Any other result is probably an error and we close the socket on our end
 				else return false;
 			}
