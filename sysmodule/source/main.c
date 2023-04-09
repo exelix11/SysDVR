@@ -186,13 +186,13 @@ static void SetModeInternal(const void* argmode)
 		LOG("Starting video thread\n");
 		if (mode->VThread) {
 			memset(VStreamStackArea, 0, sizeof(VStreamStackArea));
-			LaunchThread(&VideoThread, mode->VThread, mode->Vargs, VStreamStackArea, sizeof(VStreamStackArea), 0x2C);
+			LaunchThread(&VideoThread, mode->VThread, mode->Vargs, VStreamStackArea, sizeof(VStreamStackArea), 0x26);
 		}
 
 		LOG("Starting audio thread\n");
 		if (mode->AThread) {
 			memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
-			LaunchThread(&AudioThread, mode->AThread, mode->Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
+			LaunchThread(&AudioThread, mode->AThread, mode->Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x26);
 		}
 	}
 	IsSwitchingModes = false;
