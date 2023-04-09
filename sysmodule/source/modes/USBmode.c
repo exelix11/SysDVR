@@ -2,13 +2,6 @@
 #include "../USB/Serial.h"
 #include "../capture.h"
 
-typedef struct {
-	UsbStreamChannel Channel;
-	u32 CheckCode;
-	VLAPacket* Packet;
-	ConsumerProducer* Consumer;
-} UsbStreamBlock;
-
 // Usb streaming is now single-threaded
 static void USB_StreamThread(void*)
 {

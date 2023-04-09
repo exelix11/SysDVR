@@ -25,7 +25,7 @@
 	This is acceptable as grc:d already doesn't provide real time audio.
 	To remove set the following to 1
 */
-#define ABatching 3
+#define ABatching 2
 
 typedef struct {
 	u32 Magic;
@@ -48,13 +48,6 @@ typedef struct {
 } AudioPacket;
 
 _Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * ABatching);
-
-typedef struct {
-	PacketHeader Header;
-	u8 Data[];
-} VLAPacket;
-
-_Static_assert(sizeof(VLAPacket) == sizeof(PacketHeader));
 
 extern VideoPacket VPkt;
 extern AudioPacket APkt;

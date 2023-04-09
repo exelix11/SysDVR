@@ -10,7 +10,7 @@ void SocketDeinit();
 
 int SocketUdp();
 
-int SocketTcpListen(short port, bool blocking);
+int SocketTcpListen(short port);
 
 // Only valid after SocketTcpAccept() returns SOCKET_INVALID
 bool SocketIsErrnoNetDown();
@@ -31,3 +31,6 @@ bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* ad
 s32 SocketRecv(int* socket, void* buffer, u32 size);
 
 bool SocketMakeNonBlocking(int socket);
+
+// Hopefully heps saving memory by getting rid of receiving buffers
+void SocketCloseReceivingEnd(int socket);

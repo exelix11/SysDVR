@@ -1,6 +1,7 @@
 #ifndef USB_ONLY
 #include <string.h>
 #include <fcntl.h> // fcntl
+#include <netinet/tcp.h> // IPPROTO_TCP, TCP_NODELAY
 
 #include "sockets.h"
 #define NX_EAGAIN 11
@@ -15,18 +16,26 @@
 
 static bool SocketReady;
 
-// Libnx defaults but tweaked for our use case
-#define TCP_TX_SZ 0x44000
-#define TCP_RX_SZ 0x1000
+#define PAGE_ALIGN(x) ((x + 0xFFF) &~ 0xFFF)
 
-#define UDP_TX_SZ 0x2000
+#define NON_ZERO(x, y) (x == 0 ? y : x)
+
+// This is our biggest offender in memory usage but lower values may cause random hanging over long streaming sessions.
+// They can be workarounded with auto reconnection and non-blocking sockets but i prefer keeping the connection stable
+// Having enough capacity ensures that we can handle any packet size without dropping frames.
+#define TCP_TX_SZ MaxRTPPacket
+#define TCP_RX_SZ 0x2000
+
+#define TCP_TX_MAX_SZ (PAGE_ALIGN(sizeof(VideoPacket)) + PAGE_ALIGN(sizeof(AudioPacket)))
+#define TCP_RX_MAX_SZ 0
+
+#define UDP_TX_SZ 0x4000
 #define UDP_RX_SZ 0x1000
 
 #define SOCK_EFFICIENCY 2
 
 // Formula taken from libnx itslf
-#define PAGE_ALIGN(x) ((x + 0xFFF) &~ 0xFFF)
-#define TMEM_SIZE PAGE_ALIGN(TCP_TX_SZ + TCP_RX_SZ + UDP_TX_SZ + UDP_RX_SZ) * SOCK_EFFICIENCY
+#define TMEM_SIZE PAGE_ALIGN(NON_ZERO(TCP_TX_MAX_SZ, TCP_TX_SZ) + NON_ZERO(TCP_RX_MAX_SZ, TCP_RX_SZ) + UDP_TX_SZ + UDP_RX_SZ) * SOCK_EFFICIENCY
 
 static u8 alignas(0x1000) TmemBackingBuffer[TMEM_SIZE];
 
@@ -42,10 +51,10 @@ void SocketInit()
 		.tmem_buffer = TmemBackingBuffer,
 		.tmem_buffer_size = TMEM_SIZE,
 
-		.tcp_tx_buf_size = 0x4000,
-		.tcp_rx_buf_size = 0x1000,
-		.tcp_tx_buf_max_size = TCP_TX_SZ,
-		.tcp_rx_buf_max_size = TCP_RX_SZ,
+		.tcp_tx_buf_size = TCP_TX_SZ,
+		.tcp_rx_buf_size = TCP_RX_SZ,
+		.tcp_tx_buf_max_size = TCP_TX_MAX_SZ,
+		.tcp_rx_buf_max_size = TCP_RX_MAX_SZ,
 
 		.udp_tx_buf_size = UDP_TX_SZ,
 		.udp_rx_buf_size = UDP_RX_SZ,
@@ -53,8 +62,8 @@ void SocketInit()
 		.sb_efficiency = SOCK_EFFICIENCY
 	};
 
-	LOG("Initializing BSD\n");
-	R_THROW(bsdInitialize(&config, 2, BsdServiceType_Auto));
+	LOG("Initializing BSD with tmem size %x\n", TMEM_SIZE);
+	R_THROW(bsdInitialize(&config, 3, BsdServiceType_User));
 }
 
 void SocketDeinit()
@@ -80,18 +89,15 @@ int SocketUdp()
 	return bsdSocket(AF_INET, SOCK_DGRAM, 0);
 }
 
-int SocketTcpListen(short port, bool blocking)
+int SocketTcpListen(short port)
 {
 	while (true) {
 		int socket = bsdSocket(AF_INET, SOCK_STREAM, 0);
 		if (socket < 0)
 			goto failed;
 
-		if (!blocking)
-		{
-			if (!SocketMakeNonBlocking(socket))
-				goto failed;
-		}
+		if (!SocketMakeNonBlocking(socket))
+			goto failed;
 
 		const int optVal = 1;
 		if (bsdSetSockOpt(socket, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, sizeof(optVal)) == -1)
@@ -111,7 +117,7 @@ int SocketTcpListen(short port, bool blocking)
 		return socket;
 
 	failed:
-		LOG("Failed");
+		LOG("SocketTcpListen failed");
 
 		if (socket != SOCKET_INVALID)
 			bsdClose(socket);
@@ -164,14 +170,21 @@ bool SocketSendAll(int* socket, const void* buffer, u32 size)
 		if (sock == SOCKET_INVALID)
 			return false;
 
-		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, 0);
+		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, MSG_DONTWAIT);
 		if (res == -1)
 		{
 			if (g_bsdErrno == NX_EAGAIN)
+			{
+				// Avoid endless loops
+				if (!IsThreadRunning)
+					return false;
+
 				svcSleepThread(1);
+			}
 			else
 				return false;
 		}
+
 		sent += res;
 	}
 
@@ -196,4 +209,9 @@ bool SocketMakeNonBlocking(int socket)
 	return bsdFcntl(socket, F_SETFL, NX_O_NONBLOCK) != -1;
 }
 
+void SocketCloseReceivingEnd(int socket)
+{
+	if (bsdShutdown(socket, SHUT_RD) < 0)
+		LOG("SocketCloseReceivingEnd: %d\n", g_bsdErrno);
+}
 #endif

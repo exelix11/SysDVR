@@ -88,7 +88,7 @@ void RTSP_ServerThread(void* _)
 	RTSP_Running = true;
 
 reconnect:
-	int listener= SocketTcpListen(RTSP_PORT, false);
+	int listener= SocketTcpListen(RTSP_PORT);
 	while (RTSP_Running)
 	{
 		unsigned int clientAddRlen = sizeof(clientAddress);
@@ -102,7 +102,7 @@ reconnect:
 			if (SocketIsErrnoNetDown())
 			{
 				SocketClose(&listener);
-				listener = SocketTcpListen(RTSP_PORT, false);
+				listener = SocketTcpListen(RTSP_PORT);
 				SocketMakeNonBlocking(listener);
 			}
 
@@ -110,6 +110,7 @@ reconnect:
 		}
 
 		SocketClose(&listener);
+		SocketMakeNonBlocking(client);
 		RTSP_MainLoop();
 
 		//MainLoop returns on TEARDOWN or error, wait for all the socketing operation to finish
@@ -342,7 +343,13 @@ static inline int recvAll(int sock, char* data, int size)
 			if (read > 10 && !strncmp(data + read - 4, "\r\n\r\n", 4))
 				return read;
 
-			svcSleepThread(1);
+			if (read == 0)
+				// If there is no pending data we can sleep more to avoid using BSD sessions needed by other threads
+				svcSleepThread(1E+8);
+			else
+				// Othwerise just wait a bit for sockets to be ready
+				svcSleepThread(1);
+
 			continue;
 		}
 		else if (res < 0)
