@@ -216,7 +216,7 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 		{
 			if (g_bsdErrno == NX_EAGAIN)
 			{
-				int poll = 0;
+				int pollCount = 0;
 			poll_again:
 				PollResult pollRes = PolLScoket(sock, 1000);
 
@@ -225,10 +225,10 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 					return false;
 
 				// after 10 seconds we give up (and the user probably did too)
-				if (++poll >= 10)
+				if (++pollCount >= 10)
 					return false;
 
-				// If can write, we can retry
+				// If we can write, retry
 				if (pollRes == PollResult_CanWrite)
 					continue;
 				else if (pollRes == PollResult_Timeout)
