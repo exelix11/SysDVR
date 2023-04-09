@@ -35,27 +35,33 @@ static Result GrcInitialize()
 static bool ReadAudioStream()
 {
 	Result rc = grcdServiceTransfer(
-		&grcdAudio, GrcStream_Audio, 
-		APkt.Data, AbufSz, 
-		NULL, 
-		&APkt.Header.DataSize, 
+		&grcdAudio, GrcStream_Audio,
+		APkt.Data, AbufSz,
+		NULL,
+		&APkt.Header.DataSize,
 		&APkt.Header.Timestamp);
 
-	for (int i = 1; i < ABatching && R_SUCCEEDED(rc); i++)
+	if (R_FAILED(rc))
+		return false;
+
+	for (int i = 1; i < ABatching; i++)
 	{
 		u32 tmpSize = 0;
-		
+
 		rc = grcdServiceTransfer(
-			&grcdAudio, GrcStream_Audio, 
-			APkt.Data + APkt.Header.DataSize, AbufSz, 
-			NULL, 
-			&tmpSize, 
+			&grcdAudio, GrcStream_Audio,
+			APkt.Data + (AbufSz * i), AbufSz,
+			NULL,
+			&tmpSize,
 			NULL);
-		
+
+		if (R_FAILED(rc))
+			return false;
+
 		APkt.Header.DataSize += tmpSize;
 	}
 
-	return R_SUCCEEDED(rc);
+	return true;
 }
 
 static bool ReadVideoStream()

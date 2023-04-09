@@ -3,12 +3,15 @@
 #ifdef USE_LOGGING
 	#include <stdio.h>
 	#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
-
+	// Verbose logging, disabled even with USE_LOGGING	
+	#define LOG_V(...) do { } while (0)
+	
 	#pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
 	// This is also added to thread stacks so must be 0x1000-aligned	
 	#define LOGGING_HEAP_BOOST 0x1000
 #else
 	#define LOG(...) do { } while (0)
+	#define LOG_V(...) do { } while (0)
 	#define LOGGING_HEAP_BOOST 0
 #endif
 

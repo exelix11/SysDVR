@@ -8,11 +8,11 @@ static inline int TCP_BeginListen(GrcStream stream)
 	LOG("TCP %d Begin listen\n", (int)stream);
 	if (stream == GrcStream_Video)
 	{
-		return SocketTcpListen(9911, true);
+		return SocketTcpListen(9911);
 	}
 	else
 	{
-		return SocketTcpListen(9922, true);
+		return SocketTcpListen(9922);
 	}
 }
 
@@ -44,26 +44,29 @@ restart:
 	return SOCKET_INVALID;
 }
 
-typedef struct 
+typedef struct
 {
 	GrcStream Type;
 	ConsumerProducer* Target;
 	PacketHeader* Pkt;
 	const char* FullPacket;
+	int MaxSendSize;
 } StreamConf;
 
 const StreamConf VideoConfig = {
 	GrcStream_Video,
 	&VideoProducer,
 	&VPkt.Header,
-	(const char*)&VPkt
+	(const char*)&VPkt,
+	sizeof(VideoPacket)
 };
 
 const StreamConf AudioConfig = {
 	GrcStream_Audio,
 	&AudioProducer,
 	&APkt.Header,
-	(const char*)&APkt
+	(const char*)&APkt,
+	sizeof(AudioPacket)
 };
 
 static void TCP_StreamThread(void* argConfig)
@@ -82,7 +85,15 @@ static void TCP_StreamThread(void* argConfig)
 			continue;
 		}
 
+		u64 total = 0;
+
+		SocketCloseReceivingEnd(client);
+		SocketMakeNonBlocking(client);
+
 		CaptureOnClientConnected(config.Target);
+
+		// Give the client a few moments to be ready
+		svcSleepThread(5E+8);
 
 		while (true)
 		{
@@ -92,9 +103,12 @@ static void TCP_StreamThread(void* argConfig)
 
 			if (success)
 			{
-				//LOG("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
+				LOG_V("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
 				success = SocketSendAll(&client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
 			}
+
+			if (success)
+				total += config.Pkt->DataSize + sizeof(PacketHeader);
 
 			CaptureEndConsume(config.Target);
 
@@ -107,7 +121,7 @@ static void TCP_StreamThread(void* argConfig)
 
 		CaptureOnClientDisconnected(config.Target);
 
-		LOG("TCP %d Closing client\n", (int)config.Type);
+		LOG("TCP %d Closing client after %llu bytes\n", (int)config.Type, total);
 		SocketClose(&client);
 		svcSleepThread(2E+8);
 	}
@@ -115,12 +129,12 @@ static void TCP_StreamThread(void* argConfig)
 	LOG("TCP %d Thread terminating\n", (int)config.Type);
 }
 
-static void TCP_Init() 
+static void TCP_Init()
 {
 	VPkt.Header.Magic = STREAM_PACKET_MAGIC_VIDEO;
 	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
 }
 
-const StreamMode TCP_MODE = { TCP_Init, NULL, TCP_StreamThread, TCP_StreamThread, (void*)&VideoConfig, (void*)&AudioConfig};
+const StreamMode TCP_MODE = { TCP_Init, NULL, TCP_StreamThread, TCP_StreamThread, (void*)&VideoConfig, (void*)&AudioConfig };
 
 #endif
