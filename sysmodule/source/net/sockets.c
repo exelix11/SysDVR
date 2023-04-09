@@ -205,13 +205,13 @@ static PollResult PolLScoket(int socket, int timeoutMs)
 
 bool SocketSendAll(int sock, const void* buffer, u32 size)
 {
+	if (sock == SOCKET_INVALID)
+		return false;
+
 	u32 sent = 0;
 	while (sent < size)
 	{
-		if (sock == SOCKET_INVALID)
-			return false;
-
-		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, 0);
+		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, MSG_DONTWAIT);
 		if (res == -1)
 		{
 			if (g_bsdErrno == NX_EAGAIN)
