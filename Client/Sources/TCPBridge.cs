@@ -1,7 +1,10 @@
 ﻿using LibUsbDotNet;
 using System;
+using System.Configuration;
+using System.IO;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,9 +18,14 @@ namespace SysDVR.Client.Sources
         const int MaxConnectionAttempts = 5;
 		const int ConnFailDelayMs = 2000;
 
-		readonly string IpAddress;
-		readonly int Port;
-		readonly byte PacketMagicHeader;
+		const int TcpBridgeVideoPort = 9911;
+		const int TcpBridgeAudioPort = 9922;
+        
+		int Port => 
+			SourceKind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
+
+        readonly string IpAddress;
+		readonly byte HeaderMagicByte;
 
 		CancellationToken Token;
 		Socket Sock;
@@ -29,23 +37,26 @@ namespace SysDVR.Client.Sources
 
             SourceKind = kind;
 			IpAddress = ip;
-			Port = kind == StreamKind.Video ? 9911 : 9922;
 
-			PacketMagicHeader =		
-				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
+			// Assumes that the magic bytes are composed of 4 identical bytes
+			HeaderMagicByte = (byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);			
         }
 
 		public void WaitForConnection()
 		{
-			Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Sock?.Close();
+            Sock?.Dispose();
+
+            Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
 			try {
 				Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+				Sock.NoDelay = true;
 			}
 			catch { }
 
 			Exception ReportException = null;
-			for (int i = 0; i < MaxConnectionAttempts; i++) 
+			for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++) 
 			{
 				if (i != 0 || Logging) // Don't show error for the first attempt
 					Console.WriteLine($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
@@ -54,7 +65,10 @@ namespace SysDVR.Client.Sources
 				{
 					Sock.ConnectAsync(IpAddress, Port, Token).GetAwaiter().GetResult();
 					if (Sock.Connected)
+					{
+						InSync = false;
 						break;
+					}
 				}
 				catch (Exception ex) 
 				{
@@ -62,6 +76,9 @@ namespace SysDVR.Client.Sources
 					Thread.Sleep(ConnFailDelayMs);
 				}
 			}
+
+			if (Token.IsCancellationRequested)
+				return;
 
 			if (!Sock.Connected)
 			{
@@ -73,7 +90,7 @@ namespace SysDVR.Client.Sources
 		public void StopStreaming()
 		{
 			Sock?.Close();
-			Sock?.Dispose();
+            Sock?.Dispose();
 		}
 
 		public void UseCancellationToken(CancellationToken tok)
@@ -81,40 +98,67 @@ namespace SysDVR.Client.Sources
 			Token = tok;
 		}
 
-		public void Flush()
-		{
-			Console.WriteLine($"{SourceKind} needs reconnection");
-			Sock?.Close();
+		bool ReportedLostConnection = false;
+        public void Flush()
+        {
+            if (Token.IsCancellationRequested)
+                return;
 
-			if (Token.IsCancellationRequested)
-				return;
-
-            Thread.Sleep(1000);
-            WaitForConnection();
+            InSync = false;
+			if (ReportedLostConnection)
+			{
+				ReportedLostConnection = false;
+				Console.WriteLine($"{SourceKind} stream connection lost, reconnecting...");
+				WaitForConnection();
+            }
         }
 
-		public bool ReadHeader(byte[] buffer)
+        bool InSync = false;
+        public bool ReadHeader(byte[] buffer)
+        {
+            if (InSync)
+            {
+                return ReadPayload(buffer, PacketHeader.StructLength);
+            }
+            else
+            {
+                // TCPBridge is a raw stream of data, search for an header
+                for (int i = 0; i < 4 && !Token.IsCancellationRequested;)
+                {
+                    ReadExact(buffer.AsSpan().Slice(i, 1));
+					if (buffer[i] != HeaderMagicByte)
+						i = 0;
+					else 
+						i++;
+                }
+
+				if (Token.IsCancellationRequested)
+					return false;
+
+                InSync = true;
+                return ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
+            }
+        }
+
+        bool ReadExact(Span<byte> data)
 		{
 			try
 			{
-                return ReadPayload(buffer, PacketHeader.StructLength);
-            }
-			catch
+				while (data.Length > 0)
+				{
+					int r = Sock.Receive(data);
+					if (r == 0)
+					{
+						ReportedLostConnection = true;
+                        return false;
+					}
+
+					data = data.Slice(r);
+				}
+			}
+			catch 
 			{
-                return false;
-            }
-		}
-
-		bool ReadExact(Span<byte> data)
-		{
-			while (data.Length > 0) 
-			{
-				int r = Sock.Receive(data);
-
-				if (r == 0)
-					return false;
-
-				data = data.Slice(r);
+				return false;
 			}
 
 			return true;
