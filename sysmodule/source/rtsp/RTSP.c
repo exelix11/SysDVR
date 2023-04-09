@@ -158,7 +158,7 @@ static inline int RTSP_SendInternal(const char* data, size_t len)
 	int error = 0;
 
 	LOCK_SOCKETING;
-	if (!SocketSendAll(&client, data, len))
+	if (!SocketSendAll(client, data, len))
 	{
 		printl("RTSP_Send error %d \n", g_bsdErrno);
 		SocketClose(&client);
@@ -336,7 +336,7 @@ static inline int recvAll(int sock, char* data, int size)
 	s32 read = 0;
 	while (read < size)
 	{
-		s32 res = SocketRecv(&sock, data + read, size - read);
+		s32 res = SocketRecv(sock, data + read, size - read);
 		if (res == 0) // EAGAIN 
 		{
 			// On avalid RTSP terminator we can stop reading
