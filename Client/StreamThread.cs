@@ -3,6 +3,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -105,9 +106,10 @@ namespace SysDVR.Client
 		TimeTrace trace = new TimeTrace();
 		void DeviceThreadMain(CancellationToken token)
 		{
-			var log = Logging;
+			var logStats = Logging;
+			var logDbg = logStats || Debugger.IsAttached;
 
-			Source.Logging = log;
+			Source.Logging = logStats;
 			Source.UseCancellationToken(token);
 			
 			SetCancellationToken(token);
@@ -127,13 +129,14 @@ namespace SysDVR.Client
 						goto loop_again;
 					}
 
-					if (log)
+					if (logStats)
 						Console.WriteLine($"[{Kind}] {Header}");
 
 					if (Header.Magic is not PacketHeader.MagicResponseAudio and not PacketHeader.MagicResponseVideo)
 					{
-						if (log)
+						if (logDbg)
 							Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
+						
 						Source.Flush();
 						Thread.Sleep(10);
 						continue;
@@ -141,8 +144,9 @@ namespace SysDVR.Client
 
 					if (Header.DataSize > StreamInfo.MaxPayloadSize)
 					{
-						if (log)
+						if (logDbg)
 							Console.WriteLine($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
+						
 						Source.Flush();
 						Thread.Sleep(10);
 						continue;
@@ -151,6 +155,9 @@ namespace SysDVR.Client
 					var Data = PoolBuffer.Rent(Header.DataSize);
 					if (!Source.ReadPayload(Data.RawBuffer, Header.DataSize))
 					{
+                        if (logDbg)
+                            Console.WriteLine($"[{Kind}] Read payload failed.");
+                        
 						Source.Flush();
 						Data.Free();
 						Thread.Sleep(10);
@@ -159,8 +166,8 @@ namespace SysDVR.Client
 
 					if (!DataReceived(Header, Data)) 
 					{
-                        if (log)
-                            Console.WriteLine($"[{Kind}] Wrong header magic, expected different one: {Header.Magic:X}");
+                        if (logDbg)
+                            Console.WriteLine($"[{Kind}] DataReceived rejected the packet, header magic was {Header.Magic:X}");
                         
 						Source.Flush();
                         Data.Free();
