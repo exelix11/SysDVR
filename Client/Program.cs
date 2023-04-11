@@ -368,7 +368,7 @@ namespace SysDVR.Client
             // UI Test mode: only load libavcodec and SDL without streaming anything
 			else if (Args[0] == "stub")
 			{
-				StreamManager.AddSource(new StubSource());
+				StreamManager.AddSource(new StubSource(!NoVideo, !NoAudio));
 			}
 #if DEBUG
 			else if (Args[0] == "record")

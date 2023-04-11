@@ -8,7 +8,19 @@ namespace SysDVR.Client.Sources
 	{
 		public bool Logging { get; set; }
 
-		public StreamKind SourceKind => StreamKind.Both;
+		readonly StreamKind kind;
+		public StreamKind SourceKind => kind;
+
+		public StubSource(bool hasVideo, bool hasAudio)
+		{
+			kind = (hasVideo, hasAudio) switch
+			{
+				(true, true) => StreamKind.Both,
+				(true, false) => StreamKind.Video,
+				(false, true) => StreamKind.Audio,
+				_ => throw new NotSupportedException()
+			};
+		}
 
         CancellationToken Cancellation;
 

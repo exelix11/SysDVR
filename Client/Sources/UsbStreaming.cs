@@ -127,12 +127,7 @@ namespace SysDVR.Client.Sources
 
 		public UsbStreamingSource CreateStreamingSource(bool HasVideo, bool HasAudio)
 		{
-			var source = new UsbStreamingSource(this);
-
-			source.HasVideo = HasVideo;
-			source.HasAudio = HasAudio;
-
-			return source;
+			return new UsbStreamingSource(this, HasVideo, HasAudio); ;
 		}
 
 		private bool disposedValue;
@@ -181,8 +176,8 @@ namespace SysDVR.Client.Sources
 		protected UsbEndpointWriter writer;
 		protected UsbContext context;
 
-		public bool HasAudio;
-		public bool HasVideo;
+		readonly bool HasAudio;
+		readonly bool HasVideo;
 
 		byte[] RequestMagic => (HasVideo, HasAudio) switch 
 		{
@@ -200,10 +195,13 @@ namespace SysDVR.Client.Sources
             _ => throw new Exception("Invalid state")
         };
 
-        public UsbStreamingSource(UsbContext context)
+        public UsbStreamingSource(UsbContext context, bool hasVideo, bool hasAudio)
 		{
 			this.context = context;
 			(reader, writer) = context.OpenEndpointPair();
+
+			HasVideo = hasVideo;
+			HasAudio = hasAudio;
 		}
 
 		public void StopStreaming()
