@@ -88,7 +88,7 @@ void RTSP_ServerThread(void* _)
 	RTSP_Running = true;
 
 reconnect:
-	int listener= SocketTcpListen(RTSP_PORT);
+	int listener = SocketTcpListen(RTSP_PORT);
 	while (RTSP_Running)
 	{
 		unsigned int clientAddRlen = sizeof(clientAddress);
@@ -99,7 +99,7 @@ reconnect:
 				break;
 
 			svcSleepThread(1E+9);
-			if (SocketIsErrnoNetDown())
+			if (SocketIsListenNetDown())
 			{
 				SocketClose(&listener);
 				listener = SocketTcpListen(RTSP_PORT);

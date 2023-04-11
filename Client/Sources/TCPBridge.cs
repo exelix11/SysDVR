@@ -51,7 +51,6 @@ namespace SysDVR.Client.Sources
 
 			try {
 				Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
-				Sock.NoDelay = true;
 			}
 			catch { }
 
@@ -66,7 +65,8 @@ namespace SysDVR.Client.Sources
 					Sock.ConnectAsync(IpAddress, Port, Token).GetAwaiter().GetResult();
 					if (Sock.Connected)
 					{
-						InSync = false;
+						// Assume the connection starts in-sync and fall back to resync code only on failure
+						InSync = true;
 						break;
 					}
 				}
@@ -147,7 +147,7 @@ namespace SysDVR.Client.Sources
 				while (data.Length > 0)
 				{
 					int r = Sock.Receive(data);
-					if (r == 0)
+					if (r <= 0)
 					{
 						ReportedLostConnection = true;
                         return false;

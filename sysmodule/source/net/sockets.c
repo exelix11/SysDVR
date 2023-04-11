@@ -132,7 +132,7 @@ int SocketTcpListen(short port)
 // a meaningful error code is from poll, which will return 0 when no connection is pending
 // and 1 otherwise but if Accept fails with EAGAIN, we know the console was in sleep mode.
 // We should use nifm but that comes with its share of weirdness.....
-bool SocketIsErrnoNetDown()
+bool SocketIsListenNetDown()
 {
 	return g_bsdErrno == NX_EAGAIN;
 }
@@ -177,27 +177,32 @@ typedef enum {
 	PollResult_Disconnected,
 	PollResult_CanWrite,
 	PollResult_CanRead,
+	PollResult_Other
 } PollResult;
 
 static PollResult PolLScoket(int socket, int timeoutMs)
 {
 	struct pollfd pollinfo;
 	pollinfo.fd = socket;
-	pollinfo.events = POLLOUT | POLLHUP;
+	pollinfo.events = POLLOUT | POLLIN;
 	pollinfo.revents = 0;
 
 	int rc = bsdPoll(&pollinfo, 1, timeoutMs);
 	if (rc > 0)
 	{
-		if (pollinfo.revents & POLLOUT)
-			return PollResult_CanWrite;
+		LOG_V("poll %x\n", pollinfo.revents);
+
+		// This is not exactly correct, but we only care about the result in the context of SocketSendAll
+		if (pollinfo.revents & POLLERR)
+			return PollResult_Disconnected;
 		else if (pollinfo.revents & POLLHUP)
 			return PollResult_Disconnected;
-		// This is not exactly correct but we use this function in the context of writing, if we can read it means the socket is closed
+		else if (pollinfo.revents & POLLOUT)
+			return PollResult_CanWrite;
 		else if (pollinfo.revents & POLLIN)
 			return PollResult_CanRead;
-		else if (pollinfo.revents & POLLERR)
-			return PollResult_Disconnected;
+
+		return PollResult_Other;
 	}
 
 	return PollResult_Timeout;
@@ -233,7 +238,9 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 					continue;
 				else if (pollRes == PollResult_Timeout)
 					goto poll_again;
-				// Any other result is probably an error and we close the socket on our end
+
+				// We don't expect to receive data from the client, so any other
+				// result is probably an error and we close the socket on our end
 				else return false;
 			}
 			else
@@ -262,11 +269,5 @@ s32 SocketRecv(int socket, void* buffer, u32 size)
 bool SocketMakeNonBlocking(int socket)
 {
 	return bsdFcntl(socket, F_SETFL, NX_O_NONBLOCK) != -1;
-}
-
-void SocketCloseReceivingEnd(int socket)
-{
-	if (bsdShutdown(socket, SHUT_RD) < 0)
-		LOG("SocketCloseReceivingEnd: %d\n", g_bsdErrno);
 }
 #endif

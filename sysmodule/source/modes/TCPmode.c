@@ -21,6 +21,13 @@ static inline int TCP_Accept(GrcStream stream)
 restart:
 	int listen = TCP_BeginListen(stream);
 
+	if (listen == SOCKET_INVALID)
+	{
+		LOG("TCP %d Listen failed\n", (int)stream);
+		svcSleepThread(1E+9);
+		return SOCKET_INVALID;
+	}
+
 	while (IsThreadRunning)
 	{
 		int client = SocketTcpAccept(listen, NULL, NULL);
@@ -32,7 +39,7 @@ restart:
 		}
 
 		svcSleepThread(1E+9);
-		if (SocketIsErrnoNetDown())
+		if (SocketIsListenNetDown())
 		{
 			LOG("TCP %d Network change detected\n", (int)stream);
 			SocketClose(&listen);
@@ -86,9 +93,6 @@ static void TCP_StreamThread(void* argConfig)
 		}
 
 		u64 total = 0;
-
-		SocketCloseReceivingEnd(client);
-
 		CaptureOnClientConnected(config.Target);
 
 		// Give the client a few moments to be ready
@@ -106,8 +110,12 @@ static void TCP_StreamThread(void* argConfig)
 				success = SocketSendAll(client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
 			}
 
+#if USE_LOGGING
 			if (success)
 				total += config.Pkt->DataSize + sizeof(PacketHeader);
+#else
+			(void)total;
+#endif
 
 			CaptureEndConsume(config.Target);
 
