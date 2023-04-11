@@ -13,9 +13,9 @@ int SocketUdp();
 int SocketTcpListen(short port);
 
 // Only valid after SocketTcpAccept() returns SOCKET_INVALID
-bool SocketIsErrnoNetDown();
+bool SocketIsListenNetDown();
 
-// Returns SOCKET_INVALID on error, use SocketIsErrnoNetDown() to check if the listener needs to be reset
+// Returns SOCKET_INVALID on error, use SocketIsListenNetDown() to check if the listener needs to be reset
 int SocketTcpAccept(int listenerHandle, struct sockaddr* addr, socklen_t* addrlen);
 
 // Coses a socket, also sets it to SOCKET_INVALID
@@ -31,6 +31,3 @@ bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* ad
 s32 SocketRecv(int socket, void* buffer, u32 size);
 
 bool SocketMakeNonBlocking(int socket);
-
-// Hopefully heps saving memory by getting rid of receiving buffers
-void SocketCloseReceivingEnd(int socket);
