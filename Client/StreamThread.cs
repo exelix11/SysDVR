@@ -38,6 +38,9 @@ namespace SysDVR.Client
 
 	interface IStreamingSource
 	{
+		// Note that the source should respect the target output type,
+		// this means that by the time it's added to a StreamManager
+		// this field should match the NoAudio/NoVideo state of the target
 		StreamKind SourceKind { get; }
 
 		bool Logging { get; set; }
