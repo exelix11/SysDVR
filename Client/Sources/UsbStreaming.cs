@@ -114,7 +114,7 @@ namespace SysDVR.Client.Sources
 			var (epIn, epOut) = (ReadEndpointID.Ep01, WriteEndpointID.Ep01);
 
 			var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
-			var writer = dev.OpenEndpointWriter(epOut, EndpointType.Interrupt);
+			var writer = dev.OpenEndpointWriter(epOut, EndpointType.Bulk);
 
 			return (reader, writer);
 		}
