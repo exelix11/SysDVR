@@ -14,7 +14,6 @@ fi
 
 mkdir -p dvr-build
 mv ../bin/Release/net6.0/publish/* dvr-build/
-rm dvr-build/*.pdb
 
 # install flatpak dependencies
 flatpak install --user --noninteractive --assumeyes flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08 runtime/org.freedesktop.Sdk.Extension.dotnet6/x86_64/22.08
