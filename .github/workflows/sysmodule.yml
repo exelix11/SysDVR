@@ -30,11 +30,11 @@ jobs:
       with:
         name: SysDVR sysmodule USB only
         path: SysmoduleRelease/USB.zip
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: SysDVR sysmodule
         path: SysmoduleRelease/SysDVR.zip
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: Sysmodule debug ELFs
         path: SysmoduleRelease/Debug/
