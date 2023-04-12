@@ -13,7 +13,7 @@ if [ -d "dvr-build" ]; then
 fi
 
 mkdir -p dvr-build
-mv -r ../bin/Release/net6.0/publish/* dvr-build/
+mv ../bin/Release/net6.0/publish/* dvr-build/
 rm dvr-build/*.pdb
 
 # install flatpak dependencies
