@@ -20,6 +20,9 @@ jobs:
         dotnet publish Client/Client.csproj -c Release
         mkdir -p Client/linux/dvr-build
         mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build/
+    - name: Clone shared-modules repo
+      run: |
+        git clone --depth 1 https://github.com/flathub/shared-modules.git Client/linux/shared-modules
     - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
         bundle: SysDVR-Client.flatpak
