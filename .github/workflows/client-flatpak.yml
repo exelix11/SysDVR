@@ -19,7 +19,6 @@ jobs:
       run: |
         dotnet publish Client/Client.csproj -c Release 
         mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build/
-    - name: Build flatpak
     - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
         bundle: SysDVR-Client.flatpak
