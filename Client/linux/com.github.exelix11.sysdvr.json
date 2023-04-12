@@ -3,6 +3,7 @@
 	"runtime": "org.freedesktop.Platform",
 	"runtime-version": "22.08",
 	"sdk": "org.freedesktop.Sdk",
+	"command": "SysDVR-Client",
 	"finish-args": [
 		"--share=ipc",
 		"--socket=x11",
