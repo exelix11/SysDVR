@@ -15,16 +15,13 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: "6.x"
-    - name: Build client
+    - name: Run build script
       run: |
-        dotnet publish Client/Client.csproj -c Release
-        mkdir -p Client/linux/dvr-build
-        mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build/
-    - name: Clone shared-modules repo
-      run: |
-        git clone --depth 1 https://github.com/flathub/shared-modules.git Client/linux/shared-modules
-    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        cd Client/linux
+        chmod +x build-flatpak.sh
+        ./build-flatpak.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
       with:
-        bundle: SysDVR-Client.flatpak
-        manifest-path: Client/linux/com.github.exelix11.sysdvr.json
-        cache-key: flatpak-builder
+        name: SysDVR-Client.flatpak
+        path: Client/linux/SysDVR-Client.flatpak
