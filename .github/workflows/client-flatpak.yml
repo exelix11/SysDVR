@@ -15,11 +15,10 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: "6.x"
-    - name: Install flatpak
     - name: Build client
       run: |
         dotnet publish Client/Client.csproj -c Release 
-        mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build
+        mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build/
     - name: Build flatpak
     - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
