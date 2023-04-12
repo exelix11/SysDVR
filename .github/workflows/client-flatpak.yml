@@ -1,0 +1,35 @@
+name: SysDVR-Client flatpak
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: "6.x"
+    - name: Install flatpak
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flatpak
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - name: Cache built modules
+      uses: actions/cache@v2
+      with:
+        path: Client/linux/.flatpak-builder
+        key: ${{ runner.os }}-flatpak-builder
+    - name: Run build script
+      run: |
+        cd Client/linux
+        chmod +x build-flatpak.sh
+        ./build-flatpak.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Client flatpak
+        path: Client/linux/SysDVR-Client.flatpak

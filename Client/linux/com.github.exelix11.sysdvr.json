@@ -1,0 +1,78 @@
+{
+	"app-id": "com.github.exelix11.sysdvr",
+	"runtime": "org.freedesktop.Platform",
+	"runtime-version": "22.08",
+	"sdk": "org.freedesktop.Sdk",
+	"finish-args": [
+		"--share=ipc",
+		"--socket=x11",
+		"--socket=wayland",
+		"--device=all",
+		"--share=network",
+		"--socket=pulseaudio",
+		"--filesystem=host"
+	],
+	"sdk-extensions": [
+		"org.freedesktop.Sdk.Extension.dotnet6"
+	],
+	"build-options": {
+		"append-path": "/usr/lib/sdk/dotnet6/bin",
+		"append-ld-library-path": "/usr/lib/sdk/dotnet6/lib",
+		"env": {
+			"PKG_CONFIG_PATH": "/app/lib/pkgconfig:/app/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib/sdk/dotnet6/lib/pkgconfig"
+		}
+	},
+	"modules": [
+		"shared-modules/SDL2/SDL2-no-libdecor.json",
+		"shared-modules/libusb/libusb.json",
+		{
+			"name": "ffmpeg",
+			"cleanup": [ "/include", "/lib/pkgconfig", "/share/ffmpeg/examples" ],
+			"config-opts": [
+			  "--enable-shared",
+			  "--disable-static",
+			  "--enable-gnutls",
+			  "--disable-doc",
+			  "--disable-programs",
+			  "--disable-encoders"
+			],
+			"sources": [{
+			  "type": "archive",
+			  "url": "https://ffmpeg.org/releases/ffmpeg-5.1.tar.xz",
+			  "sha256": "55eb6aab5ee235550fa54a33eaf8bf1b4ec66c01453182b12f6a993d75698b03"
+			}]
+		  },
+		{
+			"name": "sysdvr-client",
+			"buildsystem": "simple",
+			"build-commands":
+			[
+				"install.sh",
+				"cp -r . /app"
+			],
+			"sources":
+			[
+				{
+					"type": "dir",
+					"path": "dvr-build"
+				}
+			]
+		},
+		{
+			"name": "launcher",
+			"buildsystem": "simple",
+			"build-commands":
+			[
+				"install -D launcher.sh /app/bin/SysDVR-Client"
+			],
+			"sources":
+			[
+				{
+					"type": "dir",
+					"path": "flatpak-content"
+				}
+			]
+		}
+	]
+  }
+  
