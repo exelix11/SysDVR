@@ -9,6 +9,8 @@ on:
       - ClientGUI/**
       - Libs/**
       - ReleaseClient.bat
+      # but not the linux folder
+      - '!Client/linux/**'
   pull_request:
     branches: [ master ]
     paths:
@@ -16,6 +18,7 @@ on:
       - ClientGUI/**
       - Libs/**
       - ReleaseClient.bat
+      - '!Client/linux/**'
 
 jobs:
   build:
