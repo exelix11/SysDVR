@@ -17,7 +17,8 @@ jobs:
         dotnet-version: "6.x"
     - name: Build client
       run: |
-        dotnet publish Client/Client.csproj -c Release 
+        dotnet publish Client/Client.csproj -c Release
+        mkdir -p Client/linux/dvr-build
         mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build/
     - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
