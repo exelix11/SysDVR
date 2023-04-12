@@ -6,8 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 
-    
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:gnome-44
+      options: --privileged    
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET SDK
@@ -15,21 +16,17 @@ jobs:
       with:
         dotnet-version: "6.x"
     - name: Install flatpak
+    - name: Build client
       run: |
-        sudo apt-get update
-        sudo apt-get install -y flatpak
-        sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - name: Cache built modules
-      uses: actions/cache@v2
+        dotnet publish Client/Client.csproj -c Release 
+        mv Client/bin/Release/net6.0/publish/* Client/linux/dvr-build
+    - name: Build flatpak
+    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        path: Client/linux/.flatpak-builder
-        key: ${{ runner.os }}-flatpak-builder
-    - name: Run build script
-      run: |
-        cd Client/linux
-        chmod +x build-flatpak.sh
-        ./build-flatpak.sh
+        bundle: SysDVR-Client.flatpak
+        manifest-path: Client/linux/com.github.exelix11.sysdvr.json
+        cache-key: flatpak-builder
     - uses: actions/upload-artifact@v3
       with:
-        name: SysDVR-Client flatpak
-        path: Client/linux/SysDVR-Client.flatpak
+        name: SysDVR-Client.flatpak
+        path: SysDVR-Client.flatpak
