@@ -48,15 +48,28 @@
 			"build-commands":
 			[
 				"install.sh",
-				"cp -r . /app",
-				"chmod +x /app/SysDVR-Client",
-				"install -D SysDVR-Client /app/bin/SysDVR-Client"
+				"cp -r . /app"
 			],
 			"sources":
 			[
 				{
 					"type": "dir",
 					"path": "dvr-build"
+				}
+			]
+		},
+		{
+			"name": "launcher",
+			"buildsystem": "simple",
+			"build-commands":
+			[
+				"install -D launcher.sh /app/bin/SysDVR-Client"
+			],
+			"sources":
+			[
+				{
+					"type": "dir",
+					"path": "flatpak-content"
 				}
 			]
 		}
