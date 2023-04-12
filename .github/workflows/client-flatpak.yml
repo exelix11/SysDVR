@@ -28,7 +28,3 @@ jobs:
         bundle: SysDVR-Client.flatpak
         manifest-path: Client/linux/com.github.exelix11.sysdvr.json
         cache-key: flatpak-builder
-    - uses: actions/upload-artifact@v3
-      with:
-        name: SysDVR-Client.flatpak
-        path: SysDVR-Client.flatpak
