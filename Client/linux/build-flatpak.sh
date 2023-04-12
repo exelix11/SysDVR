@@ -3,7 +3,7 @@
 set -e
 
 # install flatpak dependencies
-flatpak install --user flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08 runtime/org.freedesktop.Sdk.Extension.dotnet6/x86_64/22.08
+flatpak install --user -y flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08 runtime/org.freedesktop.Sdk.Extension.dotnet6/x86_64/22.08
 
 if [ ! -d "shared-modules" ]; then
 	git clone --depth 1 https://github.com/flathub/shared-modules.git
