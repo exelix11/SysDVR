@@ -64,7 +64,7 @@ namespace SysDVRClientGUI
 
             if (Utils.FindExecutableInPath("dotnet.exe") == null)
             {
-                if (MessageBox.Show(".NET 6 doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(".NET doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
                 this.Close();
             }
