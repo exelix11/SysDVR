@@ -226,7 +226,10 @@ namespace SysDVR.Client.Sources
 						Console.WriteLine($"USB warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting it.");
 						lastError = err;
 					}
-					Thread.Sleep(3000);
+
+					if (!Token.IsCancellationRequested)
+						Thread.Sleep(3000);
+
 					continue;
 				}
 				lastError = err;
@@ -237,8 +240,11 @@ namespace SysDVR.Client.Sources
 
 		public virtual void Flush() 
 		{
-			// Wait some time so the switch side timeouts
-			Thread.Sleep(3000);
+            if (Token.IsCancellationRequested)
+                return;
+
+            // Wait some time so the switch side timeouts
+            Thread.Sleep(3000);
 
             // Then attempt to connect again
             WaitForConnection();
