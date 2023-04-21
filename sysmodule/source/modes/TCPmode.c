@@ -76,7 +76,7 @@ const StreamConf AudioConfig = {
 static void TCP_StreamThread(void* argConfig)
 {
 	if (!IsThreadRunning)
-		fatalThrow(ERR_TCP_VIDEO);
+		fatalThrow(ERR_TCP_THREAD);
 
 	StreamConf config = *(const StreamConf*)argConfig;
 
@@ -125,7 +125,7 @@ static void TCP_StreamThread(void* argConfig)
 
 		CaptureOnClientDisconnected(config.Target);
 
-		LOG("TCP %d Closing client after %llu bytes\n", (int)config.Type, total);
+		LOG("TCP %d Closing client after %lu bytes\n", (int)config.Type, total);
 		SocketClose(&client);
 		svcSleepThread(2E+8);
 	}
