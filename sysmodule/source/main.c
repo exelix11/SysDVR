@@ -45,7 +45,7 @@
 	#include "ipc/ipc.h"
 #endif
 
-#if !defined(USB_ONLY) || UDP_LOGGING
+#if NEEDS_SOCKETS
 	#include "net/sockets.h"
 #endif
 
@@ -84,13 +84,13 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
-#if !defined(USB_ONLY) || FILE_LOGGING
+#if NEEDS_FS
 	rc = fsInitialize();
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 #endif
 
-#if !defined(USB_ONLY)
+#if NEEDS_SOCKETS
 	SocketInit();
 #endif
 
@@ -106,17 +106,17 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(ERR_INIT_FAILED);
 
-#if !defined(USB_ONLY) || FILE_LOGGING
+#if NEEDS_FS
 	fsdevMountSdmc();
 #endif
 }
 
 void __attribute__((weak)) __appExit(void)
 {
-#if !defined(USB_ONLY) || UDP_LOGGING
+#if NEEDS_SOCKETS
 	SocketDeinit();
 #endif
-#if !defined(USB_ONLY) || FILE_LOGGING
+#if NEEDS_FS
 	fsdevUnmountAll();
 	fsExit();
 #endif
