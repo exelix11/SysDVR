@@ -122,6 +122,8 @@ namespace SysDVR.Client.Sources
             }
             else
             {
+				Console.WriteLine($"{SourceKind} Resyncing....");
+
                 // TCPBridge is a raw stream of data, search for an header
                 for (int i = 0; i < 4 && !Token.IsCancellationRequested;)
                 {
