@@ -1,12 +1,24 @@
 #pragma once
 
-#ifdef USE_LOGGING
-	#include <stdio.h>
-	#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
-	// Verbose logging, disabled even with USE_LOGGING	
-	#define LOG_V(...) do { } while (0)
+#define LOGGING_ENABLED (UDP_LOGGING | FILE_LOGGING)
+
+#if UDP_LOGGING && FILE_LOGGING
+#pragma error "UDP and file logging are mutually exclusive"
+#endif
+
+#if LOGGING_ENABLED
+	#if FILE_LOGGING
+		#include <stdio.h>
+		#define LogFunctionImpl(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
+	#else
+		void LogFunctionImpl(const char* fmt, ...);
+	#endif
+
+	#define LOG(...) do { LogFunctionImpl(__VA_ARGS__); } while (0)
 	
-	#pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
+	// When building as a sysmodule we ignore any kind of verbose logging
+	#define LOG_V(...) do {  } while (0)
+
 	// This is also added to thread stacks so must be 0x1000-aligned	
 	#define LOGGING_HEAP_BOOST 0x1000
 #else

@@ -57,23 +57,20 @@ typedef struct
 	ConsumerProducer* Target;
 	PacketHeader* Pkt;
 	const char* FullPacket;
-	int MaxSendSize;
 } StreamConf;
 
 const StreamConf VideoConfig = {
 	GrcStream_Video,
 	&VideoProducer,
 	&VPkt.Header,
-	(const char*)&VPkt,
-	sizeof(VideoPacket)
+	(const char*)&VPkt
 };
 
 const StreamConf AudioConfig = {
 	GrcStream_Audio,
 	&AudioProducer,
 	&APkt.Header,
-	(const char*)&APkt,
-	sizeof(AudioPacket)
+	(const char*)&APkt
 };
 
 static void TCP_StreamThread(void* argConfig)
@@ -110,7 +107,7 @@ static void TCP_StreamThread(void* argConfig)
 				success = SocketSendAll(client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
 			}
 
-#if USE_LOGGING
+#if LOGGING_ENABLED
 			if (success)
 				total += config.Pkt->DataSize + sizeof(PacketHeader);
 #else

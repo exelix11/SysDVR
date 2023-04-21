@@ -13,8 +13,16 @@
 //#define USB_ONLY
 #endif
 
-#ifdef USE_LOGGING
-#pragma message "Logging is enabled"
+#if FILE_LOGGING
+#pragma message "File logging is enabled"
+#endif
+
+#if UDP_LOGGING
+#pragma message "UDP logging is enabled"
+#endif
+
+#if LOGGING_ENABLED
+#pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
 #endif
 
 // Memory is carefully calculated, for development and logging it is increased
@@ -35,11 +43,14 @@
 	#pragma message "Building full version"
 	
 	#include "ipc/ipc.h"
+#endif
+
+#if !defined(USB_ONLY) || UDP_LOGGING
 	#include "net/sockets.h"
 #endif
 
 u32 __nx_applet_type = AppletType_None;
-#ifndef USE_LOGGING
+#ifndef FILE_LOGGING
 	u32 __nx_fs_num_sessions = 1;
 	u32 __nx_fsdev_direntry_cache_size = 1;
 #endif
@@ -73,7 +84,7 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
-#if !defined(USB_ONLY) && !defined(USE_LOGGING)
+#if !defined(USB_ONLY) || FILE_LOGGING
 	rc = fsInitialize();
 	if (R_FAILED(rc))
 		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
@@ -95,17 +106,17 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(ERR_INIT_FAILED);
 
-#if !defined(USB_ONLY) && !defined(USE_LOGGING)
+#if !defined(USB_ONLY) || FILE_LOGGING
 	fsdevMountSdmc();
 #endif
 }
 
 void __attribute__((weak)) __appExit(void)
 {
-#if !defined(USB_ONLY)
+#if !defined(USB_ONLY) || UDP_LOGGING
 	SocketDeinit();
 #endif
-#if !defined(USB_ONLY) && !defined(USE_LOGGING)
+#if !defined(USB_ONLY) || FILE_LOGGING
 	fsdevUnmountAll();
 	fsExit();
 #endif

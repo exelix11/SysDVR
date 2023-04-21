@@ -31,3 +31,7 @@ bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* ad
 s32 SocketRecv(int socket, void* buffer, u32 size);
 
 bool SocketMakeNonBlocking(int socket);
+
+#if UDP_LOGGING
+void SocketSetUdpLoggingTarget(struct sockaddr_in* addr);
+#endif
