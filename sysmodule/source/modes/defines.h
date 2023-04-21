@@ -6,6 +6,9 @@
 #pragma error "UDP and file logging are mutually exclusive"
 #endif
 
+#define NEEDS_FS (!defined(USB_ONLY) || FILE_LOGGING)
+#define NEEDS_SOCKETS (!defined(USB_ONLY) || UDP_LOGGING)
+
 #if LOGGING_ENABLED
 	#if FILE_LOGGING
 		#include <stdio.h>

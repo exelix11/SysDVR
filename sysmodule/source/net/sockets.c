@@ -1,4 +1,6 @@
-#if !defined(USB_ONLY) || UDP_LOGGING
+#include "../modes/defines.h"
+
+#if NEEDS_SOCKETS
 #include <string.h>
 #include <fcntl.h> // fcntl
 #include <netinet/tcp.h> // IPPROTO_TCP, TCP_NODELAY
@@ -7,7 +9,6 @@
 #define NX_EAGAIN 11
 #define NX_O_NONBLOCK 0x800
 
-#include "../modes/defines.h"
 #include "../modes/modes.h"
 #include "../capture.h"
 
