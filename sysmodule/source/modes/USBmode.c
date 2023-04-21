@@ -6,7 +6,7 @@
 static void USB_StreamThread(void*)
 {
 	if (!IsThreadRunning)
-		fatalThrow(ERR_USB_THREAD_NOT_RUNNING);
+		fatalThrow(ERR_USB_THREAD);
 
 	LOG("Usb:beginThread %p\n", armGetTls());
 
