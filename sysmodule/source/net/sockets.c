@@ -41,37 +41,28 @@ static bool SocketReady;
 static u8 alignas(0x1000) TmemBackingBuffer[TMEM_SIZE];
 
 #if UDP_LOGGING
+#define TARGET_DEBUG_IP "192.168.1.28"
+
 #include <stdarg.h>
 #include "../third_party/nanoprintf.h"
 static struct sockaddr_in loggingDest;
 static int udpLogSocket;
 static Mutex udpLogMutex;
 
-void SocketSetUdpLoggingTarget(struct sockaddr_in* addr)
-{
-	mutexLock(&udpLogMutex);
-	loggingDest = *addr;
-	loggingDest.sin_port = htons(9999);
-	mutexUnlock(&udpLogMutex);
-
-	LogFunctionImpl("Logging attached\n");
-}
-
 void LogFunctionImpl(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 	char buf[0x100];
-	npf_vsnprintf(buf, sizeof(buf), fmt, args);
+	int n = npf_vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
 	mutexLock(&udpLogMutex);
 	if (loggingDest.sin_port != 0)
-		SocketUDPSendTo(udpLogSocket, buf, strlen(buf), (struct sockaddr*)&loggingDest, sizeof(loggingDest));
+		SocketUDPSendTo(udpLogSocket, buf, n, (struct sockaddr*)&loggingDest, sizeof(loggingDest));
 	mutexUnlock(&udpLogMutex);
 }
 #endif
-
 
 void SocketInit()
 {
@@ -96,13 +87,18 @@ void SocketInit()
 		.sb_efficiency = SOCK_EFFICIENCY
 	};
 
-	LOG("Initializing BSD with tmem size %x\n", TMEM_SIZE);
 	R_THROW(bsdInitialize(&config, 3, BsdServiceType_User));
 
 #if UDP_LOGGING
 	mutexInit(&udpLogMutex);
 	udpLogSocket = SocketUdp();
+	// parse ip
+	loggingDest.sin_family = AF_INET;
+	loggingDest.sin_port = htons(9999);
+	loggingDest.sin_addr.s_addr = inet_addr(TARGET_DEBUG_IP);
 #endif
+
+	LOG("Initialied BSD with tmem size %x\n", TMEM_SIZE);
 }
 
 void SocketDeinit()
@@ -183,15 +179,12 @@ int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* ou
 	pollinfo.events = POLLIN;
 	pollinfo.revents = 0;
 
-	struct sockaddr addr;
-	socklen_t addrlen;
-
 	int rc = bsdPoll(&pollinfo, 1, 0);
 	if (rc > 0)
 	{
 		if (pollinfo.revents & POLLIN)
 		{
-			int accepted = bsdAccept(listenerHandle, &addr, &addrlen);
+			int accepted = bsdAccept(listenerHandle, out_addr, out_addrlen);
 
 			if (accepted != SOCKET_INVALID)
 			{
@@ -200,16 +193,6 @@ int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* ou
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 				bsdSetSockOpt(accepted, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-
-				if (out_addr)
-					*out_addr = addr;
-
-				if (out_addrlen)
-					*out_addrlen = addrlen;
-
-#if UDP_LOGGING
-				SocketSetUdpLoggingTarget((struct sockaddr_in*)&addr);
-#endif
 			}
 
 			return accepted;
@@ -242,7 +225,7 @@ static PollResult PolLScoket(int socket, int timeoutMs)
 	int rc = bsdPoll(&pollinfo, 1, timeoutMs);
 	if (rc > 0)
 	{
-		LOG_V("poll %x\n", pollinfo.revents);
+		LOG("poll %x\n", pollinfo.revents);
 
 		// This is not exactly correct, but we only care about the result in the context of SocketSendAll
 		if (pollinfo.revents & POLLERR)

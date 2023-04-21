@@ -17,10 +17,6 @@
 #pragma message "File logging is enabled"
 #endif
 
-#if UDP_LOGGING
-#pragma message "UDP logging is enabled"
-#endif
-
 #if LOGGING_ENABLED
 #pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
 #endif
