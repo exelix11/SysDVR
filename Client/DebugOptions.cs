@@ -99,8 +99,11 @@ namespace SysDVR.Client
                 }
             }
 
-            sb.Append("] ");
-            Console.Write(sb.ToString());
+            if (sb.Length != 1) 
+            { 
+                sb.Append("] ");
+                Console.Write(sb.ToString());
+            }
 
             Inner.SendData(block, ts);
         }

@@ -23,6 +23,8 @@ extern "C" {
 	Result SysDvrConnect();
 	void SysDvrClose();
 	
+	void SysDVRDebugCrash();
+	
 	Result SysDvrGetVersion(u32* out_ver);
 	Result SysDvrGetMode(u32* out_mode);
 
