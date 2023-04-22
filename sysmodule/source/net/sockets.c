@@ -169,7 +169,18 @@ int SocketTcpListen(short port)
 // We should use nifm but that comes with its share of weirdness.....
 bool SocketIsListenNetDown()
 {
-	return g_bsdErrno == NX_EAGAIN;
+	bool rc = g_bsdErrno == NX_EAGAIN;
+#if UDP_LOGGING
+	// Reset the logging socket if we lost connection
+	if (rc)
+	{
+		mutexLock(&udpLogMutex);
+		SocketClose(&udpLogSocket);
+		udpLogSocket = SocketUdp();
+		mutexUnlock(&udpLogMutex);
+	}
+#endif
+	return rc;
 }
 
 int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* out_addrlen)
@@ -223,10 +234,9 @@ static PollResult PolLScoket(int socket, int timeoutMs)
 	pollinfo.revents = 0;
 
 	int rc = bsdPoll(&pollinfo, 1, timeoutMs);
+	LOG("%d poll %x\n", socket, pollinfo.revents);
 	if (rc > 0)
 	{
-		LOG("poll %x\n", pollinfo.revents);
-
 		// This is not exactly correct, but we only care about the result in the context of SocketSendAll
 		if (pollinfo.revents & POLLERR)
 			return PollResult_Disconnected;

@@ -33,7 +33,7 @@ restart:
 		int client = SocketTcpAccept(listen, NULL, NULL);
 		if (client != SOCKET_INVALID)
 		{
-			LOG("TCP %d Accepted client\n", (int)stream);
+			LOG("TCP %d Accepted client %d\n", (int)stream, client);
 			SocketClose(&listen);
 			return client;
 		}
