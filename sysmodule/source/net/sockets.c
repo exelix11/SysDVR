@@ -145,10 +145,11 @@ int SocketTcpListen(short port)
 		if (bsdListen(socket, 1) == -1)
 			goto failed;
 
+		LOG("%d listening on %d\n", socket, (int)port);
 		return socket;
 
 	failed:
-		LOG("SocketTcpListen failed");
+		LOG("SocketTcpListen failed %d\n", (int)port);
 
 		if (socket != SOCKET_INVALID)
 			bsdClose(socket);

@@ -28,47 +28,49 @@ static void USB_StreamThread(void*)
 
 		LOG("UsbStreamRequest connected V:%d A:%d\n", Video, Audio);
 		
-		// Clear any pending data from previous connections,
-		// If we don't do this CaptureWaitBeginConsumeAny may return video data
-		// from a previous connection to an only audio stream (or vice-versa)
-		CaptureClearPendingData();
-		
 		// Signal the releveant producers that the client connected
 		if (Video) CaptureOnClientConnected(&VideoProducer);
 		if (Audio) CaptureOnClientConnected(&AudioProducer);
 
 		// Once client is connected just continuously send data
-		while (true) {
+		while (IsThreadRunning) {
 			// Wait for one of the two streams to be available
 			// Target will never be NULL, CaptureWaitBeginConsumeAny will fatal
 			// in case something interrupts the wait (exiting mode cleanly unlocks simulating a produce)
-			ConsumerProducer* target = CaptureWaitBeginConsumeAny(&AudioProducer, &VideoProducer);
+			ConsumerProducer* target = CaptureWaitProducedAny(&AudioProducer, &VideoProducer);
+			if (!target)
+				continue;
+
+			// Ignore pending data from previous connections, CaptureWaitBeginConsumeAny 
+			// may return video data from a previous connection to an only audio stream (or vice-versa)
+			// This happens at most once.
+			bool isTargetvVideo = target == &VideoProducer;
+			if (isTargetvVideo && !Video)
+				continue;
+			if (!isTargetvVideo && !Audio)
+				continue;
 
 			// If we wasted too much time the client will try to reconnect
 			bool isTooLate = armGetSystemTick() - lastConnection > armNsToTicks(1.5E+9);
-			bool success = !isTooLate && IsThreadRunning;
 
 			// If we can, send the data
-			if (success)
+			if (!isTooLate)
 			{
-				const PacketHeader* send = 
+				const PacketHeader* send =
 					target == &VideoProducer ? &VPkt.Header : &APkt.Header;
-				
-				success = UsbStreamingSend(send, send->DataSize + sizeof(PacketHeader));
+
+				if (!UsbStreamingSend(send, send->DataSize + sizeof(PacketHeader)))
+				{
+					if (target == &VideoProducer)
+						LOG("Video failed\n");
+					else
+						LOG("Audio failed\n");
+
+					break;
+				}
 			}
 
-			CaptureEndConsume(target);
-
-			// If writing fails go back to waiting for client
-			if (!success)
-			{
-				if (target == &VideoProducer)
-					LOG("Video failed\n");
-				else 
-					LOG("Audio failed\n");
-				
-				break;
-			}
+			CaptureSignalConsumed(target);
 
 			// Update lastConnection only if succeeded
 			lastConnection = armGetSystemTick();

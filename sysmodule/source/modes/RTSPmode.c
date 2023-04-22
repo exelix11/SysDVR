@@ -17,28 +17,29 @@ static void RTSP_StreamVideo(void* _)
 	{
 		u64 firstTs = 0;
 
-		while (!RTSP_ClientStreaming && IsThreadRunning) 
+		while (!RTSP_ClientStreaming && IsThreadRunning)
 			svcSleepThread(1E+8); // 1/10 of second
-		
+
 		if (!IsThreadRunning) break;
-		
+
 		LOG("RTSP VIDEO STREAMING\n");
 		CaptureOnClientConnected(&VideoProducer);
 
-		while (true)
-		{	
-			CaptureBeginConsume(&VideoProducer);
+		while (IsThreadRunning)
+		{
+			if (!CaptureWaitProduced(&VideoProducer))
+				continue;
 
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
-			
+
 			LOG_V("RTSP VIDEO TS %lu BYTES %lu\n", VPkt.Header.Timestamp, VPkt.Header.DataSize + sizeof(PacketHeader));
-			bool success = IsThreadRunning && !PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
-			
-			CaptureEndConsume(&VideoProducer);
-			
-			if (!success) 
+			bool success = !PacketizeH264((char*)VPkt.Data, VPkt.Header.DataSize, (VPkt.Header.Timestamp - firstTs) / 1000, RTSP_H264SendPacket);
+
+			if (!success)
 				break;
+
+			CaptureSignalConsumed(&VideoProducer);
 		}
 
 		CaptureOnClientDisconnected(&VideoProducer);
@@ -54,26 +55,27 @@ static void RTSP_StreamAudio(void* _)
 	{
 		u64 firstTs = 0;
 
-		while (!RTSP_ClientStreaming && IsThreadRunning) 
+		while (!RTSP_ClientStreaming && IsThreadRunning)
 			svcSleepThread(1E+8); // 1/10 of second
-		
-		if (!IsThreadRunning) 
+
+		if (!IsThreadRunning)
 			break;
 
 		LOG("RTSP AUDIO STREAMING\n");
 		CaptureOnClientConnected(&AudioProducer);
 
 		while (IsThreadRunning)
-		{			
-			CaptureBeginConsume(&AudioProducer);
+		{
+			if (!CaptureWaitProduced(&AudioProducer))
+				break;
 
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
-			
+
 			LOG_V("RTSP AUDIO TS %lu BYTES %lu\n", APkt.Header.Timestamp, APkt.Header.DataSize + sizeof(PacketHeader));
 			bool success = IsThreadRunning && !PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
-			
-			CaptureEndConsume(&AudioProducer);
+
+			CaptureSignalConsumed(&AudioProducer);
 
 			if (!success)
 				break;
