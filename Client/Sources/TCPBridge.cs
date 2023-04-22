@@ -65,6 +65,9 @@ namespace SysDVR.Client.Sources
 					Sock.ConnectAsync(IpAddress, Port, Token).GetAwaiter().GetResult();
 					if (Sock.Connected)
 					{
+						Sock.NoDelay = true;
+						Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+
 						// Assume the connection starts in-sync and fall back to resync code only on failure
 						InSync = true;
 						break;
@@ -122,7 +125,8 @@ namespace SysDVR.Client.Sources
             }
             else
             {
-				Console.WriteLine($"{SourceKind} Resyncing....");
+				if (Logging.Log)
+					Console.WriteLine($"{SourceKind} Resyncing....");
 
                 // TCPBridge is a raw stream of data, search for an header
                 for (int i = 0; i < 4 && !Token.IsCancellationRequested;)

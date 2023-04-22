@@ -56,6 +56,8 @@
 #define ERR_USB_OUT_OF_MEMORY MAKERESULT(SYSDVR_CRASH_MODULEID, 20)
 #define ERR_INIT_FAILED MAKERESULT(SYSDVR_CRASH_MODULEID, 21)
 
+#define ERR_MAIN_NOTRUNNING MAKERESULT(SYSDVR_CRASH_MODULEID, 18)
+
 #define ERR_HIPC_UNKREQ MAKERESULT(11, 403)
 
 //This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
@@ -69,6 +71,8 @@
 
 #define CMD_GET_VER 100
 #define CMD_GET_MODE 101
+// Crash the process so we can get a crash report to figure out what's going on
+#define CMD_DEBUG_CRASH 102
 
 #define MODE_TO_CMD_SET(x) x
 #define CMD_SET_TO_MODE(x) x

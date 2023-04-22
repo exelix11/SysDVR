@@ -31,6 +31,11 @@ Result SysDvrConnect()
 	return rc;
 }
 
+void SysDVRDebugCrash()
+{
+	serviceDispatch(&dvr, CMD_DEBUG_CRASH);
+}
+
 void SysDvrClose()
 {
 	serviceClose(&dvr);

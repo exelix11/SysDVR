@@ -120,6 +120,12 @@ static bool HandleCommand(u64 id)
 			WritePayloadResponseToTLS(0, &mode, sizeof(mode));
 			return false;
 		}
+		case CMD_DEBUG_CRASH:
+		{
+			// Crash the process
+			*(u32*)0x0 = 0xDEAD;
+			return false;
+		}
 		case CMD_SET_USB:
 		case CMD_SET_TCP:
 		case CMD_SET_RTSP:
