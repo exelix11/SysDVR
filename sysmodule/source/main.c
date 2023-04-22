@@ -147,81 +147,143 @@ static Thread AudioThread;
 static Thread VideoThread;
 
 const StreamMode* CurrentMode = NULL;
-static atomic_bool IsSwitchingModes = false;
 
-static void SetModeInternal(const void* argmode)
-{ 
-	if (IsSwitchingModes)
-		fatalThrow(ERR_MAIN_SWITCHING);
+// Mode switching is complicated because the streaming thread can get stuck indefinitely waiting for grc when a game is not running
+// So we fake mode switching: when the user puts in a request a thread starts and waits for the streaming thread to exit
+// the request can be changed at any time while this thread is waiting, once the streaming threads actually exit the new request is processed
+static u8 alignas(0x1000) ModeSwitchingStackArea[0x2000 + LOGGING_HEAP_BOOST];
+static atomic_bool IsModeSwitchPending = false;
+static Thread ModeSwitchThread;
+static Mutex ModeSwitchingMutex;
+static const StreamMode* SwitchModeTarget = NULL;
 
-	IsSwitchingModes = true;
-	StreamMode* mode = (StreamMode*)argmode;
+const StreamMode* GetUserVisibleMode() {
+	mutexLock(&ModeSwitchingMutex);
+	
+	const StreamMode* ret = CurrentMode;
 
+	if (IsModeSwitchPending)
+		ret = SwitchModeTarget;
+
+	mutexUnlock(&ModeSwitchingMutex);
+	return ret;
+}
+
+void EnterTargetMode()
+{
+	mutexLock(&ModeSwitchingMutex);
+
+	if (CurrentMode)
+		fatalThrow(ERR_MAIN_UNEXPECTED_MODE);
+
+	CurrentMode = SwitchModeTarget;
+	SwitchModeTarget = NULL;
+
+	if (CurrentMode)
+	{
+		LOG("Starting mode\n");
+		IsThreadRunning = true;
+		memset(&Buffers, 0, sizeof(Buffers));
+
+		LOG("Calling init fn\n");
+		if (CurrentMode->InitFn)
+			CurrentMode->InitFn();
+
+		LOG("Starting video thread\n");
+		if (CurrentMode->VThread) {
+			memset(VStreamStackArea, 0, sizeof(VStreamStackArea));
+			LaunchThread(&VideoThread, CurrentMode->VThread, CurrentMode->Vargs, VStreamStackArea, sizeof(VStreamStackArea), 0x2C);
+		}
+
+		LOG("Starting audio thread\n");
+		if (CurrentMode->AThread) {
+			memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
+			LaunchThread(&AudioThread, CurrentMode->AThread, CurrentMode->Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
+		}
+	}
+
+	IsModeSwitchPending = false;
+
+	LOG("Mode started\n");
+	mutexUnlock(&ModeSwitchingMutex);
+}
+
+void ExitCurrentMode()
+{
 	if (CurrentMode)
 	{
 		LOG("Terminating mode\n");
 		IsThreadRunning = false;
 
-		LOG("Waiting video thread\n");
-		if (CurrentMode->VThread)
-			JoinThread(&VideoThread);
-		
-		LOG("Waiting audio thread\n");
-		if (CurrentMode->AThread)
-			JoinThread(&AudioThread);
-
 		LOG("Calling exit fn\n");
 		if (CurrentMode->ExitFn)
 			CurrentMode->ExitFn();
 
+		LOG("Waiting video thread\n");
+		if (CurrentMode->VThread)
+			JoinThread(&VideoThread);
+
+		LOG("Waiting audio thread\n");
+		if (CurrentMode->AThread)
+			JoinThread(&AudioThread);
+
 		LOG("Terminated\n");
+		CurrentMode = NULL;
 	}
-	CurrentMode = mode;
-	if (mode)
+}
+
+void SwitchModesThreadMain(void*)
+{
+	// This will take forever
+	ExitCurrentMode();
+
+	// This is fast
+	EnterTargetMode();
+}
+
+// To be used only for initialization
+void SetModeInternal(const StreamMode* mode)
+{
+	SwitchModeTarget = mode;
+	EnterTargetMode();
+}
+
+void SwitchModes(const StreamMode* mode)
+{
+	mutexLock(&ModeSwitchingMutex);
+
+	LOG("Mode switch requested\n");
+	SwitchModeTarget = mode;
+
+	if (!IsModeSwitchPending)
 	{
-		LOG("Starting mode\n");
-		IsThreadRunning = true;
-		memset(&Buffers, 0, sizeof(Buffers));
-		
-		LOG("Calling init fn\n");
-		if (mode->InitFn)
-			mode->InitFn();
-		
-		LOG("Starting video thread\n");
-		if (mode->VThread) {
-			memset(VStreamStackArea, 0, sizeof(VStreamStackArea));
-			LaunchThread(&VideoThread, mode->VThread, mode->Vargs, VStreamStackArea, sizeof(VStreamStackArea), 0x26);
+		IsModeSwitchPending = true;
+
+		if (ModeSwitchThread.handle) {
+			LOG("Closing old mode switch thread\n");
+			JoinThread(&ModeSwitchThread);
 		}
 
-		LOG("Starting audio thread\n");
-		if (mode->AThread) {
-			memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
-			LaunchThread(&AudioThread, mode->AThread, mode->Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x26);
-		}
+		LOG("Launching mode switch thread\n");
+		LaunchThread(&ModeSwitchThread, SwitchModesThreadMain, NULL, ModeSwitchingStackArea, sizeof(ModeSwitchingStackArea), 0x2C);
 	}
-	IsSwitchingModes = false;
-	LOG("Done\n");
+
+	mutexUnlock(&ModeSwitchingMutex);
 }
 
 u32 GetCurrentMode()
 {
-	if (IsSwitchingModes)
-		return TYPE_MODE_SWITCHING;
+	const StreamMode* mode = GetUserVisibleMode();
 
-	if (CurrentMode == NULL)
+	if (mode == NULL)
 		return TYPE_MODE_NULL;
-	else if (CurrentMode == &USB_MODE)
+	else if (mode == &USB_MODE)
 		return TYPE_MODE_USB;
-	else if (CurrentMode == &TCP_MODE)
+	else if (mode == &TCP_MODE)
 		return TYPE_MODE_TCP;
-	else if (CurrentMode == &RTSP_MODE)
+	else if (mode == &RTSP_MODE)
 		return TYPE_MODE_RTSP;
 	else fatalThrow(ERR_MAIN_UNKMODE);
-}
-
-bool CanChangeMode()
-{
-	return !IsSwitchingModes;
 }
 
 void SetModeID(u32 mode)
@@ -229,16 +291,16 @@ void SetModeID(u32 mode)
 	switch (mode)
 	{
 	case TYPE_MODE_USB:
-		SetModeInternal(&USB_MODE);
+		SwitchModes(&USB_MODE);
 		break;
 	case TYPE_MODE_TCP:
-		SetModeInternal(&TCP_MODE);
+		SwitchModes(&TCP_MODE);
 		break;
 	case TYPE_MODE_RTSP:
-		SetModeInternal(&RTSP_MODE);
+		SwitchModes(&RTSP_MODE);
 		break;
 	case TYPE_MODE_NULL:
-		SetModeInternal(NULL);
+		SwitchModes(NULL);
 		break;
 	default:
 		fatalThrow(ERR_MAIN_UNKMODESET);
@@ -259,7 +321,7 @@ int main(int argc, char* argv[])
 #ifdef USE_LOGGING
 	freopen("/sysdvr_log.txt", "w", stdout);
 #endif
-	Result rc = CaptureStartThreads();
+	Result rc = CaptureInitialize();
 	if (R_FAILED(rc)) fatalThrow(rc);
 
 #ifdef USB_ONLY

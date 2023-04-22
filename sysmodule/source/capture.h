@@ -52,58 +52,11 @@ _Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * ABatching)
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
 
-Result CaptureStartThreads();
+Result CaptureInitialize();
+void CaptureFinalize();
 
-typedef struct {
-	UEvent Consumed, Produced;
-	Mutex ProducerBusy;
-} ConsumerProducer;
+// Captures video with grc:d, if no game is running this blocks and there's no way to terminate the call
+bool CaptureReadVideo();
 
-extern ConsumerProducer VideoProducer;
-extern ConsumerProducer AudioProducer;
-
-void CaptureOnClientConnected(ConsumerProducer*);
-void CaptureOnClientDisconnected(ConsumerProducer*);
-
-// Returns -1 if the wait was failed, 0 if the first event was signalled, 1 if the second was signalled
-static inline s32 CaptureWaitObjectsWrapper(UEvent* first, UEvent* second)
-{
-	Waiter w[2] =
-	{
-		waiterForUEvent(first),
-		second ? waiterForUEvent(second) : (Waiter) {}
-	};
-
-	s32 out;
-	Result rc = waitObjects(&out, w, second ? 2 : 1, 1E+9);
-
-	if (rc == MAKERESULT(Module_Kernel, KernelError_TimedOut))
-		return -1;
-
-	if (R_FAILED(rc))
-		fatalThrow(rc);
-
-	return out;
-}
-
-// If this reutnrs NULL, it means the wait was cancelled
-static inline ConsumerProducer* CaptureWaitProducedAny(ConsumerProducer* first, ConsumerProducer* second)
-{
-	s32 res = CaptureWaitObjectsWrapper(&first->Produced, second ? &second->Produced : NULL);
-
-	if (res == -1)
-		return NULL;
-
-	return res == 0 ? first : second;
-}
-
-// Returns false when the wait was cancelled
-static inline bool CaptureWaitProduced(ConsumerProducer* prod)
-{
-	return CaptureWaitProducedAny(prod, NULL);
-}
-
-static inline void CaptureSignalConsumed(ConsumerProducer* prod)
-{
-	ueventSignal(&prod->Consumed);
-}
+// Captures audio with grc:d, if no game is running this blocks and there's no way to terminate the call
+bool CaptureReadAudio();

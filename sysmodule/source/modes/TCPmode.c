@@ -54,24 +54,23 @@ restart:
 typedef struct
 {
 	GrcStream Type;
-	ConsumerProducer* Target;
 	PacketHeader* Pkt;
 	const char* FullPacket;
 } StreamConf;
 
 const StreamConf VideoConfig = {
 	GrcStream_Video,
-	&VideoProducer,
 	&VPkt.Header,
 	(const char*)&VPkt
 };
 
 const StreamConf AudioConfig = {
 	GrcStream_Audio,
-	&AudioProducer,
 	&APkt.Header,
 	(const char*)&APkt
 };
+
+typedef bool (*StreamReadFunc)();
 
 static void TCP_StreamThread(void* argConfig)
 {
@@ -79,6 +78,7 @@ static void TCP_StreamThread(void* argConfig)
 		fatalThrow(ERR_TCP_THREAD);
 
 	StreamConf config = *(const StreamConf*)argConfig;
+	const StreamReadFunc ReadStream = config.Type == GrcStream_Video ? CaptureReadVideo : CaptureReadAudio;
 
 	LOG("TCP %d Thread started\n", (int)config.Type);
 
@@ -93,12 +93,10 @@ static void TCP_StreamThread(void* argConfig)
 		svcSleepThread(5E+8);
 
 		u64 total = 0;
-		CaptureOnClientConnected(config.Target);
-
-		while (IsThreadRunning)
+		while (true)
 		{
-			if (!CaptureWaitProduced(config.Target))
-				continue;
+			if (!ReadStream() || !IsThreadRunning)
+				break;
 
 			LOG_V("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
 			bool success = SocketSendAll(client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
@@ -115,12 +113,8 @@ static void TCP_StreamThread(void* argConfig)
 #else
 			(void)total;
 #endif
-
-			CaptureSignalConsumed(config.Target);
 		}
-
-		CaptureOnClientDisconnected(config.Target);
-
+		
 		LOG("TCP %d Closing client after %lu bytes\n", (int)config.Type, total);
 		SocketClose(&client);
 		svcSleepThread(2E+8);

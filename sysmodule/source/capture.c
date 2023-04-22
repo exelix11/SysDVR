@@ -8,32 +8,17 @@
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
-// These threads have smaller stack than normal, may cause issues if more code is added
-static u8 alignas(0x1000) VCapThreadStackArea[0x1000 + LOGGING_HEAP_BOOST];
-static u8 alignas(0x1000) ACapThreadStackArea[0x1000 + LOGGING_HEAP_BOOST];
-
-ConsumerProducer VideoProducer;
-ConsumerProducer AudioProducer;
-
 static Service grcdVideo;
 static Service grcdAudio;
-
-static Thread videoThread;
-static Thread audioThread;
 
 static const uint8_t SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 static const uint8_t PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 static bool forceSPSPPS = false;
 
-static Result GrcInitialize()
-{
-	R_RET_ON_FAIL(grcdServiceOpen(&grcdVideo));
-	R_RET_ON_FAIL(grcdServiceOpen(&grcdAudio));
-	return grcdServiceBegin(&grcdVideo);
-}
+static atomic_bool capturing = false;
 
-static bool ReadAudioStream()
+bool CaptureReadAudio()
 {
 	Result rc = grcdServiceTransfer(
 		&grcdAudio, GrcStream_Audio,
@@ -62,7 +47,7 @@ static bool ReadAudioStream()
 	return R_SUCCEEDED(rc);
 }
 
-static bool ReadVideoStream()
+bool CaptureReadVideo()
 {
 	Result res = grcdServiceTransfer(
 		&grcdVideo, GrcStream_Video,
@@ -109,94 +94,17 @@ static bool ReadVideoStream()
 	return result;
 }
 
-static inline void CaptureWaitForConsumed(ConsumerProducer* prod)
+Result CaptureInitialize()
 {
-	Waiter w = waiterForUEvent(&prod->Consumed);
-	Result r = waitSingle(w, UINT64_MAX);
-	if (R_FAILED(r))
-		fatalThrow(r);
+	capturing = true;
+
+	R_RET_ON_FAIL(grcdServiceOpen(&grcdVideo));
+	R_RET_ON_FAIL(grcdServiceOpen(&grcdAudio));
+	return grcdServiceBegin(&grcdVideo);
 }
 
-static inline void CaptureSignalProduced(ConsumerProducer* prod)
+void CaptureFinalize()
 {
-	ueventSignal(&prod->Produced);
-}
-
-static void CaptureVideoThread(void*)
-{
-	while (true) {
-		CaptureWaitForConsumed(&VideoProducer);
-		mutexLock(&VideoProducer.ProducerBusy);
-		ReadVideoStream();
-		CaptureSignalProduced(&VideoProducer);
-		mutexUnlock(&VideoProducer.ProducerBusy);
-	}
-}
-
-static void CaptureAudioThread(void*)
-{
-	while (true) {
-		CaptureWaitForConsumed(&AudioProducer);
-		mutexLock(&AudioProducer.ProducerBusy);
-		ReadAudioStream();
-		CaptureSignalProduced(&AudioProducer);
-		mutexUnlock(&AudioProducer.ProducerBusy);
-	}
-}
-
-static Result CaptureProducerConsumerInit(ConsumerProducer* prod)
-{
-	ueventCreate(&prod->Consumed, true);
-	ueventCreate(&prod->Produced, true);
-	mutexInit(&prod->ProducerBusy);
-
-	return 0;
-}
-
-Result CaptureStartThreads()
-{
-	R_RET_ON_FAIL(CaptureProducerConsumerInit(&VideoProducer));
-	R_RET_ON_FAIL(CaptureProducerConsumerInit(&AudioProducer));
-	R_RET_ON_FAIL(GrcInitialize());
-
-	R_RET_ON_FAIL(threadCreate(&videoThread, CaptureVideoThread, NULL, VCapThreadStackArea, sizeof(VCapThreadStackArea), 0x26, 3));
-	R_RET_ON_FAIL(threadCreate(&audioThread, CaptureAudioThread, NULL, ACapThreadStackArea, sizeof(ACapThreadStackArea), 0x26, 3));
-	R_RET_ON_FAIL(threadStart(&videoThread));
-	R_RET_ON_FAIL(threadStart(&audioThread));
-
-	return 0;
-}
-
-void CaptureOnClientConnected(ConsumerProducer* prod)
-{
-	if (prod == &VideoProducer)
-		forceSPSPPS = true;
-
-	// We want to keep the state of the ConsumerProducer structures always consistent.
-	// here the producer can be in one of two states:
-	//   - Data has been produced so Produced is signaled and now the thread is waiting on Consumed.
-	//   - The producer is producing data (either right now or it's stuck waiting for grc).
-
-	if (mutexTryLock(&prod->ProducerBusy))
-	{
-		// If we're here the producer is not stuck and must be waiting on Consumed.
-
-		// clear Produced so the streaming thread waits for the next frame.
-		ueventClear(&prod->Produced);
-
-		// Signal Consumed so the streaming thread can start producing data.
-		CaptureSignalConsumed(prod);
-
-		mutexUnlock(&prod->ProducerBusy);
-	}
-	else
-	{
-		// THe producer is waiting for grc or about to set produced, we can safely wait on produced.
-	}
-}
-
-void CaptureOnClientDisconnected(ConsumerProducer* prod)
-{
-	// Halt the producer thread
-	ueventClear(&prod->Consumed);
+	grcdServiceClose(&grcdVideo);
+	grcdServiceClose(&grcdAudio);
 }
