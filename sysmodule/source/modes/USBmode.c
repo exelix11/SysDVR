@@ -24,13 +24,10 @@ static bool SendData(void* data, size_t length)
 	mutexLock(&UsbMutex);
 
 	bool isTooLate = armGetSystemTick() - LastConnection > armNsToTicks(1.5E+9);
-	if (isTooLate)
-		return false;
-
-	if (!ClientConnected())
-		return false;
-
-	success = UsbStreamingSend(data, length);
+	if (isTooLate || !ClientConnected())
+		success = false;
+	else 
+		success = UsbStreamingSend(data, length);
 
 	if (success)
 		LastConnection = armGetSystemTick();
