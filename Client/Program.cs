@@ -177,7 +177,7 @@ namespace SysDVR.Client
 
 		bool HasArg(string arg) => Array.IndexOf(Args, arg) != -1;
 
-		string ArgValue(string arg)
+		string? ArgValue(string arg)
 		{
 			int index = Array.IndexOf(Args, arg);
 			if (index == -1) return null;
@@ -212,8 +212,9 @@ namespace SysDVR.Client
 
 		void ProgramMain()
 		{
-			bool StreamStdout = HasArg("--stdout");
-			string libOverride = ArgValue("--libdir");
+			var StreamStdout = HasArg("--stdout");
+			var libOverride = ArgValue("--libdir");
+			DebugOptions.Current = DebugOptions.Parse(ArgValue("--debug"));
 
             // Native library loading memes
 			if (libOverride is not null)
@@ -269,7 +270,6 @@ namespace SysDVR.Client
 
 			NoAudio = HasArg("--no-audio");
 			NoVideo = HasArg("--no-video");
-			StreamThread.Logging = HasArg("--print-stats");
 
 			if (NoVideo && NoAudio)
 			{
@@ -309,9 +309,9 @@ namespace SysDVR.Client
 				StreamManager = new Mp4OutputManager(filename, !NoVideo, !NoAudio);
 			}
 #if DEBUG
-			else if (HasArg("--debug"))
+			else if (HasArg("--record-debug"))
 			{
-				string path = ArgValue("--debug");
+				string path = ArgValue("--record-debug");
 				StreamManager = new LoggingManager(NoVideo ? null : Path.Combine(path, "video.h264"), NoAudio ? null : Path.Combine(path, "audio.raw"));
 			}
 #endif
@@ -529,7 +529,6 @@ Stream sources:
 	Note that the `Simple network mode` option in SysDVR-Settings does not require the client, you must open it directly in a video player.
 
 Source options:
-	`--print-stats` : Logs received data size and errors
 	`--usb-warn` : Enables printing warnings from the usb stack, use it to debug USB issues
 	`--usb-debug` : Same as `--usb-warn` but more detailed
 	`--usb-serial NX0000000` : When multiple consoles are plugged in via USB use this option to automatically select one by serial number. 
@@ -566,6 +565,9 @@ Extra options:
 	`--version` : Prints the version
 	`--libdir` : Overrides the dynami library loading path, use only if dotnet can't locate your ffmpeg/avcoded/SDL2 libraries automatically
                  this option effect depend on your platform, some libraries may still be handled by dotnet, it's better to use your loader path environment variable.
+	`--debug <debug options>` : Enables debug loggings, Supported options are `stats`, `log`, `keyframe`, `nal`
+				Multiple options are comma separated, example: --debug log,stats
+				When a debugger is attached `log` is enabled by default
 
 Command examples:
 	SysDVR-Client.exe usb

@@ -10,7 +10,7 @@ namespace SysDVR.Client.Sources
 	// Playsback a recording made with LoggingTarget, useful for developing without a console
 	class RecordedSource : IStreamingSource
 	{
-		public bool Logging { get; set; }
+		public DebugOptions Logging { get; set; }
 		public BinaryReader Source { get; set; }
 
         public StreamKind SourceKind { get; private init; }

@@ -21,7 +21,7 @@ namespace SysDVR.Client.FileOutput
 			HasVideo ? new Mp4VideoTarget() : null,
 			HasAudio ? new Mp4AudioTarget() : null)
 		{
-			output = new Mp4Output(filename, this);
+			output = new Mp4Output(filename, VideoTarget as Mp4VideoTarget, AudioTarget as Mp4AudioTarget);
 		}
 
 		public override void Begin()
@@ -61,13 +61,13 @@ namespace SysDVR.Client.FileOutput
 		AVFormatContext* OutCtx;
 		AVStream* VStream, AStream;
 
-		Mp4VideoTarget Vid;
-		Mp4AudioTarget Aud;
+		Mp4VideoTarget? Vid;
+		Mp4AudioTarget? Aud;
 
-		public Mp4Output(string filename, Mp4OutputManager manager)
+		public Mp4Output(string filename, Mp4VideoTarget? vTarget, Mp4AudioTarget? aTarget)
 		{
-			Vid = manager.VideoTarget as Mp4VideoTarget;
-			Aud = manager.AudioTarget as Mp4AudioTarget;
+			Vid = vTarget;
+			Aud = aTarget;
 			Filename = filename;
 		}
 
@@ -80,7 +80,7 @@ namespace SysDVR.Client.FileOutput
 			avformat_alloc_output_context2(&ctx, OutFmt, null, null).AssertNotNeg();
 			OutCtx = ctx != null ? ctx : throw new Exception("Couldn't allocate output context");
 
-			if (Vid != null)
+			if (Vid is not null)
 			{
 				VStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_H264));
 				if (VStream == null) throw new Exception("Couldn't allocate video stream");
@@ -100,7 +100,7 @@ namespace SysDVR.Client.FileOutput
 				//VStream->codecpar->extradata_size = sz;
 			}
 
-			if (Aud != null)
+			if (Aud is not null)
 			{
 				AStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP2));
 				if (AStream == null) throw new Exception("Couldn't allocate audio stream");

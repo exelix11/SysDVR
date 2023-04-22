@@ -55,42 +55,15 @@ namespace SysDVR.Client.RTSP
 
 	class SysDVRVideoRTSPTarget : SysDvrRTSPTarget
 	{
-		static int FindNextNALHeader(Span<byte> span)
-		{
-			for (int i = 2; i < span.Length; i++)
-				if (span[i - 2] == 0 && span[i - 1] == 0 && span[i] == 1)
-					return i + 1;
-
-			return -1;
-		}
-
-		static Span<byte> AdvanceToStart(Span<byte> span)
-		{
-            var offset = FindNextNALHeader(span);
-			if (offset == -1)
-				return Span<byte>.Empty;
-			else
-				return span.Slice(offset);
-        }
-
 		override public void SendData(PoolBuffer block, ulong ts)
 		{			
 			var tsMs = ts / 1000;
 
-			Span<byte> data = AdvanceToStart(block);
-			while (!data.IsEmpty)
+			var dataSpan = block.Span;
+            foreach (var (start, length) in H264Util.EnumerateNals(block.ArraySegment))
 			{
-				var next = FindNextNALHeader(data);
-				if (next == -1)
-				{
-					InvokeEvent(data, tsMs);
-					break;
-				}
-
-				var sendSlice = data.Slice(0, next - 3);
-                InvokeEvent(sendSlice, tsMs);
-
-                data = data.Slice(next);
+				var data = dataSpan.Slice(start, length);
+                InvokeEvent(data, tsMs);
             }
             
 			block.Free();

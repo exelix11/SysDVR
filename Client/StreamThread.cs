@@ -43,7 +43,7 @@ namespace SysDVR.Client
 		// this field should match the NoAudio/NoVideo state of the target
 		StreamKind SourceKind { get; }
 
-		bool Logging { get; set; }
+		DebugOptions Logging { get; set; }
 		void UseCancellationToken(CancellationToken tok);
 		
 		void WaitForConnection();
@@ -56,8 +56,6 @@ namespace SysDVR.Client
 
 	abstract class StreamThread : IDisposable
 	{
-		public static bool Logging;
-
 		Thread DeviceThread;
 		CancellationTokenSource Cancel;
 
@@ -109,10 +107,10 @@ namespace SysDVR.Client
 		TimeTrace trace = new TimeTrace();
 		void DeviceThreadMain(CancellationToken token)
 		{
-			var logStats = Logging;
-			var logDbg = logStats || Debugger.IsAttached;
+			var logStats = DebugOptions.Current.Stats;
+			var logDbg = DebugOptions.Current.Log;
 
-			Source.Logging = logStats;
+			Source.Logging = DebugOptions.Current;
 			Source.UseCancellationToken(token);
 			
 			SetCancellationToken(token);
