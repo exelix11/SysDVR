@@ -3,10 +3,7 @@
 #include "defines.h"
 #include <stdint.h>
 #include <stdbool.h>
-
-#if defined(__SWITCH__)
-	#include <stdatomic.h>
-#endif
+#include <stdatomic.h>
 
 #if defined(USB_ONLY)
 static const bool IsThreadRunning = true;

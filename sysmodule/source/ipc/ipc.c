@@ -6,7 +6,6 @@
 // From main
 extern void SetModeID(u32 mode);
 extern u32 GetCurrentMode();
-extern bool CanChangeMode();
 
 static Handle handles[2];
 static SmServiceName serverName;
@@ -130,12 +129,8 @@ static bool HandleCommand(u64 id)
 		case CMD_SET_TCP:
 		case CMD_SET_RTSP:
 		case CMD_SET_OFF:
-			if (CanChangeMode())
-			{
-				modeToSet = id;
-				WriteResponseToTLS(0);
-			}
-			else WriteResponseToTLS(ERR_MAIN_SWITCHING);
+			modeToSet = id;
+			WriteResponseToTLS(0);
 			return false;
 		default:
 			WriteResponseToTLS(ERR_IPC_UNKCMD);

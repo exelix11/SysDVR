@@ -131,7 +131,9 @@ namespace SysDVR.Client.Sources
                 // TCPBridge is a raw stream of data, search for an header
                 for (int i = 0; i < 4 && !Token.IsCancellationRequested;)
                 {
-                    ReadExact(buffer.AsSpan().Slice(i, 1));
+					if (!ReadExact(buffer.AsSpan().Slice(i, 1)))
+						return false;
+
 					if (buffer[i] != HeaderMagicByte)
 						i = 0;
 					else 

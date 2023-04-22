@@ -23,12 +23,11 @@ static void RTSP_StreamVideo(void* _)
 		if (!IsThreadRunning) break;
 
 		LOG("RTSP VIDEO STREAMING\n");
-		CaptureOnClientConnected(&VideoProducer);
 
-		while (IsThreadRunning)
+		while (true)
 		{
-			if (!CaptureWaitProduced(&VideoProducer))
-				continue;
+			if (!CaptureReadVideo() || !IsThreadRunning)
+				break;
 
 			if (firstTs == 0)
 				firstTs = VPkt.Header.Timestamp;
@@ -38,11 +37,7 @@ static void RTSP_StreamVideo(void* _)
 
 			if (!success)
 				break;
-
-			CaptureSignalConsumed(&VideoProducer);
 		}
-
-		CaptureOnClientDisconnected(&VideoProducer);
 	}
 }
 
@@ -62,11 +57,10 @@ static void RTSP_StreamAudio(void* _)
 			break;
 
 		LOG("RTSP AUDIO STREAMING\n");
-		CaptureOnClientConnected(&AudioProducer);
 
 		while (IsThreadRunning)
 		{
-			if (!CaptureWaitProduced(&AudioProducer))
+			if (!CaptureReadAudio() || !IsThreadRunning)
 				break;
 
 			if (firstTs == 0)
@@ -75,13 +69,9 @@ static void RTSP_StreamAudio(void* _)
 			LOG_V("RTSP AUDIO TS %lu BYTES %lu\n", APkt.Header.Timestamp, APkt.Header.DataSize + sizeof(PacketHeader));
 			bool success = IsThreadRunning && !PacketizeLE16((char*)APkt.Data, APkt.Header.DataSize, (APkt.Header.Timestamp - firstTs) / 1000, RTSP_LE16SendPacket);
 
-			CaptureSignalConsumed(&AudioProducer);
-
 			if (!success)
 				break;
 		}
-
-		CaptureOnClientDisconnected(&AudioProducer);
 	}
 }
 
