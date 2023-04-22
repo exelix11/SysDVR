@@ -27,7 +27,7 @@ static bool SocketReady;
 #define TCP_TX_SZ (16 * 1024)
 #define TCP_RX_SZ (8 * 1024)
 
-#define TCP_TX_MAX_SZ (128 * 1024)
+#define TCP_TX_MAX_SZ (256 * 1024)
 #define TCP_RX_MAX_SZ 0
 
 #define UDP_TX_SZ (8 * 1024)
@@ -47,7 +47,6 @@ static u8 alignas(0x1000) TmemBackingBuffer[TMEM_SIZE];
 #include "../third_party/nanoprintf.h"
 static struct sockaddr_in loggingDest;
 static int udpLogSocket;
-static Mutex udpLogMutex;
 
 void LogFunctionImpl(const char* fmt, ...)
 {
@@ -57,10 +56,8 @@ void LogFunctionImpl(const char* fmt, ...)
 	int n = npf_vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
-	mutexLock(&udpLogMutex);
 	if (loggingDest.sin_port != 0)
 		SocketUDPSendTo(udpLogSocket, buf, n, (struct sockaddr*)&loggingDest, sizeof(loggingDest));
-	mutexUnlock(&udpLogMutex);
 }
 #endif
 
@@ -90,7 +87,6 @@ void SocketInit()
 	R_THROW(bsdInitialize(&config, 3, BsdServiceType_User));
 
 #if UDP_LOGGING
-	mutexInit(&udpLogMutex);
 	udpLogSocket = SocketUdp();
 	// parse ip
 	loggingDest.sin_family = AF_INET;
@@ -174,10 +170,8 @@ bool SocketIsListenNetDown()
 	// Reset the logging socket if we lost connection
 	if (rc)
 	{
-		mutexLock(&udpLogMutex);
 		SocketClose(&udpLogSocket);
 		udpLogSocket = SocketUdp();
-		mutexUnlock(&udpLogMutex);
 	}
 #endif
 	return rc;
@@ -204,6 +198,10 @@ int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* ou
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 				bsdSetSockOpt(accepted, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+				// Set TCP_NODELAY
+				int optVal = 1;
+				bsdSetSockOpt(accepted, IPPROTO_TCP, TCP_NODELAY, &optVal, sizeof(optVal));
 			}
 
 			return accepted;
@@ -242,10 +240,11 @@ static PollResult PolLScoket(int socket, int timeoutMs)
 			return PollResult_Disconnected;
 		else if (pollinfo.revents & POLLHUP)
 			return PollResult_Disconnected;
-		else if (pollinfo.revents & POLLOUT)
-			return PollResult_CanWrite;
+		// This comes first to detect disconnection before we can write
 		else if (pollinfo.revents & POLLIN)
 			return PollResult_CanRead;
+		else if (pollinfo.revents & POLLOUT)
+			return PollResult_CanWrite;
 
 		return PollResult_Other;
 	}
@@ -261,7 +260,7 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 	u32 sent = 0;
 	while (sent < size)
 	{
-		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, MSG_DONTWAIT);
+		int res = bsdSend(sock, (const char*)buffer + sent, size - sent, 0);
 		if (res == -1)
 		{
 			if (g_bsdErrno == NX_EAGAIN)
@@ -282,15 +281,17 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 				if (pollRes == PollResult_CanWrite)
 					continue;
 				else if (pollRes == PollResult_Timeout)
-					goto poll_again;
+					goto poll_again;				
 
 				// We don't expect to receive data from the client, so any other
 				// result is probably an error and we close the socket on our end
-				else return false;
-			}
-			else
 				return false;
+			}
+			// Any other error is fatal
+			return false;
 		}
+		else if (res == 0)
+			return false;
 
 		sent += res;
 	}
