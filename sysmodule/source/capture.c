@@ -3,6 +3,7 @@
 #include "grcd.h"
 #include "capture.h"
 #include "modes/defines.h"
+#include <stdatomic.h>
 
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
@@ -55,24 +56,21 @@ static bool ReadAudioStream()
 			&tmpSize,
 			NULL);
 
-		if (R_FAILED(rc))
-			return false;
-
 		APkt.Header.DataSize += tmpSize;
 	}
 
-	return true;
+	return R_SUCCEEDED(rc);
 }
 
 static bool ReadVideoStream()
 {
 	Result res = grcdServiceTransfer(
-		&grcdVideo, GrcStream_Video, 
-		VPkt.Data, VbufSz, 
-		NULL, 
-		&VPkt.Header.DataSize, 
+		&grcdVideo, GrcStream_Video,
+		VPkt.Data, VbufSz,
+		NULL,
+		&VPkt.Header.DataSize,
 		&VPkt.Header.Timestamp);
-	
+
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
 #ifndef RELEASE
@@ -83,21 +81,22 @@ static bool ReadVideoStream()
 		fatalThrow(res);
 #endif
 
-	if (!result)
+	if (!result) {
+		LOG("Video capture failed: %x\n", res);
 		return false;
-
+	}
 	/*
 		GRC only emits SPS and PPS once when a game is started,
 		this is not good as without those it's not possible to play the stream If there's space add SPS and PPS to IDR frames every once in a while
 	*/
 	static int IDRCount = 0;
 	const bool isIDRFrame = (VPkt.Data[4] & 0x1F) == 5;
-	
+
 	// if this is an IDR frame and we haven't added SPS/PPS in the last 5 or forceSPSPPS is set
 	bool EmitMeta = forceSPSPPS || (isIDRFrame && ++IDRCount >= 5);
 
 	// Only if there's enough space
-	if (EmitMeta && (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS))) 
+	if (EmitMeta && (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
 	{
 		IDRCount = 0;
 		forceSPSPPS = false;
@@ -110,7 +109,7 @@ static bool ReadVideoStream()
 	return result;
 }
 
-static inline void CaptureBeginProduceBlocking(ConsumerProducer* prod)
+static inline void CaptureWaitForConsumed(ConsumerProducer* prod)
 {
 	Waiter w = waiterForUEvent(&prod->Consumed);
 	Result r = waitSingle(w, UINT64_MAX);
@@ -118,7 +117,7 @@ static inline void CaptureBeginProduceBlocking(ConsumerProducer* prod)
 		fatalThrow(r);
 }
 
-static inline void CaptureEndProduce(ConsumerProducer* prod)
+static inline void CaptureSignalProduced(ConsumerProducer* prod)
 {
 	ueventSignal(&prod->Produced);
 }
@@ -126,18 +125,22 @@ static inline void CaptureEndProduce(ConsumerProducer* prod)
 static void CaptureVideoThread(void*)
 {
 	while (true) {
-		CaptureBeginProduceBlocking(&VideoProducer);
+		CaptureWaitForConsumed(&VideoProducer);
+		mutexLock(&VideoProducer.ProducerBusy);
 		ReadVideoStream();
-		CaptureEndProduce(&VideoProducer);
+		CaptureSignalProduced(&VideoProducer);
+		mutexUnlock(&VideoProducer.ProducerBusy);
 	}
 }
 
 static void CaptureAudioThread(void*)
 {
 	while (true) {
-		CaptureBeginProduceBlocking(&AudioProducer);
+		CaptureWaitForConsumed(&AudioProducer);
+		mutexLock(&AudioProducer.ProducerBusy);
 		ReadAudioStream();
-		CaptureEndProduce(&AudioProducer);
+		CaptureSignalProduced(&AudioProducer);
+		mutexUnlock(&AudioProducer.ProducerBusy);
 	}
 }
 
@@ -145,6 +148,7 @@ static Result CaptureProducerConsumerInit(ConsumerProducer* prod)
 {
 	ueventCreate(&prod->Consumed, true);
 	ueventCreate(&prod->Produced, true);
+	mutexInit(&prod->ProducerBusy);
 
 	return 0;
 }
@@ -154,12 +158,12 @@ Result CaptureStartThreads()
 	R_RET_ON_FAIL(CaptureProducerConsumerInit(&VideoProducer));
 	R_RET_ON_FAIL(CaptureProducerConsumerInit(&AudioProducer));
 	R_RET_ON_FAIL(GrcInitialize());
-	
+
 	R_RET_ON_FAIL(threadCreate(&videoThread, CaptureVideoThread, NULL, VCapThreadStackArea, sizeof(VCapThreadStackArea), 0x26, 3));
 	R_RET_ON_FAIL(threadCreate(&audioThread, CaptureAudioThread, NULL, ACapThreadStackArea, sizeof(ACapThreadStackArea), 0x26, 3));
 	R_RET_ON_FAIL(threadStart(&videoThread));
 	R_RET_ON_FAIL(threadStart(&audioThread));
-	
+
 	return 0;
 }
 
@@ -167,36 +171,32 @@ void CaptureOnClientConnected(ConsumerProducer* prod)
 {
 	if (prod == &VideoProducer)
 		forceSPSPPS = true;
-	
-	// Clear events
+
+	// We want to keep the state of the ConsumerProducer structures always consistent.
+	// here the producer can be in one of two states:
+	//   - Data has been produced so Produced is signaled and now the thread is waiting on Consumed.
+	//   - The producer is producing data (either right now or it's stuck waiting for grc).
+
+	if (mutexTryLock(&prod->ProducerBusy))
+	{
+		// If we're here the producer is not stuck and must be waiting on Consumed.
+
+		// clear Produced so the streaming thread waits for the next frame.
+		ueventClear(&prod->Produced);
+
+		// Signal Consumed so the streaming thread can start producing data.
+		CaptureSignalConsumed(prod);
+
+		mutexUnlock(&prod->ProducerBusy);
+	}
+	else
+	{
+		// THe producer is waiting for grc or about to set produced, we can safely wait on produced.
+	}
+}
+
+void CaptureOnClientDisconnected(ConsumerProducer* prod)
+{
+	// Halt the producer thread
 	ueventClear(&prod->Consumed);
-	ueventClear(&prod->Produced);
-
-	// Signal capture thread to start
-	CaptureEndConsume(prod);
-}
-
-void CaptureForceUnlockConsumers() 
-{
-	// Clear all events
-	ueventClear(&VideoProducer.Consumed);
-	ueventClear(&VideoProducer.Produced);
-	ueventClear(&AudioProducer.Consumed);
-	ueventClear(&AudioProducer.Produced);
-
-	// Signal consumers to unlock them
-	CaptureEndProduce(&VideoProducer);
-	CaptureEndProduce(&AudioProducer);
-}
-
-void CaptureOnClientDisconnected(ConsumerProducer*)
-{
-	// Nothing to do here
-}
-
-void CaptureClearPendingData() 
-{
-	// Clear all produced events
-	ueventClear(&VideoProducer.Produced);
-	ueventClear(&AudioProducer.Produced);
 }

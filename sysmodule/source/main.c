@@ -162,9 +162,6 @@ static void SetModeInternal(const void* argmode)
 		LOG("Terminating mode\n");
 		IsThreadRunning = false;
 
-		LOG("Unlocking consumers\n");
-		CaptureForceUnlockConsumers();
-
 		LOG("Waiting video thread\n");
 		if (CurrentMode->VThread)
 			JoinThread(&VideoThread);

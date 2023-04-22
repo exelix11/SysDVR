@@ -89,22 +89,24 @@ static void TCP_StreamThread(void* argConfig)
 			continue;
 		}
 
-		u64 total = 0;
-		CaptureOnClientConnected(config.Target);
-
 		// Give the client a few moments to be ready
 		svcSleepThread(5E+8);
 
-		while (true)
+		u64 total = 0;
+		CaptureOnClientConnected(config.Target);
+
+		while (IsThreadRunning)
 		{
-			CaptureBeginConsume(config.Target);
+			if (!CaptureWaitProduced(config.Target))
+				continue;
 
-			bool success = IsThreadRunning;
+			LOG_V("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
+			bool success = SocketSendAll(client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
 
-			if (success)
+			if (!success)
 			{
-				LOG_V("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));
-				success = SocketSendAll(client, config.FullPacket, config.Pkt->DataSize + sizeof(PacketHeader));
+				LOG("TCP %d send failed %d %d\n", (int)config.Type, g_bsdErrno, IsThreadRunning);
+				break;
 			}
 
 #if LOGGING_ENABLED
@@ -114,13 +116,7 @@ static void TCP_StreamThread(void* argConfig)
 			(void)total;
 #endif
 
-			CaptureEndConsume(config.Target);
-
-			if (!success)
-			{
-				LOG("TCP %d send failed %d %d\n", (int)config.Type, g_bsdErrno, IsThreadRunning);
-				break;
-			}
+			CaptureSignalConsumed(config.Target);
 		}
 
 		CaptureOnClientDisconnected(config.Target);
