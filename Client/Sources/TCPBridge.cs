@@ -12,7 +12,7 @@ namespace SysDVR.Client.Sources
 {
 	class TCPBridgeSource : IStreamingSource
 	{
-		public bool Logging { get; set; }
+		public DebugOptions Logging { get; set; }
         public StreamKind SourceKind { get; private init; }
 
         const int MaxConnectionAttempts = 5;
@@ -57,7 +57,7 @@ namespace SysDVR.Client.Sources
 			Exception ReportException = null;
 			for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++) 
 			{
-				if (i != 0 || Logging) // Don't show error for the first attempt
+				if (i != 0 || Logging.Log) // Don't show error for the first attempt
 					Console.WriteLine($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
 
 				try

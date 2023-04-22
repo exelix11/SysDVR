@@ -163,7 +163,7 @@ namespace SysDVR.Client.Sources
 		protected static readonly byte[] MagicRequestAudio = { 0xCC, 0xCC, 0xCC, 0xCC };
 		protected static readonly byte[] MagicRequestBoth = { 0xAA, 0xAA, 0xAA, 0xAA };
 
-		public bool Logging { get; set; }
+		public DebugOptions Logging { get; set; }
 		CancellationToken Token; 
 
 		// TODO: Remove tracing code
@@ -263,7 +263,7 @@ namespace SysDVR.Client.Sources
             var err = reader.Read(ReadBuffer, 0, PacketHeader.MaxTransferSize, 800, out ReadSize);
             if (err != LibUsbDotNet.Error.Success)
             {
-                if (Logging)
+                if (Logging.Log)
                     Console.WriteLine($"Warning: libusb error {err} while reading header");
                 return false;
             }

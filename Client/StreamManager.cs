@@ -65,8 +65,8 @@ namespace SysDVR.Client
 		private StreamThread Thread1;
 		private StreamThread? Thread2;
 
-		public IOutStream VideoTarget { get;  set; }
-		public IOutStream AudioTarget { get; set; }
+		protected IOutStream VideoTarget { get;  set; }
+		protected IOutStream AudioTarget { get; set; }
 
 		public StreamKind? Streams { get; private set; }
 
@@ -75,16 +75,24 @@ namespace SysDVR.Client
 
 		public BaseStreamManager(IOutStream videoTarget, IOutStream audioTarget)
 		{
-			VideoTarget = videoTarget;
+            VideoTarget = videoTarget;
 			AudioTarget = audioTarget;
 		}
+
+		IOutStream? WrapVideoTarget()
+		{
+            if (DebugOptions.Current.RequiresH264Analysis && VideoTarget is not null)
+                return new H264LoggingWrapperTarget(VideoTarget);
+
+			return VideoTarget;
+        }
 
 		public void AddSource(IStreamingSource source)
 		{
 			if (source.SourceKind == StreamKind.Video) 
 			{
 				if (HasVideo) throw new Exception("Already has a video source");
-				Thread1 = new SingleStreamThread(source, VideoTarget);
+				Thread1 = new SingleStreamThread(source, WrapVideoTarget());
 
                 Streams = HasAudio ? StreamKind.Both : StreamKind.Video;
             }
@@ -98,7 +106,7 @@ namespace SysDVR.Client
             else if (source.SourceKind == StreamKind.Both)
             {
                 if (HasAudio || HasVideo) throw new Exception("Already has a multi source");
-                Thread1 = new MultiStreamThread(source, VideoTarget, AudioTarget);
+                Thread1 = new MultiStreamThread(source, WrapVideoTarget(), AudioTarget);
 
                 Streams = StreamKind.Both;
             }

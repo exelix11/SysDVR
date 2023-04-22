@@ -2,7 +2,7 @@
   "profiles": {
     "Client": {
       "commandName": "Project",
-      "commandLineArgs": "usb"
+      "commandLineArgs": "bridge 192.168.178.42 --debug log,nal"
     }
   }
 }

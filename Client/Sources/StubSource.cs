@@ -6,7 +6,7 @@ namespace SysDVR.Client.Sources
     // Stub source for testing SDL/Ffmpeg UI without a real console 
     class StubSource : IStreamingSource
 	{
-		public bool Logging { get; set; }
+		public DebugOptions Logging { get; set; }
 
 		readonly StreamKind kind;
 		public StreamKind SourceKind => kind;
