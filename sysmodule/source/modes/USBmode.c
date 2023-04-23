@@ -64,7 +64,7 @@ static void USB_VideoStreamThread(void*)
 				svcSleepThread(5E+8);
 			}
 		}
-		else 
+		else if (!VideoConnected)
 		{
 			svcSleepThread(1E+9);
 		}
