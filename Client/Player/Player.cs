@@ -192,23 +192,23 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		unsafe DecoderContext InitDecoder(string forceDecoder)
+		static unsafe DecoderContext InitDecoderRequestDecoderName(string forceDecoder, AutoResetEvent dataProducedEvent)
 		{				
 			var codec = avcodec_find_decoder_by_name(forceDecoder);
 
 			if (codec == null)
 			{
 				Console.WriteLine($"ERROR: The codec {forceDecoder} Couldn't be initialized, falling back to default decoder.");
-				return InitDecoder(false);
+				return InitDecoderAuto(false, dataProducedEvent);
 			}
 			else
 			{
 				Console.WriteLine("You manually set a video decoder with the --decoder option, in case of issues remove it to use the default one.");
-				return InitDecoder(codec);
+				return CreateDecoderContext(codec, dataProducedEvent);
 			}
 		}
 
-		unsafe DecoderContext InitDecoder(bool hwAcc)
+		unsafe static DecoderContext InitDecoderAuto(bool hwAcc, AutoResetEvent dataProducedEvent)
 		{
 			AVCodec* codec = null;
 
@@ -230,10 +230,10 @@ namespace SysDVR.Client.Player
 			if (codec == null)
 				throw new Exception("Couldn't find any compatible video codecs");
 
-			return InitDecoder(codec);
+			return CreateDecoderContext(codec, dataProducedEvent);
 		}
 
-		unsafe DecoderContext InitDecoder(AVCodec* codec)
+		static unsafe DecoderContext CreateDecoderContext(AVCodec* codec, AutoResetEvent dataProducedEvent)
 		{
 			if (codec == null)
 				throw new Exception("Codec can't be null");
@@ -277,7 +277,7 @@ namespace SysDVR.Client.Player
 				ReceiveFrame = pic,
 				RenderFrame = pic2,
 				CodecLock = new object(),
-				DataSubmitted = newDataEvent
+				DataSubmitted = dataProducedEvent
             };
 		}
 
@@ -438,7 +438,7 @@ namespace SysDVR.Client.Player
 		}
 
 		bool converterFirstFrameCheck = false;
-		AutoResetEvent newDataEvent = new(false);
+		AutoResetEvent producedDataEvent = new(false);
 		unsafe bool DecodeNextFrame()
 		{
 			int ret = 0;
@@ -450,11 +450,11 @@ namespace SysDVR.Client.Player
 					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
 
 				if (ret == AVERROR(EAGAIN))
-					newDataEvent.WaitOne();
+					producedDataEvent.WaitOne(500);
 
 				++attempts;
 			}
-			while (ret == AVERROR(EAGAIN) && Running && attempts < 15);
+			while (ret == AVERROR(EAGAIN) && Running && attempts < 6);
 
 			if (ret == AVERROR(EAGAIN))
 			{
@@ -520,7 +520,7 @@ namespace SysDVR.Client.Player
 
 			if (HasVideo)
 			{
-				Decoder = codecName == null ? InitDecoder(hwAcc) : InitDecoder(codecName);
+				Decoder = codecName == null ? InitDecoderAuto(hwAcc, producedDataEvent) : InitDecoderRequestDecoderName(codecName, producedDataEvent);
 				videoTarget.UseContext(Decoder);
 			}
 
@@ -582,8 +582,10 @@ namespace SysDVR.Client.Player
 						sws_freeContext(Converter.Converter);
 					}
 				}
-				
-				disposedValue = true;
+
+				producedDataEvent.Dispose();
+
+                disposedValue = true;
 			}
 		}
 
