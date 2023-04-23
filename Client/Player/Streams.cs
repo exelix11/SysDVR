@@ -98,8 +98,10 @@ namespace SysDVR.Client.Player
 		{
 			byte[] buffer = data.RawBuffer;
 			int size = data.Length;
-		
-			if (firstTs == -1)
+			var dataSubmitted = ctx.DataSubmitted;
+
+
+            if (firstTs == -1)
 				firstTs = (long)ts;
 
 			fixed (byte* nal_data = buffer)
@@ -115,7 +117,7 @@ namespace SysDVR.Client.Player
 			send_again:
 				lock (ctx.CodecLock)
 					res = avcodec_send_packet(ctx.CodecCtx, pkt);
-				
+
 				if (res == AVERROR(EAGAIN))
 				{
 					// Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
@@ -134,6 +136,10 @@ namespace SysDVR.Client.Player
 				{
 					Console.WriteLine($"avcodec_send_packet {res}");
 				}
+				else
+				{
+					dataSubmitted.Set();
+                }
 			}
 
 			data.Free();

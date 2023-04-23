@@ -1,6 +1,4 @@
-﻿//#define DEBUG_FRAMERATE
-
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static SDL2.SDL;
@@ -41,6 +39,7 @@ namespace SysDVR.Client.Player
 		public AVFrame* Frame2 { get; init; }
 
 		public object CodecLock { get; init; }
+		public AutoResetEvent DataSubmitted { get; init; }
 	}
 
 	unsafe struct FormatConverterContext
@@ -122,6 +121,7 @@ namespace SysDVR.Client.Player
 		protected SDLContext SDL; // This must be initialized by the UI thread
 		protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 		protected readonly SDLAudioContext SDLAudio;
+		public string BaseWindowTitle;
 
 		static SDLContext InitSDLVideo(string scaleQuality, string windowTitle)
 		{
@@ -130,7 +130,7 @@ namespace SysDVR.Client.Player
 			SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
 			var win = SDL_CreateWindow(
-				$"SysDVR-Client - {windowTitle ?? ($"PID {Process.GetCurrentProcess().Id}")}",
+                windowTitle,
 				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
 				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
 				.Assert(SDL_GetError);
@@ -192,7 +192,7 @@ namespace SysDVR.Client.Player
 			};
 		}
 
-		static unsafe DecoderContext InitDecoder(string forceDecoder)
+		unsafe DecoderContext InitDecoder(string forceDecoder)
 		{				
 			var codec = avcodec_find_decoder_by_name(forceDecoder);
 
@@ -208,7 +208,7 @@ namespace SysDVR.Client.Player
 			}
 		}
 
-		static unsafe DecoderContext InitDecoder(bool hwAcc)
+		unsafe DecoderContext InitDecoder(bool hwAcc)
 		{
 			AVCodec* codec = null;
 
@@ -233,7 +233,7 @@ namespace SysDVR.Client.Player
 			return InitDecoder(codec);
 		}
 
-		static unsafe DecoderContext InitDecoder(AVCodec* codec)
+		unsafe DecoderContext InitDecoder(AVCodec* codec)
 		{
 			if (codec == null)
 				throw new Exception("Codec can't be null");
@@ -276,8 +276,9 @@ namespace SysDVR.Client.Player
 				Frame2 = pic2,
 				ReceiveFrame = pic,
 				RenderFrame = pic2,
-				CodecLock = new object()
-			};
+				CodecLock = new object(),
+				DataSubmitted = newDataEvent
+            };
 		}
 
 		unsafe static FormatConverterContext InitializeConverter(AVCodecContext* codecctx) 
@@ -320,7 +321,8 @@ namespace SysDVR.Client.Player
 
 		unsafe public void UiThreadMain(bool startFullScreen, string windowTitle)
 		{
-			SDL = InitSDLVideo(ScaleQuality, windowTitle);
+			BaseWindowTitle = $"SysDVR-Client - {windowTitle ?? ($"PID {Process.GetCurrentProcess().Id}")}"; 
+            SDL = InitSDLVideo(ScaleQuality, BaseWindowTitle);
 
 			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
 			bool fullscreen = startFullScreen;
@@ -358,13 +360,12 @@ namespace SysDVR.Client.Player
 
 			CalculateDisplayRect();
 
-#if DEBUG_FRAMERATE
-			int diplayFrames = 0;	// FPS for the SDL window
-			int consoleFrames = 0;	// FPS for the remote stream
-			Stopwatch sw = new Stopwatch();
-			sw.Start();
-#endif
-			while (Running)
+            var countFps = DebugOptions.Current.Fps;
+            FramerateCounter fpsCounter = new();
+            if (countFps)
+                fpsCounter.Start();
+
+            while (Running)
 			{
 				if (DecodeNextFrame())
 				{
@@ -374,23 +375,13 @@ namespace SysDVR.Client.Player
 					SDL_RenderClear(SDL.Renderer);
 					SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
 					SDL_RenderPresent(SDL.Renderer);
-#if DEBUG_FRAMERATE
-					consoleFrames++;
-#endif
+                    fpsCounter.OnFrame();
 				}
 
-#if DEBUG_FRAMERATE
-				diplayFrames++;
-#endif
-
-#if DEBUG_FRAMERATE
-				if (sw.ElapsedMilliseconds >= 1000)
+				if (countFps && fpsCounter.GetFps(out var fps))
 				{
-					Console.WriteLine($"Disp:{diplayFrames} Console:{consoleFrames} {sw.ElapsedMilliseconds}");
-					sw.Restart();
-					consoleFrames = diplayFrames = 0;
+					SDL_SetWindowTitle(SDL.Window, $"{BaseWindowTitle} - FPS: {fps}");
 				}
-#endif
 
 				int res = SDL_PollEvent(out var evt);
 				while (res > 0)
@@ -447,6 +438,7 @@ namespace SysDVR.Client.Player
 		}
 
 		bool converterFirstFrameCheck = false;
+		AutoResetEvent newDataEvent = new(false);
 		unsafe bool DecodeNextFrame()
 		{
 			int ret = 0;
@@ -458,8 +450,7 @@ namespace SysDVR.Client.Player
 					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
 
 				if (ret == AVERROR(EAGAIN))
-					// Empirically chosen value, seems to be a good balance between latency and CPU usage, without sleeping you get at most 1 less frame of latency
-					Thread.Sleep(3);
+					newDataEvent.WaitOne();
 
 				++attempts;
 			}

@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client
 {
-    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal)
+    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps)
     {
-        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false);
+        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false, false);
 
         public bool RequiresH264Analysis => Keyframe || Nal;
 
@@ -21,7 +21,7 @@ namespace SysDVR.Client
             if (string.IsNullOrEmpty(options))
                 return Current;
 
-            bool stats = false, log = false, keyframe = false, nal = false;
+            bool stats = false, log = false, keyframe = false, nal = false, fps = false;
             foreach (var opt in options.Split(','))
             {
                 switch (opt)
@@ -38,11 +38,44 @@ namespace SysDVR.Client
                     case "nal":
                         nal = true;
                         break;
+                    case "fps":
+                        fps = true;
+                        break;
                     default:
                         throw new Exception($"Unknown debug option: {opt}");
                 }
             }
-            return new DebugOptions(stats, log, keyframe, nal);
+            return new DebugOptions(stats, log, keyframe, nal, fps);
+        }
+    }
+
+    class FramerateCounter 
+    {
+        Stopwatch sw = new();
+        int frames = 0;
+
+        public void Start() 
+        {
+            sw.Restart();
+        }
+
+        public void OnFrame()
+        {
+            unchecked { frames++; }
+        }
+
+        public bool GetFps(out int fps) 
+        {
+            if (sw.ElapsedMilliseconds > 1000)
+            {
+                fps = (int)(frames * 1000 / sw.ElapsedMilliseconds);
+                frames = 0;
+                sw.Restart();
+                return true;
+            }
+
+            fps = 0;
+            return false;
         }
     }
 
