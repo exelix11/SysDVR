@@ -56,6 +56,7 @@
             this.cbAdvOpt = new System.Windows.Forms.CheckBox();
             this.linkLabel2 = new System.Windows.Forms.LinkLabel();
             this.button4 = new System.Windows.Forms.Button();
+            this.cbIgnoreSync = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
@@ -318,6 +319,7 @@
             // 
             this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox3.Controls.Add(this.cbIgnoreSync);
             this.groupBox3.Controls.Add(this.cbStats);
             this.groupBox3.Controls.Add(this.cbUsbLog);
             this.groupBox3.Controls.Add(this.cbUsbWarn);
@@ -406,6 +408,16 @@
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
+            // cbIgnoreSync
+            // 
+            this.cbIgnoreSync.AutoSize = true;
+            this.cbIgnoreSync.Location = new System.Drawing.Point(140, 19);
+            this.cbIgnoreSync.Name = "cbIgnoreSync";
+            this.cbIgnoreSync.Size = new System.Drawing.Size(143, 17);
+            this.cbIgnoreSync.TabIndex = 5;
+            this.cbIgnoreSync.Text = "Ignore Audio/Video sync";
+            this.cbIgnoreSync.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -474,6 +486,7 @@
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.LinkLabel linkLabel2;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.CheckBox cbIgnoreSync;
     }
 }
 
