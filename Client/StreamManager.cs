@@ -57,50 +57,10 @@ namespace SysDVR.Client
 		void SendData(PoolBuffer block, UInt64 ts);
 	}
 
-	class StreamSynchronizationHelper 
-	{
-		ulong LastVideoTs;
-		ulong LastAudiots;
-
-		// Timestamps are in microseconds
-		const ulong MaxDifferenceUs = 200 * 1000;
-
-		public void Reset()
-		{
-            LastAudiots = 0;
-            LastVideoTs = 0;
-        }
-
-		// Updates the timestamps and drops packets that are behind
-		public bool CheckTimestamp(bool isVideo, ulong now) 
-		{
-			if (isVideo)
-			{
-				LastVideoTs = now;
-
-				var audio = LastAudiots;
-                if (now < audio && audio - now > MaxDifferenceUs)
-                    return false;
-			}
-			else 
-			{
-				LastAudiots = now;
-
-				var video = LastAudiots;
-				if (now < video && video - now > MaxDifferenceUs)
-                    return false;
-			}
-
-			return true;
-		}
-	}
-
 	abstract class BaseStreamManager : IDisposable
 	{
 		private bool disposedValue;
 
-        private readonly StreamSynchronizationHelper SyncHelper = new();
-        
 		// Usb streaming may require a single thread
         private StreamThread Thread1;
 		private StreamThread? Thread2;
@@ -164,11 +124,6 @@ namespace SysDVR.Client
                 throw new Exception("There should be no video target for an audio only stream");
 			if (Streams == StreamKind.Both && (VideoTarget == null || AudioTarget == null))
                 throw new Exception("One or more targets are not set");
-
-			Thread1?.AssignSynchHelper(SyncHelper);
-			Thread2?.AssignSynchHelper(SyncHelper);
-
-			SyncHelper.Reset();
 
             Thread1?.Start();
 			Thread2?.Start();
