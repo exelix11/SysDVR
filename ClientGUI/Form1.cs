@@ -168,7 +168,19 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
             void append(string s) { str.Append(" "); str.Append(s); }
 
-            if (cbStats.Checked) append("--print-stats");
+            if (cbStats.Checked || cbIgnoreSync.Checked) 
+            {
+                List<string> opt = new List<string>();
+                opt.Add("log");
+
+                if (cbStats.Checked)
+                    opt.Add("stats");
+
+                if (cbIgnoreSync.Checked)
+                    opt.Add("nosync");
+
+                append("--debug " + string.Join(",", opt));
+            }
             if (cbUsbLog.Checked) append("--usb-debug");
             if (cbUsbWarn.Checked) append("--usb-warn");
             return str.ToString();
