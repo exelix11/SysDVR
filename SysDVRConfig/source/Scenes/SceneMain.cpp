@@ -200,7 +200,7 @@ void scenes::ModeSelect()
 			return;
 
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
-	switch (ImGuiCenterButtons({ "Guide", "Set current mode as default on boot", "dvr-patches manager", "Save and exit", "crash"}))
+	switch (ImGuiCenterButtons({ "Guide", "Set current mode as default on boot", "dvr-patches manager", "Save and exit" /*, "crash"*/}))
 	{
 	case 0:
 		app::SetNextScene(Scene::Guide);
