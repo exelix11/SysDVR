@@ -79,7 +79,7 @@ namespace SysDVR.Client
 				LastVideoTs = now;
 
 				var audio = LastAudiots;
-                if (now < audio && now < audio - MaxDifferenceUs)
+                if (now < audio && audio - now > MaxDifferenceUs)
                     return false;
 			}
 			else 
@@ -87,7 +87,7 @@ namespace SysDVR.Client
 				LastAudiots = now;
 
 				var video = LastAudiots;
-				if (now < video && now < video - MaxDifferenceUs)
+				if (now < video && video - now > MaxDifferenceUs)
                     return false;
 			}
 
@@ -99,8 +99,9 @@ namespace SysDVR.Client
 	{
 		private bool disposedValue;
 
-        // Usb streaming may require a single thread
         private readonly StreamSynchronizationHelper SyncHelper = new();
+        
+		// Usb streaming may require a single thread
         private StreamThread Thread1;
 		private StreamThread? Thread2;
 
