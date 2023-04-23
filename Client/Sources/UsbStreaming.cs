@@ -238,13 +238,13 @@ namespace SysDVR.Client.Sources
 			}
 		}
 
-		public virtual void Flush() 
+        public virtual void Flush() 
 		{
             if (Token.IsCancellationRequested)
                 return;
 
             // Wait some time so the switch side timeouts
-            Thread.Sleep(3000);
+            Thread.Sleep(1500);
 
             // Then attempt to connect again
             WaitForConnection();

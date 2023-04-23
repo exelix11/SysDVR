@@ -26,10 +26,7 @@ namespace SysDVR.Client.Sources
 			Source = new BinaryReader(File.OpenRead(Path.Combine(basePath, name)));
 		}
 
-		public void Flush()
-		{
-
-		}
+		public void Flush() { }
 
 		Int64 ms;
 		public bool ReadHeader(byte[] buffer)

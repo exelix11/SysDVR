@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client
 {
-    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps)
+    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps, bool NoSync)
     {
-        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false, false);
+        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false, false, false);
 
         public bool RequiresH264Analysis => Keyframe || Nal;
 
@@ -21,7 +21,7 @@ namespace SysDVR.Client
             if (string.IsNullOrEmpty(options))
                 return Current;
 
-            bool stats = false, log = false, keyframe = false, nal = false, fps = false;
+            bool stats = false, log = false, keyframe = false, nal = false, fps = false, nosync = false;
             foreach (var opt in options.Split(','))
             {
                 switch (opt)
@@ -41,11 +41,14 @@ namespace SysDVR.Client
                     case "fps":
                         fps = true;
                         break;
+                    case "nosync":
+                        nosync = true;
+                        break;
                     default:
                         throw new Exception($"Unknown debug option: {opt}");
                 }
             }
-            return new DebugOptions(stats, log, keyframe, nal, fps);
+            return new DebugOptions(stats, log, keyframe, nal, fps, nosync);
         }
     }
 
