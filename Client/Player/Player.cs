@@ -39,7 +39,9 @@ namespace SysDVR.Client.Player
 		public AVFrame* Frame2 { get; init; }
 
 		public object CodecLock { get; init; }
-	}
+
+		public StreamSynchronizationHelper SyncHelper;
+    }
 
 	unsafe struct FormatConverterContext
 	{
@@ -113,8 +115,9 @@ namespace SysDVR.Client.Player
 		readonly bool HasAudio;
 		readonly bool HasVideo;
 		readonly string ScaleQuality;
+		readonly StreamSynchronizationHelper SyncHelper;
 
-		private bool Running = false;
+        private bool Running = false;
 		
 		protected DecoderContext Decoder; 
 		protected SDLContext SDL; // This must be initialized by the UI thread
@@ -490,9 +493,6 @@ namespace SysDVR.Client.Player
 				}
 
 				return true;
-
-				// TODO: figure out audio/video synchronization. 
-				// The current implementation shows video as fast as it arrives, it seems to work fine but not sure if it's correct.
 			}
 		}
 
@@ -507,15 +507,21 @@ namespace SysDVR.Client.Player
 
 			SDL_Init(0).Assert(SDL_GetError);
 
-			if (HasVideo)
+			// SyncHelper is disabled if there is only a single stream
+			// Note that it can also be disabled via a --debug flag and this is handled by the constructor
+			SyncHelper = new(HasAudio && HasVideo);
+
+            if (HasVideo)
 			{
 				Decoder = codecName == null ? InitDecoderAuto(hwAcc) : InitDecoderRequestDecoderName(codecName);
-				videoTarget.UseContext(Decoder);
+				Decoder.SyncHelper = SyncHelper;
+                videoTarget.UseContext(Decoder);
 			}
 
 			if (HasAudio)
 			{
 				SDLAudio = InitSDLAudio(audioTarget);
+				audioTarget.UseSynchronizationHeloper(SyncHelper);
 			}
 		}
 

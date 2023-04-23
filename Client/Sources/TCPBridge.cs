@@ -25,7 +25,6 @@ namespace SysDVR.Client.Sources
 			SourceKind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
 
         readonly string IpAddress;
-		readonly byte HeaderMagicByte;
 
 		CancellationToken Token;
 		Socket Sock;
@@ -37,9 +36,6 @@ namespace SysDVR.Client.Sources
 
             SourceKind = kind;
 			IpAddress = ip;
-
-			// Assumes that the magic bytes are composed of 4 identical bytes
-			HeaderMagicByte = (byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);			
         }
 
         public void WaitForConnection()

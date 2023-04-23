@@ -67,13 +67,6 @@ namespace SysDVR.Client
 		Thread DeviceThread;
 		CancellationTokenSource Cancel;
 
-		StreamSynchronizationHelper SyncHelper;
-		
-		public void AssignSynchHelper(StreamSynchronizationHelper syncHelper)
-		{
-			SyncHelper = syncHelper;	
-		}
-
 		readonly public IStreamingSource Source;
 		readonly public StreamKind Kind;
 
@@ -124,7 +117,6 @@ namespace SysDVR.Client
 		{
 			var logStats = DebugOptions.Current.Stats;
 			var logDbg = DebugOptions.Current.Log;
-			var sync = !DebugOptions.Current.NoSync;
 
 			Source.Logging = DebugOptions.Current;
 			Source.UseCancellationToken(token);
@@ -177,16 +169,7 @@ namespace SysDVR.Client
 						continue;
 					}
 
-					if (sync && !SyncHelper.CheckTimestamp(Header.IsVideo(), Header.Timestamp))
-					{
-						if (logDbg)
-                            Console.WriteLine($"[{Kind}] Timestamp {Header.Timestamp} is behind, dropping content.");
-                        
-                        Data.Free();
-                        continue;
-					}
-
-					if (!DataReceived(Header, Data)) 
+                    if (!DataReceived(Header, Data)) 
 					{
                         if (logDbg)
                             Console.WriteLine($"[{Kind}] DataReceived rejected the packet, header magic was {Header.Magic:X}");
