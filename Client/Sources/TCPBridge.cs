@@ -29,8 +29,9 @@ namespace SysDVR.Client.Sources
 
 		CancellationToken Token;
 		Socket Sock;
+        bool CommunicationException = false;
 
-		public TCPBridgeSource(string ip, StreamKind kind)
+        public TCPBridgeSource(string ip, StreamKind kind)
 		{
             if (kind == StreamKind.Both)
                 throw new Exception("Tcp bridge can't stream both channels over a single connection");
@@ -42,10 +43,11 @@ namespace SysDVR.Client.Sources
 			HeaderMagicByte = (byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);			
         }
 
-		public void WaitForConnection()
+        public void WaitForConnection()
 		{
             Sock?.Close();
             Sock?.Dispose();
+			CommunicationException = false;
 
             Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -101,23 +103,26 @@ namespace SysDVR.Client.Sources
 			Token = tok;
 		}
 
-		bool ReportedLostConnection = false;
-        public void Flush()
-        {
+		public void Flush() 
+		{
             if (Token.IsCancellationRequested)
                 return;
 
             InSync = false;
-			if (ReportedLostConnection)
+			if (CommunicationException)
 			{
-				ReportedLostConnection = false;
-				Console.WriteLine($"{SourceKind} stream connection lost, reconnecting...");
+				Sock?.Close();
+				Sock?.Dispose();
+				Sock = null;
+
+                Console.WriteLine($"{SourceKind} stream connection lost, reconnecting...");
+                Thread.Sleep(800);
 				WaitForConnection();
-            }
+			}
         }
 
         bool InSync = false;
-        public bool ReadHeader(byte[] buffer)
+		public bool ReadHeader(byte[] buffer)
         {
             if (InSync)
             {
@@ -157,7 +162,7 @@ namespace SysDVR.Client.Sources
 					int r = Sock.Receive(data);
 					if (r <= 0)
 					{
-						ReportedLostConnection = true;
+                        CommunicationException = true;
                         return false;
 					}
 
@@ -166,7 +171,8 @@ namespace SysDVR.Client.Sources
 			}
 			catch 
 			{
-				return false;
+                CommunicationException = true;
+                return false;
 			}
 
 			return true;

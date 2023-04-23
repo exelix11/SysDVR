@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -34,6 +35,12 @@ namespace SysDVR.Client
 			if (Marshal.SizeOf<PacketHeader>() != StructLength)
 				throw new Exception("PacketHeader struct binary size is wrong");
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsVideo() => Magic == MagicResponseVideo;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsAudio() => Magic == MagicResponseAudio;
 	}
 
 	interface IStreamingSource
@@ -48,6 +55,7 @@ namespace SysDVR.Client
 		
 		void WaitForConnection();
 		void StopStreaming();
+		
 		void Flush();
 
 		bool ReadHeader(byte[] buffer);
@@ -58,6 +66,13 @@ namespace SysDVR.Client
 	{
 		Thread DeviceThread;
 		CancellationTokenSource Cancel;
+
+		StreamSynchronizationHelper SyncHelper;
+		
+		public void AssignSynchHelper(StreamSynchronizationHelper syncHelper)
+		{
+			SyncHelper = syncHelper;	
+		}
 
 		readonly public IStreamingSource Source;
 		readonly public StreamKind Kind;
@@ -109,6 +124,7 @@ namespace SysDVR.Client
 		{
 			var logStats = DebugOptions.Current.Stats;
 			var logDbg = DebugOptions.Current.Log;
+			var sync = !DebugOptions.Current.NoSync;
 
 			Source.Logging = DebugOptions.Current;
 			Source.UseCancellationToken(token);
@@ -126,7 +142,6 @@ namespace SysDVR.Client
 					while (!Source.ReadHeader(HeaderData))
 					{
 						Source.Flush();
-						Thread.Sleep(10);
 						goto loop_again;
 					}
 
@@ -139,7 +154,6 @@ namespace SysDVR.Client
 							Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
 						
 						Source.Flush();
-						Thread.Sleep(10);
 						continue;
 					}
 
@@ -149,7 +163,6 @@ namespace SysDVR.Client
 							Console.WriteLine($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
 						
 						Source.Flush();
-						Thread.Sleep(10);
 						continue;
 					}
 
@@ -161,8 +174,16 @@ namespace SysDVR.Client
                         
 						Source.Flush();
 						Data.Free();
-						Thread.Sleep(10);
 						continue;
+					}
+
+					if (sync && !SyncHelper.CheckTimestamp(Header.IsVideo(), Header.Timestamp))
+					{
+						if (logDbg)
+                            Console.WriteLine($"[{Kind}] Timestamp {Header.Timestamp} is behind, dropping content.");
+                        
+                        Data.Free();
+                        continue;
 					}
 
 					if (!DataReceived(Header, Data)) 
@@ -170,9 +191,7 @@ namespace SysDVR.Client
                         if (logDbg)
                             Console.WriteLine($"[{Kind}] DataReceived rejected the packet, header magic was {Header.Magic:X}");
                         
-						Source.Flush();
                         Data.Free();
-                        Thread.Sleep(10);
                         continue;
                     }
                 }
@@ -213,8 +232,8 @@ namespace SysDVR.Client
         protected override bool DataReceived(in PacketHeader header, PoolBuffer body)
         {
 			var valid =
-				(Kind == StreamKind.Video && header.Magic == PacketHeader.MagicResponseVideo) ||
-				(Kind == StreamKind.Audio && header.Magic == PacketHeader.MagicResponseAudio);
+				(Kind == StreamKind.Video && header.IsVideo()) ||
+				(Kind == StreamKind.Audio && header.IsAudio());
 
 			if (!valid)
 				return false;
@@ -247,9 +266,9 @@ namespace SysDVR.Client
 
         protected override bool DataReceived(in PacketHeader header, PoolBuffer body)
         {
-			if (header.Magic == PacketHeader.MagicResponseVideo)
+			if (header.IsVideo())
 				VideoTarget.SendData(body, header.Timestamp);
-			else if (header.Magic == PacketHeader.MagicResponseAudio)
+			else if (header.IsAudio())
 				AudioTarget.SendData(body, header.Timestamp);
 			else 
 				return false;
