@@ -370,13 +370,15 @@ namespace SysDVR.Client.Player
 					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
 					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
 					UpdateSDLTexture(Decoder.RenderFrame);
-					SDL_RenderClear(SDL.Renderer);
-					SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
-					SDL_RenderPresent(SDL.Renderer);
+                    SDL_RenderClear(SDL.Renderer);
+                    SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
                     fpsCounter.OnFrame();
-				}
+                }
+				                
+				// We need this here to limit the framerate to the monitor refresh rate
+				SDL_RenderPresent(SDL.Renderer);
 
-				if (countFps && fpsCounter.GetFps(out var fps))
+                if (countFps && fpsCounter.GetFps(out var fps))
 				{
 					SDL_SetWindowTitle(SDL.Window, $"{BaseWindowTitle} - FPS: {fps}");
 				}
@@ -439,23 +441,13 @@ namespace SysDVR.Client.Player
 		unsafe bool DecodeNextFrame()
 		{
 			int ret = 0;
-			int attempts = 0;
 
-			do
+            lock (Decoder.CodecLock)
+                ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
+
+            if (ret == AVERROR(EAGAIN))
 			{
-				lock (Decoder.CodecLock)
-					ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
-
-				if (ret == AVERROR(EAGAIN))
-					Thread.Sleep(2);
-
-				++attempts;
-			}
-			while (ret == AVERROR(EAGAIN) && Running && attempts < 6);
-
-			if (ret == AVERROR(EAGAIN))
-			{
-				// After too many failed attempts return in order to handle UI events
+				// Try again for the next SDL frame
 				return false;
 			}
 			else if (ret != 0)

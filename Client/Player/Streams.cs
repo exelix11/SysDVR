@@ -126,9 +126,6 @@ namespace SysDVR.Client.Player
 						resendCount++;
 						goto send_again;
 					}
-#if DEBUG
-					Console.WriteLine("Info: dropping video packet due to UI thread timeout");
-#endif
 				}
 				else if (res != 0)
 				{
