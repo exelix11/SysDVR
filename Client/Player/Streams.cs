@@ -98,8 +98,6 @@ namespace SysDVR.Client.Player
 		{
 			byte[] buffer = data.RawBuffer;
 			int size = data.Length;
-			var dataSubmitted = ctx.DataSubmitted;
-
 
             if (firstTs == -1)
 				firstTs = (long)ts;
@@ -136,10 +134,6 @@ namespace SysDVR.Client.Player
 				{
 					Console.WriteLine($"avcodec_send_packet {res}");
 				}
-				else
-				{
-					dataSubmitted.Set();
-                }
 			}
 
 			data.Free();
