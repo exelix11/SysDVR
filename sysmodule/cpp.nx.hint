@@ -10,6 +10,7 @@
 #define _Static_assert(x,y)
 #define atomic_bool int
 #define alignas(...)
+#define __asm__(...)
 
 #define O_NONBLOCK 0
 #define F_SETFL 0
