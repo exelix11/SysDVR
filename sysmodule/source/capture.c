@@ -49,8 +49,73 @@ bool CaptureReadAudio()
 	return R_SUCCEEDED(rc);
 }
 
+#define CRC32X(crc, value) __asm__("crc32x %w[c], %w[c], %x[v]":[c]"+r"(crc):[v]"r"(value))
+#define CRC32W(crc, value) __asm__("crc32w %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+#define CRC32H(crc, value) __asm__("crc32h %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+#define CRC32B(crc, value) __asm__("crc32b %w[c], %w[c], %w[v]":[c]"+r"(crc):[v]"r"(value))
+
+#define DEFINE_UNALIGNED_ACCESSOR(type) static type get_unaligned_##type(const u8 *p) { type v; memcpy(&v, p, sizeof(v)); return v; }
+
+DEFINE_UNALIGNED_ACCESSOR(u64);
+DEFINE_UNALIGNED_ACCESSOR(u32);
+DEFINE_UNALIGNED_ACCESSOR(u16);
+
+static u32 crc32_arm64_hw(u32 crc, const u8* p, unsigned int len)
+{
+	s64 length = len;
+	while ((length -= sizeof(u64)) >= 0) {
+		CRC32X(crc, get_unaligned_u64(p));
+		p += sizeof(u64);
+	}
+	/* The following is more efficient than the straight loop */
+	if (length & sizeof(u32)) {
+		CRC32W(crc, get_unaligned_u32(p));
+		p += sizeof(u32);
+	}
+	if (length & sizeof(u16)) {
+		CRC32H(crc, get_unaligned_u16(p));
+		p += sizeof(u16);
+	}
+	if (length & sizeof(u8))
+		CRC32B(crc, *p);
+	return crc;
+}
+
+bool CheckVideoPacket(const u8* data, size_t len)
+{
+	static u32 droppedInAReow = 0;
+	static u32 LastPackets[20];
+	static u32 LastPacketsIdx = 0;
+
+	u32 hash = crc32_arm64_hw(0, data, len);
+	bool found = false;
+
+	for (int i = 0; i < sizeof(LastPackets) / sizeof(LastPackets[0]); i++)
+	{
+		if (LastPackets[i] == hash)
+		{
+			found = true;
+			break;
+		}
+	}
+
+	LastPackets[LastPacketsIdx++] = hash;
+	LastPacketsIdx %= sizeof(LastPackets) / sizeof(LastPackets[0]);
+
+	// We need to send these keyframes once in a while otherwise we get something similar to https://github.com/exelix11/SysDVR/issues/91
+	if (found && ++droppedInAReow > 6)
+	{
+		droppedInAReow = 0;
+		LOG("Letting duplicate packet through.\n");
+		return false;
+	}
+
+	return found;
+}
+
 bool CaptureReadVideo()
 {
+again:
 	Result res = grcdServiceTransfer(
 		&grcdVideo, GrcStream_Video,
 		VPkt.Data, VbufSz,
@@ -72,6 +137,17 @@ bool CaptureReadVideo()
 		LOG("Video capture failed: %x\n", res);
 		return false;
 	}
+
+	// Static images are particularly bad for sysdvr cause they cause the video encoder
+	// to emit really big keyframes, all to produce a static image. So here's a trick:
+	// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
+	// this is a static images so we kan just not send it with no consequences to free
+	// up bandwidth for audio and reduce delay once the image changes
+	if (VPkt.Header.DataSize > 0xF000 && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize)) {
+		LOG("Dropping duplicate video packet\n");
+		goto again;
+	}
+
 	/*
 		GRC only emits SPS and PPS once when a game is started,
 		this is not good as without those it's not possible to play the stream If there's space add SPS and PPS to IDR frames every once in a while
