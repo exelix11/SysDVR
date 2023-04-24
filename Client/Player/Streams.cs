@@ -133,22 +133,15 @@ namespace SysDVR.Client.Player
 					pkt->pts = pkt->dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
 
 					int res = 0;
-					int resendCount = 0;
 
-				send_again:
 					lock (ctx.CodecLock)
 						res = avcodec_send_packet(ctx.CodecCtx, pkt);
 
 					if (res == AVERROR(EAGAIN))
 					{
 						// Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
-						// Since this is not threaded anymore if we block here the device thread also blocks, possibly causing desync, so just discard the packet after a few attempts
-						if (resendCount < 60 && !tok.IsCancellationRequested)
-						{
-							Thread.Sleep(1);
-							resendCount++;
-							goto send_again;
-						}
+						// Since this is not threaded anymore if we block here the device thread also blocks, possibly causing desync, so just discard the packet.
+						// In practice we may need some async buffering here (since if we hang we may also block the audio thread for USB)
 					}
 					else if (res != 0)
 					{
