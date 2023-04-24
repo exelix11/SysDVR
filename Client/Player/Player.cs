@@ -7,6 +7,8 @@ using static FFmpeg.AutoGen.ffmpeg;
 using System.Threading;
 using System.Linq;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
 namespace SysDVR.Client.Player
 {
@@ -320,12 +322,35 @@ namespace SysDVR.Client.Player
 			SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
 		}
 
+		private unsafe void InitializeLoadingTexture() 
+		{
+			var currentDllPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			var loadingTexturePath = Path.Combine(currentDllPath, "runtimes", "loading.yuv");
+			byte[] data = null;
+
+			if (File.Exists(loadingTexturePath))
+				data = File.ReadAllBytes(loadingTexturePath);
+			else 
+			{
+				// Hardcoded buffer size for a 1280x720 YUV texture
+				data = new byte[0x1517F0];
+				// Fill with YUV white
+				data.AsSpan(0, 0xE1000).Fill(0xFF);
+				data.AsSpan(0xE1000, 0x119400 - 0xE1000).Fill(0x7F);
+				data.AsSpan(0x119400).Fill(0x80);
+			}
+
+			fixed (byte* ptr = data)
+				SDL_UpdateTexture(SDL.Texture, ref SDL.TextureSize, new IntPtr(ptr), 1280);
+        }
+
 		unsafe public void UiThreadMain(bool startFullScreen, string windowTitle)
 		{
-			BaseWindowTitle = $"SysDVR-Client - {windowTitle ?? ($"PID {Process.GetCurrentProcess().Id}")}"; 
+            BaseWindowTitle = $"SysDVR-Client - {windowTitle ?? ($"PID {Process.GetCurrentProcess().Id}")}"; 
             SDL = InitSDLVideo(ScaleQuality, BaseWindowTitle);
+            InitializeLoadingTexture();
 
-			SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
+            SDL_Rect DisplayRect = new SDL_Rect { x = 0, y = 0 };
 			bool fullscreen = startFullScreen;
 
 			void CalculateDisplayRect()
