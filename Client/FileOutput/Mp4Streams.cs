@@ -61,7 +61,7 @@ namespace SysDVR.Client.FileOutput
 
             frame = av_frame_alloc();
             if (frame == null) throw new Exception("Couldn't allocate AVFrame");
-            frame->nb_samples = Math.Min(StreamInfo.AudioSamplesPerPayload, codecCtx->frame_size);
+            frame->nb_samples = Math.Min(StreamInfo.MinAudioSamplesPerPayload, codecCtx->frame_size);
             frame->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
             av_channel_layout_default(&frame->ch_layout, StreamInfo.AudioChannels);
             frame->sample_rate = StreamInfo.AudioSampleRate;

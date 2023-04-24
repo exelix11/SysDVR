@@ -25,7 +25,7 @@
 	This is acceptable as grc:d already doesn't provide real time audio.
 	To remove set the following to 1
 */
-#define ABatching 2
+#define MaxABatching 3
 
 typedef struct {
 	u32 Magic;
@@ -44,16 +44,18 @@ _Static_assert(sizeof(VideoPacket) == sizeof(PacketHeader) + VbufSz);
 
 typedef struct {
 	PacketHeader Header;
-	u8 Data[AbufSz * ABatching];
+	u8 Data[AbufSz * MaxABatching];
 } AudioPacket;
 
-_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * ABatching);
+_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * MaxABatching);
 
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
 
 Result CaptureInitialize();
 void CaptureFinalize();
+
+void CaptureSetAudioBatching(int batch);
 
 // Captures video with grc:d, if no game is running this blocks and there's no way to terminate the call
 bool CaptureReadVideo();

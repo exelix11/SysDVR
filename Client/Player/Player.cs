@@ -182,7 +182,7 @@ namespace SysDVR.Client.Player
 				channels = StreamInfo.AudioChannels,
 				format = AUDIO_S16LSB,
 				freq = StreamInfo.AudioSampleRate,
-				size = StreamInfo.AudioPayloadSize * StreamInfo.AudioBatching,
+				size = StreamInfo.AudioPayloadSize * 2,
 				callback = callback,
 				userdata = GCHandle.ToIntPtr(handle)
 			};

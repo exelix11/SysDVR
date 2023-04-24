@@ -208,6 +208,9 @@ mainloop:
 		case Scene::NoConnection:
 			scenes::NoConnection();
 			break;
+		case Scene::DevScene:
+			scenes::DevTestScene();
+			break;
 		default:
 			Glfw::SetShouldClose();
 			break;
