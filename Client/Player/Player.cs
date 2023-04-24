@@ -393,17 +393,18 @@ namespace SysDVR.Client.Player
 
             while (Running)
 			{
-				if (DecodeNextFrame())
-				{
-					// TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
-					// Check if are there any performance improvements by moving this to the decoder thread on other OSes
-					UpdateSDLTexture(Decoder.RenderFrame);
-                    SDL_RenderClear(SDL.Renderer);
-                    SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
+                if (DecodeNextFrame())
+                {
+                    // TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
+                    // Check if are there any performance improvements by moving this to the decoder thread on other OSes
+                    UpdateSDLTexture(Decoder.RenderFrame);
                     fpsCounter.OnFrame();
                 }
-				                
-				// We need this here to limit the framerate to the monitor refresh rate
+
+                // SDL_RenderClear seems to cause a memory leak when the window is minimized on Windows.
+				// Guess we don't really need to call it anyway since we're overwriting the whole screen anyway
+                SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
+                
 				SDL_RenderPresent(SDL.Renderer);
 
                 if (countFps && fpsCounter.GetFps(out var fps))
