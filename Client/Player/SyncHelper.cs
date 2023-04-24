@@ -47,8 +47,6 @@ namespace SysDVR.Client.Player
         {
             if (AudioThreshold < MaxAudioDifferenceUs)
                 AudioThreshold += MinDifferenceIncrement;
-
-            Console.WriteLine($"Audio thres: {AudioThreshold}");
         }
 
         // Updates the timestamps and drops packets that are behind
@@ -79,8 +77,6 @@ namespace SysDVR.Client.Player
                     AudioIncrementDelay();
                     return false;
                 }
-
-                Console.WriteLine($"{((long)video - (long)now) / 1000} {AudioThreshold / 1000}");
             }
 
             return true;
