@@ -24,7 +24,7 @@ namespace SysDVR.Client.Player
 
         // Timestamps are in microseconds
         const ulong BaseMinDifference = 90 * 1000;
-        const ulong MinDifferenceIncrement = 100;
+        const ulong MinDifferenceIncrement = 10 * 1000;
 
         // Some games stress the network protocol more than others so we start with a baseline 
         // difference of 100ms and every time a synchronization error happens we increase the
@@ -34,7 +34,7 @@ namespace SysDVR.Client.Player
 
         // Video has a lower threshold becuase it can freeze if the UI thread becomes unresponsivle
         // (click on cmd, dragging the window SDL bug and so on)
-        const ulong MaxVideoDifferenceUs = 140 * 1000;
+        const ulong MaxVideoDifferenceUs = 110 * 1000;
         const ulong MaxAudioDifferenceUs = 240 * 1000;
 
         void VideoIncrementDelay()
