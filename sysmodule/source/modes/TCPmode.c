@@ -129,6 +129,11 @@ static void TCP_Init()
 	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
 }
 
-const StreamMode TCP_MODE = { TCP_Init, NULL, TCP_StreamThread, TCP_StreamThread, (void*)&VideoConfig, (void*)&AudioConfig };
+const StreamMode TCP_MODE = { 
+	TCP_Init, NULL, 
+	TCP_StreamThread, TCP_StreamThread, 
+	(void*)&VideoConfig, (void*)&AudioConfig,
+	2
+};
 
 #endif

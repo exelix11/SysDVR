@@ -111,7 +111,7 @@ namespace SysDVR.Client.FileOutput
 				AStream->codecpar->sample_rate = StreamInfo.AudioSampleRate;
 				av_channel_layout_default(&AStream->codecpar->ch_layout, StreamInfo.AudioChannels);
 				AStream->codecpar->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
-				AStream->codecpar->frame_size = StreamInfo.AudioSamplesPerPayload;
+				AStream->codecpar->frame_size = StreamInfo.MinAudioSamplesPerPayload;
 				AStream->codecpar->bit_rate = 128000;
 			}
 

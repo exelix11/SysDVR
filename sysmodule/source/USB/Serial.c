@@ -8,8 +8,6 @@
 // We need the thread running flag
 #include "../modes/modes.h"
 
-static Mutex UsbStreamingMutex;
-
 static const char* GetDeviceSerial() 
 {
 	static char serialStr[50] = "SysDVR:Unknown serial";
@@ -36,8 +34,6 @@ static const char* GetDeviceSerial()
 
 Result UsbStreamingInitialize()
 {
-	mutexInit(&UsbStreamingMutex);
-
 	UsbSerailInterfaceInfo interfaces = {
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_CLASS_VENDOR_SPEC,
@@ -67,17 +63,12 @@ void UsbStreamingExit()
 
 UsbStreamRequest UsbStreamingWaitConnection()
 {
-	// Since USB is single-threaded now, in theory nothing else should be going on over usb at this point
-	mutexLock(&UsbStreamingMutex);
-
 	u32 request = 0;
 	size_t read = 0;
 
 	do
 		read = usbSerialRead(&request, sizeof(request), 1E+9);
 	while (read == 0 && IsThreadRunning);
-
-	mutexUnlock(&UsbStreamingMutex);
 
 	if (read != sizeof(request) || !IsThreadRunning)
 		return UsbStreamRequestFailed;
@@ -91,11 +82,6 @@ UsbStreamRequest UsbStreamingWaitConnection()
 
 bool UsbStreamingSend(const void* data, size_t length)
 {
-	mutexLock(&UsbStreamingMutex);
-
 	size_t sent = usbSerialWrite(data, length, 1E+9);
-
-	mutexUnlock(&UsbStreamingMutex);
-
 	return sent == length;
 }

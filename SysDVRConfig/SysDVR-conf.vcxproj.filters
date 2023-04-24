@@ -54,6 +54,9 @@
     <ClCompile Include="source\Scenes\SceneNoConnection.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="source\Scenes\SecneDev.cpp">
+      <Filter>Scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\UI\UI.hpp">

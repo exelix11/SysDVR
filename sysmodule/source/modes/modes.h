@@ -22,6 +22,7 @@ typedef struct
 	void (*AThread)(void*);
 	void* Vargs;
 	void* Aargs;
+	int AudioBatches;
 } StreamMode;
 
 extern const StreamMode USB_MODE;

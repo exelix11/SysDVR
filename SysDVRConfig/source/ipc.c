@@ -31,6 +31,18 @@ Result SysDvrConnect()
 	return rc;
 }
 
+Result SysDvrSetAudioBatchingOverride(int batching)
+{
+	if (batching == 1)
+		return serviceDispatch(&dvr, CMD_AUDIO_NO_BATCHING);
+	else if (batching == 2)
+		return serviceDispatch(&dvr, CMD_AUDIO_BATCHING_2);
+	else if (batching == 3)
+		return serviceDispatch(&dvr, CMD_AUDIO_BATCHING_3);
+	else 
+		return MAKERESULT(Module_Libnx, LibnxError_BadInput);
+}
+
 void SysDVRDebugCrash()
 {
 	serviceDispatch(&dvr, CMD_DEBUG_CRASH);

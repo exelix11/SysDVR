@@ -119,5 +119,7 @@ static void USB_Exit()
 const StreamMode USB_MODE = {
 	USB_Init, USB_Exit, 
 	USB_VideoStreamThread, USB_AudioStreamThread,
-	NULL, NULL
+	NULL, NULL,
+	// USB uses an higher audio batching value to avoid stuttering
+	3
 };

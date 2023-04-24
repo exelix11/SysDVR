@@ -8,7 +8,8 @@ enum class Scene {
 	Guide,
 	FatalError,
 	DvrPatches,
-	NoConnection
+	NoConnection,
+	DevScene
 };
 
 // Each implemented in its own scenes cpp file
@@ -27,6 +28,8 @@ namespace scenes {
 	void FatalError();
 	
 	void NoConnection();
+	
+	void DevTestScene();
 }
 
 // from main.cpp

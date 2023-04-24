@@ -8,6 +8,8 @@
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
+static int AudioBatching = MaxABatching;
+
 static Service grcdVideo;
 static Service grcdAudio;
 
@@ -30,7 +32,7 @@ bool CaptureReadAudio()
 	if (R_FAILED(rc))
 		return false;
 
-	for (int i = 1; i < ABatching; i++)
+	for (int i = 1; i < AudioBatching; i++)
 	{
 		u32 tmpSize = 0;
 
@@ -92,6 +94,17 @@ bool CaptureReadVideo()
 	}
 
 	return result;
+}
+
+void CaptureSetAudioBatching(int batch)
+{
+	if (batch < 1)
+		batch = 1;
+
+	if (batch > MaxABatching)
+		batch = MaxABatching;
+
+	AudioBatching = batch;
 }
 
 Result CaptureInitialize()

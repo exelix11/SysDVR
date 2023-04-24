@@ -74,6 +74,12 @@
 #define CMD_GET_MODE 101
 // Crash the process so we can get a crash report to figure out what's going on
 #define CMD_DEBUG_CRASH 102
+// Options to tweak audio batching dynamically
+#define CMD_AUDIO_NO_BATCHING 103
+// Default for network modes
+#define CMD_AUDIO_BATCHING_2 104
+// Default for USB mode
+#define CMD_AUDIO_BATCHING_3 105
 
 #define MODE_TO_CMD_SET(x) x
 #define CMD_SET_TO_MODE(x) x

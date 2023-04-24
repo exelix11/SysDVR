@@ -21,5 +21,5 @@ void UsbStreamingExit();
 
 UsbStreamRequest UsbStreamingWaitConnection();
 
-// Since switching to a single interface there's no need for two different send functions
+// This is not protected by a mutex, the caller should ensure thread safety
 bool UsbStreamingSend(const void* data, size_t length);

@@ -1,4 +1,6 @@
-﻿namespace SysDVR.Client
+﻿using System.Runtime.CompilerServices;
+
+namespace SysDVR.Client
 {
 	public static class StreamInfo
 	{
@@ -12,12 +14,13 @@
 		public const int VideoHeight = 720;
 
 		public const int AudioPayloadSize = 0x1000;
-		public const int AudioBatching = 2;
+		public const int MaxAudioBatching = 3;
 		
 		public const int AudioChannels = 2;
 		public const int AudioSampleRate = 48000;
 		public const int AudioSampleSize = 2;
 
-		public const int AudioSamplesPerPayload = AudioBatching * AudioPayloadSize / (AudioChannels * AudioSampleSize);
+		// Doesn't accoutn for batching, there may be more samples than this
+		public const int MinAudioSamplesPerPayload = AudioPayloadSize / (AudioChannels * AudioSampleSize);
 	}
 }

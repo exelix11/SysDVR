@@ -7,6 +7,9 @@
 extern void SetModeID(u32 mode);
 extern u32 GetCurrentMode();
 
+// From capture
+void CaptureSetAudioBatching(int batch);
+
 static Handle handles[2];
 static SmServiceName serverName;
 
@@ -117,6 +120,18 @@ static bool HandleCommand(u64 id)
 		{
 			u32 mode = GetCurrentMode();
 			WritePayloadResponseToTLS(0, &mode, sizeof(mode));
+			return false;
+		}
+		case CMD_AUDIO_NO_BATCHING: 
+		case CMD_AUDIO_BATCHING_2:
+		case CMD_AUDIO_BATCHING_3:
+		{
+			int batch = 1;
+			if (id == CMD_AUDIO_BATCHING_2) batch = 2;
+			else if (id == CMD_AUDIO_BATCHING_3) batch = 3;
+
+			CaptureSetAudioBatching(batch);
+			WriteResponseToTLS(0);
 			return false;
 		}
 		case CMD_DEBUG_CRASH:

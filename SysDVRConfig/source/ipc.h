@@ -30,6 +30,11 @@ extern "C" {
 
 	Result SysDvrSetMode(u32 command);
 	
+	// THis setting is reset when mode is changed
+	// Valid values are 1 (no batching) to MaxABatching (defined in capture.h, 3 currently)
+	// This affects how much audio is buffered before being sent to the client
+	Result SysDvrSetAudioBatchingOverride(int batching);
+	
 	Result SysDvrSetUSB();
 	Result SysDvrSetRTSP();
 	Result SysDvrSetTCP();

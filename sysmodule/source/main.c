@@ -185,6 +185,8 @@ void EnterTargetMode()
 		IsThreadRunning = true;
 		memset(&Buffers, 0, sizeof(Buffers));
 
+		CaptureSetAudioBatching(CurrentMode->AudioBatches);
+
 		LOG("Calling init fn\n");
 		if (CurrentMode->InitFn)
 			CurrentMode->InitFn();
