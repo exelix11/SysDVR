@@ -20,7 +20,6 @@ namespace SysDVR.Client.Player
         }
 
         ulong LastVideoTs;
-        ulong LastAudiots;
 
         // Timestamps are in microseconds
         const ulong BaseMinDifference = 90 * 1000;
@@ -29,19 +28,9 @@ namespace SysDVR.Client.Player
         // Some games stress the network protocol more than others so we start with a baseline 
         // difference of 100ms and every time a synchronization error happens we increase the
         // threshold by 10ms, even though at that point the delay may be noticeable.
-        ulong VideoThreshold = BaseMinDifference;
         ulong AudioThreshold = BaseMinDifference;
 
-        // Video has a lower threshold becuase it can freeze if the UI thread becomes unresponsivle
-        // (click on cmd, dragging the window SDL bug and so on)
-        const ulong MaxVideoDifferenceUs = 110 * 1000;
         const ulong MaxAudioDifferenceUs = 240 * 1000;
-
-        void VideoIncrementDelay()
-        {
-            if (VideoThreshold < MaxVideoDifferenceUs)
-                VideoThreshold += MinDifferenceIncrement;
-        }
 
         void AudioIncrementDelay() 
         {
@@ -50,6 +39,10 @@ namespace SysDVR.Client.Player
         }
 
         // Updates the timestamps and drops packets that are behind
+        // With this implementation we make audio always follow video, this is because
+        // video has lower buffering and it's less likely to have a delay.
+        // Also video can freeze if the UI thread becomes unresponsivle
+        // (click on cmd, dragging the window SDL bug and so on) so we can't do the other way.
         public bool CheckTimestamp(bool isVideo, ulong now)
         {
             if (!Enabled)
@@ -58,19 +51,9 @@ namespace SysDVR.Client.Player
             if (isVideo)
             {
                 LastVideoTs = now;
-
-                var audio = LastAudiots;
-                // If audio is ahead of us of more than 200ms, drop the packet
-                if (audio > now && audio - now > VideoThreshold)
-                {
-                    VideoIncrementDelay();
-                    return false;
-                }
             }
             else
             {
-                LastAudiots = now;
-
                 var video = LastVideoTs;
                 if (video > now && video - now > AudioThreshold)
                 {
