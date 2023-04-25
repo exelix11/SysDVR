@@ -121,5 +121,5 @@ const StreamMode USB_MODE = {
 	USB_VideoStreamThread, USB_AudioStreamThread,
 	NULL, NULL,
 	// USB uses an higher audio batching value to avoid stuttering
-	3
+	2
 };

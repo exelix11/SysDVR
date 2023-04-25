@@ -8,7 +8,10 @@
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
+const int DefaultSeqStaticDropThreshold = 5;
+
 static int AudioBatching = MaxABatching;
+static int SeqStaticDropThreshold = DefaultSeqStaticDropThreshold;
 
 static Service grcdVideo;
 static Service grcdAudio;
@@ -32,13 +35,13 @@ bool CaptureReadAudio()
 	if (R_FAILED(rc))
 		return false;
 
-	for (int i = 1; i < AudioBatching; i++)
+	for (int i = 0; i < AudioBatching; i++)
 	{
 		u32 tmpSize = 0;
 
 		rc = grcdServiceTransfer(
 			&grcdAudio, GrcStream_Audio,
-			APkt.Data + (AbufSz * i), AbufSz,
+			APkt.Data + AbufSz + (AbufSz * i), AbufSz,
 			NULL,
 			&tmpSize,
 			NULL);
@@ -83,8 +86,11 @@ static u32 crc32_arm64_hw(u32 crc, const u8* p, unsigned int len)
 
 bool CheckVideoPacket(const u8* data, size_t len)
 {
+	if (SeqStaticDropThreshold == 0)
+		return false;
+
 	static u32 droppedInAReow = 0;
-	static u32 LastPackets[20];
+	static u32 LastPackets[15];
 	static u32 LastPacketsIdx = 0;
 
 	u32 hash = crc32_arm64_hw(0, data, len);
@@ -103,7 +109,7 @@ bool CheckVideoPacket(const u8* data, size_t len)
 	LastPacketsIdx %= sizeof(LastPackets) / sizeof(LastPackets[0]);
 
 	// We need to send these keyframes once in a while otherwise we get something similar to https://github.com/exelix11/SysDVR/issues/91
-	if (found && ++droppedInAReow > 6)
+	if (found && ++droppedInAReow > SeqStaticDropThreshold)
 	{
 		droppedInAReow = 0;
 		LOG("Letting duplicate packet through.\n");
@@ -172,15 +178,36 @@ again:
 	return result;
 }
 
+// Configurable options
 void CaptureSetAudioBatching(int batch)
 {
-	if (batch < 1)
-		batch = 1;
+	if (batch < 0)
+		batch = 0;
 
 	if (batch > MaxABatching)
 		batch = MaxABatching;
 
 	AudioBatching = batch;
+}
+
+int CaptureGetAudioBatching()
+{
+	return AudioBatching;
+}
+
+void CaptureResetStaticDropThreshold()
+{
+	SeqStaticDropThreshold = DefaultSeqStaticDropThreshold;
+}
+
+void CaptureSetStaticDropThreshold(int maxConsecutive) 
+{
+	SeqStaticDropThreshold = maxConsecutive;
+}
+
+int CaptureGetStaticDropThreshold()
+{
+	return SeqStaticDropThreshold;
 }
 
 Result CaptureInitialize()

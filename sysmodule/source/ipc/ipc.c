@@ -6,9 +6,8 @@
 // From main
 extern void SetModeID(u32 mode);
 extern u32 GetCurrentMode();
-
-// From capture
-void CaptureSetAudioBatching(int batch);
+extern UserOverrides GetUserOverrides();
+extern void ApplyUserOverrides(UserOverrides overrides);
 
 static Handle handles[2];
 static SmServiceName serverName;
@@ -34,16 +33,18 @@ static void StopServer()
 typedef struct {
 	u32 type;
 	u64 cmdId;
+	void* data;
+	u32 dataSize;
 } Request;
 
 static Request ParseRequestFromTLS()
 {
-	Request res = {0};
+	Request req = {0};
 
 	void* base = armGetTls();
 	HipcParsedRequest hipc = hipcParseRequest(base);
 
-	res.type = hipc.meta.type;
+	req.type = hipc.meta.type;
 
 	if (hipc.meta.type == CmifCommandType_Request)
 	{
@@ -57,10 +58,12 @@ static Request ParseRequestFromTLS()
 		if (header->magic != CMIF_IN_HEADER_MAGIC)
 			fatalThrow(ERR_IPC_INVMAGIC);
 
-		res.cmdId = header->command_id;
+		req.cmdId = header->command_id;
+		req.dataSize = dataSize - sizeof(CmifInHeader);
+		req.data = req.dataSize ? ((u8*)header) + sizeof(CmifInHeader) : NULL;
 	}
 
-	return res;
+	return req;
 }
 
 static void WriteResponseToTLS(Result rc)
@@ -76,6 +79,15 @@ static void WriteResponseToTLS(Result rc)
 	rawHeader->magic = CMIF_OUT_HEADER_MAGIC;
 	rawHeader->result = rc;
 	rawHeader->token = 0;
+}
+
+static bool ReadPayload(const Request* req, void* data, u32 len)
+{
+	if (req->dataSize < len || !req->data)
+		return false;
+
+	memcpy(data, req->data, len);
+	return true;
 }
 
 static void WritePayloadResponseToTLS(Result rc, const void* payload, u32 len)
@@ -95,20 +107,20 @@ static void WritePayloadResponseToTLS(Result rc, const void* payload, u32 len)
 	memcpy(((u8*)rawHeader) + sizeof(CmifOutHeader), payload, len);
 }
 
-static u32 modeToSet = TYPE_MODE_ERROR;
+static u32 modeToSet = TYPE_MODE_INVALID;
 static void ApplyModeChanges()
 {
-	if (modeToSet == TYPE_MODE_ERROR)
+	if (modeToSet == TYPE_MODE_INVALID)
 		return;
 
-	SetModeID(CMD_SET_TO_MODE(modeToSet));
+	SetModeID(modeToSet);
 
-	modeToSet = TYPE_MODE_ERROR;
+	modeToSet = TYPE_MODE_INVALID;
 }
 
-static bool HandleCommand(u64 id)
+static bool HandleCommand(const Request* req)
 {
-	switch (id)
+	switch (req->cmdId)
 	{
 		case CMD_GET_VER:
 		{
@@ -122,15 +134,21 @@ static bool HandleCommand(u64 id)
 			WritePayloadResponseToTLS(0, &mode, sizeof(mode));
 			return false;
 		}
-		case CMD_AUDIO_NO_BATCHING: 
-		case CMD_AUDIO_BATCHING_2:
-		case CMD_AUDIO_BATCHING_3:
+		case CMD_GET_USER_OVERRIDES: 
 		{
-			int batch = 1;
-			if (id == CMD_AUDIO_BATCHING_2) batch = 2;
-			else if (id == CMD_AUDIO_BATCHING_3) batch = 3;
-
-			CaptureSetAudioBatching(batch);
+			UserOverrides overrides = GetUserOverrides();
+			WritePayloadResponseToTLS(0, &overrides, sizeof(overrides));
+			return false;
+		}
+		case CMD_SET_USER_OVERRIDES:
+		{
+			UserOverrides overrides;
+			if (!ReadPayload(req, &overrides, sizeof(overrides)))
+			{
+				WriteResponseToTLS(ERR_IPC_INVALID_REQUEST);
+				return true;
+			}
+			ApplyUserOverrides(overrides);
 			WriteResponseToTLS(0);
 			return false;
 		}
@@ -144,7 +162,12 @@ static bool HandleCommand(u64 id)
 		case CMD_SET_TCP:
 		case CMD_SET_RTSP:
 		case CMD_SET_OFF:
-			modeToSet = id;
+			// This relies nn the following conditions, otherwise it needs custom conversion code
+			_Static_assert(CMD_SET_USB == TYPE_MODE_USB, "");
+			_Static_assert(CMD_SET_TCP == TYPE_MODE_TCP, "");
+			_Static_assert(CMD_SET_RTSP == TYPE_MODE_RTSP, "");
+			_Static_assert(CMD_SET_OFF == TYPE_MODE_NULL, "");
+			modeToSet = req->cmdId;
 			WriteResponseToTLS(0);
 			return false;
 		default:
@@ -187,7 +210,7 @@ static void WaitAndProcessRequest()
 		switch (r.type)
 		{
 		case CmifCommandType_Request:
-			shouldClose = HandleCommand(r.cmdId);
+			shouldClose = HandleCommand(&r);
 			break;
 		case CmifCommandType_Close:
 			WriteResponseToTLS(0);

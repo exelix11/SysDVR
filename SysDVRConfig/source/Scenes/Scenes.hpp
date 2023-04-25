@@ -29,6 +29,7 @@ namespace scenes {
 	
 	void NoConnection();
 	
+	void InitDevScene();
 	void DevTestScene();
 }
 
