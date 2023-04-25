@@ -133,7 +133,7 @@ const StreamMode TCP_MODE = {
 	TCP_Init, NULL, 
 	TCP_StreamThread, TCP_StreamThread, 
 	(void*)&VideoConfig, (void*)&AudioConfig,
-	2
+	1
 };
 
 #endif

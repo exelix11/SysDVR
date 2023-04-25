@@ -157,6 +157,34 @@ static Thread ModeSwitchThread;
 static Mutex ModeSwitchingMutex;
 static const StreamMode* SwitchModeTarget = NULL;
 
+// Configurable user parameters
+static UserOverrides Overrides = { false, 0, 0 };
+
+void ApplyUserOverrides(UserOverrides overrides)
+{
+	Overrides = overrides;
+	if (!overrides.Enabled)
+	{
+		if (CurrentMode)
+			CaptureSetAudioBatching(CurrentMode->AudioBatches);
+		CaptureResetStaticDropThreshold();
+	}
+	else 
+	{
+		CaptureSetAudioBatching(overrides.AudioBatching);
+		CaptureSetStaticDropThreshold(overrides.StaticDropThreshold);
+	}
+}
+
+UserOverrides GetUserOverrides()
+{
+	UserOverrides res;
+	res.Enabled = Overrides.Enabled;
+	res.AudioBatching = CaptureGetAudioBatching();
+	res.StaticDropThreshold = CaptureGetStaticDropThreshold();
+	return res;
+}
+
 const StreamMode* GetUserVisibleMode() {
 	mutexLock(&ModeSwitchingMutex);
 	
@@ -185,7 +213,8 @@ void EnterTargetMode()
 		IsThreadRunning = true;
 		memset(&Buffers, 0, sizeof(Buffers));
 
-		CaptureSetAudioBatching(CurrentMode->AudioBatches);
+		// Reset capture options depending on the state of overrides
+		ApplyUserOverrides(Overrides);
 
 		LOG("Calling init fn\n");
 		if (CurrentMode->InitFn)

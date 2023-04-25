@@ -249,9 +249,7 @@ namespace scenes {
 
 	void DvrPatches()
 	{
-		constexpr auto paddedFrameWidth = UI::WindowWidth * 4 / 5;
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2((UI::WindowWidth - paddedFrameWidth) / 2, 0));
-		SetupMainWindow("Dvr-patches");
+		SetupMainWindow("Dvr-patches", UI::DefaultFramePadding);
 		
 		ImGui::SetCursorPosY(30);
 		
@@ -356,6 +354,5 @@ namespace scenes {
 		}
 		
 		ImGui::End();
-		ImGui::PopStyleVar();
 	}
 }

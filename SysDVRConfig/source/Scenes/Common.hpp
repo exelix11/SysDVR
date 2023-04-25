@@ -33,10 +33,10 @@ static inline void CenterText(const std::string_view text)
 	ImGui::TextUnformatted(text.data(), text.data() + text.size());
 }
 
-static void SetupMainWindow(const char* name)
+static void SetupMainWindow(const char* name, float padding = 0)
 {
-	ImGui::SetNextWindowSize({ UI::WindowWidth, UI::WindowHeight });
-	ImGui::SetNextWindowPos({ 0,0 });
+	ImGui::SetNextWindowSize({ UI::WindowWidth - padding, UI::WindowHeight });
+	ImGui::SetNextWindowPos({ (UI::WindowWidth - (UI::WindowWidth - padding)) / 2, 0});
 	
 	ImGui::Begin(name, 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 }

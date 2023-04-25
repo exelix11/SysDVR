@@ -20,12 +20,12 @@
 
 /*
 	Audio batching adds some delay to the audio streaming in excange for less pressure on
-	the USB and network protocols. A batching of 2 halves the number of audio transfers while
+	the USB and network protocols. A batching of 1 halves the number of audio transfers while
 	adding about a frame of delay.
 	This is acceptable as grc:d already doesn't provide real time audio.
-	To remove set the following to 1
+	To disable support set the following to 0
 */
-#define MaxABatching 3
+#define MaxABatching 2
 
 typedef struct {
 	u32 Magic;
@@ -44,10 +44,10 @@ _Static_assert(sizeof(VideoPacket) == sizeof(PacketHeader) + VbufSz);
 
 typedef struct {
 	PacketHeader Header;
-	u8 Data[AbufSz * MaxABatching];
+	u8 Data[AbufSz * (1 + MaxABatching)];
 } AudioPacket;
 
-_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * MaxABatching);
+_Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * (1 + MaxABatching));
 
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
@@ -56,6 +56,11 @@ Result CaptureInitialize();
 void CaptureFinalize();
 
 void CaptureSetAudioBatching(int batch);
+int CaptureGetAudioBatching();
+
+void CaptureResetStaticDropThreshold();
+void CaptureSetStaticDropThreshold(int maxConsecutive);
+int CaptureGetStaticDropThreshold();
 
 // Captures video with grc:d, if no game is running this blocks and there's no way to terminate the call
 bool CaptureReadVideo();

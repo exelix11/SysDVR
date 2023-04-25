@@ -31,16 +31,18 @@ Result SysDvrConnect()
 	return rc;
 }
 
-Result SysDvrSetAudioBatchingOverride(int batching)
+Result SysDvrSetUserOverrides(const UserOverrides* options)
 {
-	if (batching == 1)
-		return serviceDispatch(&dvr, CMD_AUDIO_NO_BATCHING);
-	else if (batching == 2)
-		return serviceDispatch(&dvr, CMD_AUDIO_BATCHING_2);
-	else if (batching == 3)
-		return serviceDispatch(&dvr, CMD_AUDIO_BATCHING_3);
-	else 
-		return MAKERESULT(Module_Libnx, LibnxError_BadInput);
+	return serviceDispatchIn(&dvr, CMD_SET_USER_OVERRIDES, *options);
+}
+
+Result SysDvrGetUserOverrides(UserOverrides* out_options)
+{
+	UserOverrides opt;
+	Result rc = serviceDispatchOut(&dvr, CMD_GET_USER_OVERRIDES , opt);
+	if (R_SUCCEEDED(rc))
+		*out_options = opt;
+	return rc;
 }
 
 void SysDVRDebugCrash()
@@ -74,27 +76,27 @@ Result SysDvrGetMode(u32* out_mode)
 
 Result SysDvrSetMode(u32 command)
 {
-	return serviceDispatch(&dvr, MODE_TO_CMD_SET(command));
+	return serviceDispatch(&dvr, command);
 }
 
 Result SysDvrSetUSB()
 {
-	return SysDvrSetMode(TYPE_MODE_USB);
+	return SysDvrSetMode(CMD_SET_USB);
 }
 
 Result SysDvrSetRTSP()
 {
-	return SysDvrSetMode(TYPE_MODE_RTSP);
+	return SysDvrSetMode(CMD_SET_RTSP);
 }
 
 Result SysDvrSetTCP()
 {
-	return SysDvrSetMode(TYPE_MODE_TCP);
+	return SysDvrSetMode(CMD_SET_TCP);
 }
 
 Result SysDvrSetOFF()
 {
-	return SysDvrSetMode(TYPE_MODE_NULL);
+	return SysDvrSetMode(CMD_SET_OFF);
 }
 #else
 // Stub implementation
@@ -117,7 +119,7 @@ Result SysDvrGetVersion(u32* out_ver)
 
 Result SysDvrGetMode(u32* out_mode)
 {
-	*out_mode = 0;
+	*out_mode = TYPE_MODE_USB;
 	return 0;
 }
 
@@ -143,6 +145,17 @@ Result SysDvrSetTCP()
 
 Result SysDvrSetOFF()
 {
+	return 0;
+}
+
+Result SysDvrSetUserOverrides(const UserOverrides* options)
+{
+	return 0;
+}
+
+Result SysDvrGetUserOverrides(UserOverrides* out_options)
+{
+	*out_options = (UserOverrides){ true, 2, 3 };
 	return 0;
 }
 #endif

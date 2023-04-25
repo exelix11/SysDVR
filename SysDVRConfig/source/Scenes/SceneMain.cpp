@@ -25,6 +25,37 @@ namespace {
 	const std::string UsbDescription = "Use this mode to stream to the SysDVR-Client application via USB.\n"
 		"To setup SysDVR-Client on your pc refer to the guide on Github";
 
+	int debugButtonPresses = 0;
+	bool DebugButton() 
+	{
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3);
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
+
+		auto win = ImGui::GetWindowWidth();
+		ImGui::SetCursorPosX(win / 2 - SysDVRLogo.Size().x * 0.6f / 2);
+
+		bool pressed = ImGui::Button("debug options", ImVec2(SysDVRLogo.Size().x * 0.6f, SysDVRLogo.Size().y * 0.6f));
+
+		ImGui::PopStyleVar(3);
+		ImGui::PopStyleColor(4);
+
+		if (pressed)
+			debugButtonPresses++;
+
+		if (debugButtonPresses >= 7)
+		{
+			debugButtonPresses = 0;
+			return true;
+		}
+
+		return false;
+	}
+
 	u32 GetBootMode()
 	{
 		if (fs::Exists(SDMC "/config/sysdvr/usb"))
@@ -145,9 +176,7 @@ void scenes::InitModeSelect()
 		return;
 	}
 
-	if (CurrentMode == TYPE_MODE_SWITCHING)
-		app::FatalError("SysDVR is already switching modes", "Enter a game to complete the operation, if you think SysDVR is stuck try rebooting");
-	else if (CurrentMode == TYPE_MODE_ERROR)
+	if (CurrentMode == TYPE_MODE_INVALID)
 		app::FatalError("Couldn't get the current SysDVR mode", "Try rebooting your console");
 
 	BootMode = GetBootMode();
@@ -176,8 +205,14 @@ void scenes::ModeSelect()
 	};
 
 	SetupMainWindow("Select mode");
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 12);
+	auto logoPosition = ImGui::GetCursorPosY() + 12;
+	ImGui::SetCursorPosY(logoPosition);
 	CenterImage(SysDVRLogo, .6f);
+
+	// Debug button is invisible and overlaps the logo
+	ImGui::SetCursorPosY(logoPosition);
+	if (DebugButton())
+		app::SetNextScene(Scene::DevScene);
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
 	if (ModeButton("Simple network mode", RtspDescription, ModeRtsp, CurrentMode == TYPE_MODE_RTSP, BootMode == TYPE_MODE_RTSP))
@@ -200,7 +235,7 @@ void scenes::ModeSelect()
 			return;
 
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
-	switch (ImGuiCenterButtons({ "Guide", "Set current mode as default on boot", "dvr-patches manager", "Save and exit" /*, "Advanced"*/}))
+	switch (ImGuiCenterButtons({ "Guide", "Set current mode as default on boot", "dvr-patches manager", "Save and exit"}))
 	{
 	case 0:
 		app::SetNextScene(Scene::Guide);
@@ -222,9 +257,6 @@ void scenes::ModeSelect()
 			app::SetWaitOnExit(true);
 		
 		app::RequestExit();
-		break;
-	case 4:
-		app::SetNextScene(Scene::DevScene);
 		break;
 	default:
 		break;

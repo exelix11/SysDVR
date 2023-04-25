@@ -2,37 +2,98 @@
 #include "Common.hpp"
 #include "../ipc.h"
 
+namespace {
+	Result LastError;
+	UserOverrides Overrides;
+
+	bool EnableOverrides;
+	int MaxSeqDrops;
+
+	const char* SeqDropsComboOptions[] = {
+		"0 (Feautre disabled)",
+		"1", "2", "3", "4",
+		"5 (default)",
+		"6", "7", "8", "9", "10"
+	};
+
+	constexpr int SeqDropsComboCount = sizeof(SeqDropsComboOptions) / sizeof(SeqDropsComboOptions[0]);
+}
+
 namespace scenes {
+	void InitDevScene()
+	{
+		LastError = SysDvrGetUserOverrides(&Overrides);
+		if (R_SUCCEEDED(LastError))
+		{
+			EnableOverrides = Overrides.Enabled;
+			MaxSeqDrops = Overrides.StaticDropThreshold;
+		}
+	}
+
+	void SaveChanges() 
+	{
+		Overrides.Enabled = EnableOverrides;
+		Overrides.StaticDropThreshold = MaxSeqDrops;
+		LastError = SysDvrSetUserOverrides(&Overrides);
+
+		if (R_SUCCEEDED(LastError)) {
+			// Check if it was successful
+			InitDevScene();
+		}
+	}
+
 	void DevTestScene()
 	{
-		SetupMainWindow("DevTest");
-		CenterImage(SysDVRLogo, 1);
-
-		CenterText("These options are for debug and should not be used normally.");
+		SetupMainWindow("Advanced options", UI::DefaultFramePadding);
 		
-		ImGui::NewLine();
-		if (ImGui::Button("Crash"))
-			SysDVRDebugCrash();
+		ImGui::SetCursorPosY(30);
+		CenterImage(SysDVRLogo, .6f);
+
+		CenterText("These are advanced options to tweak communication and capture behavior, if you're not sure don't use them.");
 
 		ImGui::NewLine();
+		
+		if (R_FAILED(LastError))
+		{
+			ImGui::Text("Last operation failed: 0x%x", LastError);
+			ImGui::NewLine();
+		}
+
+		ImGui::Checkbox("Enable custom options, if disabled the following won't have any effect", &EnableOverrides);
+
 		ImGui::NewLine();
 
-		if (ImGui::Button("    No audio batch    "))
-			SysDvrSetAudioBatchingOverride(1);
+		ImGui::TextWrapped("Audio batching: When enabled send audio data less often by grouping together small packets, each packet is about a frame worth of audio so delay is minimal.");
+		if (ImGui::RadioButton("Disabled", Overrides.AudioBatching == 0))
+			Overrides.AudioBatching = 0;
 
 		ImGui::SameLine();
-
-		if (ImGui::Button("    Audio batch 1    "))
-			SysDvrSetAudioBatchingOverride(2);
+		if (ImGui::RadioButton("1 Packet (Default)", Overrides.AudioBatching == 1))
+			Overrides.AudioBatching = 1;
 
 		ImGui::SameLine();
-		if (ImGui::Button("    Audio batch 2    "))
-			SysDvrSetAudioBatchingOverride(3);
+		if (ImGui::RadioButton("2 Packets", Overrides.AudioBatching == 2))
+			Overrides.AudioBatching = 2;
 
 		ImGui::NewLine();
 
-		if (ImGui::Button("Back"))
+		ImGui::TextWrapped("Max sequential static packet drops: When enabled sysdvr will not send big repeated keyframes, this fixes delay issues caused by games showing static images. Big values may cause compression artifacts in the stream.");
+		ImGui::Combo("", &MaxSeqDrops, SeqDropsComboOptions, SeqDropsComboCount);
+
+		ImGui::NewLine();
+
+		switch (ImGuiCenterButtons({ "   Refresh   ", "   Save   ", "   Back   " }))
+		{
+		case 0:
+			InitDevScene();
+			break;
+		case 1:
+			SaveChanges();
+			break;
+		case 2:
 			app::ReturnToPreviousScene();
+			break;
+		}
 
 		ImGui::End();
 	}

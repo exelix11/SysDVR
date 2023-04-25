@@ -10,6 +10,7 @@
 namespace UI {
 	constexpr uint32_t WindowWidth = 1280;
 	constexpr uint32_t WindowHeight = 720;
+	constexpr float DefaultFramePadding = WindowWidth / 8.0f;
 	
 	extern GLFWwindow* MainWindow;
 	

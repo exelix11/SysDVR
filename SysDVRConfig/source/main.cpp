@@ -170,6 +170,8 @@ int main(int argc, char* argv[])
 			app::FatalError("You're using an outdated version of SysDVR", "Please download the latest version from github, then reboot your console.");
 			goto mainloop;
 		}
+
+		scenes::InitDevScene();
 	}
 
 	scenes::InitModeSelect();
@@ -190,6 +192,12 @@ mainloop:
 		Platform::ImguiBindings();
 
 		UI::StartFrame();
+
+		// Render background
+		ImGui::SetNextWindowSize({ UI::WindowWidth , UI::WindowHeight });
+		ImGui::SetNextWindowPos({ 0, 0 });
+
+		ImGui::Begin("_background_", 0, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration);
 		
 		switch (currentScene)
 		{
@@ -216,6 +224,7 @@ mainloop:
 			break;
 		}
 
+		ImGui::End();
 		UI::EndFrame();
 		Platform::Sleep(1 / 30.0f * 1000);
 	}

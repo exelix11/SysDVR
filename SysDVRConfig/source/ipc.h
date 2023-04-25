@@ -7,17 +7,19 @@
 #include <stdbool.h>
 typedef uint32_t u32;
 typedef uint32_t Result;
+typedef uint8_t u8;
 #define MAKERESULT(x,y) 0
 #define R_FAILED(x) (x != 0)
+#define R_SUCCEEDED(x) (x == 0)
 #define R_DESCRIPTION(x) x
 #define R_MODULE(x) x
 #endif
 
-#include "../../sysmodule/source/modes/defines.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+	#include "../../sysmodule/source/modes/defines.h"
+
 	bool SysDvrIsRunning();
 
 	Result SysDvrConnect();
@@ -30,10 +32,8 @@ extern "C" {
 
 	Result SysDvrSetMode(u32 command);
 	
-	// THis setting is reset when mode is changed
-	// Valid values are 1 (no batching) to MaxABatching (defined in capture.h, 3 currently)
-	// This affects how much audio is buffered before being sent to the client
-	Result SysDvrSetAudioBatchingOverride(int batching);
+	Result SysDvrSetUserOverrides(const UserOverrides* options);
+	Result SysDvrGetUserOverrides(UserOverrides* out_options);
 	
 	Result SysDvrSetUSB();
 	Result SysDvrSetRTSP();
