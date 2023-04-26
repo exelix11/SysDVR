@@ -90,7 +90,7 @@ bool CheckVideoPacket(const u8* data, size_t len)
 		return false;
 
 	static u32 droppedInAReow = 0;
-	static u32 LastPackets[15];
+	static u32 LastPackets[24];
 	static u32 LastPacketsIdx = 0;
 
 	u32 hash = crc32_arm64_hw(0, data, len);
@@ -149,7 +149,7 @@ again:
 	// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
 	// this is a static images so we kan just not send it with no consequences to free
 	// up bandwidth for audio and reduce delay once the image changes
-	if (VPkt.Header.DataSize > 0xF000 && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize)) {
+	if (VPkt.Header.DataSize > 0xF800 && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize)) {
 		LOG("Dropping duplicate video packet\n");
 		goto again;
 	}
