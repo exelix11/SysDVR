@@ -8,7 +8,7 @@
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
 
-const int DefaultSeqStaticDropThreshold = 5;
+const int DefaultSeqStaticDropThreshold = 4;
 
 static int AudioBatching = MaxABatching;
 static int SeqStaticDropThreshold = DefaultSeqStaticDropThreshold;
@@ -90,7 +90,7 @@ bool CheckVideoPacket(const u8* data, size_t len)
 		return false;
 
 	static u32 droppedInAReow = 0;
-	static u32 LastPackets[24];
+	static u32 LastPackets[20];
 	static u32 LastPacketsIdx = 0;
 
 	u32 hash = crc32_arm64_hw(0, data, len);
@@ -144,12 +144,15 @@ again:
 		return false;
 	}
 
+	// GRC only produces a single nal per packet so this is always correct
+	const bool isIDRFrame = (VPkt.Data[4] & 0x1F) == 5;
+
 	// Static images are particularly bad for sysdvr cause they cause the video encoder
 	// to emit really big keyframes, all to produce a static image. So here's a trick:
 	// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
 	// this is a static images so we kan just not send it with no consequences to free
 	// up bandwidth for audio and reduce delay once the image changes
-	if (VPkt.Header.DataSize > 0xF800 && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize)) {
+	if (isIDRFrame && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize)) {
 		LOG("Dropping duplicate video packet\n");
 		goto again;
 	}
@@ -159,7 +162,6 @@ again:
 		this is not good as without those it's not possible to play the stream If there's space add SPS and PPS to IDR frames every once in a while
 	*/
 	static int IDRCount = 0;
-	const bool isIDRFrame = (VPkt.Data[4] & 0x1F) == 5;
 
 	// if this is an IDR frame and we haven't added SPS/PPS in the last 5 or forceSPSPPS is set
 	bool EmitMeta = forceSPSPPS || (isIDRFrame && ++IDRCount >= 5);
