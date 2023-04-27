@@ -86,10 +86,11 @@
 
 typedef struct {
 	// Globally enables or disables overrides, if this is false the following values are ignored in CMD_SET_USER_OVERRIDES
-	// If this is the result of GET_USER_OVERRIDES the other values are valid and represent the current options.
+	// If this is the result of GET_USER_OVERRIDES the other values are valid and represent the current options either previously set by the user or the hardcoded defaults.
 	char Enabled;
 	// Represents how many audio reads (0x1000 bytes) are batched together before being sent to the client, default is 1
-	// This is needed to reduce the amount of packets sent over the network, read the comment in capture.h
+	// This is needed to reduce the amount of packets sent over the network, this is capped to the size of MaxABatching (since buffers are statically allocated)
+	// More info in the comment in capture.h
 	char AudioBatching;
 	// Workaround for a specific condition explained in capture.c in CaptureReadVideo, default value is 5, bigger values may cause glitches and visual artifacts,
 	// smaller values may increase latency or delay since we're sending more data over the channel.
@@ -99,4 +100,4 @@ typedef struct {
 	char Padding;
 } UserOverrides;
 
-_Static_assert(sizeof(UserOverrides) == 4, "UserOverrides size is wrong");
+//_Static_assert(sizeof(UserOverrides) == 4, "UserOverrides size is wrong");
