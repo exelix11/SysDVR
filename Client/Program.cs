@@ -255,6 +255,8 @@ namespace SysDVR.Client
 				return true;
 			else if (HasArg("--show-decoders"))
 				Player.LibavUtils.PrintAllCodecs();
+			else if (HasArg("--debug-list"))
+				DebugOptions.PrintDebugOptionsHelp();
 			else
 				return false;
 
@@ -565,9 +567,9 @@ Extra options:
 	`--version` : Prints the version
 	`--libdir` : Overrides the dynami library loading path, use only if dotnet can't locate your ffmpeg/avcoded/SDL2 libraries automatically
                  this option effect depend on your platform, some libraries may still be handled by dotnet, it's better to use your loader path environment variable.
-	`--debug <debug options>` : Enables debug loggings, Supported options are `stats`, `log`, `keyframe`, `nal`, `nosync`
-				Multiple options are comma separated, example: --debug log,stats
-				When a debugger is attached `log` is enabled by default
+	`--debug <debug options>` : Enables debug options. Multiple options are comma separated for example: --debug log,stats
+				When a debugger is attached `log` is enabled by default.
+	`--debug-list` : Prints all available debug options.
 
 Command examples:
 	SysDVR-Client.exe usb

@@ -16,6 +16,15 @@ namespace SysDVR.Client
 
         public bool RequiresH264Analysis => Keyframe || Nal;
 
+        public static void PrintDebugOptionsHelp() => Console.WriteLine(
+@" Available debug options in this version:
+    - `stats`: Print data transfer information for each received packet
+    - `log`: Enable printing loggin messages such as reconnections that are usually not shown
+    - `keyframe`: Parse the h264 video stream and print delay between keyframes
+    - `nal`: Parse the h264 video stream and print all NAL types received
+    - `nosync`: Disable audio/video synchronization
+");
+
         public static DebugOptions Parse(string? options)
         {
             if (string.IsNullOrEmpty(options))

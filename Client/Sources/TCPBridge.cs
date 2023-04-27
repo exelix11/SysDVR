@@ -25,9 +25,11 @@ namespace SysDVR.Client.Sources
 			SourceKind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
 
         readonly string IpAddress;
+		readonly byte HeaderMagicByte;
 
-		CancellationToken Token;
+        CancellationToken Token;
 		Socket Sock;
+        bool CommunicationException = false;
 
         public TCPBridgeSource(string ip, StreamKind kind)
 		{
@@ -36,17 +38,22 @@ namespace SysDVR.Client.Sources
 
             SourceKind = kind;
 			IpAddress = ip;
+
+            HeaderMagicByte = 
+				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
         }
 
         public void WaitForConnection()
 		{
             Sock?.Close();
             Sock?.Dispose();
+			CommunicationException = false;
 
             Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
 			try {
 				Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+				Sock.NoDelay = true;
 			}
 			catch { }
 
@@ -63,6 +70,9 @@ namespace SysDVR.Client.Sources
 					{
 						Sock.NoDelay = true;
 						Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+
+						// Assume the connection starts in-sync and fall back to resync code only on failure
+						InSync = true;
 						break;
 					}
 				}
@@ -99,18 +109,49 @@ namespace SysDVR.Client.Sources
             if (Token.IsCancellationRequested)
                 return;
 
-            Sock?.Close();
-            Sock?.Dispose();
-            Sock = null;
+            InSync = false;
+			if (CommunicationException)
+			{
+				Sock?.Close();
+				Sock?.Dispose();
+				Sock = null;
 
-            Console.WriteLine($"{SourceKind} stream connection lost, reconnecting...");
-            Thread.Sleep(800);
-            WaitForConnection();
+                Console.WriteLine($"{SourceKind} stream connection lost, reconnecting...");
+                Thread.Sleep(800);
+				WaitForConnection();
+			}
         }
 
+        bool InSync = false;
 		public bool ReadHeader(byte[] buffer)
         {
-            return ReadPayload(buffer, PacketHeader.StructLength);
+            if (InSync)
+            {
+                return ReadPayload(buffer, PacketHeader.StructLength);
+            }
+            else
+            {
+				if (Logging.Log)
+					Console.WriteLine($"{SourceKind} Resyncing....");
+
+                // TCPBridge is a raw stream of data, search for an header
+                for (int i = 0; i < 4 && !Token.IsCancellationRequested;)
+                {
+					if (!ReadExact(buffer.AsSpan().Slice(i, 1)))
+						return false;
+
+					if (buffer[i] != HeaderMagicByte)
+						i = 0;
+					else 
+						i++;
+                }
+
+				if (Token.IsCancellationRequested)
+					return false;
+
+                InSync = true;
+                return ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
+            }
         }
 
         bool ReadExact(Span<byte> data)
@@ -122,6 +163,7 @@ namespace SysDVR.Client.Sources
 					int r = Sock.Receive(data);
 					if (r <= 0)
 					{
+                        CommunicationException = true;
                         return false;
 					}
 
@@ -130,6 +172,7 @@ namespace SysDVR.Client.Sources
 			}
 			catch 
 			{
+                CommunicationException = true;
                 return false;
 			}
 
