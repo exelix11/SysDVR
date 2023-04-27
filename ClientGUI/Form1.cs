@@ -168,7 +168,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
             void append(string s) { str.Append(" "); str.Append(s); }
 
-            if (cbStats.Checked || cbIgnoreSync.Checked) 
+            if (cbStats.Checked || cbIgnoreSync.Checked || cbLogStatus.Checked) 
             {
                 List<string> opt = new List<string>();
                 opt.Add("log");

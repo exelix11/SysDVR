@@ -49,6 +49,7 @@
             this.rbStreamRtsp = new System.Windows.Forms.RadioButton();
             this.rbPlayMpv = new System.Windows.Forms.RadioButton();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.cbIgnoreSync = new System.Windows.Forms.CheckBox();
             this.cbStats = new System.Windows.Forms.CheckBox();
             this.cbUsbLog = new System.Windows.Forms.CheckBox();
             this.cbUsbWarn = new System.Windows.Forms.CheckBox();
@@ -56,7 +57,7 @@
             this.cbAdvOpt = new System.Windows.Forms.CheckBox();
             this.linkLabel2 = new System.Windows.Forms.LinkLabel();
             this.button4 = new System.Windows.Forms.Button();
-            this.cbIgnoreSync = new System.Windows.Forms.CheckBox();
+            this.cbLogStatus = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
@@ -319,6 +320,7 @@
             // 
             this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox3.Controls.Add(this.cbLogStatus);
             this.groupBox3.Controls.Add(this.cbIgnoreSync);
             this.groupBox3.Controls.Add(this.cbStats);
             this.groupBox3.Controls.Add(this.cbUsbLog);
@@ -330,10 +332,20 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Advanced/Debug options";
             // 
+            // cbIgnoreSync
+            // 
+            this.cbIgnoreSync.AutoSize = true;
+            this.cbIgnoreSync.Location = new System.Drawing.Point(140, 19);
+            this.cbIgnoreSync.Name = "cbIgnoreSync";
+            this.cbIgnoreSync.Size = new System.Drawing.Size(143, 17);
+            this.cbIgnoreSync.TabIndex = 5;
+            this.cbIgnoreSync.Text = "Ignore Audio/Video sync";
+            this.cbIgnoreSync.UseVisualStyleBackColor = true;
+            // 
             // cbStats
             // 
             this.cbStats.AutoSize = true;
-            this.cbStats.Location = new System.Drawing.Point(6, 21);
+            this.cbStats.Location = new System.Drawing.Point(7, 19);
             this.cbStats.Name = "cbStats";
             this.cbStats.Size = new System.Drawing.Size(102, 17);
             this.cbStats.TabIndex = 0;
@@ -408,15 +420,15 @@
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
-            // cbIgnoreSync
+            // cbLogStatus
             // 
-            this.cbIgnoreSync.AutoSize = true;
-            this.cbIgnoreSync.Location = new System.Drawing.Point(140, 19);
-            this.cbIgnoreSync.Name = "cbIgnoreSync";
-            this.cbIgnoreSync.Size = new System.Drawing.Size(143, 17);
-            this.cbIgnoreSync.TabIndex = 5;
-            this.cbIgnoreSync.Text = "Ignore Audio/Video sync";
-            this.cbIgnoreSync.UseVisualStyleBackColor = true;
+            this.cbLogStatus.AutoSize = true;
+            this.cbLogStatus.Location = new System.Drawing.Point(298, 19);
+            this.cbLogStatus.Name = "cbLogStatus";
+            this.cbLogStatus.Size = new System.Drawing.Size(125, 17);
+            this.cbLogStatus.TabIndex = 6;
+            this.cbLogStatus.Text = "Log status messages";
+            this.cbLogStatus.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -487,6 +499,7 @@
 		private System.Windows.Forms.LinkLabel linkLabel2;
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.CheckBox cbIgnoreSync;
+        private System.Windows.Forms.CheckBox cbLogStatus;
     }
 }
 
