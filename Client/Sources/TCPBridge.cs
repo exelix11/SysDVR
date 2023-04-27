@@ -125,6 +125,10 @@ namespace SysDVR.Client.Sources
         bool InSync = false;
 		public bool ReadHeader(byte[] buffer)
         {
+            // What is this ? Isn't TCP supposed to be reliable ?
+			// Well turs out we have small-ish socket buffers on the console side and certain packets like video
+			// can be much bigger, this causes non-recoverable packet drops. This only happens in extreme situations
+			// so we just handle the error by ignoring dropped packets looking for an header
             if (InSync)
             {
                 return ReadPayload(buffer, PacketHeader.StructLength);

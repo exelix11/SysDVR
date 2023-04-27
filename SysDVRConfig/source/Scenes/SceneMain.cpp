@@ -210,9 +210,9 @@ void scenes::ModeSelect()
 	CenterImage(SysDVRLogo, .6f);
 
 	// Debug button is invisible and overlaps the logo
-	ImGui::SetCursorPosY(logoPosition);
-	if (DebugButton())
-		app::SetNextScene(Scene::DevScene);
+	//ImGui::SetCursorPosY(logoPosition);
+	//if (DebugButton())
+	//	app::SetNextScene(Scene::DevScene);
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
 	if (ModeButton("Simple network mode", RtspDescription, ModeRtsp, CurrentMode == TYPE_MODE_RTSP, BootMode == TYPE_MODE_RTSP))
@@ -230,7 +230,12 @@ void scenes::ModeSelect()
 			return;
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
-	if (ImGui::Button("Stop streaming", { ModeButtonW , 0 }))
+	if (ImGui::Button("Advanced options", {200, 0}))
+		app::SetNextScene(Scene::DevScene);
+
+	ImGui::SameLine();
+	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2 + 215);
+	if (ImGui::Button("Stop streaming", { ModeButtonW - 215, 0 }))
 		if (!SetMode(TYPE_MODE_NULL))
 			return;
 

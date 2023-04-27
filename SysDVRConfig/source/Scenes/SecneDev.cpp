@@ -10,10 +10,10 @@ namespace {
 	int MaxSeqDrops;
 
 	const char* SeqDropsComboOptions[] = {
-		"0 (Feautre disabled)",
-		"1", "2", "3", "4",
-		"5 (default)",
-		"6", "7", "8", "9", "10"
+		"0 (Feature disabled)",
+		"1", "2", "3", "4 (default)",
+		"5", "6", "7", "8", "9", 
+		"10 (expect visual artifacts)"
 	};
 
 	constexpr int SeqDropsComboCount = sizeof(SeqDropsComboOptions) / sizeof(SeqDropsComboOptions[0]);
@@ -49,7 +49,7 @@ namespace scenes {
 		ImGui::SetCursorPosY(30);
 		CenterImage(SysDVRLogo, .6f);
 
-		CenterText("These are advanced options to tweak communication and capture behavior, if you're not sure don't use them.");
+		ImGui::TextWrapped("These are advanced options to tweak communication and capture behavior, if you're not sure don't use them. These options are not saved and they're cleared when you reboot your console.");
 
 		ImGui::NewLine();
 		

@@ -276,11 +276,9 @@ namespace scenes {
 		}
 		else {
 
-			ImGui::TextWrapped(
-				"From this page you can download latest version of dvr-patches from github or uninstall them.\n"
-				"This feature requires an internet connection, you can download the zip file manually from the GitHub repository at https://github.com/exelix11/dvr-patches\n\n"
-				
-				"dvr-patches are system patches that allow to stream most incompatible games with SysDVR, a few games are reported to crash, you can read mone on the issue tracker on GitHub.\n"
+			ImGui::TextWrapped(	
+				"dvr-patches are system patches that allow to stream most incompatible games with SysDVR, a few games are reported to crash, you can read mone on the issue tracker on https://github.com/exelix11/dvr-patches.\n"
+				"You can also manually download the zip file from the GitHub repo with a computer."
 			);
 
 			ImGui::NewLine();
@@ -321,7 +319,7 @@ namespace scenes {
 			if (updateFoundUrl.size() > 0)
 			{
 				ImGui::TextWrapped("%s", updateInfo.c_str());
-				if (ImGuiCenterButtons({ "Download now" }) == 0)
+				if (ImGuiCenterButtons({ "Download and install" }) == 0)
 				{
 					scheduledAction = DownloadRelease;
 				}
