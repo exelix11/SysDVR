@@ -83,18 +83,86 @@ namespace SysDVR.Client.Player
 		}
 	}
 
-	unsafe class H264StreamTarget : IOutStream
+	unsafe class H264StreamTarget : IOutStream, IDisposable
 	{
-		DecoderContext ctx;
+        readonly Thread VideoConsumerThread;
+        readonly BlockingCollection<(PoolBuffer, ulong)> videoBUffer = new BlockingCollection<(PoolBuffer, ulong)>(50);
+
+        DecoderContext ctx;
 		CancellationToken tok;
 		int timebase_den;
 		AVPacket* packet;
 		StreamSynchronizationHelper sync;
 		bool log;
+		AutoResetEvent onFrame;
+
+        // The video player consumer may block but we don't want that when streaming over USB
+		// since the same thread handles both audio and video, we use a buffer to avoid blocking
+        void VideoConsumerMain()
+        {
+            try
+            {
+                // We should not run out of capacity because the target will start dropping packets once their timestamp is too old
+                foreach (var (buf, ts) in videoBUffer.GetConsumingEnumerable(tok))
+                {
+					bool success = false;
+					bool tsFailed = false;
+
+					// Try at most 5 times ( = 5 frames since we lock on the frame event)
+					for (int i = 0; i < 4; i++)
+					{
+						// Drop the packet if while we were trying to send it audio went out of sync
+						if (!sync.CheckTimestamp(true, ts))
+						{
+							tsFailed = true;
+                            break;
+                        }
+
+                        var res = DecodePacket(buf, ts);
+
+						if (res == AVERROR(EAGAIN))
+						{
+							// Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
+							// However it also seems to happen for some specific games so simply dropping packets will cause visual artifacts
+							// Wait for the next frame and submit again
+							// Since we don't check this every frame we may wake up too early but only for a frame so it's fine
+							onFrame.WaitOne(500);
+
+                            if (tok.IsCancellationRequested)
+								break;
+						}
+						else if (res != 0)
+						{
+							Console.WriteLine($"avcodec_send_packet {res}");
+						}
+						else
+						{
+							success = true;
+							break;
+						}
+                    }
+
+					if (!success && log)
+					{
+						if (tsFailed)
+							Console.WriteLine($"Dropping video packet with ts {ts} to resync audio");
+                        else
+							Console.WriteLine($"Dropping video packet because the UI thread is too late");
+                    }
+
+                    buf.Free();
+                }
+            }
+            catch
+            {
+                // Exception is thrown when consumer finishes or token is cancelled
+            }
+        }
 
         unsafe public H264StreamTarget() {
 			packet = av_packet_alloc();
 			log = DebugOptions.Current.Log;
+			VideoConsumerThread = new Thread(VideoConsumerMain);
         }
 
 		unsafe ~H264StreamTarget() {
@@ -107,15 +175,30 @@ namespace SysDVR.Client.Player
 			this.ctx = ctx;
 			timebase_den = ctx.CodecCtx->time_base.den;
 			sync = ctx.SyncHelper;
+			onFrame = ctx.OnFrameEvent;
         }
 
 		public void UseCancellationToken(CancellationToken tok)
 		{
 			this.tok = tok;
-		}
+			// Start the consumer only after the token is set
+			VideoConsumerThread.Start();
+        }
 
-		long firstTs = -1;
-		public unsafe void SendData(PoolBuffer data, ulong ts)
+		// Queue the packet so it's not blocking
+        public void SendData(PoolBuffer data, ulong ts)
+        {
+            videoBUffer.Add((data, ts), tok);
+        }
+
+        public void Dispose()
+        {
+			// If the cancellation token is not set, the consumer thread has probably already terminated
+			VideoConsumerThread.Join();
+        }
+
+        long firstTs = -1;
+		public unsafe int DecodePacket(PoolBuffer data, ulong ts)
 		{
 			byte[] buffer = data.RawBuffer;
 			int size = data.Length;
@@ -123,36 +206,16 @@ namespace SysDVR.Client.Player
             if (firstTs == -1)
 				firstTs = (long)ts;
 
-			if (sync.CheckTimestamp(true, ts))
-			{
-				fixed (byte* nal_data = buffer)
-				{
-					var pkt = packet;
-					pkt->data = nal_data;
-					pkt->size = size;
-					pkt->pts = pkt->dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
+            fixed (byte* nal_data = buffer)
+            {
+                var pkt = packet;
+                pkt->data = nal_data;
+                pkt->size = size;
+                pkt->pts = pkt->dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
 
-					int res = 0;
-
-					lock (ctx.CodecLock)
-						res = avcodec_send_packet(ctx.CodecCtx, pkt);
-
-					if (res == AVERROR(EAGAIN))
-					{
-						// Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
-						// Since this is not threaded anymore if we block here the device thread also blocks, possibly causing desync, so just discard the packet.
-						// In practice we may need some async buffering here (since if we hang we may also block the audio thread for USB)
-					}
-					else if (res != 0)
-					{
-						Console.WriteLine($"avcodec_send_packet {res}");
-					}
-				}
-			}
-			else if (log)
-				Console.WriteLine($"Dropping video packet with ts {ts}");
-
-            data.Free();
+                lock (ctx.CodecLock)
+                    return avcodec_send_packet(ctx.CodecCtx, pkt);
+            }
 		}
-	}
+    }
 }

@@ -51,6 +51,7 @@ namespace SysDVR.Client
 
 	interface IOutStream
 	{
+		// This must be called before sending any data
 		void UseCancellationToken(CancellationToken tok);
 
 		// The implementation must call Free() on the buffer
