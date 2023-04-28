@@ -43,6 +43,7 @@ namespace SysDVR.Client.Player
 		public object CodecLock { get; init; }
 
 		public StreamSynchronizationHelper SyncHelper;
+		public AutoResetEvent OnFrameEvent;
     }
 
 	unsafe struct FormatConverterContext
@@ -118,6 +119,7 @@ namespace SysDVR.Client.Player
 		readonly bool HasVideo;
 		readonly string ScaleQuality;
 		readonly StreamSynchronizationHelper SyncHelper;
+		readonly AutoResetEvent? OnNewFrame;
 
         private bool Running = false;
 		
@@ -281,6 +283,7 @@ namespace SysDVR.Client.Player
 				ReceiveFrame = pic,
 				RenderFrame = pic2,
 				CodecLock = new object(),
+				OnFrameEvent = new AutoResetEvent(true)
             };
 		}
 
@@ -404,8 +407,12 @@ namespace SysDVR.Client.Player
                 // SDL_RenderClear seems to cause a memory leak when the window is minimized on Windows.
 				// Guess we don't really need to call it anyway since we're overwriting the whole screen anyway
                 SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
-                
 				SDL_RenderPresent(SDL.Renderer);
+
+                // Signal we're presenting something to SDL to kick the decding thread
+                // We don't care if we didn't actually decoded anything we just do it here
+                // to do this on every vsync to avoid arbitrary sleeps on the other side
+                OnNewFrame?.Set();
 
                 if (countFps && fpsCounter.GetFps(out var fps))
 				{
@@ -542,7 +549,8 @@ namespace SysDVR.Client.Player
 				Decoder = codecName == null ? InitDecoderAuto(hwAcc) : InitDecoderRequestDecoderName(codecName);
 				Decoder.SyncHelper = SyncHelper;
                 videoTarget.UseContext(Decoder);
-			}
+				OnNewFrame = Decoder.OnFrameEvent;
+            }
 
 			if (HasAudio)
 			{
@@ -603,6 +611,8 @@ namespace SysDVR.Client.Player
 						sws_freeContext(Converter.Converter);
 					}
 				}
+
+				OnNewFrame?.Dispose();
 
                 disposedValue = true;
 			}
