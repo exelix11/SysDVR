@@ -194,12 +194,6 @@ int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* ou
 
 			if (accepted != SOCKET_INVALID)
 			{
-				// Cap the socket send timeout even in blocking mode
-				struct timeval tv;
-				tv.tv_sec = 1;
-				tv.tv_usec = 0;
-				bsdSetSockOpt(accepted, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-
 				// Set TCP_NODELAY
 				int optVal = 1;
 				bsdSetSockOpt(accepted, IPPROTO_TCP, TCP_NODELAY, &optVal, sizeof(optVal));
