@@ -27,7 +27,7 @@ static bool SocketReady;
 #define TCP_TX_SZ (16 * 1024)
 #define TCP_RX_SZ (8 * 1024)
 
-#define TCP_TX_MAX_SZ (128 * 1024)
+#define TCP_TX_MAX_SZ (200 * 1024)
 #define TCP_RX_MAX_SZ 0
 
 #define UDP_TX_SZ (8 * 1024)
