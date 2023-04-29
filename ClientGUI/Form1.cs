@@ -88,7 +88,7 @@ namespace SysDVRClientGUI
             
             if (DotnetMajorVersion < RequiredDotnetMajor)
             {
-                if (MessageBox.Show("It seems you're running an outdated version of .NET. Since SysDVR 5.0 the client app requires the .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show("It seems you're running an outdated version of .NET. SysDVR-Client requires .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
                 else
                     MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.");
