@@ -13,12 +13,12 @@ using SysDVR.Client.Sources;
 
 namespace SysDVR.Client
 {
-	class Program
-	{
-		public static string BundledRuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes");
+    class Program
+    {
+        public static string BundledRuntimesFolder => Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "runtimes");
 
         static string ArchName => RuntimeInformation.ProcessArchitecture switch
-		{
+        {
             Architecture.X64 => "-x64",
             Architecture.X86 => "-x86",
             Architecture.Arm => "-arm",
@@ -26,501 +26,504 @@ namespace SysDVR.Client
             _ => ""
         };
 
-        static string OsName {
-			get {
-				if (OperatingSystem.IsWindows())
-					return "win";
+        static string OsName
+        {
+            get
+            {
+                if (OperatingSystem.IsWindows())
+                    return "win";
                 if (OperatingSystem.IsMacOS())
                     return "mac";
                 // We don't currently support other OSes
-				else return "linux";
-			}
-		}
+                else return "linux";
+            }
+        }
 
-		public static string BundledOsNativeFolder => Path.Combine(BundledRuntimesFolder, $"{OsName}{ArchName}", "native");
+        public static string BundledOsNativeFolder => Path.Combine(BundledRuntimesFolder, $"{OsName}{ArchName}", "native");
 
-		public static string? LibLoaderOverride = null;
+        public static string? LibLoaderOverride = null;
 
-		public static string OsLibFolder { 
-			get {
-				if (LibLoaderOverride is not null)
-					return LibLoaderOverride;
+        public static string OsLibFolder
+        {
+            get
+            {
+                if (LibLoaderOverride is not null)
+                    return LibLoaderOverride;
 
-				if (OperatingSystem.IsWindows())
-					return BundledOsNativeFolder;
+                if (OperatingSystem.IsWindows())
+                    return BundledOsNativeFolder;
 
-				// Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
-				if (OperatingSystem.IsMacOS())
-					return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
+                // Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+                if (OperatingSystem.IsMacOS())
+                    return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
 
-				// On linux we have to rely on the dlopen implementation to find the libs wherever they are 
-				return string.Empty;
-			} 
-		}
+                // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
+                return string.Empty;
+            }
+        }
 
-		static IEnumerable<string> FindMacOSLibrary(string libraryName)
-		{
-			var names = new[] {
-				Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"),
-				Path.Combine(OsLibFolder, $"{libraryName}.dylib"),
-				Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"),
-				Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"),
-				$"lib{libraryName}.dylib",
-				$"{libraryName}.dylib",
-				libraryName
-			};
+        static IEnumerable<string> FindMacOSLibrary(string libraryName)
+        {
+            var names = new[] {
+                Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"),
+                Path.Combine(OsLibFolder, $"{libraryName}.dylib"),
+                Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"),
+                Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"),
+                $"lib{libraryName}.dylib",
+                $"{libraryName}.dylib",
+                libraryName
+            };
 
-			return names;
-		}
-        
-		static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-		{
-			IntPtr result = IntPtr.Zero;
-			foreach (var name in FindMacOSLibrary(libraryName))
-				if (NativeLibrary.TryLoad(name, out result))
-					break;
-			
-			if (result == IntPtr.Zero)
-				Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
-			
-			return result;
-		}
+            return names;
+        }
 
+        static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            IntPtr result = IntPtr.Zero;
+            foreach (var name in FindMacOSLibrary(libraryName))
+                if (NativeLibrary.TryLoad(name, out result))
+                    break;
 
-		static void SetupMacOSLibrarySymlinks() 
-		{
+            if (result == IntPtr.Zero)
+                Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
+
+            return result;
+        }
+
+        static void SetupMacOSLibrarySymlinks()
+        {
             // This is a terrible hack but seems to work, we'll create symlinks to the OS libraries in the program folder
             // The alternative is to fork libusbdotnet to add a way to load its native lib from a cusstom folder
             // See https://github.com/exelix11/SysDVR/issues/192
 
             var thisExePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			
-			// We only need to link libusb as ffmpeg has a global root path variable and for SDL we set the custom NativeLoader callback
-			var libNames = new[] { 
-				("libusb-1.0", "libusb-1.0.dylib")
-			};
 
-			foreach (var (libName, fileName) in libNames)
-			{
-				if (File.Exists(Path.Combine(thisExePath, fileName)))
-					continue;
+            // We only need to link libusb as ffmpeg has a global root path variable and for SDL we set the custom NativeLoader callback
+            var libNames = new[] {
+                ("libusb-1.0", "libusb-1.0.dylib")
+            };
+
+            foreach (var (libName, fileName) in libNames)
+            {
+                if (File.Exists(Path.Combine(thisExePath, fileName)))
+                    continue;
 
                 var path = FindMacOSLibrary(libName).Where(File.Exists).FirstOrDefault();
-				if (string.IsNullOrWhiteSpace(path))
-					Console.Error.WriteLine($"Couldn't find a library to symlink: {libName} ({fileName}). You might need to install it with brew.");
+                if (string.IsNullOrWhiteSpace(path))
+                    Console.Error.WriteLine($"Couldn't find a library to symlink: {libName} ({fileName}). You might need to install it with brew.");
                 else
-					File.CreateSymbolicLink(Path.Combine(thisExePath, fileName), path);
-			}
+                    File.CreateSymbolicLink(Path.Combine(thisExePath, fileName), path);
+            }
         }
 
-		static void Main(string[] args)
-		{
-			try
-			{
+        static void Main(string[] args)
+        {
+            try
+            {
                 new Program(args).ProgramMain();
-			}
-			catch (DllNotFoundException ex)
-			{
+            }
+            catch (DllNotFoundException ex)
+            {
                 Console.Error.WriteLine($"There was an error loading a dynamic library. Make sure you installed all the dependencies and that you have the correct version of the libraries.");
 
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !Environment.Is64BitProcess)
-				{
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !Environment.Is64BitProcess)
+                {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.Error.WriteLine("You are running the 32-bit version of .NET, on Windows this is NOT supported due to ffmpeg not providing official 32-bit versions of their libs.");
 
-					if (Environment.Is64BitOperatingSystem)
-					{
-						Console.Error.WriteLine("Since you are using 64-bit Windows, uninstall x86 or 32-bit .NET and install the x64 version from Microsoft's website.");
-					}
-					else
-					{
-						Console.Error.WriteLine("It seems you're using 32-bit Windows, this is not supported and you should upgrade your PC.");
+                    if (Environment.Is64BitOperatingSystem)
+                    {
+                        Console.Error.WriteLine("Since you are using 64-bit Windows, uninstall x86 or 32-bit .NET and install the x64 version from Microsoft's website.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("It seems you're using 32-bit Windows, this is not supported and you should upgrade your PC.");
                         Console.Error.WriteLine("However, you can try to make SysDVR work by downloading 32-bit ffmpeg builds and copying them to the SysDVR-client folder.");
-					}
-					
-					Console.ResetColor();
-				}
-				else
-				{
-					Console.Error.WriteLine(
-						"If all libraries are properly installed ensure their path is set in your dynamic loader environment variable (PATH on Windows, LD_LIBRARY_PATH on Linux and DYLD_LIBRARY_PATH on MacOS)\r\n\r\n" +
+                    }
 
-						"In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --libdir <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).");
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.Error.WriteLine(
+                        "If all libraries are properly installed ensure their path is set in your dynamic loader environment variable (PATH on Windows, LD_LIBRARY_PATH on Linux and DYLD_LIBRARY_PATH on MacOS)\r\n\r\n" +
 
-					if (OperatingSystem.IsLinux())
-						Console.Error.WriteLine("For example on x64 linux you can try --libdir /lib/x86_64-linux-gnu/");
-					else if (OperatingSystem.IsMacOS())
-					{
-						Console.Error.WriteLine("For example on MacOS you can try --libdir $(brew --prefix)/lib/");
+                        "In case of problems specific to ffmpeg or libavcodec you can override the loader path by adding to the command line --libdir <library path> where <library path> is the folder containing the dyamic libraries of ffmpeg (or symlinks to them).");
+
+                    if (OperatingSystem.IsLinux())
+                        Console.Error.WriteLine("For example on x64 linux you can try --libdir /lib/x86_64-linux-gnu/");
+                    else if (OperatingSystem.IsMacOS())
+                    {
+                        Console.Error.WriteLine("For example on MacOS you can try --libdir $(brew --prefix)/lib/");
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.Error.WriteLine("If you're using an arm based mac make sure you're using native arm dotnet and not the intel one.");
                         Console.ResetColor();
                     }
-					else
-						Console.Error.WriteLine("For example on Windows you can try --libdir C:\\Program Files\\ffmpeg\\bin");
+                    else
+                        Console.Error.WriteLine("For example on Windows you can try --libdir C:\\Program Files\\ffmpeg\\bin");
                 }
 
-				Console.Error.WriteLine("\r\nFull error message:\r\n" + ex);
-			}
-			catch (Exception ex)
-			{
+                Console.Error.WriteLine("\r\nFull error message:\r\n" + ex);
+            }
+            catch (Exception ex)
+            {
                 Console.Error.WriteLine("There was an error in SysDVR-Client.");
                 Console.Error.WriteLine("Make sure the SysDVR version on your console is the same as SysDVR-Client on your pc.");
                 Console.Error.WriteLine("After updating SysDVR on your console you should reboot.");
 
                 Console.Error.WriteLine("\r\nFull error message:");
                 Console.Error.WriteLine(ex);
-			}
-		}
+            }
+        }
 
-		string[] Args { get; init; }
+        string[] Args { get; init; }
 
-		bool HasArg(string arg) => Array.IndexOf(Args, arg) != -1;
+        bool HasArg(string arg) => Array.IndexOf(Args, arg) != -1;
 
-		string? ArgValue(string arg)
-		{
-			int index = Array.IndexOf(Args, arg);
-			if (index == -1) return null;
-			if (Args.Length <= index + 1) return null;
+        string? ArgValue(string arg)
+        {
+            int index = Array.IndexOf(Args, arg);
+            if (index == -1) return null;
+            if (Args.Length <= index + 1) return null;
 
-			string value = Args[index + 1];
-			if (!value.Contains(' ') && value.StartsWith('"') && value.EndsWith('"'))
-				value = value.Substring(1, value.Length - 2);
+            string value = Args[index + 1];
+            if (!value.Contains(' ') && value.StartsWith('"') && value.EndsWith('"'))
+                value = value.Substring(1, value.Length - 2);
 
-			return value;
-		}
+            return value;
+        }
 
-		int? ArgValueInt(string arg)
-		{
-			var a = ArgValue(arg);
-			if (int.TryParse(a, out int res))
-				return res;
-			return null;
-		}
+        int? ArgValueInt(string arg)
+        {
+            var a = ArgValue(arg);
+            if (int.TryParse(a, out int res))
+                return res;
+            return null;
+        }
 
-		Program(string[] args)
-		{
-			Args = args;
-		}
+        Program(string[] args)
+        {
+            Args = args;
+        }
 
-		static string VersionString()
-		{
-			var Version = typeof(Program).Assembly.GetName().Version;
-			return Version is null ? "<unknown version>" :
-				$"SysDVR {Version.Major}.{Version.Minor}{(Version.Revision == 0 ? "" : $".{Version.Revision}")}";
-		}
+        static string VersionString()
+        {
+            var Version = typeof(Program).Assembly.GetName().Version;
+            return Version is null ? "<unknown version>" :
+                $"SysDVR {Version.Major}.{Version.Minor}{(Version.Revision == 0 ? "" : $".{Version.Revision}")}";
+        }
 
-		void ProgramMain()
-		{
-			var StreamStdout = HasArg("--stdout");
-			var libOverride = ArgValue("--libdir");
-			DebugOptions.Current = DebugOptions.Parse(ArgValue("--debug"));
+        void ProgramMain()
+        {
+            var StreamStdout = HasArg("--stdout");
+            var libOverride = ArgValue("--libdir");
+            DebugOptions.Current = DebugOptions.Parse(ArgValue("--debug"));
 
             // Native library loading memes
-			if (libOverride is not null)
-				LibLoaderOverride = libOverride;
+            if (libOverride is not null)
+                LibLoaderOverride = libOverride;
 
-			ffmpeg.RootPath = OsLibFolder;
+            ffmpeg.RootPath = OsLibFolder;
 
-			if (OperatingSystem.IsMacOS())
-			{
-				NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
-				SetupMacOSLibrarySymlinks();
-			}
+            if (OperatingSystem.IsMacOS())
+            {
+                NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
+                SetupMacOSLibrarySymlinks();
+            }
 
-			if (StreamStdout)
-				Console.SetOut(Console.Error);
+            if (StreamStdout)
+                Console.SetOut(Console.Error);
 
-			Console.WriteLine($"SysDVR-Client - {VersionString()} by exelix");
-			Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
+            Console.WriteLine($"SysDVR-Client - {VersionString()} by exelix");
+            Console.WriteLine("https://github.com/exelix11/SysDVR \r\n");
 
-			if (HandleStandaloneCommands())
-				return;
+            if (HandleStandaloneCommands())
+                return;
 
-			if (Args.Length == 0)
-				ShowShortGuide();
+            if (Args.Length == 0)
+                ShowShortGuide();
 
-			var streams = HandleStreamingCommands();
-            
+            var streams = HandleStreamingCommands();
+
             if (streams is not null)
-				StartStreaming(streams);
-		}
+                StartStreaming(streams);
+        }
 
-		// Commands that don't do streaming (e.g. "help")
-		bool HandleStandaloneCommands() 
-		{
-			if (Args.Length != 0 && Args[0].Contains("help"))
-				ShowFullGuide();
-			else if (HasArg("--version"))
-				return true;
-			else if (HasArg("--show-decoders"))
-				Player.LibavUtils.PrintAllCodecs();
-			else if (HasArg("--debug-list"))
-				DebugOptions.PrintDebugOptionsHelp();
-			else
-				return false;
+        // Commands that don't do streaming (e.g. "help")
+        bool HandleStandaloneCommands()
+        {
+            if (Args.Length != 0 && Args[0].Contains("help"))
+                ShowFullGuide();
+            else if (HasArg("--version"))
+                return true;
+            else if (HasArg("--show-decoders"))
+                Player.LibavUtils.PrintAllCodecs();
+            else if (HasArg("--debug-list"))
+                DebugOptions.PrintDebugOptionsHelp();
+            else
+                return false;
 
-			return true;
-		}
+            return true;
+        }
 
-		BaseStreamManager? HandleStreamingCommands() 
-		{
-			bool StreamStdout = HasArg("--stdout");
+        BaseStreamManager? HandleStreamingCommands()
+        {
+            bool StreamStdout = HasArg("--stdout");
 
-			BaseStreamManager StreamManager;
-			bool NoAudio, NoVideo;
+            BaseStreamManager StreamManager;
+            bool NoAudio, NoVideo;
 
-			NoAudio = HasArg("--no-audio");
-			NoVideo = HasArg("--no-video");
+            NoAudio = HasArg("--no-audio");
+            NoVideo = HasArg("--no-video");
 
-			if (NoVideo && NoAudio)
-			{
-				Console.WriteLine("Specify at least a video or audio output");
-				return null;
-			}
+            if (NoVideo && NoAudio)
+            {
+                Console.WriteLine("Specify at least a video or audio output");
+                return null;
+            }
 
-			// Stream destinations
-			if (StreamStdout)
-			{
-				if (!NoVideo && !NoAudio)
-					NoAudio = true;
-				StreamManager = new StdOutManager(NoAudio ? StreamKind.Video : StreamKind.Audio);
-			}
-			else if (HasArg("--mpv"))
-			{
-				string mpvPath = ArgValue("--mpv");
-				if (mpvPath == null || !File.Exists(mpvPath))
-				{
-					Console.WriteLine("The specified mpv path is not valid");
-					return null;
-				}
-				if (!NoVideo && !NoAudio)
-					NoAudio = true;
-				StreamManager = new MpvStdinManager(NoAudio ? StreamKind.Video : StreamKind.Audio, mpvPath);
-			}
-			else if (HasArg("--file"))
-			{
-				string filename = ArgValue("--file");
-				if (string.IsNullOrWhiteSpace(filename))
-				{
-					Console.WriteLine("The specified path is not valid");
-					return null;
-				}
-				if (!filename.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase))
-					Console.WriteLine($"Warning: {filename} doesn't end with .mp4, some programs may not be able to open it if you don't rename it manually.");
-				StreamManager = new Mp4OutputManager(filename, !NoVideo, !NoAudio);
-			}
+            // Stream destinations
+            if (StreamStdout)
+            {
+                if (!NoVideo && !NoAudio)
+                    NoAudio = true;
+                StreamManager = new StdOutManager(NoAudio ? StreamKind.Video : StreamKind.Audio);
+            }
+            else if (HasArg("--mpv"))
+            {
+                string mpvPath = ArgValue("--mpv");
+                if (mpvPath == null || !File.Exists(mpvPath))
+                {
+                    Console.WriteLine("The specified mpv path is not valid");
+                    return null;
+                }
+                if (!NoVideo && !NoAudio)
+                    NoAudio = true;
+                StreamManager = new MpvStdinManager(NoAudio ? StreamKind.Video : StreamKind.Audio, mpvPath);
+            }
+            else if (HasArg("--file"))
+            {
+                string filename = ArgValue("--file");
+                if (string.IsNullOrWhiteSpace(filename))
+                {
+                    Console.WriteLine("The specified path is not valid");
+                    return null;
+                }
+                if (!filename.EndsWith(".mp4", StringComparison.InvariantCultureIgnoreCase))
+                    Console.WriteLine($"Warning: {filename} doesn't end with .mp4, some programs may not be able to open it if you don't rename it manually.");
+                StreamManager = new Mp4OutputManager(filename, !NoVideo, !NoAudio);
+            }
 #if DEBUG
-			else if (HasArg("--record-debug"))
-			{
-				string path = ArgValue("--record-debug");
-				StreamManager = new LoggingManager(NoVideo ? null : Path.Combine(path, "video.h264"), NoAudio ? null : Path.Combine(path, "audio.raw"));
-			}
+            else if (HasArg("--record-debug"))
+            {
+                string path = ArgValue("--record-debug");
+                StreamManager = new LoggingManager(NoVideo ? null : Path.Combine(path, "video.h264"), NoAudio ? null : Path.Combine(path, "audio.raw"));
+            }
 #endif
-			else if (HasArg("--rtsp"))
-			{
-				int port = ArgValueInt("--rtsp-port") ?? 6666;
-				if (port <= 1024)
-					Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
-				StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, !HasArg("--rtsp-any-addr"), port);
-			}
-			else // Stream to the built-in player by default
-			{
-				StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--hw-acc"), ArgValue("--decoder"), ArgValue("--scale"))
-				{
-					WindowTitle = ArgValue("--title"),
-					StartFullScreen = HasArg("--fullscreen")
-				};
-			}
+            else if (HasArg("--rtsp"))
+            {
+                int port = ArgValueInt("--rtsp-port") ?? 6666;
+                if (port <= 1024)
+                    Console.WriteLine("Warning: ports lower than 1024 are usually reserved and may require administrator/root privileges");
+                StreamManager = new RTSP.SysDvrRTSPManager(!NoVideo, !NoAudio, !HasArg("--rtsp-any-addr"), port);
+            }
+            else // Stream to the built-in player by default
+            {
+                StreamManager = new Player.PlayerManager(!NoVideo, !NoAudio, HasArg("--hw-acc"), ArgValue("--decoder"), ArgValue("--scale"))
+                {
+                    WindowTitle = ArgValue("--title"),
+                    StartFullScreen = HasArg("--fullscreen")
+                };
+            }
 
             // Stream sources
-			if (Args.Length == 0 || Args[0] == "usb")
-			{
-				if (HasArg("--no-winusb"))
-				{
-					Console.WriteLine("Note: the --no-winusb argument has been deprecated, it's now the default. You can remove it from the command line.");
-				}
-				
-				var warnLevel = UsbContext.LogLevel.Error;
+            if (Args.Length == 0 || Args[0] == "usb")
+            {
+                if (HasArg("--no-winusb"))
+                {
+                    Console.WriteLine("Note: the --no-winusb argument has been deprecated, it's now the default. You can remove it from the command line.");
+                }
 
-				if (HasArg("--usb-warn")) warnLevel = UsbContext.LogLevel.Warning;
-				if (HasArg("--usb-debug")) warnLevel = UsbContext.LogLevel.Debug;
+                var warnLevel = UsbContext.LogLevel.Error;
 
-				var ctx = OpenUsbSource(warnLevel, ArgValue("--usb-serial"));
-				if (ctx == null)
-					return null;
+                if (HasArg("--usb-warn")) warnLevel = UsbContext.LogLevel.Warning;
+                if (HasArg("--usb-debug")) warnLevel = UsbContext.LogLevel.Debug;
 
-				StreamManager.AddSource(ctx.CreateStreamingSource(!NoVideo, !NoAudio));
-			}
-			else if (Args[0] == "bridge")
-			{
-				if (Args.Length < 2)
-				{
-					Console.WriteLine("Specify an ip address for bridge mode");
-					return null;
-				}
+                var ctx = OpenUsbSource(warnLevel, ArgValue("--usb-serial"));
+                if (ctx == null)
+                    return null;
 
-				string ip = Args[1];
+                StreamManager.AddSource(ctx.CreateStreamingSource(!NoVideo, !NoAudio));
+            }
+            else if (Args[0] == "bridge")
+            {
+                if (Args.Length < 2)
+                {
+                    Console.WriteLine("Specify an ip address for bridge mode");
+                    return null;
+                }
 
-				if (!NoVideo)
-					StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Video));
-				if (!NoAudio)
-					StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Audio));
-			}
+                string ip = Args[1];
+
+                if (!NoVideo)
+                    StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Video));
+                if (!NoAudio)
+                    StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Audio));
+            }
             // UI Test mode: only load libavcodec and SDL without streaming anything
-			else if (Args[0] == "stub")
-			{
-				StreamManager.AddSource(new StubSource(!NoVideo, !NoAudio));
-			}
+            else if (Args[0] == "stub")
+            {
+                StreamManager.AddSource(new StubSource(!NoVideo, !NoAudio));
+            }
 #if DEBUG
-			else if (Args[0] == "record")
-			{
-				var path = ArgValue("--source");
+            else if (Args[0] == "record")
+            {
+                var path = ArgValue("--source");
 
-				if (!NoVideo)
-					StreamManager.AddSource(new RecordedSource(StreamKind.Video, path));
-				if (!NoAudio)
-					StreamManager.AddSource(new RecordedSource(StreamKind.Audio, path));
-			}
+                if (!NoVideo)
+                    StreamManager.AddSource(new RecordedSource(StreamKind.Video, path));
+                if (!NoAudio)
+                    StreamManager.AddSource(new RecordedSource(StreamKind.Audio, path));
+            }
 #endif
-			else
-			{
-				Console.WriteLine("Invalid source");
-				return null;
-			}
-
-			return StreamManager;
-		}
-
-		static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, string? preferredSerial)
-		{
-			var ctx = new UsbContext(usbLogLeve);
-
-			var devices = ctx.FindSysdvrDevices();
-
-			if (!string.IsNullOrWhiteSpace(preferredSerial))
-				preferredSerial = preferredSerial.ToLower().Trim();
-			else 
-				preferredSerial = null;
-
-			if (devices.Count == 0)
-			{
-				Console.WriteLine("ERROR: SysDVR usb device not found.\r\n" +
-					"Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver.\r\n" +
-					"SysDVR protocol may change with updates, SysDVR on your console must be the same version as the client !");
-
-				UsbDriverSuggest();
+            else
+            {
+                Console.WriteLine("Invalid source");
                 return null;
-			}
-			else if (devices.Count == 1)
-			{
-				if (preferredSerial is not null && devices[0].Item2.EndsWith(preferredSerial))
-					Console.WriteLine($"Warning: Connecting to the console with serial {devices[0].Item2} instead of the requested {preferredSerial}");
+            }
 
-				Console.WriteLine($"Connecting to the console with serial {devices[0].Item2}...");
-				ctx.OpenUsbDevice(devices[0].Item1);
-				return ctx;
-			}
-			else
-			{
-				var preferred = devices.Where(x => x.Item2.EndsWith(preferredSerial)).ToArray();
-				if (preferred.Length == 1)
-				{
-					ctx.OpenUsbDevice(preferred[0].Item1);
-					return ctx;
-				}
-				// Multiple partial matches ? look for the exact one
-				else if (preferred.Length >= 1)
-				{
-					preferred = devices.Where(x => x.Item2 == preferredSerial).ToArray();
-					if (preferred.Length == 1)
-					{
-						ctx.OpenUsbDevice(preferred[0].Item1);
-						return ctx;
-					}
-					else Console.WriteLine($"Warning: Multiple matches for {preferredSerial}, exact match not found");
-				}				
-				else Console.WriteLine($"Warning: Requsted serial {preferredSerial} not found");
+            return StreamManager;
+        }
 
-				Console.WriteLine("Available SysDVR devices:");
-				for (int i = 0; i < devices.Count; i++)
-					Console.WriteLine($"{i + 1}) {devices[i].Item2}");
+        static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, string? preferredSerial)
+        {
+            var ctx = new UsbContext(usbLogLeve);
 
-				Console.WriteLine("\r\nTIP: You can use the --usb-serial command line option to automatically select one based on the serial number");
-			
-				select_value:
-				Console.Write("Enter the number of the device you want to use: ");
-				if (!int.TryParse(Console.ReadLine(), out int selection) || selection < 1 || selection > devices.Count)
-				{
-					Console.WriteLine($"Error: expected value between 1 and {devices.Count}, try again");
-					goto select_value;
-				}
+            var devices = ctx.FindSysdvrDevices();
 
-				ctx.OpenUsbDevice(devices[selection - 1].Item1);
-				return ctx;
-			}
-		}
+            if (!string.IsNullOrWhiteSpace(preferredSerial))
+                preferredSerial = preferredSerial.ToLower().Trim();
+            else
+                preferredSerial = null;
 
-		static void UsbDriverSuggest() 
-		{
-			if (!OperatingSystem.IsWindows())
-				return;
+            if (devices.Count == 0)
+            {
+                Console.WriteLine("ERROR: SysDVR usb device not found.\r\n" +
+                    "Make sure that SysDVR is running in usb mode on your console and that you installed the correct driver.\r\n" +
+                    "SysDVR protocol may change with updates, SysDVR on your console must be the same version as the client !");
 
-			Console.WriteLine();
-			Console.ForegroundColor = ConsoleColor.Yellow;
-			Console.WriteLine("Note that version 5.5 changed the required driver, if you installed the driver in the past you need to update it");
-			Console.Write("Open SysDVR-ClientGUI.exe and click on the install driver button. ");
-			Console.ResetColor();
+                UsbDriverSuggest();
+                return null;
+            }
+            else if (devices.Count == 1)
+            {
+                if (preferredSerial is not null && devices[0].Item2.EndsWith(preferredSerial))
+                    Console.WriteLine($"Warning: Connecting to the console with serial {devices[0].Item2} instead of the requested {preferredSerial}");
+
+                Console.WriteLine($"Connecting to the console with serial {devices[0].Item2}...");
+                ctx.OpenUsbDevice(devices[0].Item1);
+                return ctx;
+            }
+            else
+            {
+                var preferred = devices.Where(x => x.Item2.EndsWith(preferredSerial)).ToArray();
+                if (preferred.Length == 1)
+                {
+                    ctx.OpenUsbDevice(preferred[0].Item1);
+                    return ctx;
+                }
+                // Multiple partial matches ? look for the exact one
+                else if (preferred.Length >= 1)
+                {
+                    preferred = devices.Where(x => x.Item2 == preferredSerial).ToArray();
+                    if (preferred.Length == 1)
+                    {
+                        ctx.OpenUsbDevice(preferred[0].Item1);
+                        return ctx;
+                    }
+                    else Console.WriteLine($"Warning: Multiple matches for {preferredSerial}, exact match not found");
+                }
+                else Console.WriteLine($"Warning: Requsted serial {preferredSerial} not found");
+
+                Console.WriteLine("Available SysDVR devices:");
+                for (int i = 0; i < devices.Count; i++)
+                    Console.WriteLine($"{i + 1}) {devices[i].Item2}");
+
+                Console.WriteLine("\r\nTIP: You can use the --usb-serial command line option to automatically select one based on the serial number");
+
+            select_value:
+                Console.Write("Enter the number of the device you want to use: ");
+                if (!int.TryParse(Console.ReadLine(), out int selection) || selection < 1 || selection > devices.Count)
+                {
+                    Console.WriteLine($"Error: expected value between 1 and {devices.Count}, try again");
+                    goto select_value;
+                }
+
+                ctx.OpenUsbDevice(devices[selection - 1].Item1);
+                return ctx;
+            }
+        }
+
+        static void UsbDriverSuggest()
+        {
+            if (!OperatingSystem.IsWindows())
+                return;
+
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Note that version 5.5 changed the required driver, if you installed the driver in the past you need to update it");
+            Console.Write("Open SysDVR-ClientGUI.exe and click on the install driver button. ");
+            Console.ResetColor();
             Console.WriteLine();
         }
 
-		void StartStreaming(BaseStreamManager streams)
-		{
-			streams.Begin();
-			bool terminating = false;
-			
-			void Quit()
-			{
+        void StartStreaming(BaseStreamManager streams)
+        {
+            streams.Begin();
+            bool terminating = false;
+
+            void Quit()
+            {
                 // this may be called at the same time by CTRL+C and main thread returning, dispose everything only once.
-				lock (this)
-				{
-					if (terminating)
-						return;
-					terminating = true;
-				}
+                lock (this)
+                {
+                    if (terminating)
+                        return;
+                    terminating = true;
+                }
 
-				Console.WriteLine("Terminating threads...");
-				streams.Stop();
-				if (streams is IDisposable d)
-					d.Dispose();
-				Environment.Exit(0);
-			}
+                Console.WriteLine("Terminating threads...");
+                streams.Stop();
+                if (streams is IDisposable d)
+                    d.Dispose();
+                Environment.Exit(0);
+            }
 
-			Console.CancelKeyPress += delegate(object instance, ConsoleCancelEventArgs args) 
-			{
-				args.Cancel = true;
-				Quit();
-			};
+            Console.CancelKeyPress += delegate (object instance, ConsoleCancelEventArgs args)
+            {
+                args.Cancel = true;
+                Quit();
+            };
 
-			streams.MainThread();		
+            streams.MainThread();
 
-			Quit();
-		}
+            Quit();
+        }
 
-		void ShowShortGuide()
-		{
-			Console.WriteLine("Basic usage:\r\n" +
-						"Simply launching this exectuable will show this message and launch the video player via USB.\r\n" +
-						"Use 'SysDVR-Client usb' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
-						"To stream in TCP Bridge mode launch 'SysDVR-Client bridge <switch ip address>'\r\n" +
-						"There are more advanced options, you can see them with 'SysDVR-Client --help'\r\n" +
-						"Press enter to continue.\r\n");
-			Console.ReadLine();
-		}
+        void ShowShortGuide()
+        {
+            Console.WriteLine("Basic usage:\r\n" +
+                        "Simply launching this exectuable will show this message and launch the video player via USB.\r\n" +
+                        "Use 'SysDVR-Client usb' to stream directly, add '--no-audio' or '--no-video' to disable one of the streams\r\n" +
+                        "To stream in TCP Bridge mode launch 'SysDVR-Client bridge <switch ip address>'\r\n" +
+                        "There are more advanced options, you can see them with 'SysDVR-Client --help'\r\n" +
+                        "Press enter to continue.\r\n");
+            Console.ReadLine();
+        }
 
-		void ShowFullGuide()
-		{
-			Console.WriteLine(
+        void ShowFullGuide()
+        {
+            Console.WriteLine(
 @"Usage:
 SysDVR-Client.exe <Stream source> [Source options] [Stream options] [Output options]
 
@@ -584,6 +587,6 @@ Command examples:
 	SysDVR-Client.exe usb --mpv `C:\Program Files\mpv\mpv.com`
 		Connects to switch via USB and streams the video in low-latency mode via mpv
 ");
-		}
-	}
+        }
+    }
 }
