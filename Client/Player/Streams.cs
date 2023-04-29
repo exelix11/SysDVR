@@ -134,6 +134,7 @@ namespace SysDVR.Client.Player
 						else if (res != 0)
 						{
 							Console.WriteLine($"avcodec_send_packet {res}");
+							break;
 						}
 						else
 						{
