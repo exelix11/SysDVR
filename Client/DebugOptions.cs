@@ -64,7 +64,7 @@ namespace SysDVR.Client
     class FramerateCounter 
     {
         Stopwatch sw = new();
-        int frames = 0;
+        uint frames = 0;
 
         public void Start() 
         {
@@ -80,7 +80,7 @@ namespace SysDVR.Client
         {
             if (sw.ElapsedMilliseconds > 1000)
             {
-                fps = (int)(frames * 1000 / sw.ElapsedMilliseconds);
+                fps = (int)(frames * 1000.0f / sw.ElapsedMilliseconds);
                 frames = 0;
                 sw.Restart();
                 return true;
