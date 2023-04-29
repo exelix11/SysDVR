@@ -1,4 +1,5 @@
-﻿using SysDVRClientGUI.DriverInstall;
+﻿using Microsoft.Win32;
+using SysDVRClientGUI.DriverInstall;
 using SysDVRClientGUI.ModesUI;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,12 @@ namespace SysDVRClientGUI
         StreamKind CurKind = StreamKind.Audio;
         IStreamTargetControl CurrentControl = null;
         readonly string SysDvrExePath;
+        
+        readonly string DotnetPath;
+        readonly int DotnetMajorVersion;
+        readonly bool DotnetIs32Bit;
+
+        const int RequiredDotnetMajor = 6;
 
         static string VersionString()
         {
@@ -49,6 +56,8 @@ namespace SysDVRClientGUI
                 SysDvrExePath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll");
 #endif
             
+            DotnetMajorVersion = Utils.FindDotnet(out DotnetPath, out DotnetIs32Bit);
+
             InitializeComponent();
         }
 
@@ -62,13 +71,22 @@ namespace SysDVRClientGUI
 				this.Close();
 			}
 
-            if (Utils.FindExecutableInPath("dotnet.exe") == null)
+            if (DotnetMajorVersion == 0)
             {
-                if (MessageBox.Show(".NET doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(".NET doesn't seem to be installed on this pc but it's needed for   SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
                 this.Close();
             }
-            else if (!Utils.IsDotnetAtLeast6Installed())
+            else if (Environment.Is64BitOperatingSystem && DotnetIs32Bit)
+            {
+                if (MessageBox.Show("It seems you installed 32-bit .NET instead of the 64-bit one, SysDVR-CLient will not work.\r\n\r\nYou can download the 64-bit version from: https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe\r\n\r\nDo you want to open it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    Process.Start("https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe");
+                    this.Close();
+                }
+            }
+            
+            if (DotnetMajorVersion < RequiredDotnetMajor)
             {
                 if (MessageBox.Show("It seems you're running an outdated version of .NET. Since SysDVR 5.0 the client app requires the .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
@@ -310,52 +328,75 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
     static class Utils
     {
-        public static string FindExecutableInPath(string fileName) =>
-            Environment.GetEnvironmentVariable("PATH")
-                .Split(Path.PathSeparator)
-                .Select(x => Path.Combine(x, fileName))
-                .FirstOrDefault(x => File.Exists(x));
+        // We want to detect the dotnet version, there are simple registry keys but they don't seem documented
+        // ms just says to invoke dotnet https://learn.microsoft.com/en-us/dotnet/core/install/how-to-detect-installed-versions?pivots=os-windows
 
-        public static bool IsDotnetAtLeast6Installed()
+        const string DotnetPath = @"SOFTWARE\dotnet\Setup\InstalledVersions\";
+
+        static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)(\.(\d+))?", RegexOptions.Compiled);
+
+        public static int FindDotnet(out string path, out bool is32Bit)
         {
-            var stringBuilder = new StringBuilder();
-            var proc = new Process()
+            // Search the 32bit hive for a x64 version
+            path = ParseDotnetRegistry(DotnetPath + "x64", out var version);
+            if (path != null)
             {
-                StartInfo = new ProcessStartInfo()
-                {
-                    FileName = "dotnet",
-                    Arguments = "--info",
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false
-                }
-            };
-            proc.OutputDataReceived += (sender, eventArgs) =>
-            {
-                //read std output
-                if (string.IsNullOrEmpty(eventArgs.Data))
-                    return;
-
-                stringBuilder.AppendLine(eventArgs.Data);
-            };
-            proc.Start();
-            proc.BeginOutputReadLine();
-
-            proc.WaitForExit();
-            var s = stringBuilder.ToString();
-
-            // Find dotnet 6
-            foreach (Match match in new Regex(@"NETCore\.App (\d+)\.").Matches(s))
-            {
-                if (match.Captures.Count == 0) continue;
-
-                string val = match.Value.Substring("NETCore.App ".Length).TrimEnd('.');
-
-                if (int.TryParse(val, out int num) && num >= 6)
-                    return true;
+                is32Bit = false;
+                return version;
             }
 
-            return false;
+            // Search a 32bit version to report the error
+            path = ParseDotnetRegistry(DotnetPath + "x86", out version);
+            if (path != null)
+            {
+                is32Bit = true;
+                return version;
+            }
+
+            is32Bit = false;
+            return 0;
         }
+
+        // This searches the 32-bit hive because it seems the 64-bit one has a different format, wtf ?
+        static string ParseDotnetRegistry(string Regpath, out int version)
+        {
+            version = 0;
+            try
+            {
+                using (var HKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+                {
+                    var key = HKLM.OpenSubKey(Regpath, false);
+
+                    if (key == null)
+                        return null;
+
+                    var path = key.GetValue("InstallLocation") as string;
+                    path = Path.Combine(path, "dotnet.exe");
+
+                    if (!File.Exists(path))
+                        return null;
+
+                    var hosts = key.OpenSubKey("sharedfx")?.OpenSubKey("Microsoft.NETCore.App");
+
+                    if (hosts == null)
+                        return null;
+
+                    var major = hosts.GetValueNames()
+                        .Select(x => VersionRegex.Match(x))
+                        .Where(x => x.Success)
+                        .Select(x => int.Parse(x.Groups[1].Value))
+                        .OrderByDescending(x => x)
+                        .FirstOrDefault();
+
+                    if (major == default)
+                        return null;
+
+                    version = major;
+                    return Path.Combine(path, "dotnet.exe");
+                }
+            }
+            catch { return null; }
+        }
+
     }
 }
