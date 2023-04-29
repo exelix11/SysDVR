@@ -20,7 +20,7 @@ namespace SysDVRClientGUI.ModesUI
 
 		public StreamKind TargetKind { get; set; }
 
-		public string GetCommandLine()
+		public string GetClientCommandLine()
 		{
 			if (!File.Exists(textBox1.Text))
 				throw new Exception($"{textBox1.Text} does not exist");
@@ -28,7 +28,7 @@ namespace SysDVRClientGUI.ModesUI
 			return $"--mpv \"{textBox1.Text}\"";
 		}
 
-		public string GetExtraCmd() => "";
+		public LaunchCommand GetExtraCmd() => null;
 
 		private void button1_Click(object sender, EventArgs e)
 		{

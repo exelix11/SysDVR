@@ -20,26 +20,27 @@ namespace SysDVRClientGUI.ModesUI
 
 		public StreamKind TargetKind { get; set; }
 
-		public string GetCommandLine() => "--rtsp";
+		public string GetClientCommandLine() => "--rtsp";
 
-		public string GetExtraCmd()
+		public LaunchCommand GetExtraCmd()
 		{
 			var mpv = textBox1.Text;
 
 			if (!string.IsNullOrEmpty(mpv) && !File.Exists(mpv))
 				throw new Exception($"{mpv} does not exist");
 
-			if (!string.IsNullOrEmpty(mpv))
-				mpv = $"\"{mpv}\" rtsp://127.0.0.1:6666/";
-			else return "";
+			var args = "rtsp://127.0.0.1:6666/";
 
 			if (cbMpvLowLat.Checked)
-				mpv += " --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no";
-			
-			if (cbMpvUntimed.Checked) 
-				mpv += " --untimed";
+				args += " --profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --cache-pause=no";
 
-			return mpv;
+			if (cbMpvUntimed.Checked)
+				args += " --untimed";
+
+			return new LaunchCommand {
+				Executable = mpv,
+				Arguments = args
+			};
 		}
 
 		private void button1_Click(object sender, EventArgs e)

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace SysDVRClientGUI
@@ -17,14 +18,24 @@ namespace SysDVRClientGUI
     {
         StreamKind CurKind = StreamKind.Audio;
         IStreamTargetControl CurrentControl = null;
-        readonly string SysDvrExePath;
         
+        readonly string ClientDllPath;
         readonly string DotnetPath;
         readonly int DotnetMajorVersion;
         readonly bool DotnetIs32Bit;
 
         const int RequiredDotnetMajor = 6;
 
+        const string BatchLauncherFileCheckTemplate = 
+@":: Ensure {1} file exists
+if not exist ""{0}"" (
+    echo.
+    echo Could not find {1}, create a new launcher from the GUI.
+    pause
+    exit /b 1
+)
+
+";
         static string VersionString()
         {
             var Version = typeof(Program).Assembly.GetName().Version;
@@ -49,11 +60,11 @@ namespace SysDVRClientGUI
                 this.Icon = Program.ApplicationIcon;
 
             if (File.Exists("SysDVR-Client.dll"))
-                SysDvrExePath = "SysDVR-Client.dll";
+                ClientDllPath = "SysDVR-Client.dll";
 // When in debug mode also search sysdvr's visual studio build folder
 #if DEBUG            
             else if (File.Exists(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll"))
-                SysDvrExePath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll");
+                ClientDllPath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll");
 #endif
             
             DotnetMajorVersion = Utils.FindDotnet(out DotnetPath, out DotnetIs32Bit);
@@ -65,7 +76,7 @@ namespace SysDVRClientGUI
         {
             this.Text = "SysDVR-Client GUI " + VersionString();
 
-			if (string.IsNullOrWhiteSpace(SysDvrExePath))
+			if (string.IsNullOrWhiteSpace(ClientDllPath))
 			{
 				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
 				this.Close();
@@ -73,7 +84,7 @@ namespace SysDVRClientGUI
 
             if (DotnetMajorVersion == 0)
             {
-                if (MessageBox.Show(".NET doesn't seem to be installed on this pc but it's needed for   SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(".NET doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
                 this.Close();
             }
@@ -204,7 +215,39 @@ Pressing no will try to start streaming regardless but it will probably fail."
             return str.ToString();
         }
 
-        string GetFinalCommand()
+        LaunchCommand GetClientCommandLine() 
+        {
+            StringBuilder args = new StringBuilder();
+
+            args.Append($"\"{Path.GetFullPath(ClientDllPath)}\" ");
+
+            if (rbSrcUsb.Checked)
+                args.Append("usb ");
+            else if (rbSrcTcp.Checked)
+                args.AppendFormat("bridge {0} ", tbTcpIP.Text);
+            else
+                throw new Exception("Select a valid source.");
+
+            if (CurKind == StreamKind.Audio)
+                args.Append("--no-video ");
+            else if (CurKind == StreamKind.Video)
+                args.Append("--no-audio ");
+
+            args.Append(CurrentControl.GetClientCommandLine());
+            if (args[args.Length - 1] != ' ')
+                args.Append(" ");
+
+            args.Append(GetExtraArgs());
+
+            return new LaunchCommand
+            {
+                Executable = DotnetPath,
+                Arguments = args.ToString().Trim(),
+                FileDependencies = new string[] { Path.GetFullPath(ClientDllPath) }
+            };
+        }
+
+        LaunchCommand[] GetFinalCommand()
         {
             if (rbSrcUsb.Checked)
                 if (CheckUSBDriver())
@@ -215,83 +258,101 @@ Pressing no will try to start streaming regardless but it will probably fail."
                 if (CurrentControl == null)
                     throw new Exception("Select all the options first");
 
-                string extra = CurrentControl.GetExtraCmd();
-                string commandLine = CurrentControl.GetCommandLine();
+                var extra = CurrentControl.GetExtraCmd();
 
-                StringBuilder str = new StringBuilder();
-
-                if (!string.IsNullOrWhiteSpace(extra))
-                    str.Append("start ");
-
-                str.Append($"dotnet \"{SysDvrExePath}\" ");
-
-                if (rbSrcUsb.Checked)
-                    str.Append("usb ");
-                else if (rbSrcTcp.Checked)
-                    str.AppendFormat("bridge {0} ", tbTcpIP.Text);
-                else
-                    throw new Exception("Invalid source");
-
-                if (CurKind == StreamKind.Audio)
-                    str.Append("--no-video ");
-                else if (CurKind == StreamKind.Video)
-                    str.Append("--no-audio ");
-
-                str.Append(commandLine);
-
-                str.Append(GetExtraArgs());
-
-                if (!string.IsNullOrWhiteSpace(extra))
+                return new LaunchCommand[]
                 {
-                    str.Append("\ntimeout 2 > NUL && ");
-                    str.Append(extra);
+                    GetClientCommandLine(),
+                    CurrentControl.GetExtraCmd()
                 }
-
-                return str.ToString();
+                .Where(x => x != null).ToArray();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error: " + ex.Message);
             }
+
             return null;
         }
 
         private void Launch(object sender, EventArgs e)
         {
-            var cmds = GetFinalCommand()?.Split('\n');
-            if (cmds != null)
+            var cmds = GetFinalCommand();
+            if (cmds == null)
+                return;
+
+            // Launch SysDVR-Client with /K so any error is shown to the user
+            Process.Start(new ProcessStartInfo
             {
-                string cmdArg = cmds.Length > 1 ? "/C" : "/K";
-                foreach (var cmd in cmds)
-                    Process.Start("cmd", $"{cmdArg} {cmd}");
-                this.Close();
+                UseShellExecute = false,
+                FileName = "cmd",
+                // Cursed quote escaping https://superuser.com/questions/1213094/how-to-escape-in-cmd-exe-c-parameters
+                Arguments = $"/K \"{cmds[0]}\""
+            });
+
+            if (cmds.Length > 1)
+            {
+                // Give sysdvr time to start then launch any extra commands
+                Thread.Sleep(2000);
+                
+                // Launch extra commands with /C so they close automatically
+                foreach (var cmd in cmds.Skip(1))
+                    Process.Start("cmd", $"/C \"{cmd}\"");
             }
+
+            this.Close();
         }
 
         private void ExportBatch(object sender, EventArgs e)
         {
-            string cmd = GetFinalCommand();
-            if (cmd == null) return;
+            var cmds = GetFinalCommand();
+            if (cmds == null) 
+                return;
 
             SaveFileDialog sav = new SaveFileDialog() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
             if (sav.ShowDialog() != DialogResult.OK)
                 return;
 
-            if (!File.Exists(Path.Combine(Directory.GetParent(sav.FileName).FullName, "SysDVR-Client.dll")))
-                if (MessageBox.Show("You're saving the bat file in a different path than the one containing SysDVR-client, the bat script won't work unless you place it there !\r\n\r\nDo you want to continue anyway ?", "Warning", MessageBoxButtons.YesNo) != DialogResult.Yes)
-                    return;
+            StringBuilder bat = new StringBuilder();
 
-            File.WriteAllText(sav.FileName, cmd);
+            bat.AppendLine("@echo off");
+            bat.AppendLine("title SysDVR Launcher");
+            bat.AppendLine("echo Launching SysDVR-Client...");
+
+            // Check all dependencies first
+            foreach (var cmd in cmds)
+            {
+                bat.AppendFormat(BatchLauncherFileCheckTemplate, cmd.Executable, Path.GetFileName(cmd.Executable));
+                
+                if (cmd.FileDependencies != null) 
+                    foreach (var dep in cmd.FileDependencies)
+                        bat.AppendFormat(BatchLauncherFileCheckTemplate, dep, Path.GetFileName(dep));
+            }
+
+            // cd to sysdvr folder so that the dll can be found
+            bat.AppendLine($"cd /D \"{Path.GetDirectoryName(Path.GetFullPath(ClientDllPath))}\"");
+
+            // If there are multiple commands use start to launch them in parallel
+            string prefix = cmds.Length > 1 ? "start " : "";
+
+            // Launch the commands
+            foreach (var cmd in cmds)
+            {
+                bat.AppendLine($"{prefix}{cmd}");
+                // If there are multiple commands wait a bit before launching the next one
+                
+                if (!string.IsNullOrWhiteSpace(prefix))
+                    bat.AppendLine("timeout 2 > NUL");
+            }
+
+            File.WriteAllText(sav.FileName, bat.ToString());
 
             if (MessageBox.Show("Done, launch SysDVR-Client now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 Launch(sender, e);
         }
 
         private void BatchInfo(object sender, EventArgs e) =>
-            MessageBox.Show("This will create a bat file to launch SysDVR-Client with the selected options you will just need to double click it. The file name depends on the configuration, you can rename it later.\r\n");
-
-        private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
-            Process.Start("https://github.com/exelix11/SysDVR/wiki/Troubleshooting");
+            MessageBox.Show("This will create a bat file to launch SysDVR-Client with the selected options you will just need to double click it.\r\n");
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
             Process.Start("https://github.com/exelix11/SysDVR/wiki/");
@@ -392,7 +453,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
                         return null;
 
                     version = major;
-                    return Path.Combine(path, "dotnet.exe");
+                    return path;
                 }
             }
             catch { return null; }

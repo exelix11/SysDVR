@@ -18,9 +18,9 @@ namespace SysDVRClientGUI.ModesUI
 			InitializeComponent();
 		}
 
-		public string GetExtraCmd() => "";
+		public LaunchCommand GetExtraCmd() => null;
 
-		public string GetCommandLine()
+		public string GetClientCommandLine()
 		{
 			if (string.IsNullOrWhiteSpace(tbVideoFile.Text))
 				throw new Exception("Select a valid path to save the video data first");			

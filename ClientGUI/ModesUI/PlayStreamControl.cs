@@ -17,7 +17,7 @@ namespace SysDVRClientGUI.ModesUI
 			InitializeComponent();
 		}
 
-		public string GetCommandLine()
+		public string GetClientCommandLine()
 		{
 			StringBuilder sb = new StringBuilder();
 
@@ -30,9 +30,6 @@ namespace SysDVRClientGUI.ModesUI
 			return sb.ToString().Trim();
 		}
 
-		public string GetExtraCmd()
-		{
-			return "";
-		}
+		public LaunchCommand GetExtraCmd() => null;
 	}
 }
