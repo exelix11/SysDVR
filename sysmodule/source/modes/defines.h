@@ -100,4 +100,4 @@ typedef struct {
 	char Padding;
 } UserOverrides;
 
-//_Static_assert(sizeof(UserOverrides) == 4, "UserOverrides size is wrong");
+_Static_assert(sizeof(UserOverrides) == 4, "UserOverrides size is wrong");
