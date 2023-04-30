@@ -60,7 +60,7 @@
 #define ERR_HIPC_UNKREQ MAKERESULT(11, 403)
 
 //This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
-#define SYSDVR_VERSION 11
+#define SYSDVR_VERSION 12
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_RTSP 4
