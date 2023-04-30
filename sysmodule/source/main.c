@@ -123,8 +123,8 @@ void __attribute__((weak)) __appExit(void)
 atomic_bool IsThreadRunning = false;
 
 static u8 alignas(0x1000) VStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
-static u8 alignas(0x1000) AStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
 #endif
+static u8 alignas(0x1000) AStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)
 {
@@ -142,8 +142,8 @@ void JoinThread(Thread* t)
 	if (R_FAILED(rc)) fatalThrow(rc);
 }
 
-#ifndef USB_ONLY
 static Thread AudioThread;
+#ifndef USB_ONLY
 static Thread VideoThread;
 
 const StreamMode* CurrentMode = NULL;
@@ -357,7 +357,8 @@ int main(int argc, char* argv[])
 
 #ifdef USB_ONLY
 	USB_MODE.InitFn();
-	// There is no USB thread dedicated to audio anymore
+	memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
+	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
 	USB_MODE.VThread(USB_MODE.Vargs);
 	USB_MODE.ExitFn();
 #else
@@ -371,7 +372,5 @@ int main(int argc, char* argv[])
 	IpcThread();
 #endif
 	
-	// Should dispose capture resources here...
-
 	return 0;
 }
