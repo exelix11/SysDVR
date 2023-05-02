@@ -95,7 +95,6 @@ namespace SysDVR.Client.FileOutput
         long firstTs = -1;
         // need to fill the encoder frame before sending it, it can also happen across SendData calls
         int frameFreeSpace = 0;
-        ulong frameBaseTs = 0;
         private void SendData(byte[] data, int size, ulong ts)
         {
             if (!running)
