@@ -109,7 +109,7 @@ namespace SysDVR.Client.Player
 					bool tsFailed = false;
 
 					// Try at most 5 times ( = 5 frames since we lock on the frame event)
-					for (int i = 0; i < 4; i++)
+					for (int i = 0; i < 20; i++)
 					{
 						// Drop the packet if while we were trying to send it audio went out of sync
 						if (!sync.CheckTimestamp(true, ts))
