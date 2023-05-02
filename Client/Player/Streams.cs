@@ -100,6 +100,9 @@ namespace SysDVR.Client.Player
 		// since the same thread handles both audio and video, we use a buffer to avoid blocking
         void VideoConsumerMain()
         {
+			var syncWithPlayer = !DebugOptions.Current.AsyncVideo;
+			var syncTimeout = syncWithPlayer ? 20 : int.MaxValue;
+
             try
             {
                 // We should not run out of capacity because the target will start dropping packets once their timestamp is too old
@@ -109,7 +112,7 @@ namespace SysDVR.Client.Player
 					bool tsFailed = false;
 
 					// Try at most 5 times ( = 5 frames since we lock on the frame event)
-					for (int i = 0; i < 20; i++)
+					for (int i = 0; i < syncTimeout; i++)
 					{
 						// Drop the packet if while we were trying to send it audio went out of sync
 						if (!sync.CheckTimestamp(true, ts))
@@ -126,7 +129,10 @@ namespace SysDVR.Client.Player
 							// However it also seems to happen for some specific games so simply dropping packets will cause visual artifacts
 							// Wait for the next frame and submit again
 							// Since we don't check this every frame we may wake up too early but only for a frame so it's fine
-							onFrame.WaitOne(500);
+							if (syncWithPlayer)
+								onFrame.WaitOne(500);
+							else
+								Thread.Yield();
 
                             if (tok.IsCancellationRequested)
 								break;

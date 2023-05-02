@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client
 {
-    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps, bool NoSync)
+    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps, bool NoSync, bool AsyncVideo)
     {
-        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false, false, false);
+        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false, false, false, false);
 
         public bool RequiresH264Analysis => Keyframe || Nal;
 
@@ -23,6 +23,7 @@ namespace SysDVR.Client
     - `keyframe`: Parse the h264 video stream and print delay between keyframes
     - `nal`: Parse the h264 video stream and print all NAL types received
     - `nosync`: Disable audio/video synchronization
+    - `asyncvideo`: Disable synchronization between the video player and video packet decoer threads (uses spinning, causes wasted high cpu usage)
 ");
 
         public static DebugOptions Parse(string? options)
@@ -30,7 +31,7 @@ namespace SysDVR.Client
             if (string.IsNullOrEmpty(options))
                 return Current;
 
-            bool stats = false, log = false, keyframe = false, nal = false, fps = false, nosync = false;
+            bool stats = false, log = false, keyframe = false, nal = false, fps = false, nosync = false, asyncvideo = false;
             foreach (var opt in options.Split(','))
             {
                 switch (opt)
@@ -53,11 +54,14 @@ namespace SysDVR.Client
                     case "nosync":
                         nosync = true;
                         break;
+                    case "asyncvideo":
+                        asyncvideo = true;
+                        break;
                     default:
                         throw new Exception($"Unknown debug option: {opt}");
                 }
             }
-            return new DebugOptions(stats, log, keyframe, nal, fps, nosync);
+            return new DebugOptions(stats, log, keyframe, nal, fps, nosync, asyncvideo);
         }
     }
 
