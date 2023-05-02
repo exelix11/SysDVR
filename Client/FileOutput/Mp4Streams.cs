@@ -13,6 +13,24 @@ using static FFmpeg.AutoGen.ffmpeg;
 
 namespace SysDVR.Client.FileOutput
 {
+    static class FirstTimestamp 
+    {
+        static object sync = new object();
+        static long value = -1;
+
+        public static long GetOrSet(ulong ts) 
+        {
+            lock (sync)
+            {
+                if (value == -1)
+                {
+                    value = (long)ts;
+                }
+            }
+            return value;
+        }
+    }
+
     unsafe class Mp4AudioTarget : IOutStream, IDisposable
     {
         AVFormatContext* outCtx;
@@ -61,7 +79,7 @@ namespace SysDVR.Client.FileOutput
 
             frame = av_frame_alloc();
             if (frame == null) throw new Exception("Couldn't allocate AVFrame");
-            frame->nb_samples = Math.Min(StreamInfo.MinAudioSamplesPerPayload, codecCtx->frame_size);
+            frame->nb_samples = Math.Max(StreamInfo.MinAudioSamplesPerPayload, codecCtx->frame_size);
             frame->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
             av_channel_layout_default(&frame->ch_layout, StreamInfo.AudioChannels);
             frame->sample_rate = StreamInfo.AudioSampleRate;
@@ -77,16 +95,18 @@ namespace SysDVR.Client.FileOutput
         long firstTs = -1;
         // need to fill the encoder frame before sending it, it can also happen across SendData calls
         int frameFreeSpace = 0;
-        ulong framePrevTs = 0;
+        ulong frameBaseTs = 0;
         private void SendData(byte[] data, int size, ulong ts)
         {
             if (!running)
                 return;
 
+            double diffTs = 0;
+
             lock (this)
             {
                 if (firstTs == -1)
-                    firstTs = (long)ts;
+                    firstTs = FirstTimestamp.GetOrSet(ts);
 
                 // Should look into endianness for this
                 Span<byte> d = new Span<byte>(data, 0, size);
@@ -98,7 +118,13 @@ namespace SysDVR.Client.FileOutput
                     {
                         av_frame_make_writable(frame).AssertNotNeg();
                         frameFreeSpace = frame->linesize[0];
-                        framePrevTs = ts;
+
+                        // Account for the case where the user opens the home menu
+                        var diffWithFirst = ((double)ts - firstTs) / 1E+6;
+                        // Set the timestamp at the start of a new packet
+                        frame->pkt_dts = frame->pts = (long)((diffTs + diffWithFirst) * timebase_den);
+                        // Account for the timestamp increments caused by sending multiple frames in a single SendData() call
+                        diffTs += frameFreeSpace / (StreamInfo.AudioChannels * StreamInfo.AudioSampleSize) / (double)StreamInfo.AudioSampleRate;
                     }
 
                     Span<byte> target = new Span<byte>(frame->data[0] + frame->linesize[0] - frameFreeSpace, frameFreeSpace);
@@ -107,9 +133,6 @@ namespace SysDVR.Client.FileOutput
                     d.Slice(0, copyBytes).CopyTo(target);
                     d = d.Slice(copyBytes);
                     frameFreeSpace -= copyBytes;
-
-                    frame->pkt_dts = frame->pts = (long)(((long)ts - firstTs) * timebase_den / 1E+6);
-                    ts += (ulong)(copyBytes / 4 * 1E+6 / StreamInfo.AudioSampleRate);
 
                     if (frameFreeSpace == 0)
                         SendFrame(frame);
@@ -214,7 +237,7 @@ namespace SysDVR.Client.FileOutput
                     data = next;
                     size = next.Length;
 
-                    firstTs = (long)ts;
+                    firstTs = FirstTimestamp.GetOrSet(ts);
                 }
 
                 fixed (byte* nal_data = data)
