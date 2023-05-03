@@ -8,7 +8,7 @@
 This is a sysmodule that allows capturing the running game output to a pc via USB or network connection.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/exelix11/SysDVR/master/.github/Screenshot.jpg" width="50%">
+  <img src="https://raw.githubusercontent.com/exelix11/SysDVR/master/.github/images/Screenshot.jpg" width="50%">
 </p>
 
 # Features
