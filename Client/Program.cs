@@ -227,7 +227,7 @@ namespace SysDVR.Client
 
             if (OperatingSystem.IsMacOS())
             {
-                if (RuntimeInformation.OSArchitecture == Architecture.Arm64 && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                if (RuntimeInformation.OSArchitecture == Architecture.Arm64 && RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("You're using the intel version of dotnet on an arm mac, this is not supported and will likely not work.");
