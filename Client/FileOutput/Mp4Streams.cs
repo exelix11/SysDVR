@@ -141,7 +141,7 @@ namespace SysDVR.Client.FileOutput
 
         private unsafe void SendFrame(AVFrame* frame)
         {
-            avcodec_send_frame(codecCtx, frame).Assert();
+            avcodec_send_frame(codecCtx, frame).AssertZero();
             while (avcodec_receive_packet(codecCtx, packet) == 0)
             {
                 packet->stream_index = channelId;
