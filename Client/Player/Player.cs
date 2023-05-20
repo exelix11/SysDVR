@@ -186,18 +186,23 @@ namespace SysDVR.Client.Player
 				channels = StreamInfo.AudioChannels,
 				format = AUDIO_S16LSB,
 				freq = StreamInfo.AudioSampleRate,
-				size = StreamInfo.AudioPayloadSize * 2,
+                // This value was the deafault until sysdvr 5.4, however SDL will pick its preferred buffer size since we pass SDL_AUDIO_ALLOW_SAMPLES_CHANGE, this is fine since we have our own buffering
+                size = StreamInfo.AudioPayloadSize * 2,
 				samples = StreamInfo.MinAudioSamplesPerPayload * 2,
 				callback = callback,
 				userdata = GCHandle.ToIntPtr(handle)
 			};
 
-			// We have our own sample buffering so we can adapt to whatever SDL decides
-			var deviceId = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out _, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+			var deviceId = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out var obtained, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 			
 			deviceId.AssertNotZero(SDL_GetError);
 
             SDL_PauseAudioDevice(deviceId, 0);
+
+			if (DebugOptions.Current.Log)
+			{
+				Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
+			}
 
             return new SDLAudioContext
 			{
