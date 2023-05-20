@@ -189,9 +189,12 @@ namespace SysDVR.Client.Player
 				userdata = GCHandle.ToIntPtr(handle)
 			};
 
-			SDL_OpenAudio(ref wantedSpec, IntPtr.Zero).Assert(SDL_GetError);
+			// We have our own sample buffering so we can adapt to whatever SDL decides
+			var rc = SDL_OpenAudioDevice(null, 0, ref wantedSpec, out _, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 
-			return new SDLAudioContext
+			((int)rc).Assert(SDL_GetError);
+
+            return new SDLAudioContext
 			{
 				CallbackDelegate = callback, // Prevents the delegate passed to native code from being GC'd
 				TargetHandle = handle
