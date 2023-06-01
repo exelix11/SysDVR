@@ -9,6 +9,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using LibUsbDotNet;
 
 namespace SysDVR.Client.Player
 {
@@ -26,6 +27,7 @@ namespace SysDVR.Client.Player
 
 	struct SDLAudioContext
 	{
+		public uint DeviceID { get; init; }
 		public SDL_AudioCallback CallbackDelegate { get; init; }
 		public GCHandle TargetHandle { get; init; }
 	}
@@ -131,7 +133,7 @@ namespace SysDVR.Client.Player
 
 		static SDLContext InitSDLVideo(string scaleQuality, string windowTitle)
 		{
-			SDL_InitSubSystem(SDL_INIT_VIDEO).Assert(SDL_GetError);
+			SDL_InitSubSystem(SDL_INIT_VIDEO).AssertZero(SDL_GetError);
 
 			SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
@@ -139,7 +141,7 @@ namespace SysDVR.Client.Player
                 windowTitle,
 				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, StreamInfo.VideoWidth, 
 				StreamInfo.VideoHeight,	SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
-				.Assert(SDL_GetError);
+				.AssertNotNull(SDL_GetError);
 
 			if (scaleQuality != null)
 			{
@@ -151,14 +153,14 @@ namespace SysDVR.Client.Player
 			var render = SDL_CreateRenderer(win, -1,
 				SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
 				SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC )
-				.Assert(SDL_GetError);
+				.AssertNotNull(SDL_GetError);
 
 			SDL_GetRendererInfo(render, out var info);
 			Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
 
 			var tex = SDL_CreateTexture(render, SDL_PIXELFORMAT_IYUV,
 				(int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-				StreamInfo.VideoWidth, StreamInfo.VideoHeight).Assert(SDL_GetError);
+				StreamInfo.VideoWidth, StreamInfo.VideoHeight).AssertNotNull(SDL_GetError);
 
 			return new SDLContext()
 			{
@@ -173,7 +175,7 @@ namespace SysDVR.Client.Player
 		
 		static unsafe SDLAudioContext InitSDLAudio(AudioStreamTarget target)
 		{
-			SDL_InitSubSystem(SDL_INIT_AUDIO).Assert(SDL_GetError);
+			SDL_InitSubSystem(SDL_INIT_AUDIO).AssertZero(SDL_GetError);
 
 			var handle = GCHandle.Alloc(target, GCHandleType.Normal);
 
@@ -184,16 +186,28 @@ namespace SysDVR.Client.Player
 				channels = StreamInfo.AudioChannels,
 				format = AUDIO_S16LSB,
 				freq = StreamInfo.AudioSampleRate,
-				size = StreamInfo.AudioPayloadSize * 2,
+                // This value was the deafault until sysdvr 5.4, however SDL will pick its preferred buffer size since we pass SDL_AUDIO_ALLOW_SAMPLES_CHANGE, this is fine since we have our own buffering
+                size = StreamInfo.AudioPayloadSize * 2,
+				samples = StreamInfo.MinAudioSamplesPerPayload * 2,
 				callback = callback,
 				userdata = GCHandle.ToIntPtr(handle)
 			};
 
-			SDL_OpenAudio(ref wantedSpec, IntPtr.Zero).Assert(SDL_GetError);
+			var deviceId = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out var obtained, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+			
+			deviceId.AssertNotZero(SDL_GetError);
 
-			return new SDLAudioContext
+            SDL_PauseAudioDevice(deviceId, 0);
+
+			if (DebugOptions.Current.Log)
 			{
-				CallbackDelegate = callback, // Prevents the delegate passed to native code from being GC'd
+				Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
+			}
+
+            return new SDLAudioContext
+			{
+				DeviceID = deviceId,
+                CallbackDelegate = callback, // Prevents the delegate passed to native code from being GC'd
 				TargetHandle = handle
 			};
 		}
@@ -265,7 +279,7 @@ namespace SysDVR.Client.Player
 			codectx->extradata_size = sz;
 			codectx->extradata = (byte*)ex.ToPointer();
 
-			avcodec_open2(codectx, codec, null).Assert("Couldn't open the codec.");
+			avcodec_open2(codectx, codec, null).AssertZero("Couldn't open the codec.");
 
 			var pic = av_frame_alloc();
 			if (pic == null)
@@ -303,7 +317,7 @@ namespace SysDVR.Client.Player
 			dstframe->width = StreamInfo.VideoWidth;
 			dstframe->height = StreamInfo.VideoHeight;
 
-			av_frame_get_buffer(dstframe, 32).Assert("Couldn't allocate the buffer for the converted frame");
+			av_frame_get_buffer(dstframe, 32).AssertZero("Couldn't allocate the buffer for the converted frame");
 			
 			swsContext = sws_getContext(codecctx->width, codecctx->height, codecctx->pix_fmt,
 										dstframe->width, dstframe->height, AVPixelFormat.AV_PIX_FMT_YUV420P,
@@ -538,7 +552,7 @@ namespace SysDVR.Client.Player
 			if (!HasAudio && !HasVideo)
 				throw new Exception("Can't start a player with no streams");
 
-			SDL_Init(0).Assert(SDL_GetError);
+			SDL_Init(0).AssertZero(SDL_GetError);
 
 			// SyncHelper is disabled if there is only a single stream
 			// Note that it can also be disabled via a --debug flag and this is handled by the constructor
@@ -638,7 +652,13 @@ namespace SysDVR.Client.Player
 				throw new Exception($"Assertion failed {code} != {expectedValue} : {(MessageFun?.Invoke() ?? "Unknown error:")}");
 		}
 
-		public static void Assert(this int code, Func<string> MessageFun = null)
+        public static void AssertNotZero(this uint code, Func<string> MessageFun = null)
+        {
+            if (code == 0)
+                throw new Exception($"Assertion failed: {code} {(MessageFun?.Invoke() ?? "Unknown error")}");
+        }
+
+        public static void AssertZero(this int code, Func<string> MessageFun = null)
 		{
 			if (code != 0)
 				throw new Exception($"Assertion failed: {code} {(MessageFun?.Invoke() ?? "Unknown error")}");
@@ -650,13 +670,13 @@ namespace SysDVR.Client.Player
 				throw new Exception($"Assertion failed: {code} {(MessageFun?.Invoke() ?? "Unknown error")}");
 		}
 
-		public static void Assert(this int code, string Message)
+		public static void AssertZero(this int code, string Message)
 		{
 			if (code != 0)
 				throw new Exception($"Assertion failed: {code} {Message}");
 		}
 
-		public static IntPtr Assert(this IntPtr val, Func<string> MessageFun = null)
+		public static IntPtr AssertNotNull(this IntPtr val, Func<string> MessageFun = null)
 		{
 			if (val == IntPtr.Zero)
 				throw new Exception($"Assertion failed: pointer is null {(MessageFun?.Invoke() ?? "Unknown error")}");

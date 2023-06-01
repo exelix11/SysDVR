@@ -115,8 +115,8 @@ namespace SysDVR.Client.FileOutput
 				AStream->codecpar->bit_rate = 128000;
 			}
 
-			avio_open(&OutCtx->pb, Filename, AVIO_FLAG_WRITE).Assert();
-			avformat_write_header(OutCtx, null).Assert();
+			avio_open(&OutCtx->pb, Filename, AVIO_FLAG_WRITE).AssertZero();
+			avformat_write_header(OutCtx, null).AssertZero();
 
 			object sync = new object();
 			Vid?.StartWithContext(OutCtx, sync);
