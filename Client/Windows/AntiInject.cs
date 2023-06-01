@@ -29,7 +29,7 @@ namespace SysDVR.Client.Windows
         static A_Delegate A_Handle;
 
         // When set to true we reject any attemt at dll injection
-        // Note that there are smarter ways to do this such as querying the process start address to figure out if this is an injected thread
+        // Note that there are smarter ways to do this such as querying the thread start address to figure out if this is an injected thread
         // but since we know our dependencies the player can just toggle this after everything is initialized and ready to start (other streaming modes don't enable this currently)
         public static bool Reject = false;
 
@@ -45,7 +45,7 @@ namespace SysDVR.Client.Windows
         private static IntPtr Impl_LoadW([MarshalAs(UnmanagedType.LPWStr)] string filename)
         {
             if (!Reject)
-                return A_Real(filename);
+                return W_Real(filename);
 
             Console.WriteLine($"Anti-Injection blocked {filename}...");
             return IntPtr.Zero;
