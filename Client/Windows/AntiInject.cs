@@ -172,7 +172,7 @@ namespace SysDVR.Client.Windows
                 return;
             }
             
-            // Just crash here if these fail just crash cause we likely messed up the memory layout
+            // Don't handle exceptions: If these fail just crash cause we likely messed up the memory layout
             ApplyRedirection((ulong)a, Impl_LoadA, out A_Handle);
             ApplyRedirection((ulong)w, Impl_LoadW, out W_Handle);
 
