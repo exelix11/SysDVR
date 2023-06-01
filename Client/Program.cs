@@ -10,6 +10,7 @@ using System.Threading;
 using FFmpeg.AutoGen;
 using SysDVR.Client.FileOutput;
 using SysDVR.Client.Sources;
+using SysDVR.Client.Windows;
 
 namespace SysDVR.Client
 {
@@ -218,6 +219,9 @@ namespace SysDVR.Client
             var StreamStdout = HasArg("--stdout");
             var libOverride = ArgValue("--libdir");
             DebugOptions.Current = DebugOptions.Parse(ArgValue("--debug"));
+
+            if (!DebugOptions.Current.NoProt)
+                AntiInject.Initialize();
 
             // Native library loading memes
             if (libOverride is not null)

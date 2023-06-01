@@ -9,6 +9,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using SysDVR.Client.Windows;
 
 namespace SysDVR.Client.Player
 {
@@ -394,6 +395,9 @@ namespace SysDVR.Client.Player
             if (countFps)
                 fpsCounter.Start();
 
+			// We are ready, block inejctions
+			AntiInject.Reject = true;
+
             while (Running)
 			{
                 if (DecodeNextFrame())
@@ -404,7 +408,7 @@ namespace SysDVR.Client.Player
                     fpsCounter.OnFrame();
                 }
 
-                // SDL_RenderClear seems to cause a memory leak when the window is minimized on Windows.
+				// SDL_RenderClear seems to cause a memory leak when the window is minimized on Windows.
 				// Guess we don't really need to call it anyway since we're overwriting the whole screen anyway
                 SDL_RenderCopy(SDL.Renderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
 				SDL_RenderPresent(SDL.Renderer);
