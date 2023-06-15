@@ -193,8 +193,6 @@ namespace SysDVR.Client.Sources
 		readonly bool HasAudio;
 		readonly bool HasVideo;
 
-		readonly string ConsoleSerial;
-
 		byte[] RequestMagic => (HasVideo, HasAudio) switch 
 		{
 			(true, true) => MagicRequestBoth,
