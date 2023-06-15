@@ -408,9 +408,6 @@ namespace SysDVR.Client.Player
             if (countFps)
                 fpsCounter.Start();
 
-			// We are ready, block inejctions
-			AntiInject.Reject = true;
-
             while (Running)
 			{
                 if (DecodeNextFrame())

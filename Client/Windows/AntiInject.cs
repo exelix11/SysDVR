@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -15,6 +16,13 @@ namespace SysDVR.Client.Windows
     // TODO: This may triggr antiviruses, consider obfucating this code....
     internal static class AntiInject
     {
+        // Currently we're only blocking discord, in practice we could implement a generic anti-injection approach
+        static readonly string[] DllBlocklist = new[] 
+        {
+            "DiscordHook64",
+            "DiscordHook"
+        };
+
         // We only care about LoadLibraryA and W
         // Note that i'm not using their full names to avoid giving suspicious indicators to antimalware software
         delegate IntPtr A_Delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
@@ -28,27 +36,19 @@ namespace SysDVR.Client.Windows
         static W_Delegate W_Handle;
         static A_Delegate A_Handle;
 
-        // When set to true we reject any attemt at dll injection
-        // Note that there are smarter ways to do this such as querying the thread start address to figure out if this is an injected thread
-        // but since we know our dependencies the player can just toggle this after everything is initialized and ready to start (other streaming modes don't enable this currently)
-        public static bool Reject = false;
-
-        private static IntPtr Impl_LoadA([MarshalAs(UnmanagedType.LPStr)] string filename)
-        {
-            if (!Reject)
-                return A_Real(filename);
-
-            Console.WriteLine($"Anti-Injection blocked {filename}...");
-            return IntPtr.Zero;
-        }
+        private static IntPtr Impl_LoadA([MarshalAs(UnmanagedType.LPStr)] string filename) =>
+            Impl_LoadW(filename);
 
         private static IntPtr Impl_LoadW([MarshalAs(UnmanagedType.LPWStr)] string filename)
         {
-            if (!Reject)
-                return W_Real(filename);
-
-            Console.WriteLine($"Anti-Injection blocked {filename}...");
-            return IntPtr.Zero;
+            if (DllBlocklist.Contains(Path.GetFileNameWithoutExtension(filename)))
+            {
+                if (DebugOptions.Current.Log)
+                    Console.WriteLine($"Anti-Injection blocked {filename} from loading.");
+                return IntPtr.Zero;
+            }
+            
+            return W_Real(filename);            
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
