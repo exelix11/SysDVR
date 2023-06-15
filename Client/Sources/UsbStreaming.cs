@@ -4,16 +4,65 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace SysDVR.Client.Sources
 {
 	// Making UsbContext non static will remove requirement on libusb, it will be loaded only if actually using USB, this is useful on architectures where it's not supported
+	// This class should be used as a singleton
 	class UsbContext : IDisposable
 	{
-		public enum LogLevel 
+		public class SysDvrDevice : IDisposable
+		{
+			readonly UsbContext Context;
+			public readonly string Serial;
+			public IUsbDevice DeviceHandle { get; private set; }
+
+			public SysDvrDevice(UsbContext ctx, string serial, IUsbDevice dev)
+			{
+				Context = ctx;
+				Serial = serial;
+				DeviceHandle = dev;
+			}
+
+			public (UsbEndpointReader, UsbEndpointWriter) Open() 
+			{
+				DeviceHandle.Open();
+
+                if (!DeviceHandle.ClaimInterface(0))
+                    throw new Exception($"Couldn't claim device interface");
+
+                var (epIn, epOut) = (ReadEndpointID.Ep01, WriteEndpointID.Ep01);
+
+                var reader = DeviceHandle.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
+                var writer = DeviceHandle.OpenEndpointWriter(epOut, EndpointType.Bulk);
+
+                return (reader, writer);
+            }
+
+			public void Close() 
+			{
+				DeviceHandle.Close();
+			}
+
+			public bool TryReconnect() 
+			{
+				Close();
+				var dev = Context.FindSysdvrDevices().Where(X => X.Serial == Serial).FirstOrDefault();
+				if (dev == null)
+					return false;
+				
+				DeviceHandle = dev.DeviceHandle;
+				return true;
+            }
+
+            public void Dispose()
+            {
+				DeviceHandle.Dispose();
+            }
+        }
+
+        public enum LogLevel 
 		{
 			Error,
 			Warning,
@@ -22,6 +71,7 @@ namespace SysDVR.Client.Sources
 		}
 
 		readonly LibUsbDotNet.LibUsb.UsbContext LibUsbCtx = null;
+		static bool Initialized = false;
 
 		private LogLevel _debugLevel;
 		public LogLevel DebugLevel {
@@ -37,13 +87,14 @@ namespace SysDVR.Client.Sources
 			}
 			get => _debugLevel;
 		}
-
-		public IUsbDevice device { get; private set; }
-		
+				
 		public UsbContext(LogLevel logLevel = LogLevel.Error) 
 		{
-			LibUsbCtx = new LibUsbDotNet.LibUsb.UsbContext();
+			if (Initialized)
+				throw new Exception("UsbContext can only be initialized once");
 
+			Initialized = true;
+			LibUsbCtx = new LibUsbDotNet.LibUsb.UsbContext();
 			DebugLevel = logLevel;
 		}
 
@@ -60,74 +111,37 @@ namespace SysDVR.Client.Sources
             }
         }
 
-        public unsafe IReadOnlyList<(IUsbDevice, string)> FindSysdvrDevices() 
+		public IReadOnlyList<SysDvrDevice> FindSysdvrDevices()
 		{
-			if (device != null)
-				throw new Exception("device has already been set");
-
 			// THis is hacky but libusb can't seem to get the device serial without opening it first
 			// If the device is already opened by another instance of sysdvr it will print an error, suppress it by temporarily changing the log level 
 			var old = DebugLevel;
 			DebugLevel = LogLevel.None;
 
-			var res = LibUsbCtx.List().Where(MatchSysdvrDevice).Select(x => {
-				try 
+			var res = LibUsbCtx.List().Where(MatchSysdvrDevice).Select(x =>
+			{
+				try
 				{
 					if (!x.TryOpen())
-						return (null, null);
+						return null;
 
 					var serial = x.Info.SerialNumber.ToLower().Trim();
-                	x.Close();
+					x.Close();
 
 					if (!serial.StartsWith("sysdvr:"))
-						return (null, null);
+						return null;
 
-					return (x, serial[7..]);
+					return new SysDvrDevice(this, serial[7..], x);
 				}
 				catch (Exception ex)
 				{
 					Console.WriteLine("Warning: failed to query device serial " + ex);
-					return (null, null);
+					return null;
 				}
-			}).Where(x => x.Item2 != null).ToArray();
-			
+			}).Where(x => x != null).ToArray();
+
 			DebugLevel = old;
 			return res;
-		}
-
-		public void OpenUsbDevice(IUsbDevice device)
-		{
-			if (this.device != null)
-				throw new Exception("device has already been set");
-
-			this.device = device;
-			this.device.Open();
-		}
-
-		public (UsbEndpointReader, UsbEndpointWriter) OpenEndpointPair()
-		{
-			var dev = device;
-
-			if (!dev.ClaimInterface(0))
-				throw new Exception($"Couldn't claim device interface");
-
-			var (epIn, epOut) = (ReadEndpointID.Ep01, WriteEndpointID.Ep01);
-
-			var reader = dev.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
-			var writer = dev.OpenEndpointWriter(epOut, EndpointType.Bulk);
-
-			return (reader, writer);
-		}
-
-		public void CloseDevice()
-		{
-            device.Close();
-            device = null;
-        }
-
-		public UsbStreamingSource CreateStreamingSource(bool HasVideo, bool HasAudio)
-		{
-			return new UsbStreamingSource(this, HasVideo, HasAudio); ;
 		}
 
 		private bool disposedValue;
@@ -137,10 +151,10 @@ namespace SysDVR.Client.Sources
 			{
 				if (disposing)
 				{
-					device?.Close();
 					LibUsbCtx.Dispose();
 				}
 
+				Initialized = false;
 				disposedValue = true;
 			}
 		}
@@ -172,12 +186,14 @@ namespace SysDVR.Client.Sources
 		protected TimeTrace BeginTrace(string extra = "", [CallerMemberName] string funcName = null) => 
 			tracer.Begin("usb", extra, funcName);
 
+		readonly UsbContext.SysDvrDevice device;
         protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
-		protected UsbContext context;
 
 		readonly bool HasAudio;
 		readonly bool HasVideo;
+
+		readonly string ConsoleSerial;
 
 		byte[] RequestMagic => (HasVideo, HasAudio) switch 
 		{
@@ -195,10 +211,10 @@ namespace SysDVR.Client.Sources
             _ => throw new Exception("Invalid state")
         };
 
-        public UsbStreamingSource(UsbContext context, bool hasVideo, bool hasAudio)
+        public UsbStreamingSource(UsbContext.SysDvrDevice device, bool hasVideo, bool hasAudio)
 		{
-			this.context = context;
-			(reader, writer) = context.OpenEndpointPair();
+			this.device = device;
+			(reader, writer) = device.Open();
 
 			HasVideo = hasVideo;
 			HasAudio = hasAudio;
@@ -206,33 +222,58 @@ namespace SysDVR.Client.Sources
 
 		public void StopStreaming()
 		{
-			context.CloseDevice();
+			device.Close();
+			device.Dispose();
 		}
 
-		LibUsbDotNet.Error lastError = LibUsbDotNet.Error.Success;
+		void Reconnect(string reason) 
+		{
+            Console.WriteLine($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
+			Thread.Sleep(3000);
+            if (device.TryReconnect())
+            {
+                (reader, writer) = device.Open();
+            }
+        }
+
 		public void WaitForConnection() 
 		{
-			while (!Token.IsCancellationRequested) 
+			bool printedTimeoutWarningOnce = false;
+            while (!Token.IsCancellationRequested) 
 			{
 				//using var trace = BeginTrace();
 #if DEBUG
 				Console.WriteLine($"Sending USB connection request {BitConverter.ToString(RequestMagic)}");
 #endif
-                var err = writer.Write(RequestMagic, 1000, out int _);
+				LibUsbDotNet.Error err = LibUsbDotNet.Error.Success;
+				try 
+				{
+					err = writer.Write(RequestMagic, 1000, out int _);
+                }
+				catch (Exception e)
+				{
+					Reconnect(e.Message);
+					continue;
+				}
+
 				if (err != LibUsbDotNet.Error.Success)
 				{
-					if (err != lastError)
+					if (err != LibUsbDotNet.Error.Timeout)
 					{
-						Console.WriteLine($"USB warning: Couldn't communicate with the console ({err}). Try entering a game, unplugging your console or restarting it.");
-						lastError = err;
-					}
+						// We probably need reconnecting
+						Reconnect(err.ToString());
+                    }
+                    else if (!printedTimeoutWarningOnce)
+					{
+						printedTimeoutWarningOnce = true;
+                        Console.WriteLine($"USB warning: Couldn't communicate with the console ({err}). Try entering a compatible game, unplugging your console or restarting it.");
+                    }
 
 					if (!Token.IsCancellationRequested)
 						Thread.Sleep(3000);
 
 					continue;
 				}
-				lastError = err;
 
 				return;
 			}
@@ -248,7 +289,7 @@ namespace SysDVR.Client.Sources
 
             // Then attempt to connect again
             WaitForConnection();
-		}
+        }
 
         // Not all USB implementations buffer data in the OS side,
 		// to support libusb we manually define the backing buffer and read everything in one shot

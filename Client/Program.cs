@@ -357,11 +357,11 @@ namespace SysDVR.Client
                 if (HasArg("--usb-warn")) warnLevel = UsbContext.LogLevel.Warning;
                 if (HasArg("--usb-debug")) warnLevel = UsbContext.LogLevel.Debug;
 
-                var ctx = OpenUsbSource(warnLevel, ArgValue("--usb-serial"));
+                var ctx = FindUsbSource(warnLevel, ArgValue("--usb-serial"));
                 if (ctx == null)
                     return null;
 
-                StreamManager.AddSource(ctx.CreateStreamingSource(!NoVideo, !NoAudio));
+                StreamManager.AddSource(new UsbStreamingSource(ctx, !NoVideo, !NoAudio));
             }
             else if (Args[0] == "bridge")
             {
@@ -403,7 +403,7 @@ namespace SysDVR.Client
             return StreamManager;
         }
 
-        static UsbContext? OpenUsbSource(UsbContext.LogLevel usbLogLeve, string? preferredSerial)
+        static UsbContext.SysDvrDevice? FindUsbSource(UsbContext.LogLevel usbLogLeve, string? preferredSerial)
         {
             var ctx = new UsbContext(usbLogLeve);
 
@@ -425,29 +425,26 @@ namespace SysDVR.Client
             }
             else if (devices.Count == 1)
             {
-                if (preferredSerial is not null && devices[0].Item2.EndsWith(preferredSerial))
-                    Console.WriteLine($"Warning: Connecting to the console with serial {devices[0].Item2} instead of the requested {preferredSerial}");
+                if (preferredSerial is not null && devices[0].Serial.EndsWith(preferredSerial))
+                    Console.WriteLine($"Warning: Connecting to the console with serial {devices[0].Serial} instead of the requested {preferredSerial}");
 
-                Console.WriteLine($"Connecting to the console with serial {devices[0].Item2}...");
-                ctx.OpenUsbDevice(devices[0].Item1);
-                return ctx;
+                Console.WriteLine($"Connecting to the console with serial {devices[0].Serial}...");
+                return devices[0];
             }
             else
             {
-                var preferred = devices.Where(x => x.Item2.EndsWith(preferredSerial)).ToArray();
+                var preferred = devices.Where(x => x.Serial.EndsWith(preferredSerial)).ToArray();
                 if (preferred.Length == 1)
                 {
-                    ctx.OpenUsbDevice(preferred[0].Item1);
-                    return ctx;
+                    return preferred[0];
                 }
                 // Multiple partial matches ? look for the exact one
                 else if (preferred.Length >= 1)
                 {
-                    preferred = devices.Where(x => x.Item2 == preferredSerial).ToArray();
+                    preferred = devices.Where(x => x.Serial == preferredSerial).ToArray();
                     if (preferred.Length == 1)
                     {
-                        ctx.OpenUsbDevice(preferred[0].Item1);
-                        return ctx;
+                        return preferred[0];
                     }
                     else Console.WriteLine($"Warning: Multiple matches for {preferredSerial}, exact match not found");
                 }
@@ -455,7 +452,7 @@ namespace SysDVR.Client
 
                 Console.WriteLine("Available SysDVR devices:");
                 for (int i = 0; i < devices.Count; i++)
-                    Console.WriteLine($"{i + 1}) {devices[i].Item2}");
+                    Console.WriteLine($"{i + 1}) {devices[i].Serial}");
 
                 Console.WriteLine("\r\nTIP: You can use the --usb-serial command line option to automatically select one based on the serial number");
 
@@ -467,8 +464,7 @@ namespace SysDVR.Client
                     goto select_value;
                 }
 
-                ctx.OpenUsbDevice(devices[selection - 1].Item1);
-                return ctx;
+                return devices[selection - 1];
             }
         }
 
