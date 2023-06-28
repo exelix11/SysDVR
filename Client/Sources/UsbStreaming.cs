@@ -224,19 +224,22 @@ namespace SysDVR.Client.Sources
 			device.Dispose();
 		}
 
-		void Reconnect(string reason) 
+		bool Reconnect(string reason) 
 		{
             Console.WriteLine($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
 			Thread.Sleep(3000);
             if (device.TryReconnect())
             {
                 (reader, writer) = device.Open();
+				return true;
             }
+			return false;
         }
 
 		public void WaitForConnection() 
 		{
 			bool printedTimeoutWarningOnce = false;
+			bool connected = true;
             while (!Token.IsCancellationRequested) 
 			{
 				//using var trace = BeginTrace();
@@ -246,11 +249,14 @@ namespace SysDVR.Client.Sources
 				LibUsbDotNet.Error err = LibUsbDotNet.Error.Success;
 				try 
 				{
-					err = writer.Write(RequestMagic, 1000, out int _);
+					if (!connected)
+						err = LibUsbDotNet.Error.NoDevice;
+					else 
+						err = writer.Write(RequestMagic, 1000, out int _);
                 }
 				catch (Exception e)
 				{
-					Reconnect(e.Message);
+                    connected = Reconnect(e.Message);
 					continue;
 				}
 
@@ -258,8 +264,8 @@ namespace SysDVR.Client.Sources
 				{
 					if (err != LibUsbDotNet.Error.Timeout)
 					{
-						// We probably need reconnecting
-						Reconnect(err.ToString());
+                        // We probably need reconnecting
+                        connected = Reconnect(err.ToString());
                     }
                     else if (!printedTimeoutWarningOnce)
 					{
