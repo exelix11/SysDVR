@@ -36,6 +36,17 @@ if [ ! -d "app/jni/cimgui/cimgui" ]; then
 	rm master.zip
 fi
 
+BFLAT=$(pwd)/bflat/bflat
+
+# Check if bflat is available
+if [ ! -e $BFLAT ]; then
+	echo Downloading bflat...
+	wget https://github.com/bflattened/bflat/releases/download/v7.0.2/bflat-7.0.2-linux-glibc-x64.tar.gz
+	mkdir bflat
+	tar xf bflat-7.0.2-linux-glibc-x64.tar.gz --strip-components=1 -C bflat
+	rm bflat-7.0.2-linux-glibc-x64.tar.gz
+fi
+
 # Move to client root
 cd ../../
 
@@ -43,7 +54,7 @@ cd ../../
 rm -rf obj/
 
 echo Building client...
-bflat build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB --ldflags "-soname libClient.so" -r bin/Debug/net7.0/FFmpeg.AutoGen.dll -r bin/Debug/net7.0/LibUsbDotNet.dll -r bin/Debug/net7.0/RTSP.dll -r bin/Debug/net7.0/Microsoft.Extensions.Logging.Abstractions.dll
+$BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB --ldflags "-soname libClient.so" -r bin/Debug/net7.0/FFmpeg.AutoGen.dll -r bin/Debug/net7.0/LibUsbDotNet.dll
 
 mv libClient.so Platform/Android/app/jni/Client/libClient.so
 cd Platform/Android/
