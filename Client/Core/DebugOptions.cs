@@ -1,4 +1,4 @@
-﻿using SysDVR.Client.Targets.RTSP;
+﻿using SysDVR.Client.Targets;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

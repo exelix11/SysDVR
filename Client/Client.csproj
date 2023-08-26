@@ -34,7 +34,6 @@
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="5.1.1" />
     <PackageReference Include="LibUsbDotNet" Version="3.0.102-alpha" />
-    <PackageReference Include="SharpRTSP" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

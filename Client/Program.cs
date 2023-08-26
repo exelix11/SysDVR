@@ -319,7 +319,8 @@ public class Program
 
         ImGui_ImplSDLRenderer2_Shutdown();
         ImGui_ImplSDL2_Shutdown();
-        ImGui.DestroyContext(ctx);
+        // Seems to crash:
+        //  ImGui.DestroyContext(ctx);
 
         SDL_DestroyRenderer(SdlRenderer);
         SDL_DestroyWindow(SdlWindow);
