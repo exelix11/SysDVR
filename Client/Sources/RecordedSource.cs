@@ -4,11 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Sources
 {
-	// Playsback a recording made with LoggingTarget, useful for developing without a console
-	class RecordedSource : IStreamingSource
+    // Playsback a recording made with LoggingTarget, useful for developing without a console
+    class RecordedSource : IStreamingSource
 	{
 		public DebugOptions Logging { get; set; }
 		public BinaryReader Source { get; set; }
