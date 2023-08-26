@@ -1,4 +1,5 @@
 ﻿using LibUsbDotNet;
+using SysDVR.Client.Core;
 using System;
 using System.Configuration;
 using System.IO;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
 {
-	class TCPBridgeSource : IStreamingSource
+    class TCPBridgeSource : IStreamingSource
 	{
 		public DebugOptions Logging { get; set; }
         public StreamKind SourceKind { get; private init; }

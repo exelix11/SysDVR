@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Platforms>AnyCPU</Platforms>
     <AssemblyName>SysDVR-Client</AssemblyName>
     <Description>https://github.com/exelix11/SysDVR</Description>
@@ -34,17 +34,22 @@
   <ItemGroup>
     <PackageReference Include="FFmpeg.AutoGen" Version="5.1.1" />
     <PackageReference Include="LibUsbDotNet" Version="3.0.102-alpha" />
-    <PackageReference Include="ppy.SDL2-CS" Version="1.0.652-alpha" />
     <PackageReference Include="SharpRTSP" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-	<ContentWithTargetPath Include="$(ProjectDir)\runtimes\**">
+	<ContentWithTargetPath Include="$(ProjectDir)\Platform\Resources\**">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		<TargetPath>runtimes\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
 	</ContentWithTargetPath>
-	  
-    <None Update="Help.txt">
+	<Compile Remove="Platform\Android\**" />
+	<Compile Remove="Platform\Linux\**" />
+	<EmbeddedResource Remove="Platform\Android\**" />
+	<EmbeddedResource Remove="Platform\Linux\**" />
+	<None Remove="Platform\Android\**" />
+	<None Remove="Platform\Linux\**" />
+  
+    <None Update="Core\Help.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

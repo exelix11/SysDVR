@@ -1,5 +1,6 @@
 ﻿using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
+using SysDVR.Client.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,9 +9,9 @@ using System.Threading;
 
 namespace SysDVR.Client.Sources
 {
-	// Making UsbContext non static will remove requirement on libusb, it will be loaded only if actually using USB, this is useful on architectures where it's not supported
-	// This class should be used as a singleton
-	class UsbContext : IDisposable
+    // Making UsbContext non static will remove requirement on libusb, it will be loaded only if actually using USB, this is useful on architectures where it's not supported
+    // This class should be used as a singleton
+    class UsbContext : IDisposable
 	{
 		public class SysDvrDevice : IDisposable
 		{
