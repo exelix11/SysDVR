@@ -7,8 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace SysDVR.Client.GUI
 {
@@ -26,6 +29,109 @@ namespace SysDVR.Client.GUI
                 UsbModeWarn = "Requires USB drivers to be installed.";
             else if (OperatingSystem.IsLinux())
                 UsbModeWarn = "Requires udev rules to be configured correctly.";
+        }
+
+        enum StreamChannels
+        {
+            Audio,
+            Video,
+            Both
+        }
+
+        StreamChannels channels = StreamChannels.Both;
+
+        Gui.CenterGroup centerRadios;
+        Gui.CenterGroup centerOptions;
+        
+        float uiScale;
+        bool portrait;
+        int ModeButtonWidth;
+        int ModeButtonHeight;
+
+        public override void ResolutionChanged()
+        {        
+            centerRadios.Reset();
+            centerOptions.Reset();
+
+            portrait = Program.Instance.IsPortrait;
+            uiScale = Program.Instance.UiScale;
+            ModeButtonWidth = (int)(350 * uiScale);
+            ModeButtonHeight = (int)(200 * uiScale);
+
+            base.ResolutionChanged();
+        }
+
+        public override void Draw()
+        {
+            Gui.BeginWindow("Main");
+            Gui.CenterImage(Resources.Logo, 120);
+            Gui.H1();
+            Gui.CenterText("SysDVR-Client " + Program.Version);
+            ImGui.PopFont();
+
+            bool wifi = false, usb = false;
+
+            var w = ImGui.GetContentRegionAvail().X;
+            var y = ImGui.GetCursorPosY() + 40 * uiScale;
+
+            if (w < ModeButtonWidth * 2.2)
+            {
+                var center = w / 2 - ModeButtonWidth / 2;
+
+                ImGui.SetCursorPos(new(center, y));
+                wifi = ModeButton2(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
+
+                y += 20 * uiScale + ModeButtonHeight;
+
+                ImGui.SetCursorPos(new(center, y));
+                usb = ModeButton2(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
+
+                y += ModeButtonHeight;
+            }
+            else 
+            {
+                var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
+                ImGui.SetCursorPos(new(center, y));
+                wifi = ModeButton2(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
+
+                ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
+                usb = ModeButton2(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
+
+                y += ModeButtonHeight;
+            }
+
+            ImGui.SetCursorPos(new(0, y + 30 * uiScale));
+
+            Gui.CenterText("Select the streaming mode");
+
+            centerRadios.StartHere();
+            ChannelRadio("Video only", StreamChannels.Video);
+            ImGui.SameLine();
+            ChannelRadio("Audio only", StreamChannels.Audio);
+            ImGui.SameLine();
+            ChannelRadio("Stream Both", StreamChannels.Both);
+            centerRadios.EndHere();
+
+            ImGui.NewLine();
+
+            centerOptions.StartHere();
+            ImGui.Button("Open the guide");
+            if (IsWindows)
+            {
+                ImGui.SameLine();
+                ImGui.Button("Install USB driver");
+            }
+            ImGui.SameLine();
+            ImGui.Button("Settings");
+            centerOptions.EndHere();
+
+            ImGui.End();
+        }
+
+        void ChannelRadio(string name, StreamChannels target) 
+        {
+            if (ImGui.RadioButton(name, channels == target))
+                channels = target;
         }
 
         //void LaunchTcp() 
@@ -59,7 +165,7 @@ namespace SysDVR.Client.GUI
         //    Program.PlayerInstance = StreamManager.player;
         //}
 
-        bool ModeButton2(Image image, string title, int width, int height)
+        static bool ModeButton2(Image image, string title, int width, int height)
         {
             const int InnerPadding = 15;
 
@@ -83,9 +189,12 @@ namespace SysDVR.Client.GUI
             var x = ImGui.GetCursorPosX();
             var y = ImGui.GetCursorPosY();
 
+            var scroll = new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+
+            // Apply scroll only to the bounding box since it uses lower level APIs
             ImRect bodySize = new ImRect();
-            bodySize.Min = new(x, y);
-            bodySize.Max = new(x + width, y + height);
+            bodySize.Min = new Vector2(x, y) - scroll;
+            bodySize.Max = new Vector2(x + width, y + height) - scroll;
 
             var id = ImGui.GetID(title);
 
@@ -112,51 +221,6 @@ namespace SysDVR.Client.GUI
             ImGui.Image(image.Texture, imageFrame);
 
             return btn;
-        }
-
-        public override void Draw()
-        {
-            Gui.BeginWindow("Main");
-            Gui.CenterImage(Resources.Logo, 120);
-            Gui.H1();
-            Gui.CenterText("SysDVR-Client");
-            ImGui.PopFont();
-
-            bool wifi = false, usb = false;
-
-            int ModeButtonWidth =  (int)(Program.Instance.UiScale * 350);
-            int ModeButtonHeight = (int)(Program.Instance.UiScale * 200);
-            var w = ImGui.GetContentRegionAvail().X;
-            var y = ImGui.GetCursorPosY() + 20;
-
-            if (w < ModeButtonWidth * 2.2)
-            {
-                var center = w / 2 - ModeButtonWidth / 2;
-
-                ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton2(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
-
-                ImGui.SetCursorPos(new(center, y + 20 + ModeButtonHeight));
-                usb = ModeButton2(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
-            }
-            else 
-            {
-                var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
-                ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton2(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
-
-                ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
-                usb = ModeButton2(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
-            }
-
-            ImGui.Button("Open the guide");
-            if (IsWindows)
-            {
-                ImGui.SameLine();
-                ImGui.Button("Install USB driver");
-            }
-
-            ImGui.End();
         }
     }
 }

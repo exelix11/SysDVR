@@ -6,6 +6,7 @@ using SysDVR.Client.Platform;
 using SysDVR.Client.Targets.Player;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -15,7 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static SDL2.SDL;
 
-public class Program 
+public class Program
 {
     public static Program Instance;
 
@@ -43,6 +44,8 @@ public class Program
     [DllImport("cimgui")]
     static extern void ImGui_ImplSDL2_Shutdown();
 
+    public static string Version;
+
     public IntPtr SdlWindow { get; private set; }
     public IntPtr SdlRenderer { get; private set; }
 
@@ -61,7 +64,6 @@ public class Program
 
     public bool IsPortrait { get; private set; }
 
-    public event Action OnResolutionChanged;
     public event Action OnExit;
 
     internal Player? PlayerInstance;
@@ -71,26 +73,36 @@ public class Program
 
     ImGuiStyle DefaultStyle;
 
-    unsafe void BackupDeafaultStyle() 
+    FramerateCap Cap = new();
+
+    unsafe void BackupDeafaultStyle()
     {
         DefaultStyle = *ImGui.GetStyle().NativePtr;
     }
 
-    unsafe void RestoreDefaultStyle() 
+    unsafe void RestoreDefaultStyle()
     {
         *ImGui.GetStyle().NativePtr = DefaultStyle;
+    }
+
+    void SetForegroundView(View view, bool destroyold)
+    {
+        if (destroyold)
+            CurrentView?.Destroy();
+        else
+            CurrentView?.LeveForeground();
+
+        CurrentView = view;
+        Cap.SetMode(view.RenderMode);
+        CurrentView?.EnterForeground();
     }
 
     public void PushView(View view)
     {
         if (CurrentView != null)
-        {
-            CurrentView.LeveForeground();
             Views.Push(CurrentView);
-        }
 
-        CurrentView = view;
-        CurrentView.EnterForeground();
+        SetForegroundView(view, false);
     }
 
     public void PopView()
@@ -98,21 +110,16 @@ public class Program
         CurrentView.Destroy();
 
         if (Views.Count > 0)
-        {
-            CurrentView = Views.Pop();
-            CurrentView.EnterForeground();
-        }
+            SetForegroundView(Views.Pop(), true);
         else CurrentView = null;
     }
 
     public void ReplaceView(View view)
     {
-        CurrentView?.Destroy();
-        CurrentView = view;
-        CurrentView.EnterForeground();
+        SetForegroundView(view, true);
     }
 
-    public void ClearScrren() 
+    public void ClearScrren()
     {
         SDL_SetRenderDrawColor(SdlRenderer, 0x0, 0x0, 0x0, 0xFF);
         SDL_RenderClear(SdlRenderer);
@@ -125,12 +132,11 @@ public class Program
         SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
     }
 
-    public void DebugInfo() 
+    public void DebugInfo()
     {
-        ImGui.SetWindowFocus("Info");
         ImGui.Begin("Info");
-        ImGui.Text($"FPS: {ImGui.GetIO().Framerate}");
-        ImGui.Text($"Window Size: {WindowSize}");
+        ImGui.Text($"FPS: {ImGui.GetIO().Framerate} Cap {Cap.CapMode}");
+        ImGui.Text($"Window Size: {WindowSize} {(IsPortrait ? "Portrait" : "Landscape")}");
         ImGui.Text($"Pixel Size: {PixelSize}");
         ImGui.Text($"Wanted DPI Scale: {WantedDPIScale}");
         ImGui.Text($"UiScale: {UiScale}");
@@ -138,18 +144,18 @@ public class Program
         ImGui.End();
     }
 
-    private void UpdateSize() 
+    private void UpdateSize()
     {
         var cur = WindowSize;
         SDL_GetWindowSize(SdlWindow, out int w, out int h);
 
         WindowSize = new(w, h);
-        IsPortrait = h > w;
+        IsPortrait = w / (float)h < 1.3;
 
         // Apply scale so the biggest dimension matches 1280
         var oldscale = UiScale;
         var biggest = Math.Max(w, h);
-        UiScale = biggest / 1280f;
+        UiScale = biggest / (IsPortrait ? 720f : 1280f);
         if (UiScale != oldscale)
         {
             RestoreDefaultStyle();
@@ -172,7 +178,7 @@ public class Program
 
         if (cur != WindowSize)
         {
-            OnResolutionChanged?.Invoke();
+            CurrentView?.ResolutionChanged();
             SDL_RenderClear(SdlRenderer);
         }
     }
@@ -192,11 +198,18 @@ public class Program
 
         try
         {
+            {
+                var ver = typeof(Program).Assembly.GetName().Version;
+                
+                Version = ver is null ? "<unknown version>" :
+                    $"{ver.Major}.{ver.Minor}{(ver.Revision == 0 ? "" : $".{ver.Revision}")}";
+            }
+
             DynamicLibraryLoader.Initialize();
             Instance = new Program();
             Instance.EntryPoint(args);
         }
-        catch (Exception ex) 
+        catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
             Console.WriteLine(ex.StackTrace.ToString());
@@ -205,7 +218,7 @@ public class Program
         }
     }
 
-    unsafe void UnsafeImguiInitialization() 
+    unsafe void UnsafeImguiInitialization()
     {
         ImGui.GetIO().NativePtr->IniFilename = null;
     }
@@ -219,8 +232,8 @@ public class Program
 
         SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
-        SdlWindow = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-                StreamInfo.VideoWidth, StreamInfo.VideoHeight, 
+        SdlWindow = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                StreamInfo.VideoWidth, StreamInfo.VideoHeight,
                 SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
                 .AssertNotNull(SDL_GetError);
 
@@ -258,9 +271,9 @@ public class Program
         {
             while (SDL_PollEvent(out var evt) != 0)
             {
-                bool steal = false;
-
-                if (evt.type == SDL_EventType.SDL_QUIT || 
+                Cap.OnEvent();
+                
+                if (evt.type == SDL_EventType.SDL_QUIT ||
                     (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE) ||
                     (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_ESCAPE))
                 {
@@ -278,19 +291,15 @@ public class Program
                 {
                     CurrentView.BackPressed();
                 }
-                else if (evt.type == SDL_EventType.SDL_MOUSEMOTION)
-                {
-                    SDL_RenderGetScale(SdlRenderer, out var x, out var y);
-                    ImGui.GetIO().AddMousePosEvent(evt.motion.x / x, evt.motion.y / y);
-                    steal = true;
-                }
-                
-                if (!steal)
-                    ImGui_ImplSDL2_ProcessEvent(in evt);
+
+                ImGui_ImplSDL2_ProcessEvent(in evt);
             }
 
+            if (Cap.Cap())
+                continue;
+
             var view = CurrentView;
-            
+
             if (view.UsesImgui)
             {
                 ImGui_ImplSDLRenderer2_NewFrame();
@@ -304,10 +313,10 @@ public class Program
             }
 
             CurrentView.RawDraw();
-            
+
             if (view.UsesImgui)
                 ImGui_ImplSDLRenderer2_RenderDrawData(ImGui.GetDrawData());
-            
+
             SDL_RenderPresent(SdlRenderer);
         }
     break_main_loop:

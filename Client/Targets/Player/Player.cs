@@ -492,7 +492,7 @@ namespace SysDVR.Client.Targets.Player
             InitializeLoadingTexture();
             RecalculateDisplayRect();
 
-            Program.Instance.OnResolutionChanged += RecalculateDisplayRect;
+            //Program.Instance.OnResolutionChanged += RecalculateDisplayRect;
             Running = true;
 
             if (HasAudio)
