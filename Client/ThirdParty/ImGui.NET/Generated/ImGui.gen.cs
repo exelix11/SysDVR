@@ -926,7 +926,7 @@ namespace ImGuiNET
             return ret != 0;
         }
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        public static bool BeginPopupModal(ReadOnlySpan<char> name)
+        public static bool BeginPopupModal(ReadOnlySpan<char> name, ImGuiWindowFlags flags = ImGuiWindowFlags.None)
 #else
         public static bool BeginPopupModal(string name)
 #endif
@@ -950,7 +950,6 @@ namespace ImGuiNET
             }
             else { native_name = null; }
             byte* p_open = null;
-            ImGuiWindowFlags flags = (ImGuiWindowFlags)0;
             byte ret = ImGuiNative.igBeginPopupModal(native_name, p_open, flags);
             if (name_byteCount > Util.StackAllocationSizeLimit)
             {

@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using LibUsbDotNet;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
@@ -114,6 +115,13 @@ namespace SysDVR.Client.GUI
 
             ImGui.NewLine();
 
+            if (ImGui.Button("Stub player"))
+            {
+                LaunchStub();
+            }
+
+            ImGui.PushFont(Program.Instance.FontText);
+
             centerOptions.StartHere();
             ImGui.Button("Open the guide");
             if (IsWindows)
@@ -125,6 +133,10 @@ namespace SysDVR.Client.GUI
             ImGui.Button("Settings");
             centerOptions.EndHere();
 
+            ImGui.PopFont();
+
+            ImGui.ImageButton("asdsa", Resources.UsbIcon.Texture, new(60, 20));
+
             Gui.EndWindow();
         }
 
@@ -132,6 +144,16 @@ namespace SysDVR.Client.GUI
         {
             if (ImGui.RadioButton(name, channels == target))
                 channels = target;
+        }
+
+        void LaunchStub() 
+        {
+            var StreamManager = new PlayerManager(true, false);
+
+            StreamManager.AddSource(new StubSource(true, false));
+
+            var view = new PlayerView(StreamManager.VideoTarget, StreamManager.AudioTarget);
+            Program.Instance.PushView(view);
         }
 
         //void LaunchTcp() 
@@ -165,9 +187,9 @@ namespace SysDVR.Client.GUI
         //    Program.PlayerInstance = StreamManager.player;
         //}
 
-        static bool ModeButton2(Image image, string title, int width, int height)
-        {
-            const int InnerPadding = 15;
+         bool ModeButton2(Image image, string title, int width, int height)
+         {
+            float InnerPadding = 15 * uiScale;
 
             // This is what we're looking for:
             // TITLE TITLE

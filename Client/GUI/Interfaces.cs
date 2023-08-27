@@ -11,12 +11,13 @@ namespace SysDVR.Client.GUI
 {
     public abstract class View
     {
-        public bool UsesImgui = true;
         public FramerateCapOptions RenderMode = FramerateCapOptions.Target(30);
 
         public abstract void Draw();
 
         public virtual void ResolutionChanged() { }
+
+        public virtual void DrawDebug() { }
 
         public virtual void RawDraw()
         {
@@ -33,8 +34,12 @@ namespace SysDVR.Client.GUI
             ResolutionChanged();
         }
 
-        public virtual void LeveForeground() { }
-        public virtual void Destroy() { }
+        public virtual void Destroy() 
+        {
+            LeaveForeground();
+        }
+ 
+        public virtual void LeaveForeground() { }
     }
 
     public static class Gui 
@@ -88,11 +93,11 @@ namespace SysDVR.Client.GUI
             ImGui.End();
         }
 
-        public static void BeginWindow(string name)
+        public static void BeginWindow(string name, ImGuiWindowFlags extraFlags = ImGuiWindowFlags.None)
         {
             ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
             ImGui.SetNextWindowPos(Vector2.Zero);
-            ImGui.Begin(name, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBringToFrontOnFocus);
+            ImGui.Begin(name, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBringToFrontOnFocus | extraFlags);
         }
 
         public static void CenterImage(Image image, int height)

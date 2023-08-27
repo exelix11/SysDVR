@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static SDL2.SDL;
 
 namespace ImGuiNET
 {
@@ -47,5 +48,34 @@ namespace ImGuiNET
 
         [DllImport("cimgui", EntryPoint = "igItemAdd", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool ItemAdd(ImRect bb, uint id, IntPtr nav_bb, ImGuiItemFlags extra_flags);
+
+        [DllImport("cimgui", EntryPoint = "igKeepAliveID", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void KeepAliveID(uint id);
+    }
+
+    public static class ImGuiSDL2Impl {
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDL2_InitForSDLRenderer")]
+        public static extern bool InitForSDLRenderer(nint window, nint renderer);
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDLRenderer2_Init")]
+        public static extern bool Init(nint renderer);
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDL2_ProcessEvent")]
+        public static extern bool ProcessEvent(in SDL_Event evt);
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDLRenderer2_NewFrame")]
+        public static extern void Renderer_NewFrame();
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDL2_NewFrame")]
+        public static extern void SDL2_NewFrame();
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDLRenderer2_RenderDrawData")]
+        public static extern void RenderDrawData(ImDrawDataPtr ptr);
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDLRenderer2_Shutdown")]
+        public static extern void Renderer_Shutdown();
+
+        [DllImport("cimgui", EntryPoint = "ImGui_ImplSDL2_Shutdown")]
+        public static extern void SDL2_Shutdown();
     }
 }
