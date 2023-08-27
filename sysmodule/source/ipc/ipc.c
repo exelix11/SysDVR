@@ -1,13 +1,9 @@
 #if !defined(USB_ONLY)
-#include "ipc.h"
 #include <string.h>
-#include "../modes/defines.h"
 
-// From main
-extern void SetModeID(u32 mode);
-extern u32 GetCurrentMode();
-extern UserOverrides GetUserOverrides();
-extern void ApplyUserOverrides(UserOverrides overrides);
+#include "ipc.h"
+#include "../modes/defines.h"
+#include "../core.h"
 
 static Handle handles[2];
 static SmServiceName serverName;

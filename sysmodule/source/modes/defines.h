@@ -1,38 +1,13 @@
 #pragma once
 
-// Debug UDP logging with netcat -ul 9999
-#define LOGGING_ENABLED (UDP_LOGGING | FILE_LOGGING)
+// This is the main version shown to the user
+#define SYSDVR_VERSION_STRING  "6.0"
+//This is a version for the SysDVR net and usb protocol, it's included in the beacon and may be shown in the UI
+#define SYSDVR_PROTOCOL_VERSION "00"
+//This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
+#define SYSDVR_IPC_VERSION 12
 
-#if UDP_LOGGING && FILE_LOGGING
-#pragma error "UDP and file logging are mutually exclusive"
-#endif
-
-#define NEEDS_FS (!defined(USB_ONLY) || FILE_LOGGING)
-#define NEEDS_SOCKETS (!defined(USB_ONLY) || UDP_LOGGING)
-
-#if LOGGING_ENABLED
-	#if FILE_LOGGING
-		#include <stdio.h>
-		#define LogFunctionImpl(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
-	#else
-		void LogFunctionImpl(const char* fmt, ...);
-	#endif
-
-	#define LOG(...) do { LogFunctionImpl(__VA_ARGS__); } while (0)
-	
-	// When building as a sysmodule we ignore any kind of verbose logging
-	#define LOG_V(...) do {  } while (0)
-
-	// This is also added to thread stacks so must be 0x1000-aligned	
-	#define LOGGING_HEAP_BOOST 0x1000
-#else
-	#define LOG(...) do { } while (0)
-	#define LOG_V(...) do { } while (0)
-	#define LOGGING_HEAP_BOOST 0
-#endif
-
-#define R_RET_ON_FAIL(x) do { Result rc = x; if (R_FAILED(rc)) return rc; } while (0)
-#define R_THROW(x) do { Result r = x; if (R_FAILED(r)) { fatalThrow(r); }  } while(0)
+_Static_assert(sizeof(SYSDVR_PROTOCOL_VERSION) == 3, "Proto version must be 2 chars");
 
 #define SYSDVR_CRASH_MODULEID 0x69
 
@@ -59,8 +34,6 @@
 
 #define ERR_HIPC_UNKREQ MAKERESULT(11, 403)
 
-//This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
-#define SYSDVR_VERSION 12
 #define TYPE_MODE_USB 1
 #define TYPE_MODE_TCP 2
 #define TYPE_MODE_RTSP 4

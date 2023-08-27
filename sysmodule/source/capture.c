@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "core.h"
 #include "grcd.h"
 #include "capture.h"
 #include "modes/defines.h"
