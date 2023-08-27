@@ -1,4 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+﻿using LibUsbDotNet;
+using System;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace SysDVR.Client.Core
 {
@@ -22,5 +25,83 @@ namespace SysDVR.Client.Core
 
         // Doesn't accoutn for batching, there may be more samples than this
         public const int MinAudioSamplesPerPayload = AudioPayloadSize / (AudioChannels * AudioSampleSize);
+    }
+
+    public enum ConnectionType 
+    {
+        Net,
+        Usb
+    }
+
+    public struct DvrProtocolVersion
+    {
+        public readonly uint AsInteger;
+        public readonly string AsString;
+
+        public DvrProtocolVersion(uint asInteger)
+        {
+            AsInteger = asInteger;
+        }
+    }
+
+    public class DeviceInfo
+    {
+        public readonly ConnectionType Source;
+        public readonly string ConnectionString;
+
+        public readonly string AdvertisementString;
+        public readonly string ProtocolVersion;
+        public readonly string Version;
+        public readonly string Serial;
+
+        public DeviceInfo(ConnectionType source, string advertisementString, string connectionString)
+        {
+            this.Source = source;
+            this.AdvertisementString = advertisementString;
+            this.ConnectionString = connectionString;
+
+            // Example beacon format:
+            //      SysDVR|6.0|00|NX00000000
+
+            var parts = advertisementString.Split('|');
+
+            if (parts[0] != "SysDVR")
+                throw new Exception("Invalid format");
+
+            Version = parts[1];
+            
+            ProtocolVersion = parts[2];
+            if (ProtocolVersion.Length != "00".Length)
+                throw new Exception("Invalid protocol version format");
+
+            Serial = parts[3];
+        }
+
+        public override string ToString() =>
+            Source == ConnectionType.Net ?
+                $"SysDVR {Version} - {Serial} @ {Source} {ConnectionString}" :
+                $"SysDVR {Version} - {Serial} @ {Source}";
+
+        public static DeviceInfo? TryParse(ConnectionType source, string advertisementString, string connectionString)
+        {
+            try {
+                return new DeviceInfo(source, advertisementString, connectionString);
+            }
+            catch {
+                return null;
+            }
+        }
+        public static DeviceInfo? TryParse(ConnectionType source, byte[] advertisementPacket, string connectionString)
+        {
+            try
+            {
+                var str = Encoding.UTF8.GetString(advertisementPacket);
+                return new DeviceInfo(source, str, connectionString);
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

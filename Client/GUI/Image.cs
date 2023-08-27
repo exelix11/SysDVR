@@ -36,8 +36,10 @@ namespace SysDVR.Client.GUI
 
         // W / w = H / h  h = w * H / W
         public int ScaleHeight(int width) => Height * width / Width;
+        public float ScaleHeight(float width) => Height * width / Width;
 
         public int ScaleWidth(int height) => Width * height / Height;
+        public float ScaleWidth(float height) => Width * height / Height;
 
         public void Dispose()
         {
