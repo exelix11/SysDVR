@@ -125,7 +125,7 @@ namespace SysDVR.Client.GUI
             ImGui.Button("Settings");
             centerOptions.EndHere();
 
-            ImGui.End();
+            Gui.EndWindow();
         }
 
         void ChannelRadio(string name, StreamChannels target) 
