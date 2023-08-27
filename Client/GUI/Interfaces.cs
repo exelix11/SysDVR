@@ -12,8 +12,11 @@ namespace SysDVR.Client.GUI
     public abstract class View
     {
         public bool UsesImgui = true;
+        public FramerateCapOptions RenderMode = FramerateCapOptions.Target(30);
 
         public abstract void Draw();
+
+        public virtual void ResolutionChanged() { }
 
         public virtual void RawDraw()
         {
@@ -25,18 +28,46 @@ namespace SysDVR.Client.GUI
             Program.Instance.PopView();
         }
 
-        public virtual void EnterForeground() { }
+        public virtual void EnterForeground() 
+        {
+            ResolutionChanged();
+        }
+
         public virtual void LeveForeground() { }
         public virtual void Destroy() { }
     }
 
     public static class Gui 
     {
+        public struct CenterGroup 
+        {
+            private float X;
+
+            public void Reset() 
+            {
+                X = 0;
+            }
+
+            public void StartHere() 
+            {
+                ImGui.SetCursorPosX(X);
+            }
+
+            public void EndHere() 
+            {
+                ImGui.SameLine();
+                var w = ImGui.GetWindowSize().X;
+                var len = ImGui.GetCursorPosX() - X;
+                X = w / 2 - len / 2;
+                ImGui.NewLine();
+            }
+        }
+
         public static void BeginWindow(string name)
         {
             ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
             ImGui.SetNextWindowPos(Vector2.Zero);
-            ImGui.Begin(name, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
+            ImGui.Begin(name, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBringToFrontOnFocus);
         }
 
         public static void CenterImage(Image image, int height)
@@ -51,7 +82,7 @@ namespace SysDVR.Client.GUI
         {
             var size = ImGui.CalcTextSize(text);
             var pos = ImGui.GetCursorPos();
-            ImGui.SetCursorPos(new Vector2((ImGui.GetWindowSize().X - size.X) / 2, pos.Y));
+            ImGui.SetCursorPos(new Vector2((ImGui.GetContentRegionAvail().X - size.X) / 2, pos.Y));
             ImGui.Text(text);
         }
 
