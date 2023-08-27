@@ -63,6 +63,31 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        // https://github.com/ocornut/imgui/issues/3379
+        static void ScrollWhenDraggingOnVoid()
+        {
+            var rect = new ImRect()
+            {
+                Min = ImGui.GetWindowPos(),
+                Max = ImGui.GetWindowPos() + ImGui.GetWindowSize(),
+            };
+
+            var id = ImGui.GetID("##ScrollOverlay");
+            ImGui.KeepAliveID(id);
+            ImGui.ButtonBehavior(rect, id, out _, out var held, ImGuiButtonFlags.MouseButtonLeft);
+
+            if (held)
+            {
+                ImGui.SetScrollY(ImGui.GetScrollY() - ImGui.GetIO().MouseDelta.Y);
+            }
+        }
+
+        public static void EndWindow() 
+        {
+            ScrollWhenDraggingOnVoid();
+            ImGui.End();
+        }
+
         public static void BeginWindow(string name)
         {
             ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
