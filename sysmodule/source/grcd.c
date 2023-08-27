@@ -2,28 +2,34 @@
 #include <switch.h>
 #include "grcd.h"
 
+#ifndef FAKEDVR
 static Result _grcCmdNoIO(Service* srv, u32 cmd_id) {
 	return serviceDispatch(srv, cmd_id);
 }
+#endif
 
 Result grcdServiceOpen(Service* out) {
-    if (serviceIsActive(out))
-        return 0;
+	if (serviceIsActive(out))
+		return 0;
 
-    Result rc = smGetService(out, "grc:d");
+	Result rc = smGetService(out, "grc:d");
 
-    if (R_FAILED(rc)) 
+	if (R_FAILED(rc))
 		grcdServiceClose(out);
 
-    return rc;
+	return rc;
 }
 
-void grcdServiceClose(Service* svc){
+void grcdServiceClose(Service* svc) {
 	serviceClose(svc);
 }
 
-Result grcdServiceBegin(Service* svc){
-    return _grcCmdNoIO(svc, 1);
+Result grcdServiceBegin(Service* svc) {
+#ifdef FAKEDVR
+	return 0;
+#else
+	return _grcCmdNoIO(svc, 1);
+#endif
 }
 
 Result grcdServiceTransfer(Service* srv, GrcStream stream, void* buffer, size_t size, u32* num_frames, u32* data_size, u64* start_timestamp) {

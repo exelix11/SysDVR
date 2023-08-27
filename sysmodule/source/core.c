@@ -1,10 +1,13 @@
-﻿#include <stdlib.h>
-#include <stdio.h>
-#include <switch.h>
 #include <string.h>
 
+#include "core.h"
+#include "modes/defines.h"
 #include "modes/modes.h"
 #include "capture.h"
+
+#if NEEDS_SOCKETS
+#include "net/sockets.h"
+#endif
 
 #ifdef RELEASE
 #pragma message "Building release"
@@ -21,102 +24,45 @@
 #pragma message "You're building with logging enabled, this increases the heap size, remember to test without logging."
 #endif
 
-// Memory is carefully calculated, for development and logging it is increased
-// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
-// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
-// For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
-#define INNER_HEAP_SIZE (10 * 1024 + LOGGING_HEAP_BOOST)
+#define PLACEHOLDER_SERIAL "Unknown serial\0\0\0\0\0\0\0\0\0"
+_Static_assert(sizeof(PLACEHOLDER_SERIAL) == sizeof(SetSysSerialNumber));
 
-/*
-	Build with USB_ONLY to have a smaller impact on memory,
-	it will only stream via USB and won't support the config app.
-	Note that memory savings don't come from the INNER_HEAP_SIZE variable
-	but from the statically allocated stacks and buffers needed for network modes
-*/
-#ifdef USB_ONLY
-	#pragma message "Building USB-only version"
-#else
-	#pragma message "Building full version"
-	
-	#include "ipc/ipc.h"
-#endif
-
-#if NEEDS_SOCKETS
-	#include "net/sockets.h"
-#endif
-
-u32 __nx_applet_type = AppletType_None;
-#ifndef FILE_LOGGING
-	u32 __nx_fs_num_sessions = 1;
-	u32 __nx_fsdev_direntry_cache_size = 1;
-#endif
-
-size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-char nx_inner_heap[INNER_HEAP_SIZE];
+char SysDVRBeacon[] = "SysDVR" "|" SYSDVR_VERSION_STRING "|" SYSDVR_PROTOCOL_VERSION "|" PLACEHOLDER_SERIAL;
+int SysDVRBeaconLen = sizeof(SysDVRBeacon);
 
 // Statically allocate all needed buffers
 StaticBuffers Buffers;
 
-void __libnx_initheap(void)
+Result CoreInit()
 {
-	void* addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
+	Result rc = setsysInitialize();
 
-	// Newlib
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
+	// Ignore error, we'll just use a placeholder serial
+	if (R_SUCCEEDED(rc)) {
+		SetSysSerialNumber serial;
+		Result rc2 = setsysGetSerialNumber(&serial);
 
-	fake_heap_start = (char*)addr;
-	fake_heap_end = (char*)addr + size;
-}
+		if (R_SUCCEEDED(rc2)) {
+			memcpy(SysDVRBeacon + SysDVRBeaconLen - sizeof(SetSysSerialNumber), serial.number, sizeof(SetSysSerialNumber));
+			SysDVRBeacon[SysDVRBeaconLen - 1] = '\0';
+		}
 
-void __attribute__((weak)) __appInit(void)
-{
-	svcSleepThread(20E+9); // 20 seconds
+		setsysExit();
+	}
 
-	Result rc;
-
-	rc = smInitialize();
+	rc = CaptureInitialize();
 	if (R_FAILED(rc))
-		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
+		return rc;
 
-#if NEEDS_FS
-	rc = fsInitialize();
-	if (R_FAILED(rc))
-		fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
+#ifdef FILE_LOGGING
+	freopen("/sysdvr_log.txt", "w", stdout);
 #endif
 
 #if NEEDS_SOCKETS
 	SocketInit();
 #endif
 
-	rc = setsysInitialize();
-	if (R_SUCCEEDED(rc)) {
-		SetSysFirmwareVersion fw;
-		rc = setsysGetFirmwareVersion(&fw);
-		if (R_SUCCEEDED(rc))
-			hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
-		setsysExit();
-	}
-
-	if (R_FAILED(rc))
-		fatalThrow(ERR_INIT_FAILED);
-
-#if NEEDS_FS
-	fsdevMountSdmc();
-#endif
-}
-
-void __attribute__((weak)) __appExit(void)
-{
-#if NEEDS_SOCKETS
-	SocketDeinit();
-#endif
-#if NEEDS_FS
-	fsdevUnmountAll();
-	fsExit();
-#endif
-	smExit();
+	return 0;
 }
 
 #ifndef USB_ONLY
@@ -128,7 +74,11 @@ static u8 alignas(0x1000) AStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)
 {
+#if FAKEDVR
+	Result rc = threadCreate(t, f, arg, stackLocation, stackSize, prio, -2);
+#else
 	Result rc = threadCreate(t, f, arg, stackLocation, stackSize, prio, 3);
+#endif
 	if (R_FAILED(rc)) fatalThrow(rc);
 	rc = threadStart(t);
 	if (R_FAILED(rc)) fatalThrow(rc);
@@ -169,7 +119,7 @@ void ApplyUserOverrides(UserOverrides overrides)
 			CaptureSetAudioBatching(CurrentMode->AudioBatches);
 		CaptureResetStaticDropThreshold();
 	}
-	else 
+	else
 	{
 		CaptureSetAudioBatching(overrides.AudioBatching);
 		CaptureSetStaticDropThreshold(overrides.StaticDropThreshold);
@@ -185,9 +135,9 @@ UserOverrides GetUserOverrides()
 	return res;
 }
 
-const StreamMode* GetUserVisibleMode() {
+static const StreamMode* GetUserVisibleMode() {
 	mutexLock(&ModeSwitchingMutex);
-	
+
 	const StreamMode* ret = CurrentMode;
 
 	if (IsModeSwitchPending)
@@ -197,7 +147,7 @@ const StreamMode* GetUserVisibleMode() {
 	return ret;
 }
 
-void EnterTargetMode()
+static void EnterTargetMode()
 {
 	mutexLock(&ModeSwitchingMutex);
 
@@ -239,7 +189,7 @@ void EnterTargetMode()
 	mutexUnlock(&ModeSwitchingMutex);
 }
 
-void ExitCurrentMode()
+static void ExitCurrentMode()
 {
 	if (CurrentMode)
 	{
@@ -263,7 +213,7 @@ void ExitCurrentMode()
 	}
 }
 
-void SwitchModesThreadMain(void*)
+static void SwitchModesThreadMain(void*)
 {
 	// This will take forever
 	ExitCurrentMode();
@@ -272,14 +222,7 @@ void SwitchModesThreadMain(void*)
 	EnterTargetMode();
 }
 
-// To be used only for initialization
-void SetModeInternal(const StreamMode* mode)
-{
-	SwitchModeTarget = mode;
-	EnterTargetMode();
-}
-
-void SwitchModes(const StreamMode* mode)
+static void SwitchModes(const StreamMode* mode)
 {
 	mutexLock(&ModeSwitchingMutex);
 
@@ -295,8 +238,19 @@ void SwitchModes(const StreamMode* mode)
 			JoinThread(&ModeSwitchThread);
 		}
 
-		LOG("Launching mode switch thread\n");
-		LaunchThread(&ModeSwitchThread, SwitchModesThreadMain, NULL, ModeSwitchingStackArea, sizeof(ModeSwitchingStackArea), 0x2C);
+		// If there is a mode active, we use a thread to wait for it to exit
+		if (CurrentMode)
+		{
+			LOG("Launching mode switch thread\n");
+			LaunchThread(&ModeSwitchThread, SwitchModesThreadMain, NULL, ModeSwitchingStackArea, sizeof(ModeSwitchingStackArea), 0x2C);
+		}
+		else // Otherwise we just do it directly
+		{
+			LOG("Perform inline mode switching\n");
+			mutexUnlock(&ModeSwitchingMutex);
+			SwitchModesThreadMain(NULL);
+			return;
+		}
 	}
 
 	mutexUnlock(&ModeSwitchingMutex);
@@ -337,40 +291,4 @@ void SetModeID(u32 mode)
 		fatalThrow(ERR_MAIN_UNKMODESET);
 	}
 }
-
-static bool FileExists(const char* fname)
-{
-	FILE* f = fopen(fname, "rb");
-	if (f)
-		return fclose(f), true;
-	return false;
-}
 #endif
-
-int main(int argc, char* argv[])
-{
-#ifdef USE_LOGGING
-	freopen("/sysdvr_log.txt", "w", stdout);
-#endif
-	Result rc = CaptureInitialize();
-	if (R_FAILED(rc)) fatalThrow(rc);
-
-#ifdef USB_ONLY
-	USB_MODE.InitFn();
-	memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
-	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
-	USB_MODE.VThread(USB_MODE.Vargs);
-	USB_MODE.ExitFn();
-#else
-	if (FileExists("/config/sysdvr/usb"))
-		SetModeInternal(&USB_MODE);
-	else if (FileExists("/config/sysdvr/rtsp"))
-		SetModeInternal(&RTSP_MODE);
-	else if (FileExists("/config/sysdvr/tcp"))
-		SetModeInternal(&TCP_MODE);
-
-	IpcThread();
-#endif
-	
-	return 0;
-}

@@ -1,18 +1,17 @@
 #pragma once
 #include <switch.h>
-#include "defines.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdatomic.h>
+
+#include "defines.h"
+#include "../core.h"
 
 #if defined(USB_ONLY)
 static const bool IsThreadRunning = true;
 #else
 extern atomic_bool IsThreadRunning;
 #endif
-
-void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio);
-void JoinThread(Thread* t);
 
 typedef struct
 {

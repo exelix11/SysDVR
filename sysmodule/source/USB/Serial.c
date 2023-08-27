@@ -8,30 +8,6 @@
 // We need the thread running flag
 #include "../modes/modes.h"
 
-static const char* GetDeviceSerial() 
-{
-	static char serialStr[50] = "SysDVR:Unknown serial";
-	static bool initialized = false;
-
-	if (!initialized) {
-		initialized = true;
-
-		Result rc = setsysInitialize();
-		if (R_SUCCEEDED(rc))
-		{
-			SetSysSerialNumber serial;
-			rc = setsysGetSerialNumber(&serial);
-			
-			if (R_SUCCEEDED(rc))
-				snprintf(serialStr, sizeof(serialStr), "SysDVR:%s", serial.number);
-			
-			setsysExit();
-		}		
-	}
-
-	return serialStr;
-}
-
 Result UsbStreamingInitialize()
 {
 	UsbSerailInterfaceInfo interfaces = {
@@ -47,7 +23,7 @@ Result UsbStreamingInitialize()
 
 		.DeviceName = "SysDVR",
 		.DeviceManufacturer = "https://github.com/exelix11/SysDVR",
-		.DeviceSerialNumber = GetDeviceSerial(),
+		.DeviceSerialNumber = SysDVRBeacon,
 
 		.NumInterfaces = 1,
 		.Interfaces = { interfaces }

@@ -59,14 +59,15 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="source\capture.c" />
+    <ClCompile Include="source\core.c" />
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\ipc\ipc.c" />
-    <ClCompile Include="source\main.c" />
     <ClCompile Include="source\modes\RTSPmode.c" />
     <ClCompile Include="source\modes\TCPmode.c" />
     <ClCompile Include="source\modes\USBmode.c" />
     <ClCompile Include="source\net\sockets.c" />
     <ClCompile Include="source\rtsp\RTSP.c" />
+    <ClCompile Include="source\sysmodule\main.c" />
     <ClCompile Include="source\third_party\nanoprintf.c" />
     <ClCompile Include="source\USB\Serial.c" />
     <ClCompile Include="source\USB\UsbComms.c" />
@@ -79,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\capture.h" />
+    <ClInclude Include="source\core.h" />
     <ClInclude Include="source\grcd.h" />
     <ClInclude Include="source\ipc\ipc.h" />
     <ClInclude Include="source\modes\defines.h" />

@@ -3,21 +3,45 @@
 #include "../net/sockets.h"
 #include "../capture.h"
 
+static int UdpAdvertiseSocket = SOCKET_INVALID;
+
+static struct sockaddr_in UdpBroadcastAddr = {
+	.sin_family = AF_INET,
+};
+
+static void InitBroadcast(GrcStream stream)
+{
+	// Only one thread need to do the advertisement
+	if (stream != GrcStream_Video)
+		return;
+
+	UdpBroadcastAddr.sin_port = htons(19999);
+	UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
+
+	UdpAdvertiseSocket = SocketUdp();
+	if (!SocketSetBroadcast(UdpAdvertiseSocket, true))
+		LOG("UDP set broadcast failed: %d\n", SocketNativeErrno());
+}
+
+static void DeinitBroadcast(GrcStream stream)
+{
+	if (stream != GrcStream_Video)
+		return;
+
+	SocketClose(&UdpAdvertiseSocket);
+}
+
 static inline int TCP_BeginListen(GrcStream stream)
 {
-	LOG("TCP %d Begin listen\n", (int)stream);
-	if (stream == GrcStream_Video)
-	{
-		return SocketTcpListen(9911);
-	}
-	else
-	{
-		return SocketTcpListen(9922);
-	}
+	int port = stream == GrcStream_Video ? 9911 : 9922;
+	LOG("TCP %d Begin listen on %d\n", (int)stream, port);
+	InitBroadcast(stream);
+	return SocketTcpListen(port);
 }
 
 static inline int TCP_Accept(GrcStream stream)
 {
+	bool advertise = false;
 restart:
 	int listen = TCP_BeginListen(stream);
 
@@ -35,19 +59,37 @@ restart:
 		{
 			LOG("TCP %d Accepted client %d\n", (int)stream, client);
 			SocketClose(&listen);
+			DeinitBroadcast(stream);
 			return client;
 		}
 
 		svcSleepThread(1E+9);
+
+		// Advertise every 2 seconds
+		if (stream == GrcStream_Video && advertise)
+		{
+			advertise = false;
+			if (UdpAdvertiseSocket != SOCKET_INVALID)
+			{
+				LOG("Sending UDP advertisement broadcast\n");
+				if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
+					LOG("UDP advertisement failed: %d\n", SocketNativeErrno());
+			}
+		}
+		else advertise = true;
+
 		if (SocketIsListenNetDown())
 		{
 			LOG("TCP %d Network change detected\n", (int)stream);
 			SocketClose(&listen);
+			DeinitBroadcast(stream);
 			goto restart;
 		}
 	}
 
 	SocketClose(&listen);
+	DeinitBroadcast(stream);
+
 	return SOCKET_INVALID;
 }
 
@@ -114,7 +156,7 @@ static void TCP_StreamThread(void* argConfig)
 			(void)total;
 #endif
 		}
-		
+
 		LOG("TCP %d Closing client after %lu bytes\n", (int)config.Type, total);
 		SocketClose(&client);
 		svcSleepThread(2E+8);
@@ -129,9 +171,9 @@ static void TCP_Init()
 	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
 }
 
-const StreamMode TCP_MODE = { 
-	TCP_Init, NULL, 
-	TCP_StreamThread, TCP_StreamThread, 
+const StreamMode TCP_MODE = {
+	TCP_Init, NULL,
+	TCP_StreamThread, TCP_StreamThread,
 	(void*)&VideoConfig, (void*)&AudioConfig,
 	1
 };
