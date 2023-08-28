@@ -29,8 +29,7 @@ namespace SysDVR.Client.Sources
         readonly string IpAddress;
 		readonly byte HeaderMagicByte;
 
-        public event Action<string> OnError;
-        public event Action<Exception> OnFatalError;
+        public event Action<string> OnMessage;
 
         CancellationToken Token;
 		Socket Sock;
@@ -72,7 +71,7 @@ namespace SysDVR.Client.Sources
             for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++)
             {
                 if (i != 0 || DebugOptions.Current.Log) // Don't show error for the first attempt
-                    OnError?.Invoke($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
+                    OnMessage?.Invoke($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
 
                 try
                 {
@@ -99,7 +98,7 @@ namespace SysDVR.Client.Sources
 
             if (!Sock.Connected)
             {
-                OnError?.Invoke($"Connection to {SourceKind} stream failed. Throwing exception.");
+                OnMessage?.Invoke($"Connection to {SourceKind} stream failed. Throwing exception.");
                 throw ReportException ?? new Exception("No exception provided");
             }
         }
@@ -122,7 +121,7 @@ namespace SysDVR.Client.Sources
 				Sock?.Dispose();
 				Sock = null;
 
-                OnError?.Invoke($"{SourceKind} stream connection lost, reconnecting...");
+                OnMessage?.Invoke($"{SourceKind} stream connection lost, reconnecting...");
                 Thread.Sleep(800);
 				
                 ConnectAsync(Token).GetAwaiter().GetResult();
@@ -142,7 +141,7 @@ namespace SysDVR.Client.Sources
             else
             {
 				if (DebugOptions.Current.Log)
-                    OnError?.Invoke($"{SourceKind} Resyncing....");
+                    OnMessage?.Invoke($"{SourceKind} Resyncing....");
 
                 // TCPBridge is a raw stream of data, search for an header
                 for (int i = 0; i < 4 && !Token.IsCancellationRequested;)

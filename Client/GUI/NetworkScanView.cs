@@ -79,11 +79,6 @@ namespace SysDVR.Client.GUI
             base.BackPressed();
         }
 
-        public override void ResolutionChanged()
-        {
-            ipEnterPopup.OnResize();
-        }
-
         void ButtonEnterIp()
         {
             ipEnterPopup.RequestOpen();

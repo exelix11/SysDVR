@@ -263,7 +263,7 @@ public class ClientApp
         BackupDeafaultStyle();
         UpdateSize();
 
-        PushView(new NetworkScanView(""));
+        PushView(new MainView());
         HandleNextAction();
 
         while (true)

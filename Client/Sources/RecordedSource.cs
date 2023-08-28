@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Sources
@@ -11,12 +12,14 @@ namespace SysDVR.Client.Sources
     // Playsback a recording made with LoggingTarget, useful for developing without a console
     class RecordedSource : IStreamingSource
 	{
-		public DebugOptions Logging { get; set; }
-		public BinaryReader Source { get; set; }
+        public event Action<string> OnMessage;
 
         public StreamKind SourceKind { get; private init; }
 
-        public RecordedSource(StreamKind kind, string basePath)
+		readonly string FileName;
+		BinaryReader Source;
+
+		public RecordedSource(StreamKind kind, string basePath)
 		{
 			if (kind == StreamKind.Both)
 				throw new Exception("Can't use both streams in RecordedSource");
@@ -24,8 +27,8 @@ namespace SysDVR.Client.Sources
 			SourceKind = kind;
 
             var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
-			Source = new BinaryReader(File.OpenRead(Path.Combine(basePath, name)));
-		}
+			FileName = Path.Combine(basePath, name);
+        }
 
 		public void Flush() { }
 
@@ -42,7 +45,7 @@ namespace SysDVR.Client.Sources
 
 			var header = MemoryMarshal.Cast<byte, PacketHeader>(buffer.AsSpan());
 			ref var h = ref header[0];
-			
+
 			sw.Restart();
 
 			ms = Source.ReadInt64();
@@ -54,8 +57,9 @@ namespace SysDVR.Client.Sources
 		}
 
 		Stopwatch sw = new Stopwatch();
-		public bool ReadPayload(byte[] buffer, int length)
-		{					
+
+        public bool ReadPayload(byte[] buffer, int length)
+		{
 			sw.Stop();
 			if (sw.ElapsedMilliseconds < ms)
 				System.Threading.Thread.Sleep((int)(ms - sw.ElapsedMilliseconds));
@@ -66,18 +70,14 @@ namespace SysDVR.Client.Sources
 
 		public void StopStreaming()
 		{
-			
-		}
-
-		public void UseCancellationToken(CancellationToken tok)
-		{
 
 		}
 
-		public void WaitForConnection()
-		{
-
-		}
-	}
+        public Task ConnectAsync(CancellationToken token)
+        {
+            Source = new BinaryReader(File.OpenRead(FileName));
+            return Task.CompletedTask;
+        }
+    }
 }
 #endif

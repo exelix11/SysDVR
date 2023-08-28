@@ -50,8 +50,7 @@ namespace SysDVR.Client.Core
         // this field should match the NoAudio/NoVideo state of the target
         StreamKind SourceKind { get; }
 
-        event Action<string> OnError;
-        event Action<Exception> OnFatalError;
+        event Action<string> OnMessage;
 
         Task ConnectAsync(CancellationToken token);
         void StopStreaming();
@@ -92,8 +91,7 @@ namespace SysDVR.Client.Core
             Kind = Source.SourceKind;
             Manager = manager;
 
-            source.OnError += Manager.ReportError;
-            source.OnFatalError += Manager.ReportFatalError;
+            source.OnMessage += Manager.ReportError;
         }
 
         public void Start()
