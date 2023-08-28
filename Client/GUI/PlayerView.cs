@@ -87,6 +87,9 @@ namespace SysDVR.Client.GUI
             if (!HasAudio && !HasVideo)
                 throw new Exception("Can't start a player with no streams");
 
+            manager.OnFatalError += Manager_OnFatalError;
+            manager.OnErrorMessage += Manager_OnErrorMessage;
+
             // SyncHelper is disabled if there is only a single stream
             // Note that it can also be disabled via a --debug flag and this is handled by the constructor
             SyncHelper = new(HasAudio && HasVideo);
@@ -108,7 +111,17 @@ namespace SysDVR.Client.GUI
                 manager.AudioTarget.UseSynchronizationHeloper(SyncHelper);
             }
 
-            UINotifyMessage("Hello word");
+            UINotifyMessage("Connected succesfully !");
+        }
+
+        private void Manager_OnErrorMessage(string obj)
+        {
+            notifications.Add(new PendingUiNotif(obj));
+        }
+
+        private void Manager_OnFatalError(Exception obj)
+        {
+            notifications.Add(new PendingUiNotif(obj.ToString()));
         }
 
         public override void BackPressed()
@@ -229,10 +242,25 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        void ButtonStartRecording() { UINotifyMessage("ButtonStartRecording"); }
-        void ButtonQuit() { BackPressed(); }
-        void ButtonStats() { UINotifyMessage("ButtonStats"); }
-        void ButtonFullscreen() { UINotifyMessage("ButtonFullscreen"); }
+        void ButtonStartRecording()
+        {
+            UINotifyMessage("ButtonStartRecording"); 
+        }
+        
+        void ButtonStats()
+        {
+            UINotifyMessage("ButtonStats"); 
+        }
+        
+        void ButtonQuit() 
+        {
+            BackPressed(); 
+        }
+
+        void ButtonFullscreen() 
+        {
+            Program.Instance.SetFullScreen(!Program.Instance.IsFullscreen);
+        }
 
         unsafe public override void RawDraw()
         {

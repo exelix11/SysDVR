@@ -26,6 +26,7 @@ namespace SysDVR.Client.Core
         public bool UncapStreaming;
         public bool UncapGUI;
         public string RecordingsPath = DefaultPlatformSavePath();
+        public bool HideSerials;
 
         // Usb logging options
         public UsbLogMode UsbLogging = UsbLogMode.Default;

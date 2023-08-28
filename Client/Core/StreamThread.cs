@@ -50,9 +50,10 @@ namespace SysDVR.Client.Core
         // this field should match the NoAudio/NoVideo state of the target
         StreamKind SourceKind { get; }
 
-        void UseCancellationToken(CancellationToken tok);
+        event Action<string> OnError;
+        event Action<Exception> OnFatalError;
 
-        void WaitForConnection();
+        Task ConnectAsync(CancellationToken token);
         void StopStreaming();
 
         void Flush();
@@ -66,6 +67,7 @@ namespace SysDVR.Client.Core
         Thread DeviceThread;
         CancellationTokenSource Cancel;
 
+        readonly BaseStreamManager Manager;
         readonly public IStreamingSource Source;
         readonly public StreamKind Kind;
 
@@ -84,10 +86,14 @@ namespace SysDVR.Client.Core
         }
 #endif
 
-        protected StreamThread(IStreamingSource source)
+        protected StreamThread(IStreamingSource source, BaseStreamManager manager)
         {
             Source = source;
             Kind = Source.SourceKind;
+            Manager = manager;
+
+            source.OnError += Manager.ReportError;
+            source.OnFatalError += Manager.ReportFatalError;
         }
 
         public void Start()
@@ -133,12 +139,12 @@ namespace SysDVR.Client.Core
                     }
 
                     if (logStats)
-                        Console.WriteLine($"[{Kind}] {Header}");
+                        Manager.ReportError($"[{Kind}] {Header}");
 
                     if (Header.Magic is not PacketHeader.MagicResponseAudio and not PacketHeader.MagicResponseVideo)
                     {
                         if (logDbg)
-                            Console.WriteLine($"[{Kind}] Wrong header magic: {Header.Magic:X}");
+                            Manager.ReportError($"[{Kind}] Wrong header magic: {Header.Magic:X}");
 
                         Source.Flush();
                         continue;
@@ -147,7 +153,7 @@ namespace SysDVR.Client.Core
                     if (Header.DataSize > StreamInfo.MaxPayloadSize)
                     {
                         if (logDbg)
-                            Console.WriteLine($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
+                            Manager.ReportError($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
 
                         Source.Flush();
                         continue;
@@ -157,7 +163,7 @@ namespace SysDVR.Client.Core
                     if (!Source.ReadPayload(Data.RawBuffer, Header.DataSize))
                     {
                         if (logDbg)
-                            Console.WriteLine($"[{Kind}] Read payload failed.");
+                            Manager.ReportError($"[{Kind}] Read payload failed.");
 
                         Source.Flush();
                         Data.Free();
@@ -167,7 +173,7 @@ namespace SysDVR.Client.Core
                     if (!DataReceived(Header, Data))
                     {
                         if (logDbg)
-                            Console.WriteLine($"[{Kind}] DataReceived rejected the packet, header magic was {Header.Magic:X}");
+                            Manager.ReportError($"[{Kind}] DataReceived rejected the packet, header magic was {Header.Magic:X}");
 
                         Data.Free();
                         continue;
@@ -179,7 +185,7 @@ namespace SysDVR.Client.Core
             catch (Exception ex)
             {
                 if (!token.IsCancellationRequested)
-                    Console.WriteLine($"Terminating ReceiveFromDeviceThread for {Kind} due to {ex}");
+                    Manager.ReportFatalError(ex);
             }
 #endif
         }
@@ -197,7 +203,7 @@ namespace SysDVR.Client.Core
     {
         readonly OutStream Target;
 
-        public SingleStreamThread(IStreamingSource source, OutStream target) : base(source)
+        public SingleStreamThread(IStreamingSource source, OutStream target, BaseStreamManager manager) : base(source, manager)
         {
             Target = target;
         }
@@ -227,7 +233,7 @@ namespace SysDVR.Client.Core
         readonly OutStream VideoTarget;
         readonly OutStream AudioTarget;
 
-        public MultiStreamThread(IStreamingSource source, OutStream videoTarget, OutStream audioTarget) : base(source)
+        public MultiStreamThread(IStreamingSource source, OutStream videoTarget, OutStream audioTarget, BaseStreamManager manager) : base(source, manager)
         {
             if (source.SourceKind != StreamKind.Both)
                 throw new Exception("Source must be able to provide both streams");

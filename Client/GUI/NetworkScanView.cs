@@ -43,7 +43,7 @@ namespace SysDVR.Client.GUI
             if (autoConnect != null) 
             {
                 if (autoConnect == "" || info.Serial.EndsWith(autoConnect))
-                    ConenctToDevice(info);
+                    ConnectToDevice(info);
             }
         }
 
@@ -89,7 +89,7 @@ namespace SysDVR.Client.GUI
             ipEnterPopup.RequestOpen();
         }
 
-        void ConenctToDevice(DeviceInfo info)
+        void ConnectToDevice(DeviceInfo info)
         {
             autoConnect = null;
             Program.Instance.PushView(new ConnectingView(info, StreamKind.Both));
@@ -134,7 +134,7 @@ namespace SysDVR.Client.GUI
                 foreach (var dev in devices)
                 {
                     if (ImGui.Button(dev.ToString(), btn))
-                        ConenctToDevice(dev);
+                        ConnectToDevice(dev);
                 }
                 ImGui.EndChildFrame();
                 ImGui.NewLine();
@@ -182,10 +182,17 @@ namespace SysDVR.Client.GUI
                 ImGui.InputText("##ip", IpAddressTextBuf, (uint)IpAddressTextBuf.Length);
                 ImGui.Spacing();
                 popupBtnCenter.StartHere();
-                ImGui.Button("   Connect   ");
+                if (ImGui.Button("   Connect   "))
+                {
+                    ipEnterPopup.RequestClose();
+                    var ip = Encoding.UTF8.GetString(IpAddressTextBuf, 0, Array.IndexOf<byte>(IpAddressTextBuf, 0));
+                    ConnectToDevice(DeviceInfo.ForIp(ip));
+                }
+
                 ImGui.SameLine();
                 if (ImGui.Button("    Cancel    "))
                     ipEnterPopup.RequestClose();
+
                 popupBtnCenter.EndHere();
                 ImGui.NewLine();
 
