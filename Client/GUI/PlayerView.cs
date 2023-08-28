@@ -17,6 +17,7 @@ using static FFmpeg.AutoGen.ffmpeg;
 using System.Security.Cryptography;
 using ImGuiNET;
 using SysDVR.Client.Platform;
+using System.Threading.Channels;
 
 namespace SysDVR.Client.GUI
 {
@@ -46,9 +47,11 @@ namespace SysDVR.Client.GUI
         readonly bool HasVideo;
         readonly StreamSynchronizationHelper SyncHelper;
         readonly AutoResetEvent? OnNewFrame;
-        protected readonly SDLAudioContext SDLAudio;
-        protected readonly DecoderContext Decoder;
-        
+        readonly SDLAudioContext SDLAudio;
+        readonly DecoderContext Decoder;
+
+        readonly PlayerManager Manager;
+
         protected SDLContext SDL; // This must be initialized by the UI thread
         protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 
@@ -66,12 +69,20 @@ namespace SysDVR.Client.GUI
             Console.WriteLine(message);
         }
 
-        public PlayerView(H264StreamTarget? videoTarget, AudioStreamTarget? audioTarget)
+        public override void Created()
+        {
+            Manager.Begin();
+            SDL_PauseAudioDevice(SDLAudio.DeviceID, 0);
+            base.Created();
+        }
+
+        public PlayerView(PlayerManager manager)
         {
             RenderMode = FramerateCapOptions.Target(60);
 
-            HasVideo = videoTarget is not null;
-            HasAudio = audioTarget is not null;
+            Manager = manager;
+            HasVideo = manager.VideoTarget is not null;
+            HasAudio = manager.AudioTarget is not null;
 
             if (!HasAudio && !HasVideo)
                 throw new Exception("Can't start a player with no streams");
@@ -84,7 +95,7 @@ namespace SysDVR.Client.GUI
             {
                 Decoder = InitVideoDecoder();
                 Decoder.SyncHelper = SyncHelper;
-                videoTarget.UseContext(Decoder);
+                manager.VideoTarget.UseContext(Decoder);
                 OnNewFrame = Decoder.OnFrameEvent;
 
                 SDL = InitSDLRenderTexture();
@@ -93,23 +104,11 @@ namespace SysDVR.Client.GUI
 
             if (HasAudio)
             {
-                SDLAudio = InitSDLAudio(audioTarget);
-                audioTarget.UseSynchronizationHeloper(SyncHelper);
+                SDLAudio = InitSDLAudio(manager.AudioTarget);
+                manager.AudioTarget.UseSynchronizationHeloper(SyncHelper);
             }
 
             UINotifyMessage("Hello word");
-        }
-
-        public override void EnterForeground()
-        {
-            base.EnterForeground();
-            SDL_PauseAudio(0);
-        }
-
-        public override void LeaveForeground()
-        {
-            base.LeaveForeground();
-            SDL_PauseAudio(1);
         }
 
         public override void BackPressed()
@@ -286,13 +285,17 @@ namespace SysDVR.Client.GUI
 
         public unsafe override void Destroy()
         {
-            base.Destroy();
+            if (HasAudio)
+                SDL_PauseAudioDevice(SDLAudio.DeviceID, 1);
+
+            Manager.Stop();
+            Manager.Dispose();
 
             // Dispose of unmanaged resources
             if (HasAudio)
             {
+                SDL_CloseAudioDevice(SDLAudio.DeviceID);
                 SDLAudio.TargetHandle.Free();
-                SDL_AudioQuit();
             }
 
             if (HasVideo)
@@ -318,6 +321,7 @@ namespace SysDVR.Client.GUI
             }
 
             OnNewFrame?.Dispose();
+            base.Destroy();
         }
 
         static SDLContext InitSDLRenderTexture()
@@ -337,8 +341,6 @@ namespace SysDVR.Client.GUI
 
         static unsafe SDLAudioContext InitSDLAudio(AudioStreamTarget target)
         {
-            SDL_InitSubSystem(SDL_INIT_AUDIO).AssertZero(SDL_GetError);
-
             var handle = GCHandle.Alloc(target, GCHandleType.Normal);
 
             SDL_AudioCallback callback = AudioStreamTargetNative.SDLCallback;
@@ -358,8 +360,6 @@ namespace SysDVR.Client.GUI
             var deviceId = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out var obtained, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 
             deviceId.AssertNotZero(SDL_GetError);
-
-            SDL_PauseAudioDevice(deviceId, 0);
 
             if (DebugOptions.Current.Log)
             {

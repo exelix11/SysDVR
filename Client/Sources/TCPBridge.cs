@@ -13,7 +13,6 @@ namespace SysDVR.Client.Sources
 {
     class TCPBridgeSource : IStreamingSource
 	{
-		public DebugOptions Logging { get; set; }
         public StreamKind SourceKind { get; private init; }
 
         const int MaxConnectionAttempts = 5;
@@ -21,6 +20,8 @@ namespace SysDVR.Client.Sources
 
 		const int TcpBridgeVideoPort = 9911;
 		const int TcpBridgeAudioPort = 9922;
+
+		const int ProtocolVersion = 0;
         
 		int Port => 
 			SourceKind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
@@ -32,13 +33,16 @@ namespace SysDVR.Client.Sources
 		Socket Sock;
         bool CommunicationException = false;
 
-        public TCPBridgeSource(string ip, StreamKind kind)
+        public TCPBridgeSource(DeviceInfo ip, StreamKind kind)
 		{
             if (kind == StreamKind.Both)
                 throw new Exception("Tcp bridge can't stream both channels over a single connection");
 
+			if (ip.ProtocolVersion != ProtocolVersion)
+				throw new Exception($"Protocol version {ip.ProtocolVersion} is not supported");
+
             SourceKind = kind;
-			IpAddress = ip;
+			IpAddress = ip.ConnectionString;
 
             HeaderMagicByte = 
 				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
@@ -61,7 +65,7 @@ namespace SysDVR.Client.Sources
 			Exception ReportException = null;
 			for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++) 
 			{
-				if (i != 0 || Logging.Log) // Don't show error for the first attempt
+				if (i != 0 || DebugOptions.Current.Log) // Don't show error for the first attempt
 					Console.WriteLine($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
 
 				try
@@ -136,7 +140,7 @@ namespace SysDVR.Client.Sources
             }
             else
             {
-				if (Logging.Log)
+				if (DebugOptions.Current.Log)
 					Console.WriteLine($"{SourceKind} Resyncing....");
 
                 // TCPBridge is a raw stream of data, search for an header

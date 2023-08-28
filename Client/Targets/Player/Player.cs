@@ -59,19 +59,13 @@ namespace SysDVR.Client.Targets.Player
         public new H264StreamTarget VideoTarget;
         public new AudioStreamTarget AudioTarget;
 
-        public PlayerManager(bool HasVideo, bool HasAudio) : base(
+        public PlayerManager(bool HasVideo, bool HasAudio, CancellationTokenSource cancel) : base(
             HasVideo ? new H264StreamTarget() : null,
-            HasAudio ? new AudioStreamTarget() : null)
+            HasAudio ? new AudioStreamTarget() : null,
+            cancel)
         {
             VideoTarget = base.VideoTarget as H264StreamTarget;
             AudioTarget = base.AudioTarget as AudioStreamTarget;
-            //player = new Player(
-            //    VideoTarget as H264StreamTarget,
-            //    AudioTarget as AudioStreamTarget,
-            //    hwAcc,
-            //    codecName,
-            //    quality
-            //);
         }
     }
 }
