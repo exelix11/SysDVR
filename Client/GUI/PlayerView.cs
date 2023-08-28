@@ -60,8 +60,10 @@ namespace SysDVR.Client.GUI
         List<PendingUiNotif> notifications = new();
         
         Gui.CenterGroup uiOptCenter;
-        Gui.Popup quitConfirm = new("Are you sure you want to quit ?");
+        Gui.Popup quitConfirm = new("Confirm quit");
+        Gui.Popup fatalError = new("Fatal error");
         bool drawUi;
+        string fatalMessage;
 
         void UINotifyMessage(string message)
         {
@@ -121,12 +123,16 @@ namespace SysDVR.Client.GUI
 
         private void Manager_OnFatalError(Exception obj)
         {
-            notifications.Add(new PendingUiNotif(obj.ToString()));
+            if (quitConfirm.IsOpen)
+                quitConfirm.RequestClose();
+
+            fatalMessage = obj.ToString();
+            fatalError.RequestOpen();
         }
 
         public override void BackPressed()
         {
-            if (!quitConfirm.HandleBackButton())
+            if (!quitConfirm.HandleBackButton() && !fatalError.HandleBackButton())
                 quitConfirm.RequestOpen();
         }
 
@@ -153,6 +159,16 @@ namespace SysDVR.Client.GUI
             DrawOverlayToggleArea();
 
             DrawQuitModal();
+
+            if (fatalError.Begin(ImGui.GetIO().DisplaySize * 0.95f))
+            {
+                ImGui.TextWrapped(fatalMessage);
+                Gui.MakeWindowScrollable();
+                if (Gui.CenterButton("  Ok  "))
+                    fatalError.RequestClose();
+
+                ImGui.EndPopup();
+            }
 
             ImGui.End();
         }
@@ -192,7 +208,7 @@ namespace SysDVR.Client.GUI
                 if (ImGui.Button("Stop streaming", new(btnwidth, 0))) ButtonQuit();
                 
                 ImGui.SetCursorPosX(width / 2 - btnwidth / 2);
-                if (ImGui.Button("Show statistics", new(btnwidth, 0))) ButtonStats();
+                if (ImGui.Button("Toggle statistics", new(btnwidth, 0))) ButtonStats();
                 
                 ImGui.SetCursorPosX(width / 2 - btnwidth / 2);
                 if (ImGui.Button("Full screen", new(btnwidth, 0))) ButtonFullscreen();
@@ -208,7 +224,7 @@ namespace SysDVR.Client.GUI
                 ImGui.SameLine();
                 if (ImGui.Button("Stop streaming")) ButtonQuit();
                 ImGui.SameLine();
-                if (ImGui.Button("Show statistics")) ButtonStats();
+                if (ImGui.Button("Toggle statistics")) ButtonStats();
                 ImGui.SameLine();
                 if (ImGui.Button("Full screen")) ButtonFullscreen();
                 uiOptCenter.EndHere();
@@ -249,7 +265,7 @@ namespace SysDVR.Client.GUI
         
         void ButtonStats()
         {
-            UINotifyMessage("ButtonStats"); 
+            Program.Instance.ShowDebugInfo = !Program.Instance.ShowDebugInfo;
         }
         
         void ButtonQuit() 
@@ -313,11 +329,11 @@ namespace SysDVR.Client.GUI
 
         public unsafe override void Destroy()
         {
-            if (HasAudio)
-                SDL_PauseAudioDevice(SDLAudio.DeviceID, 1);
-
             Manager.Stop();
             Manager.Dispose();
+
+            if (HasAudio)
+                SDL_PauseAudioDevice(SDLAudio.DeviceID, 1);
 
             // Dispose of unmanaged resources
             if (HasAudio)

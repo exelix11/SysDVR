@@ -63,7 +63,7 @@ namespace SysDVR.Client.GUI
         }
 
         // https://github.com/ocornut/imgui/issues/3379
-        static void ScrollWhenDraggingOnVoid()
+        public static void MakeWindowScrollable()
         {
             var rect = new ImRect()
             {
@@ -112,7 +112,12 @@ namespace SysDVR.Client.GUI
                 }
             }
 
-            public bool Begin() 
+            public bool Begin()
+            {
+                return Begin(Vector2.Zero);
+            }
+
+            public bool Begin(Vector2 size) 
             {
                 if (shouldOpen)
                 {
@@ -127,8 +132,19 @@ namespace SysDVR.Client.GUI
                 if (!IsOpen)
                     return false;
 
-                ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Appearing, new(0.5f, 0.5f));
-                return ImGui.BeginPopupModal(Name, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoMove);
+                ImGuiWindowFlags flags = ImGuiWindowFlags.NoMove;
+                if (size == Vector2.Zero)
+                {
+                    ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Appearing, new(0.5f, 0.5f));
+                    flags |= ImGuiWindowFlags.AlwaysAutoResize;
+                }
+                else
+                {
+                    ImGui.SetNextWindowSize(size);
+                    ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2 - size / 2);
+                    flags |= ImGuiWindowFlags.NoResize;
+                }
+                return ImGui.BeginPopupModal(Name, flags);
             }
 
             // true: steals the button
@@ -146,7 +162,7 @@ namespace SysDVR.Client.GUI
 
         public static void EndWindow() 
         {
-            ScrollWhenDraggingOnVoid();
+            MakeWindowScrollable();
             ImGui.End();
         }
 

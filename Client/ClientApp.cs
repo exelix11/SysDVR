@@ -29,6 +29,7 @@ public class ClientApp
     public Vector2 WindowSize { get; private set; }
     public float UiScale { get; private set; }
 
+    public bool ShowDebugInfo = false;
     // Debug info for scaling
     Vector2 PixelSize;
     Vector2 WantedDPIScale;
@@ -165,7 +166,7 @@ public class ClientApp
         SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
     }
 
-    public void DebugInfo()
+    void DebugInfo()
     {
         ImGui.Begin("Info");
         ImGui.Text($"FPS: {ImGui.GetIO().Framerate} Cap {Cap.CapMode}");
@@ -310,7 +311,8 @@ public class ClientApp
 
             CurrentView.Draw();
 
-            DebugInfo();
+            if (ShowDebugInfo)
+                DebugInfo();
 
             ImGui.Render();
 
