@@ -32,7 +32,7 @@ namespace SysDVR.Client.Targets.FileOutput
         }
     }
 
-    unsafe class Mp4AudioTarget : IOutStream, IDisposable
+    unsafe class Mp4AudioTarget : OutStream, IDisposable
     {
         AVFormatContext* outCtx;
         object ctxSync;
@@ -152,48 +152,43 @@ namespace SysDVR.Client.Targets.FileOutput
             }
         }
 
-        public void SendData(PoolBuffer block, ulong ts)
+        void FreeNativeResource() 
+        {
+            if (this.frame == null)
+                return;
+            
+            AVFrame* frame = this.frame;
+            av_frame_free(&frame);
+            frame = null;
+
+            AVPacket* packet = this.packet;
+            av_packet_free(&packet);
+            packet = null;
+
+            AVCodecContext* c = codecCtx;
+            avcodec_free_context(&c);
+            c = null;
+        }
+
+        ~Mp4AudioTarget()
+        {
+            FreeNativeResource();
+        }
+
+        protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
             SendData(block.RawBuffer, block.Length, ts);
             block.Free();
         }
 
-        public void UseCancellationToken(CancellationToken tok)
+        public override void Dispose()
         {
-
-        }
-
-        private bool disposedValue;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                AVFrame* frame = this.frame;
-                av_frame_free(&frame);
-
-                AVPacket* packet = this.packet;
-                av_packet_free(&packet);
-
-                AVCodecContext* c = codecCtx;
-                avcodec_free_context(&c);
-
-                disposedValue = true;
-            }
-        }
-
-        ~Mp4AudioTarget()
-        {
-            Dispose(disposing: false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            FreeNativeResource();
+            base.Dispose();
         }
     }
 
-    unsafe class Mp4VideoTarget : IOutStream
+    unsafe class Mp4VideoTarget : OutStream
     {
         AVFormatContext* outCtx;
         object ctxSync;
@@ -257,15 +252,10 @@ namespace SysDVR.Client.Targets.FileOutput
             }
         }
 
-        public void SendData(PoolBuffer block, ulong ts)
+        protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
             SendData(block.RawBuffer, block.Length, ts);
             block.Free();
-        }
-
-        public void UseCancellationToken(CancellationToken tok)
-        {
-
         }
     }
 }

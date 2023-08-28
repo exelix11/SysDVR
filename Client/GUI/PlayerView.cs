@@ -52,15 +52,12 @@ namespace SysDVR.Client.GUI
         protected SDLContext SDL; // This must be initialized by the UI thread
         protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 
-        public string BaseWindowTitle;
-
         SDL_Rect DisplayRect = new SDL_Rect();
 
         List<PendingUiNotif> notifications = new();
-        List<Action> uiActions = new();
         
         Gui.CenterGroup uiOptCenter;
-        bool quitting;
+        Gui.Popup quitConfirm = new("Are you sure you want to quit ?");
         bool drawUi;
 
         void UINotifyMessage(string message)
@@ -117,21 +114,13 @@ namespace SysDVR.Client.GUI
 
         public override void BackPressed()
         {
-            quitting = !quitting;
-            if (quitting)
-                uiActions.Add(() => ImGui.OpenPopup("Confirm quit"));
-            else
-                uiActions.Add(() => ImGui.CloseCurrentPopup());
+            if (!quitConfirm.HandleBackButton())
+                quitConfirm.RequestOpen();
         }
 
         public override void Draw()
         {
             Gui.BeginWindow("Player", ImGuiWindowFlags.NoBackground);
-
-            foreach (var act in uiActions)
-                act();
-
-            uiActions.Clear();
 
             for (int i = 0; i < notifications.Count; i++)
             {
@@ -221,27 +210,21 @@ namespace SysDVR.Client.GUI
 
         void DrawQuitModal() 
         {
-            if (!quitting)
-                return;
-
-            if (ImGui.BeginPopupModal("Confirm quit", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoMove))
+            if (quitConfirm.Begin())
             {
                 ImGui.Text("Are you sure you want to quit?");
                 ImGui.Separator();
 
                 if (ImGui.Button("Yes"))
                 {
-                    ImGui.CloseCurrentPopup();
+                    quitConfirm.RequestClose();
                     Program.Instance.PopView();
                 }
 
                 ImGui.SameLine();
 
                 if (ImGui.Button("No"))
-                {
-                    quitting = false;
-                    ImGui.CloseCurrentPopup();
-                }
+                    quitConfirm.RequestClose();
 
                 ImGui.EndPopup();
             }

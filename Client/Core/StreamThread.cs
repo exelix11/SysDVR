@@ -200,9 +200,9 @@ namespace SysDVR.Client.Core
 
     class SingleStreamThread : StreamThread
     {
-        readonly IOutStream Target;
+        readonly OutStream Target;
 
-        public SingleStreamThread(IStreamingSource source, IOutStream target) : base(source)
+        public SingleStreamThread(IStreamingSource source, OutStream target) : base(source)
         {
             Target = target;
         }
@@ -229,10 +229,10 @@ namespace SysDVR.Client.Core
 
     class MultiStreamThread : StreamThread
     {
-        readonly IOutStream VideoTarget;
-        readonly IOutStream AudioTarget;
+        readonly OutStream VideoTarget;
+        readonly OutStream AudioTarget;
 
-        public MultiStreamThread(IStreamingSource source, IOutStream videoTarget, IOutStream audioTarget) : base(source)
+        public MultiStreamThread(IStreamingSource source, OutStream videoTarget, OutStream audioTarget) : base(source)
         {
             if (source.SourceKind != StreamKind.Both)
                 throw new Exception("Source must be able to provide both streams");
