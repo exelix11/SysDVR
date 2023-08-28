@@ -7,7 +7,7 @@ using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
-    class LoggingTarget : IOutStream
+    class LoggingTarget : OutStream
     {
         readonly BinaryWriter bin;
         readonly MemoryStream mem = new MemoryStream();
@@ -19,14 +19,14 @@ namespace SysDVR.Client.Targets.FileOutput
             bin = new BinaryWriter(mem);
         }
 
-        public void WriteToDisk()
+        public void FlushToDisk()
         {
             File.WriteAllBytes(filename, mem.ToArray());
         }
 
         Stopwatch sw = new Stopwatch();
 
-        public void SendData(PoolBuffer data, ulong ts)
+        protected override void SendDataImpl(PoolBuffer data, ulong ts)
         {
             Console.WriteLine($"{filename} - ts: {ts}");
             bin.Write(0xAAAAAAAA);
@@ -39,7 +39,12 @@ namespace SysDVR.Client.Targets.FileOutput
             data.Free();
         }
 
-        public void UseCancellationToken(CancellationToken tok) { }
+        public override void Dispose()
+        {
+            mem.Dispose();
+            bin.Dispose();
+            base.Dispose();
+        }
     }
 
     class LoggingManager : BaseStreamManager
@@ -54,8 +59,8 @@ namespace SysDVR.Client.Targets.FileOutput
         public override void Stop()
         {
             base.Stop();
-            (VideoTarget as LoggingTarget)?.WriteToDisk();
-            (AudioTarget as LoggingTarget)?.WriteToDisk();
+            (VideoTarget as LoggingTarget)?.FlushToDisk();
+            (AudioTarget as LoggingTarget)?.FlushToDisk();
         }
     }
 }

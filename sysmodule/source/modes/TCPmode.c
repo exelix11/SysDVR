@@ -9,26 +9,54 @@ static struct sockaddr_in UdpBroadcastAddr = {
 	.sin_family = AF_INET,
 };
 
+static void DeinitBroadcast(GrcStream stream)
+{
+	if (stream != GrcStream_Video)
+		return;
+
+	if (UdpAdvertiseSocket == SOCKET_INVALID)
+		return;
+
+	LOG("Closing UDP broadcast socket\n");
+	SocketClose(&UdpAdvertiseSocket);
+}
+
 static void InitBroadcast(GrcStream stream)
 {
 	// Only one thread need to do the advertisement
 	if (stream != GrcStream_Video)
 		return;
 
+	if (UdpAdvertiseSocket != SOCKET_INVALID)
+		DeinitBroadcast(stream);
+
 	UdpBroadcastAddr.sin_port = htons(19999);
 	UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
 
+	LOG("Opening UDP broadcast socket\n");
 	UdpAdvertiseSocket = SocketUdp();
 	if (!SocketSetBroadcast(UdpAdvertiseSocket, true))
 		LOG("UDP set broadcast failed: %d\n", SocketNativeErrno());
 }
 
-static void DeinitBroadcast(GrcStream stream)
+static inline void AdvertiseBroadcast(GrcStream stream)
 {
 	if (stream != GrcStream_Video)
 		return;
 
-	SocketClose(&UdpAdvertiseSocket);
+	if (UdpAdvertiseSocket == SOCKET_INVALID)
+	{
+		InitBroadcast(stream);
+	}
+	else
+	{
+		LOG("Sending UDP advertisement broadcast\n");
+		if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
+		{
+			LOG("UDP advertisement failed: %d\n", SocketNativeErrno());
+			DeinitBroadcast(stream);
+		}
+	}
 }
 
 static inline int TCP_BeginListen(GrcStream stream)
@@ -66,17 +94,9 @@ restart:
 		svcSleepThread(1E+9);
 
 		// Advertise every 2 seconds
-		if (stream == GrcStream_Video && advertise)
-		{
-			advertise = false;
-			if (UdpAdvertiseSocket != SOCKET_INVALID)
-			{
-				LOG("Sending UDP advertisement broadcast\n");
-				if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
-					LOG("UDP advertisement failed: %d\n", SocketNativeErrno());
-			}
-		}
-		else advertise = true;
+		if (advertise)
+			AdvertiseBroadcast(stream);
+		advertise = !advertise;
 
 		if (SocketIsListenNetDown())
 		{

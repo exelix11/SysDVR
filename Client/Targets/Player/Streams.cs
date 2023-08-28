@@ -5,6 +5,8 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using SysDVR.Client.Core;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Linq;
 
 namespace SysDVR.Client.Targets.Player
 {
@@ -14,12 +16,11 @@ namespace SysDVR.Client.Targets.Player
             ((AudioStreamTarget)GCHandle.FromIntPtr(userdata).Target).SDLCallback(new Span<byte>(buf.ToPointer(), len));
     }
 
-    class AudioStreamTarget : IOutStream
+    class AudioStreamTarget : OutStream
     {
         readonly BlockingCollection<(PoolBuffer, ulong)> samples = new BlockingCollection<(PoolBuffer, ulong)>(20);
         readonly bool log = DebugOptions.Current.Log;
 
-        CancellationToken tok;
         StreamSynchronizationHelper sync;
 
         public void UseSynchronizationHeloper(StreamSynchronizationHelper sync)
@@ -31,7 +32,7 @@ namespace SysDVR.Client.Targets.Player
         int currentOffset = -1;
         public void SDLCallback(Span<byte> buffer)
         {
-            while (buffer.Length != 0 && !tok.IsCancellationRequested)
+            while (buffer.Length != 0 && !Cancel.IsCancellationRequested)
             {
                 if (currentOffset != -1)
                 {
@@ -53,7 +54,7 @@ namespace SysDVR.Client.Targets.Player
                     try
                     {
                     again:
-                        var (block, ts) = samples.Take(tok);
+                        var (block, ts) = samples.Take(Cancel);
                         if (!sync.CheckTimestamp(false, ts))
                         {
                             if (log)
@@ -72,24 +73,27 @@ namespace SysDVR.Client.Targets.Player
             }
         }
 
-        public unsafe void SendData(PoolBuffer block, ulong ts)
+        protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            samples.Add((block, ts), tok);
+            samples.Add((block, ts), Cancel);
+            // Free is called by the consumer thread...
         }
 
-        public void UseCancellationToken(CancellationToken tok)
+        public override void Dispose()
         {
-            this.tok = tok;
+            // Free any remaining elements
+            samples.ToList().ForEach(x => x.Item1.Free());
+            
+            base.Dispose();
         }
     }
 
-    unsafe class H264StreamTarget : IOutStream, IDisposable
+    unsafe class H264StreamTarget : OutStream
     {
         readonly Thread VideoConsumerThread;
         readonly BlockingCollection<(PoolBuffer, ulong)> videoBUffer = new BlockingCollection<(PoolBuffer, ulong)>(50);
 
         DecoderContext ctx;
-        CancellationToken tok;
         int timebase_den;
         AVPacket* packet;
         StreamSynchronizationHelper sync;
@@ -103,7 +107,7 @@ namespace SysDVR.Client.Targets.Player
             try
             {
                 // We should not run out of capacity because the target will start dropping packets once their timestamp is too old
-                foreach (var (buf, ts) in videoBUffer.GetConsumingEnumerable(tok))
+                foreach (var (buf, ts) in videoBUffer.GetConsumingEnumerable(Cancel))
                 {
                     bool success = false;
                     bool tsFailed = false;
@@ -128,7 +132,7 @@ namespace SysDVR.Client.Targets.Player
                             // Since we don't check this every frame we may wake up too early but only for a frame so it's fine
                             onFrame.WaitOne(500);
 
-                            if (tok.IsCancellationRequested)
+                            if (Cancel.IsCancellationRequested)
                                 break;
                         }
                         else if (res != 0)
@@ -181,23 +185,20 @@ namespace SysDVR.Client.Targets.Player
             onFrame = ctx.OnFrameEvent;
         }
 
-        public void UseCancellationToken(CancellationToken tok)
+        protected override void UseCancellationTokenImpl(CancellationToken tok)
         {
-            this.tok = tok;
+            base.UseCancellationTokenImpl(tok);
             // Start the consumer only after the token is set
             VideoConsumerThread.Start();
         }
 
-        // Queue the packet so it's not blocking
-        public void SendData(PoolBuffer data, ulong ts)
-        {
-            videoBUffer.Add((data, ts), tok);
-        }
-
-        public void Dispose()
+        public override void Dispose()
         {
             // If the cancellation token is not set, the consumer thread has probably already terminated
             VideoConsumerThread.Join();
+            // Free any remaining buffers
+            videoBUffer.ToList().ForEach(x => x.Item1.Free());
+            base.Dispose();
         }
 
         long firstTs = -1;
@@ -219,6 +220,12 @@ namespace SysDVR.Client.Targets.Player
                 lock (ctx.CodecLock)
                     return avcodec_send_packet(ctx.CodecCtx, pkt);
             }
+        }
+
+        protected override void SendDataImpl(PoolBuffer block, ulong ts)
+        {
+            videoBUffer.Add((block, ts), Cancel);
+            // Free is called by the consumer thread...
         }
     }
 }

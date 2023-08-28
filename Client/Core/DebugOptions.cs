@@ -95,24 +95,13 @@ namespace SysDVR.Client.Core
         }
     }
 
-    class H264LoggingWrapperTarget : IOutStream, IDisposable
+    class H264LoggingTarget : OutStream
     {
-        public readonly IOutStream Inner;
-
-        public H264LoggingWrapperTarget(IOutStream inner)
-        {
-            Inner = inner;
-        }
-
-        public void UseCancellationToken(CancellationToken tok)
-        {
-            Inner.UseCancellationToken(tok);
-        }
-
         DateTime lastKeyframe = DateTime.Now;
         DateTime lastNal = DateTime.Now;
         StringBuilder sb = new();
-        void IOutStream.SendData(PoolBuffer block, ulong ts)
+
+        protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
             sb.Clear();
             sb.Append('[');
@@ -154,13 +143,7 @@ namespace SysDVR.Client.Core
                 Console.Write(sb.ToString());
             }
 
-            Inner.SendData(block, ts);
-        }
-
-        public void Dispose()
-        {
-            if (Inner is IDisposable i)
-                i.Dispose();
+            block.Free();
         }
     }
 }

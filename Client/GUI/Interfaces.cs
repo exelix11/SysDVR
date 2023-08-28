@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -87,6 +88,69 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        public class Popup 
+        {
+            public readonly string Name;
+            public bool IsOpen { get; private set; }
+
+            bool shouldOpen;
+
+            public Popup(string name)
+            {
+                Name = name;
+            }
+
+            public void RequestOpen() 
+            {
+                shouldOpen = true;
+            }
+
+            public void RequestClose() 
+            {
+                IsOpen = false;
+            }
+
+            public void OnResize() 
+            {
+                if (IsOpen)
+                {
+                    RequestClose();
+                    RequestOpen();
+                }
+            }
+
+            public bool Begin() 
+            {
+                if (shouldOpen)
+                {
+                    if (!IsOpen)
+                    {
+                        ImGui.OpenPopup(Name);
+                        IsOpen = true;
+                        shouldOpen = false;
+                    }
+                }
+
+                if (!IsOpen)
+                    return false;
+
+                ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Appearing, new(0.5f, 0.5f));
+                return ImGui.BeginPopupModal(Name, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoMove);
+            }
+
+            // true: steals the button
+            public bool HandleBackButton() 
+            {
+                if (IsOpen)
+                {
+                    RequestClose();
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
         public static void EndWindow() 
         {
             ScrollWhenDraggingOnVoid();
@@ -110,10 +174,23 @@ namespace SysDVR.Client.GUI
 
         public static void CenterText(string text)
         {
-            var size = ImGui.CalcTextSize(text);
+            var size = ImGui.CalcTextSize(text, false, ImGui.GetContentRegionAvail().X);
             var pos = ImGui.GetCursorPos();
             ImGui.SetCursorPos(new Vector2((ImGui.GetContentRegionAvail().X - size.X) / 2, pos.Y));
-            ImGui.Text(text);
+            ImGui.TextWrapped(text);
+        }
+
+        public static bool CenterButton(string text)
+        {
+            var size = ImGui.CalcTextSize(text) + new Vector2(ImGui.GetStyle().FramePadding.X * 2, ImGui.GetStyle().FramePadding.X * 2);
+            return CenterButton(text, size);
+        }
+
+        public static bool CenterButton(string text, Vector2 size)
+        {
+            var pos = ImGui.GetCursorPos();
+            ImGui.SetCursorPos(new Vector2((ImGui.GetWindowSize().X - size.X) / 2, pos.Y));
+            return ImGui.Button(text, size);
         }
 
         public static void H1() 

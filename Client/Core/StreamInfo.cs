@@ -49,10 +49,21 @@ namespace SysDVR.Client.Core
         public readonly ConnectionType Source;
         public readonly string ConnectionString;
 
+        public readonly string TextRepresentation;
+
         public readonly string AdvertisementString;
         public readonly string ProtocolVersion;
         public readonly string Version;
         public readonly string Serial;
+
+        static ReadOnlySpan<byte> TrimNullBytes(ReadOnlySpan<byte> source) 
+        {
+            var nullStart = source.IndexOf((byte)0);
+            if (nullStart == -1)
+                return source;
+
+            return source.Slice(0, nullStart);
+        }
 
         public DeviceInfo(ConnectionType source, string advertisementString, string connectionString)
         {
@@ -75,12 +86,14 @@ namespace SysDVR.Client.Core
                 throw new Exception("Invalid protocol version format");
 
             Serial = parts[3];
+
+            TextRepresentation = Source == ConnectionType.Net ?
+                $"SysDVR {Version} - {Serial} @ {ConnectionString}" :
+                $"SysDVR {Version} - {Serial} @ USB";
         }
 
-        public override string ToString() =>
-            Source == ConnectionType.Net ?
-                $"SysDVR {Version} - {Serial} @ {Source} {ConnectionString}" :
-                $"SysDVR {Version} - {Serial} @ {Source}";
+        public override string ToString() => 
+            TextRepresentation;
 
         public static DeviceInfo? TryParse(ConnectionType source, string advertisementString, string connectionString)
         {
@@ -95,7 +108,7 @@ namespace SysDVR.Client.Core
         {
             try
             {
-                var str = Encoding.UTF8.GetString(advertisementPacket);
+                var str = Encoding.UTF8.GetString(TrimNullBytes(advertisementPacket));
                 return new DeviceInfo(source, str, connectionString);
             }
             catch

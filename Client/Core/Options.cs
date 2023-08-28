@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ namespace SysDVR.Client.Core
     {
         public bool UncapStreaming;
         public bool UncapGUI;
+        public string RecordingsPath = DefaultPlatformSavePath();
 
         // Usb logging options
         public UsbLogMode UsbLogging = UsbLogMode.Default;
@@ -42,5 +44,19 @@ namespace SysDVR.Client.Core
             ScaleMode.Best => "best",
             _ => throw new NotImplementedException(),
         };
+
+        static string DefaultPlatformSavePath() 
+        {
+#if ANDROID_LIB
+            return "/sdcard/Movies";  
+#else
+            if (OperatingSystem.IsWindows())
+                return Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+            else
+                // like you realise ~/Videos is a thing on linux right
+                //                                                  -Blecc
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Videos");
+#endif
+        }
     }
 }

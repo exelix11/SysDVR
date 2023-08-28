@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.Core
 {
@@ -11,11 +12,11 @@ namespace SysDVR.Client.Core
     {
         private const string BaseArgs = "--profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts";
 
-        private static IOutStream GetVTarget(StreamKind kind, string path) =>
-            kind == StreamKind.Video ? new StdInTarget(path, "- --fps=30 " + BaseArgs) : null;
+        private static OutStream GetVTarget(StreamKind kind, string path) =>
+            kind == StreamKind.Video ? StreamTarget.ForProcess(kind, path, "- --fps=30 " + BaseArgs) : null;
 
-        private static IOutStream GetATarget(StreamKind kind, string path) =>
-            kind == StreamKind.Audio ? new StdInTarget(path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
+        private static OutStream GetATarget(StreamKind kind, string path) =>
+            kind == StreamKind.Audio ? StreamTarget.ForProcess(kind, path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
 
         public MpvStdinManager(StreamKind kind, string path) :
             base(GetVTarget(kind, path), GetATarget(kind, path))
@@ -27,11 +28,11 @@ namespace SysDVR.Client.Core
 
     class StdOutManager : BaseStreamManager
     {
-        private static IOutStream GetVTarget(StreamKind kind) =>
-            kind == StreamKind.Video ? new StdOutTarget() : null;
+        private static OutStream GetVTarget(StreamKind kind) =>
+            kind == StreamKind.Video ? StreamTarget.ForStdOut(kind) : null;
 
-        private static IOutStream GetATarget(StreamKind kind) =>
-            kind == StreamKind.Audio ? new StdOutTarget() : null;
+        private static OutStream GetATarget(StreamKind kind) =>
+            kind == StreamKind.Audio ? StreamTarget.ForStdOut(kind) : null;
 
         public StdOutManager(StreamKind kind) :
             base(GetVTarget(kind), GetATarget(kind))
@@ -41,11 +42,26 @@ namespace SysDVR.Client.Core
         }
     }
 
-    class StdInTarget : IOutStream
+    class StreamTarget : OutStream
     {
-        Process proc;
+        Stream stream;
+        Process? processHandle;
+        bool firstTimeForVideo = true;
 
-        public StdInTarget(string path, string args)
+        public StreamTarget(Stream stream, bool isVideo)
+        {
+            this.stream = stream;
+
+            if (!isVideo)
+                firstTimeForVideo = false;
+        }
+
+        public static StreamTarget ForStdOut(StreamKind kind)
+        {
+            return new StreamTarget(Console.OpenStandardOutput(), kind == StreamKind.Video);
+        }
+
+        public static StreamTarget ForProcess(StreamKind kind, string path, string args)
         {
             ProcessStartInfo p = new ProcessStartInfo()
             {
@@ -54,53 +70,41 @@ namespace SysDVR.Client.Core
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true
             };
-            proc = Process.Start(p);
+            
+            var proc = Process.Start(p);
+
+            var target = new StreamTarget(proc.StandardInput.BaseStream, kind == StreamKind.Video);
+            target.processHandle = proc;
+
+            return target;
         }
 
-        private bool FirstTime = true;
-        public void SendData(PoolBuffer data, ulong ts)
+        protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            if (FirstTime)
+            if (firstTimeForVideo)
             {
-                proc.StandardInput.BaseStream.Write(StreamInfo.SPS);
-                proc.StandardInput.BaseStream.Write(StreamInfo.PPS);
-                FirstTime = false;
+                stream.Write(StreamInfo.SPS);
+                stream.Write(StreamInfo.PPS);
+                firstTimeForVideo = false;
             }
 
-            proc.StandardInput.BaseStream.Write(data.Span);
-            proc.StandardInput.BaseStream.Flush();
+            stream.Write(block.Span);
+            stream.Flush();
 
-            data.Free();
+            block.Free();
         }
 
-        public void UseCancellationToken(CancellationToken tok) { }
-    }
-
-    class StdOutTarget : IOutStream
-    {
-        Stream stdout;
-
-        public StdOutTarget()
+        public override void Dispose()
         {
-            stdout = Console.OpenStandardOutput();
-        }
-
-        private bool FirstTime = true;
-        public void SendData(PoolBuffer data, ulong ts)
-        {
-            if (FirstTime)
+            if (processHandle is not null)
             {
-                stdout.Write(StreamInfo.SPS);
-                stdout.Write(StreamInfo.PPS);
-                FirstTime = false;
+                if (!processHandle.HasExited)
+                    processHandle.Kill();
+
+                processHandle.Dispose();
             }
 
-            stdout.Write(data.Span);
-            stdout.Flush();
-
-            data.Free();
+            base.Dispose();
         }
-
-        public void UseCancellationToken(CancellationToken tok) { }
     }
 }
