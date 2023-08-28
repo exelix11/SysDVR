@@ -12,6 +12,7 @@ namespace SysDVR.Client.Sources
     internal class DeviceConnector
     {
         public event Action<string> OnError;
+        public event Action<string> OnMessage;
         public event Action<BaseStreamManager> OnConnected;
 
         readonly DeviceInfo Info;
@@ -42,14 +43,14 @@ namespace SysDVR.Client.Sources
             else throw new Exception();
         }
 
-        public void Connect() 
+        public async void Connect() 
         {
             try 
             {
                 if (Info.Source == ConnectionType.Net)
-                    BeginNet();
+                    await BeginNet();
                 else if (Info.Source == ConnectionType.Usb)
-                    BeginUsb();
+                    await BeginUsb();
             }
             catch (Exception ex)
             {
@@ -60,25 +61,33 @@ namespace SysDVR.Client.Sources
             }
         }
 
-        void BeginUsb() 
+        async Task BeginUsb() 
         {
-
+            throw new NotImplementedException();
         }
 
-        void BeginNet() 
+        async Task BeginNet() 
         {
             // Tcp bridge is single channel, needs two instances.
-            TCPBridgeSource vTcp = Kind is StreamKind.Video or StreamKind.Both ? new TCPBridgeSource(Info, StreamKind.Video) : null;
-            TCPBridgeSource aTcp = Kind is StreamKind.Audio or StreamKind.Both ? new TCPBridgeSource(Info, StreamKind.Audio) : null;
+            TCPBridgeSource? vTcp = Kind is StreamKind.Video or StreamKind.Both ? new TCPBridgeSource(Info, StreamKind.Video) : null;
+            TCPBridgeSource? aTcp = Kind is StreamKind.Audio or StreamKind.Both ? new TCPBridgeSource(Info, StreamKind.Audio) : null;
 
-            vTcp?.UseCancellationToken(Token.Token);
-            aTcp?.UseCancellationToken(Token.Token);
+            if (vTcp is not null) vTcp.OnError += OnMessage;
+            if (aTcp is not null) aTcp.OnError += OnMessage;
 
-            vTcp?.WaitForConnection();
-            aTcp?.WaitForConnection();
+            Task conn = Kind == StreamKind.Both ?
+                Task.WhenAll(vTcp!.ConnectAsync(Token.Token), aTcp!.ConnectAsync(Token.Token)) :
+                vTcp?.ConnectAsync(Token.Token) ?? aTcp!.ConnectAsync(Token.Token);
 
-            if (Token.IsCancellationRequested)
-                return;
+            try
+            {
+                await conn;
+            }
+            finally 
+            {
+                if (vTcp is not null) vTcp.OnError -= OnMessage;
+                if (aTcp is not null) aTcp.OnError -= OnMessage;
+            }
 
             var mng = GetManager();
             if (vTcp is not null) mng.AddSource(vTcp);

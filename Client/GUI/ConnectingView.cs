@@ -19,6 +19,7 @@ namespace SysDVR.Client.GUI
         readonly DeviceConnector conn;
 
         bool connected;
+        bool isError;
         string? errorLine;
 
         public ConnectingView(DeviceInfo info, StreamKind mode)
@@ -28,6 +29,13 @@ namespace SysDVR.Client.GUI
             conn = new DeviceConnector(info, src, mode);
             conn.OnConnected += Conn_OnConnected;
             conn.OnError += Conn_OnError;
+            conn.OnMessage += Conn_OnMessage;
+        }
+
+        private void Conn_OnMessage(string obj)
+        {
+            errorLine ??= "";
+            errorLine += obj + "\n";
         }
 
         public override void Created()
@@ -37,6 +45,7 @@ namespace SysDVR.Client.GUI
 
         private void Conn_OnError(string obj)
         {
+            isError = true;
             errorLine = obj;
         }
 
@@ -44,6 +53,7 @@ namespace SysDVR.Client.GUI
         {
             conn.OnConnected -= Conn_OnConnected;
             conn.OnError -= Conn_OnError;
+            conn.OnMessage -= Conn_OnMessage;
             connected = true;
 
             Program.Instance.ReplaceView(new PlayerView((PlayerManager)obj));
@@ -55,6 +65,7 @@ namespace SysDVR.Client.GUI
             {
                 conn.OnConnected -= Conn_OnConnected;
                 conn.OnError -= Conn_OnError;
+                conn.OnMessage -= Conn_OnMessage;
                 // If we are cdonnected the cancellation token is passed to the player 
                 src.Cancel();
             }
@@ -68,7 +79,7 @@ namespace SysDVR.Client.GUI
             ImGui.NewLine();
 
             Gui.H2();
-            Gui.CenterText("Connecting, please wait.");
+            Gui.CenterText(isError ? "Cnnection failed" : "Connecting, please wait.");
             ImGui.PopFont();
 
             Gui.CenterText(info.ToString());
@@ -77,20 +88,11 @@ namespace SysDVR.Client.GUI
 
             var btnSize = new Vector2(ImGui.GetWindowSize().X * 5 / 6, Gui.ButtonHeight());
             if (errorLine != null)
-            {
-                Gui.CenterText("Three was an error:");
                 ImGui.TextWrapped(errorLine);
 
-                Gui.CursorFromBottom(btnSize.Y);
-                if (Gui.CenterButton("Go back", btnSize))
-                    Program.Instance.PopView();
-            }
-            else 
-            {
-                Gui.CursorFromBottom(btnSize.Y);
-                if (Gui.CenterButton("Cancel", btnSize))
-                    Program.Instance.PopView();
-            }
+            Gui.CursorFromBottom(btnSize.Y);
+            if (Gui.CenterButton(isError ? "Go back" : "Cancel", btnSize))
+                Program.Instance.PopView();
 
             Gui.EndWindow();
         }

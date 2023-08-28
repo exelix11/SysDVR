@@ -29,17 +29,22 @@ namespace SysDVR.Client.Sources
         readonly string IpAddress;
 		readonly byte HeaderMagicByte;
 
+        public event Action<string> OnError;
+        public event Action<Exception> OnFatalError;
+
         CancellationToken Token;
 		Socket Sock;
         bool CommunicationException = false;
+
+        bool InSync = false;
 
         public TCPBridgeSource(DeviceInfo ip, StreamKind kind)
 		{
             if (kind == StreamKind.Both)
                 throw new Exception("Tcp bridge can't stream both channels over a single connection");
 
-			if (ip.ProtocolVersion != ProtocolVersion)
-				throw new Exception($"Protocol version {ip.ProtocolVersion} is not supported");
+			if (!ip.CheckProtocolVersion(ProtocolVersion))
+				throw new Exception($"Target protocol version is not supported, update your client and sysmodule");
 
             SourceKind = kind;
 			IpAddress = ip.ConnectionString;
@@ -48,65 +53,61 @@ namespace SysDVR.Client.Sources
 				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
         }
 
-        public void WaitForConnection()
-		{
+        public async Task ConnectAsync(CancellationToken tok)
+        {
+            Token = tok;
             Sock?.Close();
             Sock?.Dispose();
-			CommunicationException = false;
+            CommunicationException = false;
 
             Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+                Sock.NoDelay = true;
+            }
+            catch { }
 
-			try {
-				Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
-				Sock.NoDelay = true;
-			}
-			catch { }
+            Exception ReportException = null;
+            for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++)
+            {
+                if (i != 0 || DebugOptions.Current.Log) // Don't show error for the first attempt
+                    OnError?.Invoke($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
 
-			Exception ReportException = null;
-			for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++) 
-			{
-				if (i != 0 || DebugOptions.Current.Log) // Don't show error for the first attempt
-					Console.WriteLine($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
+                try
+                {
+                    await Sock.ConnectAsync(IpAddress, Port, Token).ConfigureAwait(false);
+                    if (Sock.Connected)
+                    {
+                        Sock.NoDelay = true;
+                        Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
 
-				try
-				{
-					Sock.ConnectAsync(IpAddress, Port, Token).GetAwaiter().GetResult();
-					if (Sock.Connected)
-					{
-						Sock.NoDelay = true;
-						Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+                        // Assume the connection starts in-sync and fall back to resync code only on failure
+                        InSync = true;
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ReportException = ex;
+                    await Task.Delay(ConnFailDelayMs).ConfigureAwait(false);
+                }
+            }
 
-						// Assume the connection starts in-sync and fall back to resync code only on failure
-						InSync = true;
-						break;
-					}
-				}
-				catch (Exception ex) 
-				{
-					ReportException = ex;
-					Thread.Sleep(ConnFailDelayMs);
-				}
-			}
+            if (Token.IsCancellationRequested)
+                return;
 
-			if (Token.IsCancellationRequested)
-				return;
-
-			if (!Sock.Connected)
-			{
-				Console.WriteLine($"Connection to {SourceKind} stream failed. Throwing exception.");
-				throw ReportException ?? new Exception("No exception provided");
-			}
-		}
+            if (!Sock.Connected)
+            {
+                OnError?.Invoke($"Connection to {SourceKind} stream failed. Throwing exception.");
+                throw ReportException ?? new Exception("No exception provided");
+            }
+        }
 
 		public void StopStreaming()
 		{
 			Sock?.Close();
             Sock?.Dispose();
-		}
-
-		public void UseCancellationToken(CancellationToken tok)
-		{
-			Token = tok;
 		}
 
 		public void Flush() 
@@ -121,14 +122,14 @@ namespace SysDVR.Client.Sources
 				Sock?.Dispose();
 				Sock = null;
 
-                Console.WriteLine($"{SourceKind} stream connection lost, reconnecting...");
+                OnError?.Invoke($"{SourceKind} stream connection lost, reconnecting...");
                 Thread.Sleep(800);
-				WaitForConnection();
+				
+                ConnectAsync(Token).GetAwaiter().GetResult();
 			}
         }
 
-        bool InSync = false;
-		public bool ReadHeader(byte[] buffer)
+        public bool ReadHeader(byte[] buffer)
         {
             // What is this ? Isn't TCP supposed to be reliable ?
 			// Well turs out we have small-ish socket buffers on the console side and certain packets like video
@@ -141,7 +142,7 @@ namespace SysDVR.Client.Sources
             else
             {
 				if (DebugOptions.Current.Log)
-					Console.WriteLine($"{SourceKind} Resyncing....");
+                    OnError?.Invoke($"{SourceKind} Resyncing....");
 
                 // TCPBridge is a raw stream of data, search for an header
                 for (int i = 0; i < 4 && !Token.IsCancellationRequested;)
@@ -192,7 +193,7 @@ namespace SysDVR.Client.Sources
 		{
 			return ReadExact(buffer.AsSpan().Slice(0, length));
 		}
-	}
+    }
 
 	static internal partial class Exten 
 	{

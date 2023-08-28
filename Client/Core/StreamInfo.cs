@@ -46,15 +46,16 @@ namespace SysDVR.Client.Core
 
     public class DeviceInfo
     {
+        private readonly string AdvertisementString;
+        private readonly int ProtocolVersion;
+        
         public readonly ConnectionType Source;
         public readonly string ConnectionString;
-
-        public readonly string TextRepresentation;
-
-        public readonly string AdvertisementString;
-        public readonly int ProtocolVersion;
+        public readonly bool IsManualConnection;
         public readonly string Version;
         public readonly string Serial;
+
+        public readonly string TextRepresentation;
 
         static ReadOnlySpan<byte> TrimNullBytes(ReadOnlySpan<byte> source) 
         {
@@ -65,11 +66,34 @@ namespace SysDVR.Client.Core
             return source.Slice(0, nullStart);
         }
 
+        public bool CheckProtocolVersion(int current)
+        {
+            if (IsManualConnection)
+                return true;
+
+            return ProtocolVersion == current;
+        }
+
+        private DeviceInfo(string ip)
+        {
+            this.Source = ConnectionType.Net;
+            this.ConnectionString = ip;
+            this.IsManualConnection = true;
+
+            this.AdvertisementString = "";
+            this.Version = "0.0";
+            this.ProtocolVersion = 0;
+            this.Serial = "00000000";
+
+            this.TextRepresentation = $"Unknown SysDVR @ {ConnectionString}";
+        }
+
         public DeviceInfo(ConnectionType source, string advertisementString, string connectionString)
         {
             this.Source = source;
             this.AdvertisementString = advertisementString;
             this.ConnectionString = connectionString;
+            this.IsManualConnection = false;
 
             // Example beacon format:
             //      SysDVR|6.0|00|NX00000000
@@ -89,9 +113,11 @@ namespace SysDVR.Client.Core
 
             Serial = parts[3];
 
+            var printSerial = Program.Options.HideSerials ? "(serial hidden)" : Serial;
+
             TextRepresentation = Source == ConnectionType.Net ?
-                $"SysDVR {Version} - {Serial} @ {ConnectionString}" :
-                $"SysDVR {Version} - {Serial} @ USB";
+                $"SysDVR {Version} - {printSerial} @ {ConnectionString}" :
+                $"SysDVR {Version} - {printSerial} @ USB";
         }
 
         public override string ToString() => 
@@ -106,6 +132,7 @@ namespace SysDVR.Client.Core
                 return null;
             }
         }
+
         public static DeviceInfo? TryParse(ConnectionType source, byte[] advertisementPacket, string connectionString)
         {
             try
@@ -117,6 +144,11 @@ namespace SysDVR.Client.Core
             {
                 return null;
             }
+        }
+
+        public static DeviceInfo ForIp(string ipAddress)
+        {
+            return new DeviceInfo(ipAddress);    
         }
     }
 }

@@ -158,7 +158,7 @@ public class ClientApp
         SDL_RenderClear(SdlRenderer);
     }
 
-    private void SetFullScreen(bool enableFullScreen)
+    public void SetFullScreen(bool enableFullScreen)
     {
         IsFullscreen = enableFullScreen;
         SDL_SetWindowFullscreen(SdlWindow, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);

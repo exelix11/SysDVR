@@ -134,6 +134,9 @@ namespace SysDVR.Client.Core
     {
         private bool disposedValue;
 
+        public event Action<Exception> OnFatalError;
+        public event Action<string> OnErrorMessage;
+
         // Usb streaming may require a single thread
         private StreamThread Thread1;
         private StreamThread? Thread2;
@@ -148,6 +151,12 @@ namespace SysDVR.Client.Core
 
         readonly CancellationTokenSource Cancel;
 
+        public void ReportError(string message) =>
+            OnErrorMessage?.Invoke(message);
+
+        public void ReportFatalError(Exception ex) =>
+            OnFatalError?.Invoke(ex);
+
         public BaseStreamManager(OutStream videoTarget, OutStream audioTarget, CancellationTokenSource cancel)
         {
             VideoTarget = videoTarget;
@@ -160,21 +169,21 @@ namespace SysDVR.Client.Core
             if (source.SourceKind == StreamKind.Video)
             {
                 if (HasVideo) throw new Exception("Already has a video source");
-                Thread1 = new SingleStreamThread(source, VideoTarget);
+                Thread1 = new SingleStreamThread(source, VideoTarget, this);
 
                 Streams = HasAudio ? StreamKind.Both : StreamKind.Video;
             }
             else if (source.SourceKind == StreamKind.Audio)
             {
                 if (HasAudio) throw new Exception("Already has an audio source");
-                Thread2 = new SingleStreamThread(source, AudioTarget);
+                Thread2 = new SingleStreamThread(source, AudioTarget, this);
 
                 Streams = HasVideo ? StreamKind.Both : StreamKind.Audio;
             }
             else if (source.SourceKind == StreamKind.Both)
             {
                 if (HasAudio || HasVideo) throw new Exception("Already has a multi source");
-                Thread1 = new MultiStreamThread(source, VideoTarget, AudioTarget);
+                Thread1 = new MultiStreamThread(source, VideoTarget, AudioTarget, this);
 
                 Streams = StreamKind.Both;
             }
