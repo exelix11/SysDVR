@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.Core
@@ -18,8 +19,8 @@ namespace SysDVR.Client.Core
         private static OutStream GetATarget(StreamKind kind, string path) =>
             kind == StreamKind.Audio ? StreamTarget.ForProcess(kind, path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
 
-        public MpvStdinManager(StreamKind kind, string path) :
-            base(GetVTarget(kind, path), GetATarget(kind, path))
+        public MpvStdinManager(StreamKind kind, string path, CancellationTokenSource cancel) :
+            base(GetVTarget(kind, path), GetATarget(kind, path), cancel)
         {
             if (kind == StreamKind.Both)
                 throw new Exception("MpvStdinManager can only handle one stream");
@@ -34,8 +35,8 @@ namespace SysDVR.Client.Core
         private static OutStream GetATarget(StreamKind kind) =>
             kind == StreamKind.Audio ? StreamTarget.ForStdOut(kind) : null;
 
-        public StdOutManager(StreamKind kind) :
-            base(GetVTarget(kind), GetATarget(kind))
+        public StdOutManager(StreamKind kind, CancellationTokenSource cancel) :
+            base(GetVTarget(kind), GetATarget(kind), cancel)
         {
             if (kind == StreamKind.Both)
                 throw new Exception("StdOutManager can only handle one stream");

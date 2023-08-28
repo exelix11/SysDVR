@@ -1,11 +1,13 @@
 ﻿using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
+using SysDVR.Client.Sources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client
@@ -31,11 +33,18 @@ namespace SysDVR.Client
         {
             RunApp(args);
         }
+
+        private static void Scan_OnDeviceFound(DeviceInfo obj)
+        {
+            Console.WriteLine(obj);
+        }
 #endif
-        
+
         private static void RunApp(string[] args)
         {
+#if !DEBUG
             try
+#endif
             {
                 {
                     var ver = typeof(Program).Assembly.GetName().Version;
@@ -44,17 +53,17 @@ namespace SysDVR.Client
                         $"{ver.Major}.{ver.Minor}{(ver.Revision == 0 ? "" : $".{ver.Revision}")}";
                 }
 
+                Console.WriteLine("Starting SysDVR Client " + Version);
                 DynamicLibraryLoader.Initialize();
                 Instance = new ClientApp();
                 Instance.EntryPoint(args);
             }
+            #if !DEBUG
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                Console.WriteLine(ex.StackTrace.ToString());
-                Console.WriteLine(ex.InnerException.ToString());
-                Console.WriteLine(ex.InnerException?.StackTrace?.ToString());
             }
+#endif
         }
     }
 }

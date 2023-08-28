@@ -50,7 +50,6 @@ namespace SysDVR.Client.Core
         // this field should match the NoAudio/NoVideo state of the target
         StreamKind SourceKind { get; }
 
-        DebugOptions Logging { get; set; }
         void UseCancellationToken(CancellationToken tok);
 
         void WaitForConnection();
@@ -118,16 +117,12 @@ namespace SysDVR.Client.Core
             var logStats = DebugOptions.Current.Stats;
             var logDbg = DebugOptions.Current.Log;
 
-            Source.Logging = DebugOptions.Current;
-            Source.UseCancellationToken(token);
-
             SetCancellationToken(token);
 
             var HeaderData = new byte[PacketHeader.StructLength];
             ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
             try
             {
-                Source.WaitForConnection();
             loop_again:
                 while (!token.IsCancellationRequested)
                 {

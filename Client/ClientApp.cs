@@ -67,22 +67,27 @@ public class ClientApp
 
     void HandlePopView() 
     {
+        CurrentView?.LeaveForeground();
         CurrentView?.Destroy();
         CurrentView = null;
         if (Views.Count > 0 ) 
         {
             CurrentView = Views.Pop();
             Cap.SetMode(CurrentView.RenderMode);
+            CurrentView?.ResolutionChanged();
             CurrentView?.EnterForeground();
         }
     }
 
     void HandleReplaceView(View v)
     {
+        CurrentView?.LeaveForeground();
         CurrentView?.Destroy();
         CurrentView = v;
         
         Cap.SetMode(CurrentView.RenderMode);
+        CurrentView?.Created();
+        CurrentView?.ResolutionChanged();
         CurrentView?.EnterForeground();
     }
 
@@ -95,6 +100,8 @@ public class ClientApp
         
         CurrentView = v;
         Cap.SetMode(CurrentView.RenderMode);
+        CurrentView?.Created();
+        CurrentView?.ResolutionChanged();
         CurrentView?.EnterForeground();
     }
 
@@ -103,20 +110,21 @@ public class ClientApp
         if (NextAction is null)
             return;
 
-        switch (NextAction.Type)
+        var n = NextAction;
+        NextAction = null;
+
+        switch (n.Type)
         {
             case ViewAction.Pop:
                 HandlePopView();
                 break;
             case ViewAction.Push:
-                HandlePushView(NextAction.Object!);
+                HandlePushView(n.Object!);
                 break;
             case ViewAction.Replace:
-                HandleReplaceView(NextAction.Object!);
+                HandleReplaceView(n.Object!);
                 break;
         }
-
-        NextAction = null;
     }
 
     // Public view management API, these are deferred as they can be called mid-drawing
@@ -214,7 +222,7 @@ public class ClientApp
 
     internal void EntryPoint(string[] args)
     {
-        SDL_Init(SDL_INIT_VIDEO).AssertZero(SDL_GetError);
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
 
         var flags = SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_PNG;
         SDL_image.IMG_Init(flags).AssertEqual((int)flags, SDL_image.IMG_GetError);
@@ -235,7 +243,7 @@ public class ClientApp
                 .AssertNotNull(SDL_GetError);
 
         SDL_GetRendererInfo(SdlRenderer, out var info);
-        Trace.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
+        Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
 
         var ctx = ImGui.CreateContext();
 
@@ -254,7 +262,7 @@ public class ClientApp
         BackupDeafaultStyle();
         UpdateSize();
 
-        PushView(new MainView());
+        PushView(new NetworkScanView(""));
         HandleNextAction();
 
         while (true)

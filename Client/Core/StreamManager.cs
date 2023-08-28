@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 
 namespace SysDVR.Client.Core
 {
@@ -69,16 +70,27 @@ namespace SysDVR.Client.Core
     abstract class OutStream : IDisposable
     {
         protected OutStream? Next;
-        protected bool OwnsNext;
         protected CancellationToken Cancel;
 
-        public void ChainStream(OutStream next, bool ownsNext)
+        public void ChainStream(OutStream toAdd)
         {
-            if (Next is not null && OwnsNext)
-                Next.Dispose();
+            if (Next is not null)
+                Next.ChainStream(toAdd);
+            else 
+                Next = toAdd;
+        }
 
-            OwnsNext = ownsNext;
-            Next = next;
+        public void UnchainType<T>()
+        {
+            if (Next is T)
+            {
+                var n = Next;
+                Next = Next.Next;
+                Next.Next = null;
+                n.Dispose();
+            }
+            else
+                Next?.UnchainType<T>();
         }
 
         protected virtual void UseCancellationTokenImpl(CancellationToken tok)
@@ -114,8 +126,7 @@ namespace SysDVR.Client.Core
 
         public virtual void Dispose() 
         {
-            if (OwnsNext)
-                Next?.Dispose();
+            Next?.Dispose();
         }
     }
 
@@ -135,10 +146,13 @@ namespace SysDVR.Client.Core
         public bool HasVideo => Streams is StreamKind.Both or StreamKind.Video;
         public bool HasAudio => Streams is StreamKind.Both or StreamKind.Audio;
 
-        public BaseStreamManager(OutStream videoTarget, OutStream audioTarget)
+        readonly CancellationTokenSource Cancel;
+
+        public BaseStreamManager(OutStream videoTarget, OutStream audioTarget, CancellationTokenSource cancel)
         {
             VideoTarget = videoTarget;
             AudioTarget = audioTarget;
+            Cancel = cancel;
         }
 
         public void AddSource(IStreamingSource source)
@@ -180,7 +194,7 @@ namespace SysDVR.Client.Core
                 throw new Exception("One or more targets are not set");
 
             if (DebugOptions.Current.RequiresH264Analysis && VideoTarget is not null)
-                VideoTarget.ChainStream(new H264LoggingTarget(), true);
+                VideoTarget.ChainStream(new H264LoggingTarget());
 
             Thread1?.Start();
             Thread2?.Start();
@@ -188,6 +202,7 @@ namespace SysDVR.Client.Core
 
         public virtual void Stop()
         {
+            Cancel.Cancel();
             Thread1?.Stop();
             Thread2?.Stop();
 

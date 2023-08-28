@@ -49,9 +49,10 @@ namespace SysDVR.Client.Targets.FileOutput
 
     class LoggingManager : BaseStreamManager
     {
-        public LoggingManager(string VPath, string APath) : base(
+        public LoggingManager(string VPath, string APath, CancellationTokenSource cancel) : base(
             VPath != null ? new LoggingTarget(VPath) : null,
-            APath != null ? new LoggingTarget(APath) : null)
+            APath != null ? new LoggingTarget(APath) : null,
+            cancel)
         {
 
         }

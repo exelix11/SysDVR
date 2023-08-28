@@ -17,14 +17,18 @@ namespace SysDVR.Client.GUI
         readonly NetworkScan scanner = new();
         readonly List<DeviceInfo> devices = new List<DeviceInfo>();
         readonly byte[] IpAddressTextBuf = new byte[256];
+        
+        string autoConnect;
 
         Gui.Popup ipEnterPopup = new("Enter console IP address");
         Gui.CenterGroup manualIpCenter = new();
         Gui.CenterGroup popupBtnCenter = new();
         string? lastError;
 
-        public NetworkScanView()
+        public NetworkScanView(string? autoconnect = null)
         {
+            autoConnect = autoconnect;
+
             scanner.OnDeviceFound += OnDeviceFound;
             scanner.OnFailure += OnFailure;
         }
@@ -34,6 +38,12 @@ namespace SysDVR.Client.GUI
             lock (this)
             {
                 devices.Add(info);
+            }
+
+            if (autoConnect != null) 
+            {
+                if (autoConnect == "" || info.Serial.EndsWith(autoConnect))
+                    ConenctToDevice(info);
             }
         }
 
@@ -54,6 +64,10 @@ namespace SysDVR.Client.GUI
         public override void LeaveForeground()
         {
             scanner.StopScannning();
+
+            lock (this)
+                devices.Clear();
+
             base.LeaveForeground();
         }
 
@@ -77,7 +91,8 @@ namespace SysDVR.Client.GUI
 
         void ConenctToDevice(DeviceInfo info)
         {
-
+            autoConnect = null;
+            Program.Instance.PushView(new ConnectingView(info, StreamKind.Both));
         }
 
         public override void Draw()
@@ -85,13 +100,29 @@ namespace SysDVR.Client.GUI
             var portrait = Program.Instance.IsPortrait;
 
             Gui.BeginWindow("Network scanner");
+            var win = ImGui.GetWindowSize();
 
             Gui.CenterText("Searching for network devices...");
-            ImGui.NewLine();
+            
+            if (autoConnect is not null)
+            {
+                ImGui.Spacing();
 
-            var win = ImGui.GetWindowSize();
+                if (autoConnect == "")
+                    Gui.CenterText("SysDVR will connect automatically to the first device that appears");
+                else
+                    Gui.CenterText("SysDVR will connect automatically to the console with serial containing: " + autoConnect);
+
+                if (Gui.CenterButton("Cancel auto conect", new(win.X * 5 / 6, 0)))
+                {
+                    autoConnect = null;
+                }
+
+                ImGui.Spacing();
+            }
+            else ImGui.NewLine();
+
             var sz = win;
-
             sz.Y *= portrait ? .5f : .4f;
             sz.X *= portrait ? .92f : .82f;
             
@@ -132,9 +163,8 @@ namespace SysDVR.Client.GUI
                 ImGui.Text(lastError);
             }
 
-            var styley = ImGui.GetStyle().WindowPadding.Y;
-            sz.Y = ImGui.CalcTextSize("AAA").Y + styley * 2;
-            ImGui.SetCursorPosY(win.Y - sz.Y - styley * 2);
+            sz.Y = Gui.ButtonHeight();
+            Gui.CursorFromBottom(sz.Y);
             if (Gui.CenterButton("Go back", sz))
             {
                 Program.Instance.PopView();

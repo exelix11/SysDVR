@@ -18,9 +18,10 @@ namespace SysDVR.Client.Targets.FileOutput
         private bool disposedValue;
         readonly Mp4Output output;
 
-        public Mp4OutputManager(string filename, bool HasVideo, bool HasAudio) : base(
+        public Mp4OutputManager(string filename, bool HasVideo, bool HasAudio, CancellationTokenSource cancel) : base(
             HasVideo ? new Mp4VideoTarget() : null,
-            HasAudio ? new Mp4AudioTarget() : null)
+            HasAudio ? new Mp4AudioTarget() : null,
+            cancel)
         {
             output = new Mp4Output(filename, VideoTarget as Mp4VideoTarget, AudioTarget as Mp4AudioTarget);
         }

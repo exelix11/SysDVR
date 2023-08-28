@@ -148,12 +148,12 @@ namespace SysDVR.Client.GUI
 
         void LaunchStub() 
         {
-            var StreamManager = new PlayerManager(true, false);
-
-            StreamManager.AddSource(new StubSource(true, false));
-
-            var view = new PlayerView(StreamManager.VideoTarget, StreamManager.AudioTarget);
-            Program.Instance.PushView(view);
+           //var StreamManager = new PlayerManager(true, false);
+           //
+           //StreamManager.AddSource(new StubSource(true, false));
+           //
+           //var view = new PlayerView(StreamManager.VideoTarget, StreamManager.AudioTarget);
+           //Program.Instance.PushView(view);
         }
 
         //void LaunchTcp() 

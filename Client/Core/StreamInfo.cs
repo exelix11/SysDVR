@@ -52,7 +52,7 @@ namespace SysDVR.Client.Core
         public readonly string TextRepresentation;
 
         public readonly string AdvertisementString;
-        public readonly string ProtocolVersion;
+        public readonly int ProtocolVersion;
         public readonly string Version;
         public readonly string Serial;
 
@@ -81,9 +81,11 @@ namespace SysDVR.Client.Core
 
             Version = parts[1];
             
-            ProtocolVersion = parts[2];
-            if (ProtocolVersion.Length != "00".Length)
+            var protover = parts[2];
+            if (protover.Length != "00".Length)
                 throw new Exception("Invalid protocol version format");
+
+            ProtocolVersion = int.Parse(protover, System.Globalization.NumberStyles.HexNumber);
 
             Serial = parts[3];
 

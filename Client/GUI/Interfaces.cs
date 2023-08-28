@@ -30,16 +30,9 @@ namespace SysDVR.Client.GUI
             Program.Instance.PopView();
         }
 
-        public virtual void EnterForeground() 
-        {
-            ResolutionChanged();
-        }
-
-        public virtual void Destroy() 
-        {
-            LeaveForeground();
-        }
- 
+        public virtual void Created() { }
+        public virtual void EnterForeground() { }
+        public virtual void Destroy() { }
         public virtual void LeaveForeground() { }
     }
 
@@ -191,6 +184,25 @@ namespace SysDVR.Client.GUI
             var pos = ImGui.GetCursorPos();
             ImGui.SetCursorPos(new Vector2((ImGui.GetWindowSize().X - size.X) / 2, pos.Y));
             return ImGui.Button(text, size);
+        }
+
+        public static float ButtonHeight() 
+        {
+            var styley = ImGui.GetStyle().WindowPadding.Y;
+            return ImGui.CalcTextSize("AAA").Y + styley * 2;
+        }
+
+        public static void CursorFromBottom(float height)
+        {
+            var styley = ImGui.GetStyle().WindowPadding.Y;
+            var y = ImGui.GetWindowSize().Y;
+            var cur = ImGui.GetCursorPosY();
+
+            y -= styley + height;
+
+            // If the layout is already too low do nothing to avoid overlapping components
+            if (cur < y)
+                ImGui.SetCursorPosY(y);
         }
 
         public static void H1() 
