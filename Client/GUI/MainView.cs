@@ -80,12 +80,12 @@ namespace SysDVR.Client.GUI
                 var center = w / 2 - ModeButtonWidth / 2;
 
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton2(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
 
                 y += 20 * uiScale + ModeButtonHeight;
 
                 ImGui.SetCursorPos(new(center, y));
-                usb = ModeButton2(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
@@ -93,13 +93,18 @@ namespace SysDVR.Client.GUI
             {
                 var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton2(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
 
                 ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
-                usb = ModeButton2(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
+
+            if (usb)
+                Program.Instance.PushView(new UsbDevicesView());
+            else if (wifi)
+                Program.Instance.PushView(new NetworkScanView());
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
@@ -187,7 +192,7 @@ namespace SysDVR.Client.GUI
         //    Program.PlayerInstance = StreamManager.player;
         //}
 
-         bool ModeButton2(Image image, string title, int width, int height)
+         bool ModeButton(Image image, string title, int width, int height)
          {
             float InnerPadding = 15 * uiScale;
 

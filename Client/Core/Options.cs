@@ -7,11 +7,12 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
 {
-    public enum UsbLogMode 
+    public enum UsbLogLevel
     {
-        Default,
-        Warn,
+        Error,
+        Warning,
         Debug,
+        None
     }
 
     public enum ScaleMode 
@@ -29,7 +30,7 @@ namespace SysDVR.Client.Core
         public bool HideSerials;
 
         // Usb logging options
-        public UsbLogMode UsbLogging = UsbLogMode.Default;
+        public UsbLogLevel UsbLogging = UsbLogLevel.Error;
 
         // Ffmpeg options
         public bool HardwareAccel;

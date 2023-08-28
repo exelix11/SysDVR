@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Sources
@@ -7,10 +8,11 @@ namespace SysDVR.Client.Sources
     // Stub source for testing SDL/Ffmpeg UI without a real console 
     class StubSource : IStreamingSource
 	{
-		public DebugOptions Logging { get; set; }
+        public event Action<string> OnMessage;
 
-		readonly StreamKind kind;
+        readonly StreamKind kind;
 		public StreamKind SourceKind => kind;
+		CancellationToken Cancellation;
 
 		public StubSource(bool hasVideo, bool hasAudio)
 		{
@@ -23,15 +25,19 @@ namespace SysDVR.Client.Sources
 			};
 		}
 
-        CancellationToken Cancellation;
+        public void Flush() { }
 
-		public void Flush() { }
-        
-		public bool ReadHeader(byte[] buffer) =>
-			throw new NotImplementedException();
+		public bool ReadHeader(byte[] buffer)
+		{
+            Task.Delay(-1, Cancellation).GetAwaiter().GetResult();
+			return false;
+        }
 
-		public bool ReadPayload(byte[] buffer, int length) =>
-			throw new NotImplementedException();
+		public bool ReadPayload(byte[] buffer, int length)
+		{
+			Task.Delay(-1, Cancellation).GetAwaiter().GetResult();
+            return false;
+        }
 
 		public void StopStreaming() { }
 
@@ -40,10 +46,10 @@ namespace SysDVR.Client.Sources
 			Cancellation = tok;
 		}
 
-		public void WaitForConnection()
-		{
-			while (!Cancellation.IsCancellationRequested)
-				Thread.Sleep(1000);
-		}
-	}
+        public Task ConnectAsync(CancellationToken token)
+        {
+            Cancellation = token;
+			return Task.Delay(1000);
+        }
+    }
 }

@@ -72,8 +72,8 @@ namespace SysDVR.Client.Sources
             TCPBridgeSource? vTcp = Kind is StreamKind.Video or StreamKind.Both ? new TCPBridgeSource(Info, StreamKind.Video) : null;
             TCPBridgeSource? aTcp = Kind is StreamKind.Audio or StreamKind.Both ? new TCPBridgeSource(Info, StreamKind.Audio) : null;
 
-            if (vTcp is not null) vTcp.OnError += OnMessage;
-            if (aTcp is not null) aTcp.OnError += OnMessage;
+            if (vTcp is not null) vTcp.OnMessage += OnMessage;
+            if (aTcp is not null) aTcp.OnMessage += OnMessage;
 
             Task conn = Kind == StreamKind.Both ?
                 Task.WhenAll(vTcp!.ConnectAsync(Token.Token), aTcp!.ConnectAsync(Token.Token)) :
@@ -85,8 +85,8 @@ namespace SysDVR.Client.Sources
             }
             finally 
             {
-                if (vTcp is not null) vTcp.OnError -= OnMessage;
-                if (aTcp is not null) aTcp.OnError -= OnMessage;
+                if (vTcp is not null) vTcp.OnMessage -= OnMessage;
+                if (aTcp is not null) aTcp.OnMessage -= OnMessage;
             }
 
             var mng = GetManager();

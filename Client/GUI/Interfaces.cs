@@ -103,15 +103,6 @@ namespace SysDVR.Client.GUI
                 IsOpen = false;
             }
 
-            public void OnResize() 
-            {
-                if (IsOpen)
-                {
-                    RequestClose();
-                    RequestOpen();
-                }
-            }
-
             public bool Begin()
             {
                 return Begin(Vector2.Zero);
