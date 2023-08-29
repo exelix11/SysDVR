@@ -48,16 +48,16 @@ namespace SysDVR.Client.Sources
             try 
             {
                 if (Info.Source == ConnectionType.Net)
-                    await BeginNet();
+                    await BeginNet().ConfigureAwait(false);
                 else if (Info.Source == ConnectionType.Usb)
-                    await BeginUsb();
+                    await BeginUsb().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 if (Token.IsCancellationRequested)
                     return;
 
-                OnError?.Invoke(ex.Message);
+                OnError?.Invoke(ex.ToString());
             }
         }
 
@@ -81,7 +81,7 @@ namespace SysDVR.Client.Sources
 
             try
             {
-                await conn;
+                await conn.ConfigureAwait(false);
             }
             finally 
             {

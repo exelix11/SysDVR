@@ -19,7 +19,7 @@ namespace SysDVR.Client.GUI
     internal class MainView : View
     {
         byte[] text = new byte[1024];
-        
+
         readonly string UsbModeWarn;
         readonly bool IsWindows;
 
@@ -43,14 +43,14 @@ namespace SysDVR.Client.GUI
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
-        
+
         float uiScale;
         bool portrait;
         int ModeButtonWidth;
         int ModeButtonHeight;
 
         public override void ResolutionChanged()
-        {        
+        {
             centerRadios.Reset();
             centerOptions.Reset();
 
@@ -89,7 +89,7 @@ namespace SysDVR.Client.GUI
 
                 y += ModeButtonHeight;
             }
-            else 
+            else
             {
                 var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
                 ImGui.SetCursorPos(new(center, y));
@@ -140,25 +140,31 @@ namespace SysDVR.Client.GUI
 
             ImGui.PopFont();
 
-            ImGui.ImageButton("asdsa", Resources.UsbIcon.Texture, new(60, 20));
+            if (ImGui.ImageButton("asdsa", Resources.UsbIcon.Texture, new(60, 20)))
+            {
+                Program.Instance.ShowDebugInfo = true;
+            }
 
             Gui.EndWindow();
         }
 
-        void ChannelRadio(string name, StreamChannels target) 
+        void ChannelRadio(string name, StreamChannels target)
         {
             if (ImGui.RadioButton(name, channels == target))
                 channels = target;
         }
 
-        void LaunchStub() 
+        void LaunchStub()
         {
-           //var StreamManager = new PlayerManager(true, false);
-           //
-           //StreamManager.AddSource(new StubSource(true, false));
-           //
-           //var view = new PlayerView(StreamManager.VideoTarget, StreamManager.AudioTarget);
-           //Program.Instance.PushView(view);
+            var cancel = new CancellationTokenSource();
+            var StreamManager = new PlayerManager(true, false, cancel);
+
+            var stub = new StubSource(true, false);
+            _ = stub.ConnectAsync(cancel.Token);
+            StreamManager.AddSource(stub);
+
+            var view = new PlayerView(StreamManager);
+            Program.Instance.PushView(view);
         }
 
         //void LaunchTcp() 
@@ -192,8 +198,8 @@ namespace SysDVR.Client.GUI
         //    Program.PlayerInstance = StreamManager.player;
         //}
 
-         bool ModeButton(Image image, string title, int width, int height)
-         {
+        bool ModeButton(Image image, string title, int width, int height)
+        {
             float InnerPadding = 15 * uiScale;
 
             // This is what we're looking for:

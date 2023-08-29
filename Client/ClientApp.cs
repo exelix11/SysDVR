@@ -35,6 +35,10 @@ public class ClientApp
     Vector2 WantedDPIScale;
     bool IsWantedScale;
 
+#if ANDROID_LIB
+    bool usingTextinput;
+#endif
+
     public ImFontPtr FontH1 { get; private set; }
     public ImFontPtr FontH2 { get; private set; }
     public ImFontPtr FontText { get; private set; }
@@ -188,7 +192,7 @@ public class ClientApp
         // Apply scale so the biggest dimension matches 1280
         var oldscale = UiScale;
         var biggest = Math.Max(w, h);
-        UiScale = biggest / (IsPortrait ? 720f : 1280f);
+        UiScale = biggest / 1280f;
         if (UiScale != oldscale)
         {
             RestoreDefaultStyle();
@@ -296,6 +300,17 @@ public class ClientApp
                 }
 
                 ImGuiSDL2Impl.ProcessEvent(in evt);
+
+#if ANDROID_LIB
+                if (ImGui.GetIO().WantTextInput && !usingTextinput) {
+                        SDL.SDL_StartTextInput();
+                        usingTextinput = true;
+                }
+                else if (!ImGui.GetIO().WantTextInput && usingTextinput) {
+                        SDL.SDL_StopTextInput();
+                        usingTextinput = false;
+                }
+#endif
             }
 
             if (Cap.Cap())

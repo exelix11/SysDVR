@@ -36,6 +36,25 @@ if [ ! -d "app/jni/cimgui/cimgui" ]; then
 	rm master.zip
 fi
 
+if [ ! -d "app/libs/" ]; then
+	mkdir app/libs/
+fi
+
+# Ensure android ffmpeg binaries are present
+if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
+	echo Downloading android ffmpeg-kit builds...
+	wget https://github.com/arthenica/ffmpeg-kit/releases/download/v5.1.LTS/ffmpeg-kit-full-5.1.LTS.aar
+	# We manually trim ffmpegkit to get rid of architectures we don't need
+	# This reduces the final APK size from 120MB to 60MB
+	echo Trimming ffmpeg-kit
+	unzip -q ffmpeg-kit-full-5.1.LTS.aar -d ffmpegkit
+	rm -rf ffmpegkit/armeabi-v7a ffmpegkit/x86_64 ffmpegkit/x86 ffmpegkit/jni/x86_64 ffmpegkit/jni/x86 ffmpegkit/jni/armeabi-v7a
+	7z a ffmpegkit.aar.zip ./ffmpegkit/*
+	mv ffmpegkit.aar.zip app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar
+	rm -rf ffmpegkit
+	rm ffmpeg-kit-full-5.1.LTS.aar
+fi
+
 BFLAT=$(pwd)/bflat/bflat
 
 # Check if bflat is available
@@ -54,7 +73,7 @@ cd ../../
 rm -rf obj/
 
 echo Building client...
-$BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB --ldflags "-soname libClient.so" -r bin/Debug/net7.0/FFmpeg.AutoGen.dll -r bin/Debug/net7.0/LibUsbDotNet.dll
+$BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB --ldflags "-soname libClient.so" -r Platform/Android/FFmpeg.AutoGen.dll -r bin/Debug/net7.0/LibUsbDotNet.dll
 
 mv libClient.so Platform/Android/app/jni/Client/libClient.so
 cd Platform/Android/

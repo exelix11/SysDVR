@@ -51,12 +51,21 @@ namespace SysDVR.Client.GUI
 
         private void Conn_OnConnected(BaseStreamManager obj)
         {
+            Console.WriteLine("Connected");
+
             conn.OnConnected -= Conn_OnConnected;
             conn.OnError -= Conn_OnError;
             conn.OnMessage -= Conn_OnMessage;
             connected = true;
 
-            Program.Instance.ReplaceView(new PlayerView((PlayerManager)obj));
+            try
+            {
+                Program.Instance.ReplaceView(new PlayerView((PlayerManager)obj));
+            } 
+            catch (Exception e)
+            {
+                Conn_OnError(e.ToString());
+            }
         }
 
         public override void Destroy()
@@ -79,7 +88,7 @@ namespace SysDVR.Client.GUI
             ImGui.NewLine();
 
             Gui.H2();
-            Gui.CenterText(isError ? "Cnnection failed" : "Connecting, please wait.");
+            Gui.CenterText(isError ? "Fatal error" : "Connecting, please wait");
             ImGui.PopFont();
 
             Gui.CenterText(info.ToString());

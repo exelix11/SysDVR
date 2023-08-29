@@ -21,6 +21,7 @@ namespace SysDVR.Client.Targets.Player
         readonly BlockingCollection<(PoolBuffer, ulong)> samples = new BlockingCollection<(PoolBuffer, ulong)>(20);
         readonly bool log = DebugOptions.Current.Log;
 
+        public int Pending;
         StreamSynchronizationHelper sync;
 
         public void UseSynchronizationHeloper(StreamSynchronizationHelper sync)
@@ -76,6 +77,7 @@ namespace SysDVR.Client.Targets.Player
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
             samples.Add((block, ts), Cancel);
+            Pending = samples.Count;
             // Free is called by the consumer thread...
         }
 
@@ -91,7 +93,9 @@ namespace SysDVR.Client.Targets.Player
     unsafe class H264StreamTarget : OutStream
     {
         readonly Thread VideoConsumerThread;
-        readonly BlockingCollection<(PoolBuffer, ulong)> videoBUffer = new BlockingCollection<(PoolBuffer, ulong)>(50);
+        readonly BlockingCollection<(PoolBuffer, ulong)> videoBuffer = new BlockingCollection<(PoolBuffer, ulong)>(50);
+
+        public int Pending;
 
         DecoderContext ctx;
         int timebase_den;
@@ -107,7 +111,7 @@ namespace SysDVR.Client.Targets.Player
             try
             {
                 // We should not run out of capacity because the target will start dropping packets once their timestamp is too old
-                foreach (var (buf, ts) in videoBUffer.GetConsumingEnumerable(Cancel))
+                foreach (var (buf, ts) in videoBuffer.GetConsumingEnumerable(Cancel))
                 {
                     bool success = false;
                     bool tsFailed = false;
@@ -197,7 +201,7 @@ namespace SysDVR.Client.Targets.Player
             // If the cancellation token is not set, the consumer thread has probably already terminated
             VideoConsumerThread.Join();
             // Free any remaining buffers
-            videoBUffer.ToList().ForEach(x => x.Item1.Free());
+            videoBuffer.ToList().ForEach(x => x.Item1.Free());
             base.Dispose();
         }
 
@@ -224,7 +228,8 @@ namespace SysDVR.Client.Targets.Player
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            videoBUffer.Add((block, ts), Cancel);
+            videoBuffer.Add((block, ts), Cancel);
+            Pending = videoBuffer.Count;
             // Free is called by the consumer thread...
         }
     }
