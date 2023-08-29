@@ -23,6 +23,7 @@ namespace SysDVR.Client.GUI
         {
             this.Texture = texture;
             SDL.SDL_QueryTexture(Texture, out _, out _, out Width, out Height);
+            Program.Instance.OnExit += Dispose;
         }
 
         public static Image FromFile(string filename)
@@ -46,6 +47,7 @@ namespace SysDVR.Client.GUI
             if (Disposed) return;
             SDL.SDL_DestroyTexture(Texture);
             Disposed = true;
+            Program.Instance.OnExit -= Dispose;
         }
     }
 
@@ -65,7 +67,7 @@ namespace SysDVR.Client.GUI
 
         public Image Get()
         {
-            if (image == null)
+            if (image == null || image.Disposed)
             {
                 image = Image.FromFile(Filename);
                 Width = image.Width;

@@ -17,7 +17,7 @@ namespace SysDVR.Client
     public static class Program
     {
         public static ClientApp Instance;
-        public static string Version = "6.0";
+        public static string Version = "6.0 ALPHA";
 
         public static Options Options = new();
 
@@ -62,13 +62,21 @@ namespace SysDVR.Client
             {
                 Console.WriteLine("Failed to set tasl exception handler: " + ex.ToString());
             }
+#endif
 
+#if !DEBUG
             try
 #endif
             {
                 Console.WriteLine("Starting SysDVR Client " + Version);
-                DynamicLibraryLoader.Initialize();
-                Instance = new ClientApp();
+
+                if (Instance is null)
+                {
+                    DynamicLibraryLoader.Initialize();
+                    Instance = new ClientApp();
+                    Instance.Initialize();
+                }
+
                 Instance.EntryPoint(args);
             }
 #if !DEBUG

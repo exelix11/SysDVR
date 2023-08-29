@@ -36,11 +36,15 @@ namespace SysDVR.Client.Core
 
         public override void Write(string? value)
         {
+            if (value.EndsWith("\n")) 
+                value = value[..^1];
+
             Print(value);
         }
 
         public override void Write(char[] buffer, int index, int count)
         {
+            if (buffer[^1] == '\n') --count;
             Write(new string(buffer, index, count));
         }
 
