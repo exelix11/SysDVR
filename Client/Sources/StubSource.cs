@@ -14,9 +14,12 @@ namespace SysDVR.Client.Sources
 		public StreamKind SourceKind => kind;
 		CancellationToken Cancellation;
 
+		// Check for bugs
+		bool connected;
+
 		public StubSource(bool hasVideo, bool hasAudio)
 		{
-			kind = (hasVideo, hasAudio) switch
+            kind = (hasVideo, hasAudio) switch
 			{
 				(true, true) => StreamKind.Both,
 				(true, false) => StreamKind.Video,
@@ -29,13 +32,23 @@ namespace SysDVR.Client.Sources
 
 		public bool ReadHeader(byte[] buffer)
 		{
-            Task.Delay(-1, Cancellation).GetAwaiter().GetResult();
+            if (!connected)
+                throw new Exception("Stub not connected");
+
+			while (!Cancellation.IsCancellationRequested)
+				Thread.Sleep(1000);
+
 			return false;
         }
 
 		public bool ReadPayload(byte[] buffer, int length)
 		{
-			Task.Delay(-1, Cancellation).GetAwaiter().GetResult();
+			if (!connected)
+				throw new Exception("Stub not connected");
+
+            while (!Cancellation.IsCancellationRequested)
+                Thread.Sleep(1000);
+
             return false;
         }
 
@@ -46,10 +59,13 @@ namespace SysDVR.Client.Sources
 			Cancellation = tok;
 		}
 
-        public Task ConnectAsync(CancellationToken token)
+        public async Task ConnectAsync(CancellationToken token)
         {
-            Cancellation = token;
-			return Task.Delay(1000);
+            Cancellation = token;	
+			OnMessage?.Invoke("Connecting stub...");
+			await Task.Delay(2000, token).ConfigureAwait(false);
+            OnMessage?.Invoke("Stub connected");
+			connected = true;
         }
     }
 }

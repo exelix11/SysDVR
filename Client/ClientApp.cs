@@ -16,6 +16,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using static SDL2.SDL;
 
 public class ClientApp
@@ -53,10 +54,19 @@ public class ClientApp
     ImGuiStyle DefaultStyle;
     FramerateCap Cap = new();
 
-    enum ViewAction { Push, Replace, Pop }
-    record NextViewAction(ViewAction Type, View? Object);
+    List<Action> PendingActions = new();
+    // Detect bugs such as multiple view pushes in a row
+    bool PendingViewChanges;
+    int SDLThreadId;
 
-    NextViewAction? NextAction;
+    // SDL functions must only be called from its main thread
+    // but it may not always trigger an exception
+    // force it to crash so we know there's a bug
+    public void BugCheckThreadId() 
+    {
+        if (SDLThreadId != Thread.CurrentThread.ManagedThreadId)
+            throw new InvalidOperationException();
+    }
 
     unsafe void BackupDeafaultStyle()
     {
@@ -72,6 +82,8 @@ public class ClientApp
 
     void HandlePopView() 
     {
+        PendingViewChanges = false;
+
         CurrentView?.LeaveForeground();
         CurrentView?.Destroy();
         CurrentView = null;
@@ -86,6 +98,8 @@ public class ClientApp
 
     void HandleReplaceView(View v)
     {
+        PendingViewChanges = false;
+
         CurrentView?.LeaveForeground();
         CurrentView?.Destroy();
         CurrentView = v;
@@ -98,6 +112,8 @@ public class ClientApp
 
     void HandlePushView(View v)
     {
+        PendingViewChanges = false;
+
         if (CurrentView != null)
             Views.Push(CurrentView);
 
@@ -110,51 +126,51 @@ public class ClientApp
         CurrentView?.EnterForeground();
     }
 
-    void HandleNextAction() 
+    // Post an action to be handled in the main thread
+    public void PostAction(Action act) 
     {
-        if (NextAction is null)
-            return;
-
-        var n = NextAction;
-        NextAction = null;
-
-        switch (n.Type)
+        lock (PendingActions)
         {
-            case ViewAction.Pop:
-                HandlePopView();
-                break;
-            case ViewAction.Push:
-                HandlePushView(n.Object!);
-                break;
-            case ViewAction.Replace:
-                HandleReplaceView(n.Object!);
-                break;
+            PendingActions.Add(act);
+        }
+    }
+
+    private void ExecutePendingActions() 
+    {
+        lock (PendingActions)
+        {
+            for (int i = 0; i < PendingActions.Count; i++)
+                PendingActions[i]();
+            PendingActions.Clear();
         }
     }
 
     // Public view management API, these are deferred as they can be called mid-drawing
     public void PushView(View view)
     {
-        if (NextAction is not null)
+        if (PendingViewChanges)
             throw new Exception("A view action is already scheduled");
 
-        NextAction = new(ViewAction.Push, view);
+        PendingViewChanges = true;
+        PostAction(() => HandlePushView(view));
     }
 
     public void PopView()
     {
-        if (NextAction is not null)
+        if (PendingViewChanges)
             throw new Exception("A view action is already scheduled");
 
-        NextAction = new(ViewAction.Pop, null);
+        PendingViewChanges = true;
+        PostAction(HandlePopView);
     }
 
     public void ReplaceView(View view)
     {
-        if (NextAction is not null)
+        if (PendingViewChanges)
             throw new Exception("A view action is already scheduled");
 
-        NextAction = new(ViewAction.Replace, view);
+        PendingViewChanges = true;
+        PostAction(() => HandleReplaceView(view));
     }
 
     public void ClearScrren()
@@ -225,8 +241,10 @@ public class ClientApp
         ImGui.GetIO().NativePtr->IniFilename = null;
     }
 
-    internal void EntryPoint(string[] args)
+    internal void Initialize() 
     {
+        Console.WriteLine("Initializing app");
+
         SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
 
         var flags = SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_PNG;
@@ -234,23 +252,9 @@ public class ClientApp
 
         SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
-        SdlWindow = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                StreamInfo.VideoWidth, StreamInfo.VideoHeight,
-                SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
-                .AssertNotNull(SDL_GetError);
-
-        // TODO: Other
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, Program.Options.ScaleHintForSDL);
-
-        SdlRenderer = SDL_CreateRenderer(SdlWindow, -1,
-                SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
-                SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC)
-                .AssertNotNull(SDL_GetError);
-
-        SDL_GetRendererInfo(SdlRenderer, out var info);
-        Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
-
-        var ctx = ImGui.CreateContext();
+        //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, Program.Options.ScaleHintForSDL);
+        
+        ImGui.CreateContext();
 
         UnsafeImguiInitialization();
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
@@ -261,18 +265,36 @@ public class ClientApp
         FontH1 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(Resources.ReadResouce(Resources.MainFont), 45 * 2);
         FontH2 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(Resources.ReadResouce(Resources.MainFont), 40 * 2);
 
+        BackupDeafaultStyle();
+    }
+
+    internal void EntryPoint(string[] args)
+    {
+        SDLThreadId = Thread.CurrentThread.ManagedThreadId;
+
+        SdlWindow = SDL_CreateWindow("SysDVR-Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                StreamInfo.VideoWidth, StreamInfo.VideoHeight,
+                SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
+                .AssertNotNull(SDL_GetError);
+
+        SdlRenderer = SDL_CreateRenderer(SdlWindow, -1,
+                SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
+                SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC)
+                .AssertNotNull(SDL_GetError);
+
+        SDL_GetRendererInfo(SdlRenderer, out var info);
+        Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
+
         ImGuiSDL2Impl.InitForSDLRenderer(SdlWindow, SdlRenderer);
         ImGuiSDL2Impl.Init(SdlRenderer);
 
-        BackupDeafaultStyle();
         UpdateSize();
 
-        PushView(new MainView());
-        HandleNextAction();
+        HandlePushView(new MainView());
 
         while (true)
         {
-            HandleNextAction();
+            ExecutePendingActions();
 
             if (CurrentView is null)
                 break;
@@ -341,8 +363,7 @@ public class ClientApp
 
         while (CurrentView != null)
         {
-            PopView();
-            HandleNextAction();
+            HandlePopView();
         }
 
         OnExit?.Invoke();
@@ -354,7 +375,6 @@ public class ClientApp
 
         SDL_DestroyRenderer(SdlRenderer);
         SDL_DestroyWindow(SdlWindow);
-        //SDL_Quit();
     }
 }
 

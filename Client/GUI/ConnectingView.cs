@@ -15,9 +15,10 @@ namespace SysDVR.Client.GUI
     internal class ConnectingView : View
     {
         readonly DeviceInfo info;
-        readonly CancellationTokenSource src = new();
         readonly DeviceConnector conn;
 
+        CancellationTokenSource src = new();
+        
         bool connected;
         bool isError;
         string? errorLine;
@@ -27,8 +28,6 @@ namespace SysDVR.Client.GUI
             this.info = info;
          
             conn = new DeviceConnector(info, src, mode);
-            conn.OnConnected += Conn_OnConnected;
-            conn.OnError += Conn_OnError;
             conn.OnMessage += Conn_OnMessage;
         }
 
@@ -38,45 +37,68 @@ namespace SysDVR.Client.GUI
             errorLine += obj + "\n";
         }
 
-        public override void Created()
+        public override void BackPressed()
         {
-            conn.Connect();
+            // If we're connected, the view will be replaced in a few instants
+            if (src is null)
+                return;
+
+            base.BackPressed();
         }
 
-        private void Conn_OnError(string obj)
+        public override async void Created()
         {
-            isError = true;
-            errorLine = obj;
-        }
-
-        private void Conn_OnConnected(BaseStreamManager obj)
-        {
-            Console.WriteLine("Connected");
-
-            conn.OnConnected -= Conn_OnConnected;
-            conn.OnError -= Conn_OnError;
-            conn.OnMessage -= Conn_OnMessage;
-            connected = true;
-
+            BaseStreamManager manager;
             try
             {
-                Program.Instance.ReplaceView(new PlayerView((PlayerManager)obj));
-            } 
+                manager = await conn.Connect();
+            }
             catch (Exception e)
             {
-                Conn_OnError(e.ToString());
+                if (src.IsCancellationRequested)
+                    return;
+
+                Console.WriteLine("Player connection failed");
+                Conn_OnMessage(e.ToString());
+                isError = true;
+                return;
             }
+            finally 
+            {
+                // We don't need the token anymore.
+                // if the connection failed it's not needed anymore
+                // otherwise it's now owned by the player
+                src = null;
+
+                conn.OnMessage -= Conn_OnMessage;
+            }
+
+            Console.WriteLine("Connected");
+
+            // This must execute on the main thread
+            Program.Instance.PostAction(() =>
+            {
+                try
+                {
+                    Program.Instance.ReplaceView(new PlayerView((PlayerManager)manager));
+                    connected = true;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Player creation failed");
+                    Conn_OnMessage(e.ToString());
+                    isError = true;
+                }
+            });
         }
 
         public override void Destroy()
         {
             if (!connected)
             {
-                conn.OnConnected -= Conn_OnConnected;
-                conn.OnError -= Conn_OnError;
                 conn.OnMessage -= Conn_OnMessage;
-                // If we are cdonnected the cancellation token is passed to the player 
-                src.Cancel();
+                // If we are cdonnected the cancellation token is passed to the player and we don't own it anymore
+                src?.Cancel();
             }
             
             base.Destroy();
@@ -101,7 +123,7 @@ namespace SysDVR.Client.GUI
 
             Gui.CursorFromBottom(btnSize.Y);
             if (Gui.CenterButton(isError ? "Go back" : "Cancel", btnSize))
-                Program.Instance.PopView();
+                BackPressed();
 
             Gui.EndWindow();
         }

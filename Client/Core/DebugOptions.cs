@@ -12,7 +12,7 @@ namespace SysDVR.Client.Core
 {
     public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps, bool NoSync, bool NoProt)
     {
-        public static DebugOptions Current = new DebugOptions(false, Debugger.IsAttached, false, false, false, false, false);
+        public static DebugOptions Current = new DebugOptions(false, true, false, false, false, false, false);
 
         public bool RequiresH264Analysis => Keyframe || Nal;
 

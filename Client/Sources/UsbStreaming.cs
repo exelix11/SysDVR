@@ -87,6 +87,8 @@ namespace SysDVR.Client.Sources
 
 		public UsbContext(UsbLogLevel logLevel = UsbLogLevel.Error)
 		{
+			Program.Instance.BugCheckThreadId();
+
 			if (LibUsbCtx == null)
 				LibUsbCtx = new LibUsbDotNet.LibUsb.UsbContext();
 		

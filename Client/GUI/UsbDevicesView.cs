@@ -16,15 +16,19 @@ namespace SysDVR.Client.GUI
 {
     internal class UsbDevicesView : View
     {
+        readonly StreamKind channels;
         readonly UsbContext context;
+
         IReadOnlyList<UsbContext.DvrUsbConnection> devices;
 
-        string autoConnect;
+        string? autoConnect;
         string? lastError;
 
-        public UsbDevicesView(string? autoconnect = null)
+        public UsbDevicesView(StreamKind channels, string? autoConnect = null)
         {
-            autoConnect = autoconnect;
+            this.channels = channels;
+            this.autoConnect = autoConnect;
+            
             try
             {
                 context = new UsbContext(Program.Options.UsbLogging);
@@ -48,7 +52,7 @@ namespace SysDVR.Client.GUI
                 {
                     foreach (var dev in devices)
                     {
-                        if (autoConnect == "" || dev.Info.Serial.EndsWith(autoConnect))
+                        if (autoConnect == "" || dev.Info.Serial.EndsWith(autoConnect, StringComparison.InvariantCultureIgnoreCase))
                         {
                             ConnectToDevice(dev);
                             break;
@@ -71,7 +75,7 @@ namespace SysDVR.Client.GUI
 
             try
             {
-                var source = new UsbStreamingSource(info, StreamKind.Both);
+                var source = new UsbStreamingSource(info, channels);
                 var manager = new PlayerManager(true, true, new());
                 manager.AddSource(source);
                 Program.Instance.PushView(new PlayerView(manager));
