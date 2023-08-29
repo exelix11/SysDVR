@@ -40,7 +40,7 @@ namespace SysDVR.Client.GUI
         public override void BackPressed()
         {
             // If we're connected, the view will be replaced in a few instants
-            if (src is null)
+            if (src is null && !isError)
                 return;
 
             base.BackPressed();
