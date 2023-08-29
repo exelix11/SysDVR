@@ -1,4 +1,5 @@
-﻿using SysDVR.Client.Core;
+﻿using SDL2;
+using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
 using System;
@@ -83,6 +84,7 @@ namespace SysDVR.Client
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
+                SDL.SDL_Quit();
             }
 #endif
         }
@@ -90,11 +92,13 @@ namespace SysDVR.Client
         private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
             Console.WriteLine("TaskScheduler_UnobservedTaskException: " + e.Exception.ToString());
+            SDL.SDL_Quit();
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             Console.WriteLine("CurrentDomain_UnhandledException: " + e.ExceptionObject.ToString());
+            SDL.SDL_Quit();
         }
     }
 }
