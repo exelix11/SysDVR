@@ -30,7 +30,8 @@ namespace SysDVR.Client.Core
     public enum ConnectionType 
     {
         Net,
-        Usb
+        Usb,
+        Stub
     }
 
     public struct DvrProtocolVersion
@@ -74,10 +75,10 @@ namespace SysDVR.Client.Core
             return ProtocolVersion == current;
         }
 
-        private DeviceInfo(string ip)
+        private DeviceInfo(string name, ConnectionType source, string connectionString)
         {
-            this.Source = ConnectionType.Net;
-            this.ConnectionString = ip;
+            this.Source = source;
+            this.ConnectionString = connectionString;
             this.IsManualConnection = true;
 
             this.AdvertisementString = "";
@@ -85,7 +86,7 @@ namespace SysDVR.Client.Core
             this.ProtocolVersion = 0;
             this.Serial = "00000000";
 
-            this.TextRepresentation = $"Unknown SysDVR @ {ConnectionString}";
+            this.TextRepresentation = $"{name} @ {ConnectionString}";
         }
 
         public DeviceInfo(ConnectionType source, string advertisementString, string connectionString)
@@ -148,7 +149,12 @@ namespace SysDVR.Client.Core
 
         public static DeviceInfo ForIp(string ipAddress)
         {
-            return new DeviceInfo(ipAddress);    
+            return new DeviceInfo("Manual connection", ConnectionType.Net, ipAddress);    
+        }
+
+        public static DeviceInfo Stub() 
+        {
+            return new DeviceInfo("Stub device", ConnectionType.Stub, "");
         }
     }
 }

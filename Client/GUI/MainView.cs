@@ -12,7 +12,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace SysDVR.Client.GUI
 {
@@ -32,20 +31,13 @@ namespace SysDVR.Client.GUI
                 UsbModeWarn = "Requires udev rules to be configured correctly.";
         }
 
-        enum StreamChannels
-        {
-            Audio,
-            Video,
-            Both
-        }
 
-        StreamChannels channels = StreamChannels.Both;
+        StreamKind channels = StreamKind.Both;
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
 
         float uiScale;
-        bool portrait;
         int ModeButtonWidth;
         int ModeButtonHeight;
 
@@ -54,7 +46,6 @@ namespace SysDVR.Client.GUI
             centerRadios.Reset();
             centerOptions.Reset();
 
-            portrait = Program.Instance.IsPortrait;
             uiScale = Program.Instance.UiScale;
             ModeButtonWidth = (int)(350 * uiScale);
             ModeButtonHeight = (int)(200 * uiScale);
@@ -102,20 +93,20 @@ namespace SysDVR.Client.GUI
             }
 
             if (usb)
-                Program.Instance.PushView(new UsbDevicesView());
+                Program.Instance.PushView(new UsbDevicesView(channels));
             else if (wifi)
-                Program.Instance.PushView(new NetworkScanView());
+                Program.Instance.PushView(new NetworkScanView(channels));
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
             Gui.CenterText("Select the streaming mode");
 
             centerRadios.StartHere();
-            ChannelRadio("Video only", StreamChannels.Video);
+            ChannelRadio("Video only", StreamKind.Video);
             ImGui.SameLine();
-            ChannelRadio("Audio only", StreamChannels.Audio);
+            ChannelRadio("Audio only", StreamKind.Audio);
             ImGui.SameLine();
-            ChannelRadio("Stream Both", StreamChannels.Both);
+            ChannelRadio("Stream Both", StreamKind.Both);
             centerRadios.EndHere();
 
             ImGui.NewLine();
@@ -148,7 +139,7 @@ namespace SysDVR.Client.GUI
             Gui.EndWindow();
         }
 
-        void ChannelRadio(string name, StreamChannels target)
+        void ChannelRadio(string name, StreamKind target)
         {
             if (ImGui.RadioButton(name, channels == target))
                 channels = target;
@@ -156,47 +147,13 @@ namespace SysDVR.Client.GUI
 
         void LaunchStub()
         {
-            var cancel = new CancellationTokenSource();
-            var StreamManager = new PlayerManager(true, false, cancel);
-
+            var src = new CancellationTokenSource();
             var stub = new StubSource(true, false);
-            _ = stub.ConnectAsync(cancel.Token);
-            StreamManager.AddSource(stub);
-
-            var view = new PlayerView(StreamManager);
-            Program.Instance.PushView(view);
+            stub.ConnectAsync(src.Token).GetAwaiter().GetResult();
+            var manager = new PlayerManager(true, false, src);
+            manager.AddSource(stub);
+            Program.Instance.PushView(new PlayerView(manager));
         }
-
-        //void LaunchTcp() 
-        //{
-        //    var StreamManager = new PlayerManager(true, true, false, null, null)
-        //    {
-        //        WindowTitle = "",
-        //        StartFullScreen = false
-        //    };
-
-        //    var len = Array.IndexOf<byte>(text, 0);
-        //    var ip = Encoding.ASCII.GetString(text, 0, len).Trim();
-        //    StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Video));
-        //    StreamManager.AddSource(new TCPBridgeSource(ip, StreamKind.Audio));
-
-        //    StreamManager.Begin();
-        //    Program.PlayerInstance = StreamManager.player;
-        //}
-
-        //void LaunchStub() 
-        //{
-        //    var StreamManager = new PlayerManager(true, true, false, null, null)
-        //    {
-        //        WindowTitle = "",
-        //        StartFullScreen = false
-        //    };
-
-        //    StreamManager.AddSource(new StubSource(true, true));
-
-        //    StreamManager.Begin();
-        //    Program.PlayerInstance = StreamManager.player;
-        //}
 
         bool ModeButton(Image image, string title, int width, int height)
         {

@@ -14,6 +14,7 @@ namespace SysDVR.Client.GUI
 {
     internal class NetworkScanView : View
     {
+        readonly StreamKind channels;
         readonly NetworkScan scanner = new();
         readonly List<DeviceInfo> devices = new List<DeviceInfo>();
         readonly byte[] IpAddressTextBuf = new byte[256];
@@ -25,9 +26,10 @@ namespace SysDVR.Client.GUI
         Gui.CenterGroup popupBtnCenter = new();
         string? lastError;
 
-        public NetworkScanView(string? autoconnect = null)
+        public NetworkScanView(StreamKind channels, string? autoConnect = null)
         {
-            autoConnect = autoconnect;
+            this.channels = channels;
+            this.autoConnect = autoConnect;
 
             scanner.OnDeviceFound += OnDeviceFound;
             scanner.OnFailure += OnFailure;
@@ -42,7 +44,7 @@ namespace SysDVR.Client.GUI
 
             if (autoConnect != null) 
             {
-                if (autoConnect == "" || info.Serial.EndsWith(autoConnect))
+                if (autoConnect == "" || info.Serial.EndsWith(autoConnect, StringComparison.InvariantCultureIgnoreCase))
                     ConnectToDevice(info);
             }
         }
@@ -58,6 +60,7 @@ namespace SysDVR.Client.GUI
         public override void EnterForeground()
         {
             scanner.StartScanning();
+            devices.Add(DeviceInfo.Stub());
             base.EnterForeground();
         }
 
@@ -87,7 +90,7 @@ namespace SysDVR.Client.GUI
         void ConnectToDevice(DeviceInfo info)
         {
             autoConnect = null;
-            Program.Instance.PushView(new ConnectingView(info, StreamKind.Video));
+            Program.Instance.PushView(new ConnectingView(info, channels));
         }
 
         public override void Draw()
