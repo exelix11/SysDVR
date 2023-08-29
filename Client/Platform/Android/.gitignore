@@ -3,6 +3,8 @@ app/jni/SDL/src/
 app/jni/SDL_Image/
 app/jni/cimgui/cimgui/
 app/src/main/assets/
+bflat/
+app/libs/
 *.so
 
 # Gradle files

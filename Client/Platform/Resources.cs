@@ -21,6 +21,8 @@ namespace SysDVR.Client.Platform
         // thank god SDL already wraps its stupid interface
         public static byte[] ReadResouce(string path)
         {
+            Console.WriteLine($"Loading resource {path}");
+
             var file = SDL.SDL_RWFromFile(path, "r").AssertNotNull(SDL.SDL_GetError);
 
             var len = (int)SDL.SDL_RWsize(file);

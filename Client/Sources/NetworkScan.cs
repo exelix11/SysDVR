@@ -17,15 +17,15 @@ namespace SysDVR.Client.Sources
 
         public async void StartScanning() 
         {
-            devices.Clear();
-            cancel = new CancellationTokenSource();
-            using var client = new UdpClient(19999);
-
             try
             {
+                devices.Clear();
+                cancel = new CancellationTokenSource();
+                using var client = new UdpClient(19999);
+
                 while (!cancel.IsCancellationRequested)
                 {
-                    var msg = await client.ReceiveAsync(cancel.Token);
+                    var msg = await client.ReceiveAsync(cancel.Token).ConfigureAwait(false);
                     if (msg.Buffer != null)
                     {
                         var ip = msg.RemoteEndPoint.Address;

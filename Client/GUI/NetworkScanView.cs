@@ -87,7 +87,7 @@ namespace SysDVR.Client.GUI
         void ConnectToDevice(DeviceInfo info)
         {
             autoConnect = null;
-            Program.Instance.PushView(new ConnectingView(info, StreamKind.Both));
+            Program.Instance.PushView(new ConnectingView(info, StreamKind.Video));
         }
 
         public override void Draw()

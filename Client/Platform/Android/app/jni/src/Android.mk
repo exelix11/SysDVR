@@ -12,6 +12,6 @@ LOCAL_SRC_FILES := main.c
 
 LOCAL_SHARED_LIBRARIES := SDL2 SDL2_image cimgui Client-prebuilt
 
-LOCAL_LDLIBS := -lGLESv1_CM -lGLESv2 -lOpenSLES -llog -landroid
+LOCAL_LDLIBS := -lGLESv1_CM -lGLESv2 -lOpenSLES -llog -landroid -ldl
 
 include $(BUILD_SHARED_LIBRARY)

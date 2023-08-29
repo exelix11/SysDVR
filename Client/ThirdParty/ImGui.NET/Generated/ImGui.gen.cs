@@ -928,7 +928,7 @@ namespace ImGuiNET
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
         public static bool BeginPopupModal(ReadOnlySpan<char> name, ImGuiWindowFlags flags = ImGuiWindowFlags.None)
 #else
-        public static bool BeginPopupModal(string name)
+        public static bool BeginPopupModal(string name, ImGuiWindowFlags flags = ImGuiWindowFlags.None)
 #endif
         {
             byte* native_name;
