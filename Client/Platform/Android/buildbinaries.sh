@@ -13,6 +13,9 @@ if [ ! -d "app/jni/SDL/src" ]; then
 	mv $(pwd)/SDL2-2.28.1/include ./app/jni/SDL/
 	rm -rf SDL2-2.28.1
 	rm SDL2-2.28.1.tar.gz
+	# Apply patches
+	# patches are created with `diff -Naur source_file modified_file > out.patch`
+	patch ./app/jni/SDL/src/core/android/SDL_android.c ./patches/SDL_android.c.patch
 fi
 
 # Ensure SDL_image sources are present
@@ -34,6 +37,17 @@ if [ ! -d "app/jni/cimgui/cimgui" ]; then
 	mv $(pwd)/CimguiSDL2Cross-master/Android.mk ./app/jni/cimgui/
 	rm -rf $(pwd)/CimguiSDL2Cross-master/
 	rm master.zip
+fi
+
+# Ensure libusb sources are present
+if [ ! -d "app/jni/libusb" ]; then
+	echo Downloading libusb sources...
+	wget https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2
+	tar xf libusb-1.0.26.tar.bz2
+	mv libusb-1.0.26 ./app/jni/libusb
+	rm libusb-1.0.26.tar.bz2
+	# Apply patches
+	cp ./patches/libusb_Android.mk ./app/jni/libusb/Android.mk
 fi
 
 if [ ! -d "app/libs/" ]; then

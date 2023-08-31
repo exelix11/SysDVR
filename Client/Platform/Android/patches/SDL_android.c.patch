@@ -1,0 +1,33 @@
+--- SDL2-2.28.1/src/core/android/SDL_android.c	2023-07-01 19:04:05.000000000 +0200
++++ app/jni/SDL/src/core/android/SDL_android.c	2023-08-31 15:36:46.376529100 +0200
+@@ -301,6 +301,11 @@
+ static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+ static JavaVM *mJavaVM = NULL;
+ 
++JavaVM *AndroidGetJavaVM()
++{
++    return mJavaVM;
++}
++
+ /* Main activity */
+ static jclass mActivityClass;
+ 
+@@ -415,11 +420,17 @@
+     return status;
+ }
+ 
++JNIEnv *Android_JNI_GetEnv_NoAttach(void) {
++    if (!mThreadKey)
++        return NULL;
++    return pthread_getspecific(mThreadKey);
++}
++
+ /* Get local storage value */
+ JNIEnv *Android_JNI_GetEnv(void)
+ {
+     /* Get JNIEnv from the Thread local storage */
+-    JNIEnv *env = pthread_getspecific(mThreadKey);
++    JNIEnv *env = Android_JNI_GetEnv_NoAttach();
+     if (env == NULL) {
+         /* If it fails, try to attach ! (e.g the thread isn't created with SDL_CreateThread() */
+         int status;
