@@ -17,9 +17,9 @@ namespace SysDVR.Client.GUI
     internal class UsbDevicesView : View
     {
         readonly StreamKind channels;
-        readonly UsbContext context;
+        readonly DvrUsbContext context;
 
-        IReadOnlyList<UsbContext.DvrUsbConnection> devices;
+        IReadOnlyList<DvrUsbDevice> devices;
 
         string? autoConnect;
         string? lastError;
@@ -31,7 +31,7 @@ namespace SysDVR.Client.GUI
             
             try
             {
-                context = new UsbContext(Program.Options.UsbLogging);
+                context = new DvrUsbContext(Program.Options.UsbLogging);
                 SearchDevices();
             }
             catch (Exception ex) 
@@ -66,17 +66,17 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        void ConnectToDevice(UsbContext.DvrUsbConnection info)
+        void ConnectToDevice(DvrUsbDevice info)
         {
             autoConnect = null;
 
             devices.Where(x => x != info).ToList().ForEach(x => x.Dispose());
-            devices = new List<UsbContext.DvrUsbConnection>();
+            devices = new List<DvrUsbDevice>();
 
             try
             {
                 var source = new UsbStreamingSource(info, channels);
-                var manager = new PlayerManager(true, true, new());
+                var manager = new PlayerManager(true, false, new());
                 manager.AddSource(source);
                 Program.Instance.PushView(new PlayerView(manager));
             }
@@ -117,7 +117,7 @@ namespace SysDVR.Client.GUI
             sz.Y *= portrait ? .5f : .4f;
             sz.X *= portrait ? .92f : .82f;
 
-            if (devices.Count == 0)
+            if (devices is null || devices.Count == 0)
             {
                 Gui.CenterText("No USB devices found");
             }

@@ -118,6 +118,10 @@ namespace SysDVR.Client.Core
         TimeTrace trace = new TimeTrace();
         void DeviceThreadMain(CancellationToken token)
         {
+#if ANDROID_LIB
+            // This thread may try to reopen USB devices in case of errors
+            Program.Native.NativeAttachThread?.Invoke();
+#endif
             var logStats = DebugOptions.Current.Stats;
             var logDbg = DebugOptions.Current.Log;
 
@@ -185,6 +189,10 @@ namespace SysDVR.Client.Core
                 if (!token.IsCancellationRequested)
                     Manager.ReportFatalError(ex);
             }
+#endif
+
+#if ANDROID_LIB
+            Program.Native.NativeDetachThread?.Invoke();
 #endif
         }
 

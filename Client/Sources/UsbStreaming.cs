@@ -11,138 +11,6 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
 {
-	// Making UsbContext non static will remove requirement on libusb, it will be loaded only if actually using USB, this is useful on architectures where it's not supported
-	// This class should be used as a singleton
-	class UsbContext
-	{
-		public class DvrUsbConnection : IDisposable
-		{
-			readonly UsbContext Context;
-			public readonly DeviceInfo Info;
-
-			public IUsbDevice DeviceHandle { get; private set; }
-
-			public DvrUsbConnection(UsbContext ctx, DeviceInfo info, IUsbDevice dev)
-			{
-				Context = ctx;
-				Info = info;
-				DeviceHandle = dev;
-			}
-
-			public (UsbEndpointReader, UsbEndpointWriter) Open()
-			{
-				DeviceHandle.Open();
-
-				if (!DeviceHandle.ClaimInterface(0))
-					throw new Exception($"Couldn't claim device interface");
-
-				var (epIn, epOut) = (ReadEndpointID.Ep01, WriteEndpointID.Ep01);
-
-				var reader = DeviceHandle.OpenEndpointReader(epIn, PacketHeader.MaxTransferSize, EndpointType.Bulk);
-				var writer = DeviceHandle.OpenEndpointWriter(epOut, EndpointType.Bulk);
-
-				return (reader, writer);
-			}
-
-			public void Close()
-			{
-				DeviceHandle.Close();
-			}
-
-			public bool TryReconnect()
-			{
-				Close();
-				var dev = Context.FindSysdvrDevices().Where(X => X.Info.Serial == Info.Serial).FirstOrDefault();
-				if (dev == null)
-					return false;
-
-				DeviceHandle = dev.DeviceHandle;
-				return true;
-			}
-
-			public void Dispose()
-			{
-				DeviceHandle.Dispose();
-			}
-		}
-
-		static LibUsbDotNet.LibUsb.UsbContext LibUsbCtx = null;
-
-		private UsbLogLevel _debugLevel;
-		public UsbLogLevel DebugLevel
-		{
-			set
-			{
-				_debugLevel = value;
-				LibUsbCtx.SetDebugLevel(value switch
-				{
-					UsbLogLevel.Error => LibUsbDotNet.LogLevel.Error,
-					UsbLogLevel.Warning => LibUsbDotNet.LogLevel.Info,
-					UsbLogLevel.Debug => LibUsbDotNet.LogLevel.Debug,
-					_ => LibUsbDotNet.LogLevel.None,
-				});
-			}
-			get => _debugLevel;
-		}
-
-		public UsbContext(UsbLogLevel logLevel = UsbLogLevel.Error)
-		{
-			Program.Instance.BugCheckThreadId();
-
-			if (LibUsbCtx == null)
-				LibUsbCtx = new LibUsbDotNet.LibUsb.UsbContext();
-		
-			DebugLevel = logLevel;
-		}
-
-		static bool MatchSysdvrDevice(IUsbDevice device)
-		{
-			try
-			{
-				return device.VendorId == 0x18D1 && device.ProductId == 0x4EE0;
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Warning: failed to query device ID " + ex);
-				return false;
-			}
-		}
-
-		public IReadOnlyList<DvrUsbConnection> FindSysdvrDevices()
-		{
-			// THis is hacky but libusb can't seem to get the device serial without opening it first
-			// If the device is already opened by another instance of sysdvr it will print an error, suppress it by temporarily changing the log level 
-			var old = DebugLevel;
-			DebugLevel = UsbLogLevel.None;
-
-			var res = LibUsbCtx.FindAll(MatchSysdvrDevice).Select(x =>
-			{
-				try
-				{
-					if (!x.TryOpen())
-						return null;
-
-					var serial = x.Info.SerialNumber.Trim();
-					x.Close();
-
-					var dev = DeviceInfo.TryParse(ConnectionType.Usb, serial, "usb device");
-					if (dev == null)
-                        return null;
-
-					return new DvrUsbConnection(this, dev, x);
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine("Warning: failed to query device serial " + ex);
-					return null;
-				}
-			}).Where(x => x != null).ToArray();
-
-			DebugLevel = old;
-			return res;
-		}
-	}
-
 	class UsbStreamingSource : IStreamingSource
 	{
 		protected static readonly byte[] MagicRequestVideo = { 0xBB, 0xBB, 0xBB, 0xBB };
@@ -159,7 +27,7 @@ namespace SysDVR.Client.Sources
 		protected TimeTrace BeginTrace(string extra = "", [CallerMemberName] string funcName = null) =>
 			tracer.Begin("usb", extra, funcName);
 
-		readonly UsbContext.DvrUsbConnection device;
+		readonly DvrUsbDevice device;
 		protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
 
@@ -176,7 +44,7 @@ namespace SysDVR.Client.Sources
 
 		public StreamKind SourceKind { get; private set; }
 
-		public UsbStreamingSource(UsbContext.DvrUsbConnection device, StreamKind kind)
+		public UsbStreamingSource(DvrUsbDevice device, StreamKind kind)
         {
 			this.device = device;
 			SourceKind = kind;

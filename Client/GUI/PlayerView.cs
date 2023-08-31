@@ -304,7 +304,7 @@ namespace SysDVR.Client.GUI
         {
             base.RawDraw();
 
-            if (HasVideo)
+            if (!HasVideo)
                 return;
 
             if (DecodeNextFrame())
