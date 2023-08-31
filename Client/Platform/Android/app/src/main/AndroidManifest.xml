@@ -62,6 +62,8 @@
 
          An example Java class can be found in README-android.md
     -->
+
+
     <application android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
@@ -88,6 +90,9 @@
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
+
+            <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usbdevices" />
             <!-- Drop file event -->
             <!--
             <intent-filter>

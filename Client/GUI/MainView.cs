@@ -32,7 +32,7 @@ namespace SysDVR.Client.GUI
         }
 
 
-        StreamKind channels = StreamKind.Both;
+        StreamKind channels = StreamKind.Video;
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;

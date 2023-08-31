@@ -4,6 +4,7 @@ using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -23,23 +24,25 @@ namespace SysDVR.Client
         public static Options Options = new();
 
 #if ANDROID_LIB
+        public static NativeInitBlock Native;
+
 	    [UnmanagedCallersOnly(EntryPoint = "sysdvr_entrypoint")]
-	    public static void sysdvr_entrypoint(IntPtr __arg_init)
+	    public static NativeError sysdvr_entrypoint(IntPtr __arg_init)
         {
-            var init = NativeInitBlock.Read(__arg_init);
-            Log.Setup(in init);
+            var result = NativeInitBlock.Read(__arg_init, out Native);
+            if (result != NativeError.Success)
+                return result;
+
+            NativeLogger.Setup();
             
             RunApp(new string[0]);
+
+            return NativeError.Success;
         }
 #else
         public static void Main(string[] args)
         {
             RunApp(args);
-        }
-
-        private static void Scan_OnDeviceFound(DeviceInfo obj)
-        {
-            Console.WriteLine(obj);
         }
 #endif
 

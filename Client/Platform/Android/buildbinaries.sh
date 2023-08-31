@@ -73,7 +73,7 @@ cd ../../
 rm -rf obj/
 
 echo Building client...
-$BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB -d NETSTANDARD2_0 -d NETSTANDARD2_1 -d NETSTANDARD2_1_OR_GREATER --ldflags "-soname libClient.so" -r Platform/Android/FFmpeg.AutoGen.dll -r bin/Debug/net7.0/LibUsbDotNet.dll
+$BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB -d NETSTANDARD2_0 -d NETSTANDARD2_1 -d NETSTANDARD2_1_OR_GREATER --ldflags "-soname libClient.so" -r Platform/Android/FFmpeg.AutoGen.dll
 
 mv libClient.so Platform/Android/app/jni/Client/libClient.so
 cd Platform/Android/

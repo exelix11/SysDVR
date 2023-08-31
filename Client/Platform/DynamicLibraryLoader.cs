@@ -1,4 +1,5 @@
 ﻿using FFmpeg.AutoGen;
+using SDL2;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -113,6 +114,11 @@ namespace SysDVR.Client.Platform
         public static void Initialize()
         {
             ffmpeg.RootPath = OsLibFolder;
+
+            if (OperatingSystem.IsWindows())
+                NativeLibrary.SetDllImportResolver(typeof(Program).Assembly, (name, assembly, path) => NativeLibrary.Load(Path.Combine(OsLibFolder, name + ".dll"), assembly, path));
+
+
             if (OperatingSystem.IsMacOS())
             {
                 if (RuntimeInformation.OSArchitecture == Architecture.Arm64 && RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
