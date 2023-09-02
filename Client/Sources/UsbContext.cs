@@ -35,17 +35,18 @@ namespace SysDVR.Client.Sources
             return (reader, writer);
         }
 
+        // Should call close and then initialize a new device handle
         public abstract bool TryReconnect();
 
         public virtual void Close()
         {
-            DeviceHandle.Close();
+            DeviceHandle?.Dispose();
+            DeviceHandle = null;
         }
 
         public virtual void Dispose()
         {
             Close();
-            DeviceHandle.Dispose();
         }
     }
 
@@ -108,7 +109,11 @@ namespace SysDVR.Client.Sources
                     Console.WriteLine($"Device: {i} - {serial}");
                     var parsed = DeviceInfo.TryParse(ConnectionType.Usb, serial, serial);
                     if (parsed is not null)
-                        res.Add(new AndroidUsbDevice(this, parsed));
+                    {
+                        var dev = new AndroidUsbDevice(this, parsed);
+                        parsed.ConnectionHandle = dev;
+                        res.Add(dev);
+                    }
                 }
             }
             finally
@@ -171,7 +176,7 @@ namespace SysDVR.Client.Sources
 #if ANDROID_LIB
     class AndroidUsbDevice : DvrUsbDevice
     {
-        nint NativeHandle;
+        nint NativeHandle = 0;
 
         public AndroidUsbDevice(DvrUsbContext context, DeviceInfo deviceInfo) : base(context, deviceInfo)
         {
@@ -192,8 +197,12 @@ namespace SysDVR.Client.Sources
 
         public override void Close()
         {
+            if (NativeHandle == 0)
+                return;
+
             base.Close();
             Program.Native.UsbCloseHandle(NativeHandle);
+            NativeHandle = 0;
         }
 
         public override bool TryReconnect()

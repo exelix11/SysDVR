@@ -317,7 +317,7 @@ public partial class UsbDevice
         }
     }
 
-    public Error OpenWrapped(DeviceHandle deviceHandle) 
+    private Error OpenInternal(DeviceHandle deviceHandle)
     {
         this.EnsureNotDisposed();
 
@@ -334,6 +334,11 @@ public partial class UsbDevice
             originatingContext.OpenDevices.Add(this);
 
         return Error.Success;
+    }
+
+    public Error OpenWrapped(DeviceHandle deviceHandle) 
+    {
+        return OpenInternal(deviceHandle);
     }
 
     private Error OpenNative()

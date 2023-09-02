@@ -21,5 +21,8 @@ namespace LibUsbDotNet
         
         [DllImport(LibUsbNativeLibrary, EntryPoint = "libusb_wrap_sys_device")]
         public static extern Error WrapSystemHanlde(Context ctx, nint nativeHandle, out IntPtr libusbHandle);
+
+        [DllImport(LibUsbNativeLibrary, EntryPoint = "libusb_get_device")]
+        public static extern IntPtr GetDeviceRaw(DeviceHandle devHandle);
     }
 }

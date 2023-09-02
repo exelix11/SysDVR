@@ -161,10 +161,12 @@ namespace SysDVR.Client.GUI
         {
             ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
             ImGui.SetNextWindowPos(Vector2.Zero);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
             ImGui.Begin(name, 
                 ((ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | 
                 ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBringToFrontOnFocus) &
                 ~ImGuiWindowFlags.NoScrollbar) | extraFlags);
+            ImGui.PopStyleVar();
         }
 
         public static void CenterImage(Image image, int height)

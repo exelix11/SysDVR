@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
@@ -92,7 +93,24 @@ namespace SysDVR.Client.Sources
 
         async Task<BaseStreamManager> BeginUsb() 
         {
-            throw new NotImplementedException();
+            if (Info.ConnectionHandle is not DvrUsbDevice dev)
+                throw new Exception("Wrong connection handle");
+
+            var source = new UsbStreamingSource(dev, Kind);
+            source.OnMessage += MessageReceived;
+
+            try
+            {
+                await source.ConnectAsync(Token.Token).ConfigureAwait(false);
+            }
+            finally
+            {
+                source.OnMessage -= MessageReceived;
+            }
+
+            var mng = GetManager();
+            mng.AddSource(source);
+            return mng;
         }
 
         async Task<BaseStreamManager> BeginNet() 
