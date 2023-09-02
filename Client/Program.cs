@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,7 +20,7 @@ namespace SysDVR.Client
     public static class Program
     {
         public static ClientApp Instance;
-        public static string Version = "6.0 ALPHA";
+        public static string Version = "dev";
 
         public static Options Options = new();
 
@@ -72,11 +73,15 @@ namespace SysDVR.Client
             try
 #endif
             {
-                Console.WriteLine("Starting SysDVR Client " + Version);
+                Console.WriteLine("SysDVR Client entrypoint");
 
                 if (Instance is null)
                 {
                     DynamicLibraryLoader.Initialize();
+                    
+                    Version = Resources.GetBuildId() ?? "<unknown commit>";
+                    Console.WriteLine("Detected build id: " + Version);
+
                     Instance = new ClientApp();
                     Instance.Initialize();
                 }
