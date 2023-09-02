@@ -58,6 +58,9 @@ namespace SysDVR.Client.Core
 
         public readonly string TextRepresentation;
 
+        // Sources that need to carry a context for connection can store it here
+        public object? ConnectionHandle;
+
         static ReadOnlySpan<byte> TrimNullBytes(ReadOnlySpan<byte> source) 
         {
             var nullStart = source.IndexOf((byte)0);

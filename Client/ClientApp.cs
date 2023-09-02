@@ -30,13 +30,9 @@ public class ClientApp
     public Vector2 WindowSize { get; private set; }
     public float UiScale { get; private set; }
 
-    public bool ShowDebugInfo = false;
-    // Debug info for scaling
-    Vector2 PixelSize;
-    Vector2 WantedDPIScale;
-    bool IsWantedScale;
-
 #if ANDROID_LIB
+    // On android we must manually check for when imgui needs the keyboard and open it
+    // TODO: Will this also open the keyboard when there's a physical one connected?
     bool usingTextinput;
 #endif
 
@@ -48,16 +44,25 @@ public class ClientApp
 
     public event Action OnExit;
 
+    // View state management
     Stack<View> Views = new();
     View? CurrentView = null;
-
     ImGuiStyle DefaultStyle;
+    bool PendingViewChanges;
     FramerateCap Cap = new();
 
+    // Async actions that must take place on the main thread outside of the rendering loop
     List<Action> PendingActions = new();
+
     // Detect bugs such as multiple view pushes in a row
-    bool PendingViewChanges;
     int SDLThreadId;
+
+    // Debug window state
+    public bool ShowDebugInfo = false;
+    Vector2 PixelSize;
+    Vector2 WantedDPIScale;
+    bool IsWantedScale;
+    bool ShowImguiDemo;
 
     // SDL functions must only be called from its main thread
     // but it may not always trigger an exception
@@ -79,7 +84,6 @@ public class ClientApp
     }
 
     // Private view API, has immediate effect
-
     void HandlePopView() 
     {
         PendingViewChanges = false;
@@ -186,15 +190,19 @@ public class ClientApp
         SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
     }
 
-    void DebugInfo()
+    void DebugWindow()
     {
         ImGui.Begin("Info");
         ImGui.Text($"FPS: {ImGui.GetIO().Framerate} Cap {Cap.CapMode}");
         ImGui.Text($"Window Size: {WindowSize} {(IsPortrait ? "Portrait" : "Landscape")}");
         ImGui.Text($"Pixel Size: {PixelSize} DPI Scale: {WantedDPIScale} UiScale: {UiScale}");
-        ImGui.Text($"View stack: {Views.Count}");
+        ImGui.Text($"ThreadId: {SDLThreadId} View stack: {Views.Count}");
+        ImGui.Checkbox("Show imgui demo", ref ShowImguiDemo);
         CurrentView?.DrawDebug();
         ImGui.End();
+
+        if (ShowImguiDemo)
+            ImGui.ShowDemoWindow();
     }
 
     private void UpdateSize()
@@ -344,12 +352,10 @@ public class ClientApp
             ImGuiSDL2Impl.SDL2_NewFrame();
             ImGui.NewFrame();
 
-            //ImGui.ShowDemoWindow();
-
             CurrentView.Draw();
 
             if (ShowDebugInfo)
-                DebugInfo();
+                DebugWindow();
 
             ImGui.Render();
 

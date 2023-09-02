@@ -131,10 +131,8 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        private void Manager_OnErrorMessage(string obj)
-        {
-            notifications.Add(new PendingUiNotif(obj));
-        }
+        private void Manager_OnErrorMessage(string obj) => 
+            MessageUi(obj);
 
         private void Manager_OnFatalError(Exception obj)
         {
@@ -356,6 +354,8 @@ namespace SysDVR.Client.GUI
 
         public unsafe override void Destroy()
         {
+            Program.Instance.BugCheckThreadId();
+
             Manager.Stop();
 
             // Dispose of unmanaged resources

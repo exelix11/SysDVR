@@ -17,7 +17,7 @@ namespace SysDVR.Client.GUI
     internal class UsbDevicesView : View
     {
         readonly StreamKind channels;
-        readonly DvrUsbContext context;
+        readonly DvrUsbContext? context;
 
         IReadOnlyList<DvrUsbDevice> devices;
 
@@ -32,7 +32,6 @@ namespace SysDVR.Client.GUI
             try
             {
                 context = new DvrUsbContext(Program.Options.UsbLogging);
-                SearchDevices();
             }
             catch (Exception ex) 
             {
@@ -40,8 +39,24 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        public override void EnterForeground()
+        {
+            base.EnterForeground();
+            SearchDevices();
+        }
+
+        public override void Destroy()
+        {
+            devices.ToList().ForEach(x => x.Dispose());
+            devices = new List<DvrUsbDevice>();
+            base.Destroy();
+        }
+
         void SearchDevices() 
         {
+            if (context is null)
+                return;
+
             lastError = null;
 
             try
@@ -73,17 +88,7 @@ namespace SysDVR.Client.GUI
             devices.Where(x => x != info).ToList().ForEach(x => x.Dispose());
             devices = new List<DvrUsbDevice>();
 
-            try
-            {
-                var source = new UsbStreamingSource(info, channels);
-                var manager = new PlayerManager(true, false, new());
-                manager.AddSource(source);
-                Program.Instance.PushView(new PlayerView(manager));
-            }
-            catch (Exception ex) 
-            {
-                lastError = ex.ToString();
-            }
+            Program.Instance.PushView(new ConnectingView(info.Info, channels));
         }
 
         public override void Draw()

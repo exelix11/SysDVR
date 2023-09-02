@@ -64,7 +64,6 @@ namespace SysDVR.Client.Sources
 		bool Reconnect(string reason)
 		{
             OnMessage?.Invoke($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
-			Thread.Sleep(3000);
 			if (device.TryReconnect())
 			{
 				(reader, writer) = device.Open();
@@ -86,9 +85,7 @@ namespace SysDVR.Client.Sources
 			while (!Token.IsCancellationRequested)
 			{
                 //using var trace = BeginTrace();
-#if DEBUG
                 OnMessage?.Invoke($"Sending USB connection request {BitConverter.ToString(RequestMagic)}");
-#endif
 				LibUsbDotNet.Error err = LibUsbDotNet.Error.Success;
 				try
 				{
@@ -132,7 +129,7 @@ namespace SysDVR.Client.Sources
 				return;
 
 			// Wait some time so the switch side timeouts
-			Thread.Sleep(1500);
+			Thread.Sleep(3000);
 
 			// Then attempt to connect again
 			WaitForConnection();

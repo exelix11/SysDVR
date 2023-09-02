@@ -294,10 +294,11 @@ public class UsbContext : IUsbContext
     {
         NativeMethods.WrapSystemHanlde(context, nativeHandle, out var handle).ThrowOnError();
         var deviceHandle = DeviceHandle.DangerousCreate(handle);
-        var device = NativeMethods.GetDevice(deviceHandle);
-        
-        var devObj = new UsbDevice(device, this);
 
+        // GetDevice does not increment the reference count, so we don't need to decrement it.
+        var device = Device.DangerousCreate(NativeMethods.GetDeviceRaw(deviceHandle), false);
+
+        var devObj = new UsbDevice(device, this);
         devObj.OpenWrapped(deviceHandle);
 
         return devObj;

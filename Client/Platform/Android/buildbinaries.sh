@@ -80,13 +80,23 @@ if [ ! -e $BFLAT ]; then
 	rm bflat-7.0.2-linux-glibc-x64.tar.gz
 fi
 
+echo checking resources...
+
+if [ ! -e app/src/main/assets/OpenSans.ttf ]; then
+	echo The assets folder symlink is misconfigured, app/src/main/assets should link to ..\Resources\resources
+	exit 1
+fi
+
+git rev-parse --short HEAD > app/src/main/assets/buildid.txt
+
+echo Building client...
+
 # Move to client root
 cd ../../
 
 # Seems to be needed to avoid conflicts with the dotnet build system
 rm -rf obj/
 
-echo Building client...
 $BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB -d NETSTANDARD2_0 -d NETSTANDARD2_1 -d NETSTANDARD2_1_OR_GREATER --ldflags "-soname libClient.so" -r Platform/Android/FFmpeg.AutoGen.dll
 
 mv libClient.so Platform/Android/app/jni/Client/libClient.so
