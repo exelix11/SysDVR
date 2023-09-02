@@ -123,8 +123,9 @@ namespace SysDVR.Client.GUI
             ImGui.NewLine();
 
             centerOptions.StartHere();
-            if (ImGui.Button("Open the guide"))
-                infoPoprup.RequestOpen();
+            if (ImGui.Button("Open the github page"))
+                SystemUtil.OpenURL("https://github.com/exelix11/SysDVR");
+            
             if (IsWindows)
             {
                 ImGui.SameLine();

@@ -35,6 +35,10 @@ namespace SysDVR.Client.Core
 
         // Close a device handle
         public delegate void UsbCloseHandle(nint handle);
+
+        public delegate bool SysOpenURL([MarshalAs(UnmanagedType.LPWStr)] string url);
+
+        public delegate void SysGetDynamicLibInfo(byte[] buffer, int length);
     }
 
     public enum NativeError : int 
@@ -64,6 +68,10 @@ namespace SysDVR.Client.Core
         public NativeContracts.UsbCloseHandle UsbCloseHandle;
         public NativeContracts.UsbGetError UsbGetLastError;
 
+        // System utilities, should be populated
+        public NativeContracts.SysOpenURL SysOpenURL;
+        public NativeContracts.SysGetDynamicLibInfo SysGetDynamicLibInfo;
+
         public bool PlatformSupportsUsb => 
             UsbAcquireSnapshot != null && UsbReleaseSnapshot != null &&
             UsbGetSnapshotDeviceSerial != null && UsbOpenHandle != null &&
@@ -89,6 +97,10 @@ namespace SysDVR.Client.Core
             public IntPtr UsbOpenHandle;
             public IntPtr UsbCloseHandle;
             public IntPtr UsbGetLastError;
+
+            // System utilities
+            public IntPtr SysOpenURL;
+            public IntPtr SysGetDynamicLibInfo;
         }
 
         public unsafe static NativeError Read(IntPtr ptr, out NativeInitBlock native)
@@ -126,6 +138,9 @@ namespace SysDVR.Client.Core
                 UsbOpenHandle = repr.UsbOpenHandle == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.UsbOpenHandle>(repr.UsbOpenHandle),
                 UsbCloseHandle = repr.UsbCloseHandle == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.UsbCloseHandle>(repr.UsbCloseHandle),
                 UsbGetLastError = repr.UsbGetLastError == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.UsbGetError>(repr.UsbGetLastError),
+
+                SysOpenURL = repr.SysOpenURL == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.SysOpenURL>(repr.SysOpenURL),
+                SysGetDynamicLibInfo = repr.SysGetDynamicLibInfo == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.SysGetDynamicLibInfo>(repr.SysGetDynamicLibInfo),
             };
 
             return NativeError.Success;

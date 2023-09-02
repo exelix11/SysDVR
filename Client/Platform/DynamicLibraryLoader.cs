@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -57,6 +59,35 @@ namespace SysDVR.Client.Platform
             }
         }
 
+#if ANDROID_LIB
+        static readonly string[] InvalidBuildHash = new[]
+        {
+            "Y29tLmdvb2dsZS5hbmRyb2lkLmZlZWRiYWNr",
+            "Y29tLmFuZHJvaWQudmVuZGluZw=="
+        };
+
+        static void AndroidQuerySysPaths(out string nativePath, out string managedPath)
+        {
+            byte[] Info = new byte[4096];
+            Program.Native.SysGetDynamicLibInfo(Info, Info.Length);
+            var str = Encoding.Unicode.GetString(Info, 0, Info.Length).Split('\0', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            managedPath = str[0];
+            nativePath = str.Length > 1 ? str[1] : "";
+        }
+
+        static bool AndroidCheckDependencies(string native, string managed) 
+        {
+            native = Convert.ToBase64String(Encoding.ASCII.GetBytes(native));
+            // These build hashes from releases are known bad because they don't contain all the required symbols
+            // When using CI android native libs should be built with the same toolchain as the one used to build the app
+            if (InvalidBuildHash.Contains(native))
+                return false;
+
+            // no check on managed paths for now...
+            return true;
+        }
+
+#else
         static IEnumerable<string> FindMacOSLibrary(string libraryName)
         {
             var names = new[] {
@@ -110,14 +141,19 @@ namespace SysDVR.Client.Platform
                     File.CreateSymbolicLink(Path.Combine(thisExePath, fileName), path);
             }
         }
+#endif
 
         public static void Initialize()
         {
             ffmpeg.RootPath = OsLibFolder;
 
+#if ANDROID_LIB
+            AndroidQuerySysPaths(out var native, out var managed);
+            if (!AndroidCheckDependencies(native, managed))
+               throw new Exception("Native android dependencies are missing, possibly they are missing from the APK path. Note that on android SysDVR supports only arm64 builds.");
+#else
             if (OperatingSystem.IsWindows())
                 NativeLibrary.SetDllImportResolver(typeof(Program).Assembly, (name, assembly, path) => NativeLibrary.Load(Path.Combine(OsLibFolder, name + ".dll"), assembly, path));
-
 
             if (OperatingSystem.IsMacOS())
             {
@@ -132,6 +168,7 @@ namespace SysDVR.Client.Platform
                 NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
                 SetupMacOSLibrarySymlinks();
             }
+#endif
         }
     }
 }

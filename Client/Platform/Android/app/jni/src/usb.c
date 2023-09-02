@@ -1,53 +1,13 @@
-#include <stdbool.h>
-#include <jni.h>
-#include <android/log.h>
-
-#define L(...) __android_log_print(ANDROID_LOG_ERROR, "SysDVRLogger", __VA_ARGS__)
-
-// From Thread.c
-JNIEnv* GetJNIEnv();
-
-void LOG(const char* string);
-
-// dotnet will copy this to its own string once the call returns so it can safely be used a sa scratch buffer
+#include "JniHelper.h"
+// dotnet will copy this to its own string once the call returns so it can safely be used as a scratch buffer
 jchar tmpStringBuffer[0x100];
-
-static int min(int a, int b)
-{
-    return a > b ? b : a;
-}
-
-jint jstrlen(jchar* str)
-{
-    jint len = 0;
-    while (*str)
-    {
-        ++len;
-        ++str;
-    }
-
-    return len;
-}
 
 static void JavaCopyWstr(JNIEnv *env, jstring str)
 {
-    const jchar *raw = (*env)->GetStringChars(env, str, 0);
-    jsize len = (*env)->GetStringLength(env, str);
-    int i = 0;
-
-    for (i = 0; i < min(len, sizeof(tmpStringBuffer) - 1); i++)
-        tmpStringBuffer[i] = raw[i];
-
-    tmpStringBuffer[i] = '\0';
-    (*env)->ReleaseStringChars(env, str, raw);
+    JavaStrCopyTo(env, str, tmpStringBuffer, sizeof(tmpStringBuffer));
 }
 
 static jclass usb = NULL;
-
-#define METHOD(name, signature) \
-    JNIEnv* env = GetJNIEnv();  \
-    L("Calling JNIEnv from %s %p", __FUNCTION__, env); \
-    jmethodID mid = (*env)->GetStaticMethodID(env, usb, name, signature);
 
 void UsbInit()
 {
@@ -59,7 +19,8 @@ void UsbInit()
 
 bool UsbAcquireSnapshot(int vid, int pid, int* deviceCount)
 {
-    METHOD("SnapshotDevices", "(II)I");
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(usb, "SnapshotDevices", "(II)I");
     jint result = (*env)->CallStaticIntMethod(env, usb, mid, vid, pid);
     if (result == -1)
     {
@@ -72,13 +33,15 @@ bool UsbAcquireSnapshot(int vid, int pid, int* deviceCount)
 
 void UsbReleaseSnapshot()
 {
-    METHOD("FreeCurrentSnapshot", "()V");
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(usb,"FreeCurrentSnapshot", "()V");
     (*env)->CallStaticVoidMethod(env, usb, mid);
 }
 
 jchar* UsbGetSnapshotDeviceSerial(int idx)
 {
-    METHOD("GetSerialById", "(I)Ljava/lang/String;");
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(usb,"GetSerialById", "(I)Ljava/lang/String;");
     jstring str = (jstring)(*env)->CallStaticObjectMethod(env, usb, mid, idx);
     JavaCopyWstr(env, str);
     (*env)->DeleteLocalRef(env, str);
@@ -87,7 +50,8 @@ jchar* UsbGetSnapshotDeviceSerial(int idx)
 
 jchar* UsbGetLastError()
 {
-    METHOD("GetLatError", "()Ljava/lang/String;");
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(usb,"GetLatError", "()Ljava/lang/String;");
     jstring str = (jstring)(*env)->CallStaticObjectMethod(env, usb, mid);
     JavaCopyWstr(env, str);
     (*env)->DeleteLocalRef(env, str);
@@ -96,7 +60,8 @@ jchar* UsbGetLastError()
 
 bool UsbOpenHandle(jchar* serial, void** handle)
 {
-    METHOD("OpenBySerial", "(Ljava/lang/String;)I");
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(usb,"OpenBySerial", "(Ljava/lang/String;)I");
     jstring str = (*env)->NewString(env, serial, jstrlen(serial));
     jint res = (*env)->CallStaticIntMethod(env, usb, mid, str);
     (*env)->DeleteLocalRef(env, str);
@@ -111,6 +76,7 @@ bool UsbOpenHandle(jchar* serial, void** handle)
 
 void UsbCloseHandle(void* handle)
 {
-    METHOD("CloseDevice", "(I)V");
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(usb, "CloseDevice", "(I)V");
     (*env)->CallStaticVoidMethod(env, usb, mid, handle);
 }

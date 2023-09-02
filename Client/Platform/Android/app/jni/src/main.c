@@ -22,6 +22,10 @@ struct NativeInitBlock
 	void* UsbOpenHandle;
 	void* UsbCloseHandle;
 	void* UsbGetLastError;
+
+	// Util
+	void* SysOpenURL;
+	void* SysGetClipboard;
 };
 
 // Forward declare needed functions
@@ -39,6 +43,11 @@ jchar* UsbGetSnapshotDeviceSerial(int idx);
 jchar* UsbGetLastError();
 bool UsbOpenHandle(jchar* serial, void** handle);
 void UsbCloseHandle(void* handle);
+
+// from native.c
+void SysInit();
+bool SysOpenUrl(const jchar* string);
+void SysGetClipboard(char* buffer, int size);
 
 #define L(...) __android_log_print(ANDROID_LOG_ERROR, "SysDVRLogger", __VA_ARGS__)
 
@@ -61,7 +70,10 @@ struct NativeInitBlock g_native =
 	.UsbGetSnapshotDeviceSerial = UsbGetSnapshotDeviceSerial,
 	.UsbOpenHandle = UsbOpenHandle,
 	.UsbCloseHandle = UsbCloseHandle,
-	.UsbGetLastError = UsbGetLastError
+	.UsbGetLastError = UsbGetLastError,
+
+    .SysOpenURL = SysOpenUrl,
+    .SysGetClipboard = SysGetClipboard,
 };
 
 extern int sysdvr_entrypoint(struct NativeInitBlock* init);
@@ -69,8 +81,11 @@ extern int sysdvr_entrypoint(struct NativeInitBlock* init);
 int main(int argc, char *argv[])
 {
 	L("sdl main called()");
+
+    // Initialize JNI components
     InitThreading();
-	UsbInit();
+    SysInit();
+    UsbInit();
 
 	L("Calling entrypoint");
   	int result = sysdvr_entrypoint(&g_native);
