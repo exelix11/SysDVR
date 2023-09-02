@@ -29,11 +29,24 @@ android {
             // }
         }
     }
+	signingConfigs {
+        release {
+            def kPass = System.getenv("ANDROID_CI_KEY")
+            storeFile file("/tmp/CI.jks")
+            storePassword "$kPass"
+            keyAlias "sysdvrCI"
+            keyPassword "$kPass"
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 			signingConfig signingConfigs.release
+        }
+        debug 
+        {
+            minifyEnabled false
         }
     }
     applicationVariants.all { variant ->

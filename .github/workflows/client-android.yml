@@ -1,0 +1,37 @@
+name: SysDVR-Client android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./Client/Platform/Android
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 7.x
+    - name: Setup JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Build client native lib
+      run: |
+        chmod +x buildbinaries.sh
+        ./buildbinaries.sh
+    - name: Extract keystore from secrets
+      run: |
+        echo ${{ secrets.ANDROID_CI_CERT }} | base64 -d > /tmp/CI.jks
+    - name: Build app with gradle
+      run: |
+        ./gradlew assembleRelease
+      env: 
+        ANDROID_CI_KEY: ${{ secrets.ANDROID_CI_KEY }}
+    - uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Client
+        path: ./app/build/outputs/apk/release/app-release.apk
