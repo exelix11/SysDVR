@@ -120,7 +120,7 @@ static bool HandleCommand(const Request* req)
 	{
 		case CMD_GET_VER:
 		{
-			u32 ver = SYSDVR_VERSION;
+			u32 ver = SYSDVR_IPC_VERSION;
 			WritePayloadResponseToTLS(0, &ver, sizeof(ver));
 			return false;
 		}
