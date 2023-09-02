@@ -111,15 +111,13 @@ static bool FileExists(const char* fname)
 }
 #endif
 
+// from core.c
+void UsbOnlyEntrypoint();
+
 int main(int argc, char* argv[])
 {
 #ifdef USB_ONLY
-	CaptureSetAudioBatching(USB_MODE.AudioBatches);
-	USB_MODE.InitFn();
-	memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
-	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
-	USB_MODE.VThread(USB_MODE.Vargs);
-	USB_MODE.ExitFn();
+	UsbOnlyEntrypoint();
 #else
 	if (FileExists("/config/sysdvr/usb"))
 		SetModeID(TYPE_MODE_USB);
