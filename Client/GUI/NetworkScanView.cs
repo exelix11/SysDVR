@@ -60,7 +60,7 @@ namespace SysDVR.Client.GUI
         public override void EnterForeground()
         {
             scanner.StartScanning();
-            devices.Add(DeviceInfo.Stub());
+            //devices.Add(DeviceInfo.Stub());
             base.EnterForeground();
         }
 

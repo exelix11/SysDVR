@@ -24,12 +24,8 @@ public class DvrUsbHelper {
 
     private static final String ACTION_USB_PERMISSION = "exelix11.sysdvr.USB_PERMISSION";
 
-    static void Log(String message) {
-        Log.i("SysDVRJava", message);
-    }
-
     static void SetLastError(String error) {
-        Log(error);
+        sysdvrActivity.Log(error);
         lastErrorTxt = error;
     }
 
@@ -73,7 +69,7 @@ public class DvrUsbHelper {
 
     @SuppressLint("NewApi")
     public static int SnapshotDevices(int vid, int pid) {
-        Log("Searching for devices with vid: " + vid + " pid: " + pid);
+        sysdvrActivity.Log("Searching for devices with vid: " + vid + " pid: " + pid);
 
         if (devSnapshot != null) {
             SetLastError("There is already an USB snapshot pending");
@@ -87,7 +83,7 @@ public class DvrUsbHelper {
         devSnapshot = new ArrayList<>();
         HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
         for (UsbDevice dev : deviceList.values()) {
-            Log("found device " + dev);
+            sysdvrActivity.Log("found device " + dev);
 
             if (dev.getVendorId() != vid || dev.getProductId() != pid)
                 continue;
@@ -115,7 +111,7 @@ public class DvrUsbHelper {
 
     @SuppressLint("NewApi")
     public static int OpenBySerial(String serial) {
-        Log("opening: " + serial);
+        sysdvrActivity.Log("opening: " + serial);
 
         UsbManager mng = GetUsbManager();
         if (mng == null)
@@ -132,7 +128,7 @@ public class DvrUsbHelper {
                     conn.claimInterface(iface, true);
                     int desc = conn.getFileDescriptor();
                     openDevices.put(desc, conn);
-                    Log("Opened device with desc: " + desc);
+                    sysdvrActivity.Log("Opened device with desc: " + desc);
                     return desc;
                 }
             } catch (Exception ex) {
@@ -149,6 +145,7 @@ public class DvrUsbHelper {
         if (openDevices.containsKey(handle)) {
             UsbDeviceConnection conn = openDevices.get(handle);
             conn.close();
+            openDevices.remove(handle);
         }
     }
 }
