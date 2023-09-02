@@ -33,10 +33,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="5.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
 	<ContentWithTargetPath Include="$(ProjectDir)\Platform\Resources\**">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		<TargetPath>runtimes\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>

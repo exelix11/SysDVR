@@ -10,6 +10,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace SysDVR.Client.Platform
 {
@@ -103,6 +104,18 @@ namespace SysDVR.Client.Platform
             return names;
         }
 
+        static IntPtr WindowsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            var path = Path.Combine(OsLibFolder, libraryName + ".dll");
+            
+            // Is this a library we provide ?
+            if (File.Exists(path))
+                return NativeLibrary.Load(path);
+
+            // Otherwise let windows handle it
+            return NativeLibrary.Load(libraryName);
+        }
+
         static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             IntPtr result = IntPtr.Zero;
@@ -152,8 +165,10 @@ namespace SysDVR.Client.Platform
             if (!AndroidCheckDependencies(native, managed))
                throw new Exception("Native android dependencies are missing, possibly they are missing from the APK path. Note that on android SysDVR supports only arm64 builds.");
 #else
+            // TODO: All of this has to be re-tested since now we bundle our own dependencies
+            
             if (OperatingSystem.IsWindows())
-                NativeLibrary.SetDllImportResolver(typeof(Program).Assembly, (name, assembly, path) => NativeLibrary.Load(Path.Combine(OsLibFolder, name + ".dll"), assembly, path));
+                NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), WindowsLibraryLoader);
 
             if (OperatingSystem.IsMacOS())
             {
@@ -165,7 +180,7 @@ namespace SysDVR.Client.Platform
                     Console.ResetColor();
                 }
 
-                NativeLibrary.SetDllImportResolver(typeof(SDL2.SDL).Assembly, MacOsLibraryLoader);
+                NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), MacOsLibraryLoader);
                 SetupMacOSLibrarySymlinks();
             }
 #endif

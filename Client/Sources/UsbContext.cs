@@ -158,14 +158,14 @@ namespace SysDVR.Client.Sources
                     if (dev == null)
                         return null;
 
-                    return new DesktopUsbDevice(this, dev, x);
+                    return dev.ConnectionHandle = new DesktopUsbDevice(this, dev, x);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine("Warning: failed to query device serial " + ex);
                     return null;
                 }
-            }).Where(x => x != null).ToArray();
+            }).Where(x => x != null).Cast<DesktopUsbDevice>().ToArray();
 
             DebugLevel = old;
             return res;
