@@ -157,7 +157,6 @@ namespace SysDVR.Client.GUI
             {
                 Gui.H2();
                 Gui.CenterText("No video stream has been set.");
-                Gui.EndWindow();
             }
 
             for (int i = 0; i < notifications.Count; i++)

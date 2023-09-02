@@ -291,4 +291,14 @@ void SetModeID(u32 mode)
 		fatalThrow(ERR_MAIN_UNKMODESET);
 	}
 }
+#else
+void UsbOnlyEntrypoint() 
+{
+	CaptureSetAudioBatching(USB_MODE.AudioBatches);
+	USB_MODE.InitFn();
+	memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
+	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);
+	USB_MODE.VThread(USB_MODE.Vargs);
+	USB_MODE.ExitFn();
+}
 #endif

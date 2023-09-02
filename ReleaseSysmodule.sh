@@ -7,11 +7,11 @@ mkdir -p SysmoduleRelease/Debug/
 
 cd SysDVRConfig
 make clean
-make -j4
+make -j
 
 cd ../sysmodule
 make clean
-make -j4 DEFINES="-DRELEASE"
+make -j DEFINES="-DRELEASE"
 mkdir -p ../SysmoduleRelease/Main/atmosphere/contents/00FF0000A53BB665/flags 
 mkdir -p ../SysmoduleRelease/Main/switch 
 mkdir -p ../SysmoduleRelease/Main/config/sysdvr 
@@ -24,7 +24,7 @@ cp ../SysDVRConfig/SysDVR-conf.nro ../SysmoduleRelease/Main/switch/SysDVR-conf.n
 7z a ../SysmoduleRelease/SysDVR.zip ../SysmoduleRelease/Main/*
 
 make clean
-make -j4 DEFINES="-DRELEASE -DUSB_ONLY" 
+make -j DEFINES="-DRELEASE -DUSB_ONLY" 
 mkdir -p ../SysmoduleRelease/USB/atmosphere/contents/00FF0000A53BB665/flags 
 cp sysmodule.nsp ../SysmoduleRelease/USB/atmosphere/contents/00FF0000A53BB665/exefs.nsp
 cp sysmodule.elf ../SysmoduleRelease/Debug/usbOnly.elf
