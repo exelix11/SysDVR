@@ -60,5 +60,20 @@ namespace SysDVR.Client.Platform
             var path = Path.Combine(Program.Options.RecordingsPath, $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.np4");
             return File.OpenWrite(path);
         }
+
+        public static string? GetBuildId() 
+        {
+            try
+            {
+                var s = ReadResouce(ResourcePath("buildid.txt"));
+                return Encoding.UTF8.GetString(s);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Couldn't load build id file" + ex.ToString());
+            }
+
+            return null;
+        }
     }
 }

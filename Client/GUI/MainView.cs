@@ -17,13 +17,14 @@ namespace SysDVR.Client.GUI
 {
     internal class MainView : View
     {
-        byte[] text = new byte[1024];
-
         readonly string UsbModeWarn;
         readonly bool IsWindows;
+        readonly string Heading;
 
         public MainView()
         {
+            Heading = "SysDVR-Client " + Program.Version;
+
             IsWindows = OperatingSystem.IsWindows();
             if (OperatingSystem.IsWindows())
                 UsbModeWarn = "Requires USB drivers to be installed.";
@@ -36,10 +37,19 @@ namespace SysDVR.Client.GUI
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
+        Gui.Popup infoPoprup = new Gui.Popup("Info");
 
         float uiScale;
         int ModeButtonWidth;
         int ModeButtonHeight;
+
+        public override void BackPressed()
+        {
+            if (infoPoprup.HandleBackButton())
+                return;
+
+            base.BackPressed();
+        }
 
         public override void ResolutionChanged()
         {
@@ -58,8 +68,9 @@ namespace SysDVR.Client.GUI
             Gui.BeginWindow("Main");
             Gui.CenterImage(Resources.Logo, 120);
             Gui.H1();
-            Gui.CenterText("SysDVR-Client " + Program.Version);
+            Gui.CenterText(Heading);
             ImGui.PopFont();
+            Gui.CenterText("This is an experimental version, do not open github issues.");
 
             bool wifi = false, usb = false;
 
@@ -111,48 +122,43 @@ namespace SysDVR.Client.GUI
 
             ImGui.NewLine();
 
-            if (ImGui.Button("Stub player"))
-            {
-                LaunchStub();
-            }
-
-            ImGui.PushFont(Program.Instance.FontText);
-
             centerOptions.StartHere();
-            ImGui.Button("Open the guide");
+            if (ImGui.Button("Open the guide"))
+                infoPoprup.RequestOpen();
             if (IsWindows)
             {
                 ImGui.SameLine();
-                ImGui.Button("Install USB driver");
+                if (ImGui.Button("Install USB driver"))
+                    infoPoprup.RequestOpen();
             }
             ImGui.SameLine();
-            ImGui.Button("Settings");
+            if (ImGui.Button("Settings"))
+                infoPoprup.RequestOpen();
             centerOptions.EndHere();
 
-            ImGui.PopFont();
-
-            if (ImGui.ImageButton("asdsa", Resources.UsbIcon.Texture, new(60, 20)))
-            {
-                Program.Instance.ShowDebugInfo = true;
-            }
+            DrawUnimplmentedPopup();
 
             Gui.EndWindow();
+        }
+
+        void DrawUnimplmentedPopup() 
+        {
+            if (infoPoprup.Begin())
+            {
+                ImGui.Text("This feature is not implemented yet.");
+                ImGui.Text("Please check the Discord channel for updates.");
+                ImGui.NewLine();
+                if (ImGui.Button("Close"))
+                    infoPoprup.RequestClose();
+
+                ImGui.EndPopup();
+            }
         }
 
         void ChannelRadio(string name, StreamKind target)
         {
             if (ImGui.RadioButton(name, channels == target))
                 channels = target;
-        }
-
-        void LaunchStub()
-        {
-            var src = new CancellationTokenSource();
-            var stub = new StubSource(true, false);
-            stub.ConnectAsync(src.Token).GetAwaiter().GetResult();
-            var manager = new PlayerManager(true, false, src);
-            manager.AddSource(stub);
-            Program.Instance.PushView(new PlayerView(manager));
         }
 
         bool ModeButton(Image image, string title, int width, int height)
