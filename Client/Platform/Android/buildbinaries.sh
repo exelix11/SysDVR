@@ -62,7 +62,9 @@ if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
 	# This reduces the final APK size from 120MB to 60MB
 	echo Trimming ffmpeg-kit
 	unzip -q ffmpeg-kit-full-5.1.LTS.aar -d ffmpegkit
-	rm -rf ffmpegkit/armeabi-v7a ffmpegkit/x86_64 ffmpegkit/x86 ffmpegkit/jni/x86_64 ffmpegkit/jni/x86 ffmpegkit/jni/armeabi-v7a
+	rm -rf ffmpegkit/armeabi-v7a ffmpegkit/x86_64 ffmpegkit/x86 ffmpegkit/jni/x86_64 ffmpegkit/jni/x86 ffmpegkit/jni/armeabi-v7a libffmpegkit.so
+	# Also get rid of some libraries we don't need 	
+	rm -rf ffmpegkit/jni/arm64-v8a/libffmpegkit.so ffmpegkit/jni/arm64-v8a/libffmpegkit_abidetect.so
 	7z a ffmpegkit.aar.zip ./ffmpegkit/*
 	mv ffmpegkit.aar.zip app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar
 	rm -rf ffmpegkit
