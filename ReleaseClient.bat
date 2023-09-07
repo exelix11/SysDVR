@@ -28,11 +28,11 @@ dotnet publish -c Release || goto error
 
 cd ..
 
-move ClientGUI\bin\Release\net4.5.1\publish\* Client\bin\Release\net6.0\publish\ 
+move ClientGUI\bin\Release\net4.5.1\publish\* Client\bin\Release\net7.0\publish\ 
 
-del Client\bin\Release\net6.0\publish\*.pdb
+del Client\bin\Release\net7.0\publish\*.pdb
 
-7z a Client.7z .\Client\bin\Release\net6.0\publish\*
+7z a Client.7z .\Client\bin\Release\net7.0\publish\*
 
 :error
 exit /B %ERRORLEVEL%
