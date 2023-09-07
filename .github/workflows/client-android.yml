@@ -18,6 +18,17 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: Configure native cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/cimgui
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/libusb
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/SDL
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/SDL_Image
+          ${{ github.workspace }}/Client/Platform/Android/bflat
+        key: native-cache
+        restore-keys: native-cache
     - name: Build client native lib
       run: |
         cd ./Client/Platform/Android
@@ -28,7 +39,7 @@ jobs:
     - name: Extract keystore from secrets
       run: |
         echo ${{ secrets.ANDROID_CI_CERT }} | base64 -d > /tmp/CI.jks
-    - name: Configure cache
+    - name: Configure gradle cache
       uses: actions/cache@v3
       with:
         path: |
@@ -39,6 +50,7 @@ jobs:
     - name: Build app with gradle
       run: |
         cd ./Client/Platform/Android
+        chmod +x gradlew
         ./gradlew assembleRelease
       env: 
         ANDROID_CI_KEY: ${{ secrets.ANDROID_CI_KEY }}
