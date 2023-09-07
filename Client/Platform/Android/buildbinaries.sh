@@ -38,12 +38,10 @@ fi
 # Ensure cimgui sources are present
 if [ ! -d "app/jni/cimgui/cimgui" ]; then
 	echo Downloading cimgui sources...
-	wget https://github.com/exelix11/CimguiSDL2Cross/archive/refs/heads/master.zip
-	unzip master.zip > /dev/null
+	git clone --recursive --depth 1 https://github.com/exelix11/CimguiSDL2Cross.git
 	mv $(pwd)/CimguiSDL2Cross-master/cimgui ./app/jni/cimgui/
 	mv $(pwd)/CimguiSDL2Cross-master/Android.mk ./app/jni/cimgui/
 	rm -rf $(pwd)/CimguiSDL2Cross-master/
-	rm master.zip
 fi
 
 # Ensure libusb sources are present
