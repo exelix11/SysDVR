@@ -22,7 +22,7 @@ jobs:
     - name: Setup Android SDK
       uses: amyu/setup-android@v3
       with:
-        - ndk-version: "25.2.9519653"
+        ndk-version: "25.2.9519653"
     - name: Configure native cache
       uses: actions/cache@v3
       with:
