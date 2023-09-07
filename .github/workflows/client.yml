@@ -9,8 +9,9 @@ on:
       - ClientGUI/**
       - Libs/**
       - ReleaseClient.bat
-      # but not the linux folder
-      - '!Client/linux/**'
+      # but not the multiplatform builds
+      - '!Client/Platform/Android/**'
+      - '!Client/Platform/Linux/**'
   pull_request:
     branches: [ master ]
     paths:
@@ -18,7 +19,8 @@ on:
       - ClientGUI/**
       - Libs/**
       - ReleaseClient.bat
-      - '!Client/linux/**'
+      - '!Client/Platform/Android/**'
+      - '!Client/Platform/Linux/**'
 
 jobs:
   build:
