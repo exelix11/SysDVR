@@ -14,10 +14,15 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 7.x
-    - name: Setup JDK
-      uses: actions/setup-java@v1
+    - name: Setup JDK 17
+      uses: actions/setup-java@v3
       with:
-        java-version: 1.8
+        java-version: 17
+        distribution: temurin  
+    - name: Setup Android SDK
+      uses: amyu/setup-android@v3
+      with:
+        - ndk-version: "25.2.9519653"
     - name: Configure native cache
       uses: actions/cache@v3
       with:
@@ -26,6 +31,7 @@ jobs:
           ${{ github.workspace }}/Client/Platform/Android/app/jni/libusb
           ${{ github.workspace }}/Client/Platform/Android/app/jni/SDL
           ${{ github.workspace }}/Client/Platform/Android/app/jni/SDL_Image
+          ${{ github.workspace }}/Client/Platform/Android/app/libs
           ${{ github.workspace }}/Client/Platform/Android/bflat
         key: native-cache
         restore-keys: native-cache
