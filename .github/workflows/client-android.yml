@@ -6,9 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./Client/Platform/Android
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET
@@ -21,17 +18,27 @@ jobs:
         java-version: 1.8
     - name: Build client native lib
       run: |
+        cd ./Client/Platform/Android
         chmod +x buildbinaries.sh
         ./buildbinaries.sh
     - name: Extract keystore from secrets
       run: |
         echo ${{ secrets.ANDROID_CI_CERT }} | base64 -d > /tmp/CI.jks
+    - name: Configure cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/Client/Platform/Android/.gradle
+          ${{ github.workspace }}/Client/Platform/Android/app/build
+        key: gradle-cache
+        restore-keys: gradle-cache
     - name: Build app with gradle
       run: |
+        cd ./Client/Platform/Android
         ./gradlew assembleRelease
       env: 
         ANDROID_CI_KEY: ${{ secrets.ANDROID_CI_KEY }}
     - uses: actions/upload-artifact@v3
       with:
         name: SysDVR-Client
-        path: ./app/build/outputs/apk/release/app-release.apk
+        path: ./Client/Platform/Android/app/build/outputs/apk/release/app-release.apk
