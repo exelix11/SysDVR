@@ -85,7 +85,7 @@ fi
 echo checking resources...
 
 if [ ! -e app/src/main/assets/OpenSans.ttf ]; then
-	echo The assets folder symlink is misconfigured, app/src/main/assets should link to ..\Resources\resources
+	echo The assets folder symlink is misconfigured, app/src/main/assets should link to ../Resources/resources
 	exit 1
 fi
 
