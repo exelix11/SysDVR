@@ -2,25 +2,25 @@ name: SysDVR-Client
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ master ]
-    paths:
-      - Client/**
-      - ClientGUI/**
-      - Libs/**
-      - ReleaseClient.bat
-      # but not the multiplatform builds
-      - '!Client/Platform/Android/**'
-      - '!Client/Platform/Linux/**'
-  pull_request:
-    branches: [ master ]
-    paths:
-      - Client/**
-      - ClientGUI/**
-      - Libs/**
-      - ReleaseClient.bat
-      - '!Client/Platform/Android/**'
-      - '!Client/Platform/Linux/**'
+  # push:
+  #   branches: [ master ]
+  #   paths:
+  #     - Client/**
+  #     - ClientGUI/**
+  #     - Libs/**
+  #     - ReleaseClient.bat
+  #     # but not the multiplatform builds
+  #     - '!Client/Platform/Android/**'
+  #     - '!Client/Platform/Linux/**'
+  # pull_request:
+  #   branches: [ master ]
+  #   paths:
+  #     - Client/**
+  #     - ClientGUI/**
+  #     - Libs/**
+  #     - ReleaseClient.bat
+  #     - '!Client/Platform/Android/**'
+  #     - '!Client/Platform/Linux/**'
 
 jobs:
   build:
