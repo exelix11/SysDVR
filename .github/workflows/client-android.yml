@@ -21,6 +21,7 @@ jobs:
     - name: Build client native lib
       run: |
         cd ./Client/Platform/Android
+        ln -s app/src/main/assets ../Resources/resources
         chmod +x buildbinaries.sh
         ./buildbinaries.sh
     - name: Extract keystore from secrets
