@@ -2,6 +2,13 @@
 
 set -e
 
+echo checking resources...
+
+if [ ! -e app/src/main/assets/OpenSans.ttf ]; then
+	echo The assets folder symlink is misconfigured, app/src/main/assets should link to ../Resources/resources
+	exit 1
+fi
+
 echo Checking dependencies...
 
 # Ensure SDL sources are present
@@ -80,13 +87,6 @@ if [ ! -e $BFLAT ]; then
 	mkdir bflat
 	tar xf bflat-7.0.2-linux-glibc-x64.tar.gz --strip-components=1 -C bflat
 	rm bflat-7.0.2-linux-glibc-x64.tar.gz
-fi
-
-echo checking resources...
-
-if [ ! -e app/src/main/assets/OpenSans.ttf ]; then
-	echo The assets folder symlink is misconfigured, app/src/main/assets should link to ../Resources/resources
-	exit 1
 fi
 
 git rev-parse --short HEAD > app/src/main/assets/buildid.txt
