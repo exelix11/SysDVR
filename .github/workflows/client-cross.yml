@@ -4,6 +4,9 @@ name: SysDVR-Client
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ "6.0" ]
+
   # push:
   #   branches: [ master ]
   #   paths:
