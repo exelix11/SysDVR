@@ -42,5 +42,5 @@ jobs:
         dotnet build -c Release
     - uses: actions/upload-artifact@v3
       with:
-        name: SysDVR-Client-dotnet.7z
-        path: Client\bin\Release\net7.0\
+        name: SysDVR-Client-dotnet.zip
+        path: Client/bin/Release/net7.0/
