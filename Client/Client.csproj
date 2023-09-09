@@ -18,6 +18,7 @@
     <ApplicationIcon>Client.ico</ApplicationIcon>
 	<RollForward>Major</RollForward>
 	<Nullable>annotations</Nullable>
+	<PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -43,9 +44,5 @@
 	<EmbeddedResource Remove="Platform\Linux\**" />
 	<None Remove="Platform\Android\**" />
 	<None Remove="Platform\Linux\**" />
-  
-    <None Update="Core\Help.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>
