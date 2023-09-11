@@ -44,21 +44,14 @@ namespace SysDVR.Client.GUI
 
     internal class PlayerView : View
     {
-        const AVPixelFormat TargetDecodingFormat = AVPixelFormat.AV_PIX_FMT_YUV420P;
-        static uint TargetTextureFormat = SDL_PIXELFORMAT_IYUV;
-
         readonly bool HasAudio;
+        readonly AudioPlayer? Audio;
         readonly bool HasVideo;
-        readonly StreamSynchronizationHelper SyncHelper;
-        readonly AutoResetEvent? OnNewFrame;
-        readonly SDLAudioContext SDLAudio;
-        readonly DecoderContext Decoder;
+        readonly VideoPlayer? Video;
+
         readonly FramerateCounter fps = new();
 
         readonly PlayerManager Manager;
-
-        protected SDLContext SDL; // This must be initialized by the UI thread
-        protected FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 
         SDL_Rect DisplayRect = new SDL_Rect();
 
@@ -79,7 +72,7 @@ namespace SysDVR.Client.GUI
         public override void Created()
         {
             Manager.Begin();
-            SDL_PauseAudioDevice(SDLAudio.DeviceID, 0);
+            Audio?.Resume();
             base.Created();
         }
 
@@ -93,10 +86,28 @@ namespace SysDVR.Client.GUI
             ImGui.Text($"Pending: {Manager.AudioTarget?.Pending} {Manager.VideoTarget?.Pending}");
         }
 
+        void ShowPlayerOptionMessage() 
+        {
+            if (Program.Options.DecoderName is not null)
+            {
+                if (Video.DecoderName != Program.Options.DecoderName)
+                {
+                    MessageUi($"Decoder {Program.Options.DecoderName} not found, using {Video.DecoderName} instead.");
+                }
+                else
+                {
+                    MessageUi($"Using custom decoder {Program.Options.DecoderName}, in case of issues try disabling this option to use the default one.");
+                }
+            }
+
+            if (Video.AcceleratedDecotr)
+            {
+                MessageUi($"Using the {Video.DecoderName} hardware accelerated video decoder, in case of issues try to use the default one by disabling this option.");
+            }
+        }
+
         public PlayerView(PlayerManager manager)
         {
-            RenderMode = FramerateCapOptions.Target(60);
-
             Manager = manager;
             HasVideo = manager.VideoTarget is not null;
             HasAudio = manager.AudioTarget is not null;
@@ -109,16 +120,16 @@ namespace SysDVR.Client.GUI
 
             // SyncHelper is disabled if there is only a single stream
             // Note that it can also be disabled via a --debug flag and this is handled by the constructor
-            SyncHelper = new(HasAudio && HasVideo);
+            var sync = new StreamSynchronizationHelper(HasAudio && HasVideo);
 
             if (HasVideo)
             {
-                Decoder = InitVideoDecoder();
-                Decoder.SyncHelper = SyncHelper;
-                manager.VideoTarget.UseContext(Decoder);
-                OnNewFrame = Decoder.OnFrameEvent;
+                Video = new(Program.Options.DecoderName, Program.Options.HardwareAccel);
+                Video.Decoder.SyncHelper = sync;
+                manager.VideoTarget.UseContext(Video.Decoder);
 
-                SDL = InitSDLRenderTexture();
+                ShowPlayerOptionMessage();
+
                 InitializeLoadingTexture();
 
                 fps.Start();
@@ -126,8 +137,8 @@ namespace SysDVR.Client.GUI
 
             if (HasAudio)
             {
-                SDLAudio = InitSDLAudio(manager.AudioTarget);
-                manager.AudioTarget.UseSynchronizationHeloper(SyncHelper);
+                Audio = new(manager.AudioTarget);
+                manager.AudioTarget.SyncHelper = sync;
             }
         }
 
@@ -304,22 +315,18 @@ namespace SysDVR.Client.GUI
             if (!HasVideo)
                 return;
 
-            if (DecodeNextFrame())
+            if (Video.DecodeFrame())
             {
-                // TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
-                // Check if are there any performance improvements by moving this to the decoder thread on other OSes
-                UpdateSDLTexture(Decoder.RenderFrame);
-
                 fps.OnFrame();
             }
 
             // Bypass imgui for this
-            SDL_RenderCopy(Program.Instance.SdlRenderer, SDL.Texture, ref SDL.TextureSize, ref DisplayRect);
+            SDL_RenderCopy(Program.Instance.SdlRenderer, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
 
             // Signal we're presenting something to SDL to kick the decding thread
             // We don't care if we didn't actually decoded anything we just do it here
             // to do this on every vsync to avoid arbitrary sleeps on the other side
-            OnNewFrame?.Set();
+            Video.Decoder.OnFrameEvent.Set();
         }
 
         public override void ResolutionChanged()
@@ -358,236 +365,19 @@ namespace SysDVR.Client.GUI
             Manager.Stop();
 
             // Dispose of unmanaged resources
-            if (HasAudio)
-            {
-                SDL_PauseAudioDevice(SDLAudio.DeviceID, 1);
-                SDL_CloseAudioDevice(SDLAudio.DeviceID);
-                SDLAudio.TargetHandle.Free();
-            }
-
-            if (HasVideo)
-            {
-                var ptr = Decoder.Frame1;
-                av_frame_free(&ptr);
-
-                ptr = Decoder.Frame2;
-                av_frame_free(&ptr);
-
-                var ptr2 = Decoder.CodecCtx;
-                avcodec_free_context(&ptr2);
-
-                if (Converter.Converter != null)
-                {
-                    var ptr3 = Converter.Frame;
-                    av_frame_free(&ptr3);
-
-                    sws_freeContext(Converter.Converter);
-                }
-
-                if (SDL.Texture != 0)
-                    SDL_DestroyTexture(SDL.Texture);
-            }
+            Audio?.Dispose();
+            Video?.Dispose();
 
             Manager.Dispose();
-            OnNewFrame?.Dispose();
             base.Destroy();
-        }
-
-        static SDLContext InitSDLRenderTexture()
-        {
-            Program.Instance.BugCheckThreadId();
-
-            var tex = SDL_CreateTexture(Program.Instance.SdlRenderer, TargetTextureFormat,
-                (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
-                StreamInfo.VideoWidth, StreamInfo.VideoHeight).AssertNotNull(SDL_GetError);
-
-            if (DebugOptions.Current.Log)
-            {
-                var pixfmt = SDL_QueryTexture(tex, out var format, out var a, out var w, out var h);
-                Console.WriteLine($"SDL texture info: f = {SDL_GetPixelFormatName(format)} a = {a} w = {w} h = {h}");
-
-                SDL_RendererInfo info;
-                SDL_GetRendererInfo(Program.Instance.SdlRenderer, out info);
-                for (int i = 0; i < info.num_texture_formats; i++) unsafe
-                {
-                    Console.WriteLine($"Renderer supports pixel format {SDL_GetPixelFormatName(info.texture_formats[i])}");
-                }
-            }
-
-            return new SDLContext()
-            {
-                Initialized = true,
-                TextureSize = new SDL_Rect() { x = 0, y = 0, w = StreamInfo.VideoWidth, h = StreamInfo.VideoHeight },
-                Texture = tex,
-                TextureLock = new object()
-            };
-        }
-
-        static unsafe SDLAudioContext InitSDLAudio(AudioStreamTarget target)
-        {
-            Program.Instance.BugCheckThreadId();
-
-            var handle = GCHandle.Alloc(target, GCHandleType.Normal);
-
-            SDL_AudioCallback callback = AudioStreamTargetNative.SDLCallback;
-            SDL_AudioSpec wantedSpec = new SDL_AudioSpec()
-            {
-                silence = 0,
-                channels = StreamInfo.AudioChannels,
-                format = AUDIO_S16LSB,
-                freq = StreamInfo.AudioSampleRate,
-                // This value was the deafault until sysdvr 5.4, however SDL will pick its preferred buffer size since we pass SDL_AUDIO_ALLOW_SAMPLES_CHANGE, this is fine since we have our own buffering
-                size = StreamInfo.AudioPayloadSize * 2,
-                samples = StreamInfo.MinAudioSamplesPerPayload * 2,
-                callback = callback,
-                userdata = GCHandle.ToIntPtr(handle)
-            };
-
-            var deviceId = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out var obtained, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
-
-            deviceId.AssertNotZero(SDL_GetError);
-
-            if (DebugOptions.Current.Log)
-            {
-                Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
-            }
-
-            return new SDLAudioContext
-            {
-                DeviceID = deviceId,
-                CallbackDelegate = callback, // Prevents the delegate passed to native code from being GC'd
-                TargetHandle = handle
-            };
-        }
-
-        unsafe DecoderContext InitVideoDecoder()
-        {
-            var name = Program.Options.DecoderName;
-            var useHwAcc = Program.Options.HardwareAccel;
-            AVCodec* codec = null;
-
-            if (name is not null) 
-            {
-                codec = avcodec_find_decoder_by_name(name);
-
-                if (codec == null)
-                {
-                    MessageUi($"ERROR: The codec {name} Couldn't be initialized, falling back to default decoder.");
-                }
-                else
-                {
-                    MessageUi("You manually set a video decoder with the --decoder option, in case of issues remove it to use the default one.");
-                    return CreateDecoderContext(codec);
-                }
-            }
-
-            if (useHwAcc)
-            {
-                name = LibavUtils.GetH264Decoders().Where(x => x.Name != "h264").FirstOrDefault()?.Name;
-
-                if (name != null)
-                {
-                    codec = avcodec_find_decoder_by_name(name);
-                    if (codec != null)
-                        MessageUi("Attempting to initialize the video player with an hardware accelerated video decoder, in case of issues try removing the --hw-acc option do disable this.");
-                }
-            }
-
-            if (codec == null)
-                codec = avcodec_find_decoder(AVCodecID.AV_CODEC_ID_H264);
-
-            if (codec == null)
-                throw new Exception("Couldn't find any compatible video codecs");
-
-            return CreateDecoderContext(codec);
-        }
-
-        static unsafe DecoderContext CreateDecoderContext(AVCodec* codec)
-        {
-            if (codec == null)
-                throw new Exception("Codec can't be null");
-
-            string codecName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
-
-            Console.WriteLine($"Initializing video player with {codecName} codec.");
-
-            var codectx = avcodec_alloc_context3(codec);
-            if (codectx == null)
-                throw new Exception("Couldn't allocate a codec context");
-
-            // These are set in ffplay
-            codectx->codec_id = codec->id;
-            codectx->codec_type = AVMediaType.AVMEDIA_TYPE_VIDEO;
-            codectx->bit_rate = 0;
-
-            // Some decoders break without this
-            codectx->width = StreamInfo.VideoWidth;
-            codectx->height = StreamInfo.VideoHeight;
-
-            var (ex, sz) = LibavUtils.AllocateH264Extradata();
-            codectx->extradata_size = sz;
-            codectx->extradata = (byte*)ex.ToPointer();
-
-            avcodec_open2(codectx, codec, null).AssertZero("Couldn't open the codec.");
-
-            var pic = av_frame_alloc();
-            if (pic == null)
-                throw new Exception("Couldn't allocate the decoding frame");
-
-            var pic2 = av_frame_alloc();
-            if (pic2 == null)
-                throw new Exception("Couldn't allocate the decoding frame");
-
-            return new DecoderContext()
-            {
-                CodecCtx = codectx,
-                Frame1 = pic,
-                Frame2 = pic2,
-                ReceiveFrame = pic,
-                RenderFrame = pic2,
-                CodecLock = new object(),
-                OnFrameEvent = new AutoResetEvent(true)
-            };
-        }
-
-        unsafe static FormatConverterContext InitializeConverter(AVCodecContext* codecctx)
-        {
-            AVFrame* dstframe = null;
-            SwsContext* swsContext = null;
-
-            Console.WriteLine($"Initializing converter for {codecctx->pix_fmt}");
-
-            dstframe = av_frame_alloc();
-
-            if (dstframe == null)
-                throw new Exception("Couldn't allocate the the converted frame");
-
-            dstframe->format = (int)TargetDecodingFormat;
-            dstframe->width = StreamInfo.VideoWidth;
-            dstframe->height = StreamInfo.VideoHeight;
-
-            av_frame_get_buffer(dstframe, 32).AssertZero("Couldn't allocate the buffer for the converted frame");
-
-            swsContext = sws_getContext(codecctx->width, codecctx->height, codecctx->pix_fmt,
-                                        dstframe->width, dstframe->height, (AVPixelFormat)dstframe->format,
-                                        SWS_FAST_BILINEAR, null, null, null);
-
-            if (swsContext == null)
-                throw new Exception("Couldn't initialize the converter");
-
-            return new FormatConverterContext()
-            {
-                Converter = swsContext,
-                Frame = dstframe
-            };
-        }
+        }      
 
         private unsafe void InitializeLoadingTexture()
         {
             Program.Instance.BugCheckThreadId();
 
             // This hardcodes YUV dats
-            if (TargetTextureFormat != SDL_PIXELFORMAT_IYUV)
+            if (Video.TargetTextureFormat != SDL_PIXELFORMAT_IYUV)
                 return;
 
             byte[] data = null;
@@ -610,97 +400,8 @@ namespace SysDVR.Client.GUI
             }
 
             fixed (byte* ptr = data)
-                SDL_UpdateYUVTexture(SDL.Texture, ref SDL.TextureSize,
+                SDL_UpdateYUVTexture(Video.TargetTexture, ref Video.TargetTextureSize,
                     (IntPtr)ptr, 1280, (IntPtr)(ptr + 0xE1000), 640, (IntPtr)(ptr + 0x119400), 640);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int av_ceil_rshift(int a, int b) =>
-            -(-a >> b);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe void UpdateSDLTexture(AVFrame* pic)
-        {
-            if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
-            {
-                SDL_UpdateYUVTexture(SDL.Texture, ref SDL.TextureSize,
-                    (IntPtr)pic->data[0], pic->linesize[0],
-                    (IntPtr)pic->data[1], pic->linesize[1],
-                    (IntPtr)pic->data[2], pic->linesize[2]);
-            }
-#if DEBUG
-            // Not sure if this is needed but ffplay source does handle this case, all my tests had positive linesize
-            else if (pic->linesize[0] < 0 && pic->linesize[1] < 0 && pic->linesize[2] < 0)
-            {
-                Console.WriteLine("Negative Linesize");
-                SDL_UpdateYUVTexture(SDL.Texture, ref SDL.TextureSize,
-                    (IntPtr)(pic->data[0] + pic->linesize[0] * (pic->height - 1)), -pic->linesize[0],
-                    (IntPtr)(pic->data[1] + pic->linesize[1] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[1],
-                    (IntPtr)(pic->data[2] + pic->linesize[2] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[2]);
-            }
-#endif
-            // While this doesn't seem to be handled in ffplay but the texture can be non-planar with some decoders
-            else if (pic->linesize[0] > 0 && pic->linesize[1] == 0)
-            {
-                SDL_UpdateTexture(SDL.Texture, ref SDL.TextureSize, (nint)pic->data[0], pic->linesize[0]);
-            }
-            else Console.WriteLine($"Error: Non-positive planar linesizes are not supported, open an issue on Github. {pic->linesize[0]} {pic->linesize[1]} {pic->linesize[2]}");
-        }
-
-        bool converterFirstFrameCheck = false;
-        unsafe bool DecodeNextFrame()
-        {
-            int ret = 0;
-
-            lock (Decoder.CodecLock)
-                ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
-
-            if (ret == AVERROR(EAGAIN))
-            {
-                // Try again for the next SDL frame
-                return false;
-            }
-            else if (ret != 0)
-            {
-                // Should not happen
-                Console.WriteLine($"avcodec_receive_frame {ret}");
-                return false;
-            }
-            else
-            {
-                // On the first frame we get check if we need to use a converter
-                if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
-                {
-                    if (DebugOptions.Current.Log)
-                        Console.WriteLine($"Decoder.CodecCtx uses pixel format {Decoder.CodecCtx->pix_fmt}");
-                    
-                    converterFirstFrameCheck = true;
-                    if (Decoder.CodecCtx->pix_fmt != TargetDecodingFormat)
-                    {
-                        Converter = InitializeConverter(Decoder.CodecCtx);
-                        // Render to the converted frame
-                        Decoder.RenderFrame = Converter.Frame;
-                    }
-                }
-
-                if (Converter.Converter != null)
-                {
-                    var source = Decoder.ReceiveFrame;
-                    var target = Decoder.RenderFrame;
-                    sws_scale(Converter.Converter, source->data, source->linesize, 0, source->height, target->data, target->linesize);
-                }
-                else
-                {
-                    // Swap the frames so we can render source
-                    var toRender = Decoder.ReceiveFrame;
-                    var receiveNext = Decoder.RenderFrame;
-
-                    Decoder.ReceiveFrame = receiveNext;
-                    Decoder.RenderFrame = toRender;
-                }
-
-                return true;
-            }
-        }
+        }        
     }
 }

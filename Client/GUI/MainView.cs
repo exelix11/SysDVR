@@ -37,7 +37,7 @@ namespace SysDVR.Client.GUI
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
-        Gui.Popup infoPoprup = new Gui.Popup("Info");
+        Gui.Popup infoPoprup = new Gui.Popup("ErrorMessage");
 
         float uiScale;
         int ModeButtonWidth;

@@ -58,7 +58,7 @@ public class ClientApp
     int SDLThreadId;
 
     // Debug window state
-    public bool ShowDebugInfo = false;
+    public bool ShowDebugInfo = Debugger.IsAttached;
     Vector2 PixelSize;
     Vector2 WantedDPIScale;
     bool IsWantedScale;
@@ -177,6 +177,12 @@ public class ClientApp
         PostAction(() => HandleReplaceView(view));
     }
 
+    // Called to simulate input when rendering mode is adaptive, we need it so the video decoding thread can force a re-render even when there is no user input active
+    public void KickRendering(bool important) 
+    {
+        Cap.OnEvent(important);
+    }
+
     public void ClearScrren()
     {
         SDL_SetRenderDrawColor(SdlRenderer, 0x0, 0x0, 0x0, 0xFF);
@@ -209,6 +215,9 @@ public class ClientApp
     {
         var cur = WindowSize;
         SDL_GetWindowSize(SdlWindow, out int w, out int h);
+
+        if (cur == new Vector2(w, h))
+            return;
 
         WindowSize = new(w, h);
         IsPortrait = w / (float)h < 1.3;
@@ -285,10 +294,10 @@ public class ClientApp
                 SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
                 .AssertNotNull(SDL_GetError);
 
-        SdlRenderer = SDL_CreateRenderer(SdlWindow, -1,
-                SDL_RendererFlags.SDL_RENDERER_ACCELERATED |
-                SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC)
-                .AssertNotNull(SDL_GetError);
+        var flags = Program.Options.ForceSoftwareRenderer ? SDL_RendererFlags.SDL_RENDERER_SOFTWARE :
+            (SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
+        
+        SdlRenderer = SDL_CreateRenderer(SdlWindow, -1, flags).AssertNotNull(SDL_GetError);
 
         SDL_GetRendererInfo(SdlRenderer, out var info);
         Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
@@ -309,7 +318,7 @@ public class ClientApp
 
             while (SDL_PollEvent(out var evt) != 0)
             {
-                Cap.OnEvent();
+                Cap.OnEvent(true);
                 
                 if (evt.type == SDL_EventType.SDL_QUIT ||
                     (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
