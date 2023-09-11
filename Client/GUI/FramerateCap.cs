@@ -3,7 +3,9 @@ using SDL2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.GUI
@@ -40,13 +42,14 @@ namespace SysDVR.Client.GUI
             opt = mode;
             
             if (opt.Mode == FramerateCapOptions.CapMode.Adaptive)
-                OnEvent(); 
+                OnEvent(true); 
         }
 
-        // Mark an event as received, needed for adaptive mode
-        public void OnEvent() 
+        // Mark an event as received, needed for adaptive mode.
+        // Thread safety: may be called by any thread
+        public void OnEvent(bool important) 
         {
-            eventCounter = 10;
+            eventCounter = important ? 10 : 4;
         }
 
         // Called in the render loop, returns true if the frame should be skipped
@@ -71,11 +74,12 @@ namespace SysDVR.Client.GUI
             {
                 var ticks = SDL.SDL_GetTicks();
                 var delta = ticks - lastTick;
-                lastTick = ticks;
                 if (delta < opt.DeltaCap)
                 {
                     SDL.SDL_Delay(opt.DeltaCap - delta);
+                    lastTick = SDL.SDL_GetTicks();
                 }
+                else lastTick = ticks;
             }
 
             return false;

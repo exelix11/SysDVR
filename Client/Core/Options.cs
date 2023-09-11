@@ -37,6 +37,7 @@ namespace SysDVR.Client.Core
         public string? DecoderName;
 
         // SDL options
+        public bool ForceSoftwareRenderer;
         public ScaleMode RendererScale = ScaleMode.Linear;
 
         public string ScaleHintForSDL => RendererScale switch

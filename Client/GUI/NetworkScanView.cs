@@ -4,6 +4,7 @@ using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -60,7 +61,10 @@ namespace SysDVR.Client.GUI
         public override void EnterForeground()
         {
             scanner.StartScanning();
-            //devices.Add(DeviceInfo.Stub());
+            
+            if (Debugger.IsAttached)
+                devices.Add(DeviceInfo.Stub());
+            
             base.EnterForeground();
         }
 

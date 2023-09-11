@@ -12,7 +12,7 @@ namespace SysDVR.Client.GUI
 {
     public abstract class View
     {
-        public FramerateCapOptions RenderMode = FramerateCapOptions.Target(30);
+        public FramerateCapOptions RenderMode = FramerateCapOptions.Adaptive();
 
         public abstract void Draw();
 

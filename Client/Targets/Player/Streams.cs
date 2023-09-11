@@ -22,12 +22,7 @@ namespace SysDVR.Client.Targets.Player
         readonly bool log = DebugOptions.Current.Log;
 
         public int Pending;
-        StreamSynchronizationHelper sync;
-
-        public void UseSynchronizationHeloper(StreamSynchronizationHelper sync)
-        {
-            this.sync = sync;
-        }
+        public StreamSynchronizationHelper SyncHelper;
 
         PoolBuffer currentBlock;
         int currentOffset = -1;
@@ -56,7 +51,7 @@ namespace SysDVR.Client.Targets.Player
                     {
                     again:
                         var (block, ts) = samples.Take(Cancel);
-                        if (!sync.CheckTimestamp(false, ts))
+                        if (!SyncHelper.CheckTimestamp(false, ts))
                         {
                             if (log)
                                 Console.WriteLine($"Dropping audio packet with ts {ts}");
@@ -147,6 +142,8 @@ namespace SysDVR.Client.Targets.Player
                         else
                         {
                             success = true;
+                            // Tell the UI thread to start rendering again
+                            Program.Instance.KickRendering(false);
                             break;
                         }
                     }
