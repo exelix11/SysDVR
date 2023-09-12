@@ -1,11 +1,9 @@
-name: SysDVR-Client
+name: SysDVR-Client dotnet build
 # This is the "cross platform" build of SysDVR-Client, it only produces clean .net binaries without dependencies
 # All the other builds are platform specific and produce a native AOT build with all the dependencies included
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "6.0" ]
 
   # push:
   #   branches: [ master ]
