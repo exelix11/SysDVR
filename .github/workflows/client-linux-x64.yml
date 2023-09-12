@@ -20,15 +20,15 @@ jobs:
     - name: Cache flatpak builds
       uses: actions/cache@v3
       with:
-        path: Client/linux/.flatpak-builder
+        path: Client/Platform/Linux/.flatpak-builder
         key: flatpak-${{ runner.os }}
     - name: Run build script
       run: |
-        cd Client/linux
+        cd Client/Platform/Linux
         chmod +x build-flatpak.sh
         ./build-flatpak.sh
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: SysDVR-Client.flatpak
-        path: Client/linux/SysDVR-Client.flatpak
+        path: Client/Platform/Linux/SysDVR-Client.flatpak
