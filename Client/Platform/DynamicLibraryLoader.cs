@@ -135,7 +135,7 @@ namespace SysDVR.Client.Platform
             // The alternative is to fork libusbdotnet to add a way to load its native lib from a cusstom folder
             // See https://github.com/exelix11/SysDVR/issues/192
 
-            var thisExePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var thisExePath = Path.GetDirectoryName(AppContext.BaseDirectory);
 
             // We only need to link libusb as ffmpeg has a global root path variable and for SDL we set the custom NativeLoader callback
             var libNames = new[] {

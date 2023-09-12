@@ -1138,10 +1138,7 @@ namespace SDL2
 			);
 			if (result != IntPtr.Zero)
 			{
-				callback = (SDL_LogOutputFunction) Marshal.GetDelegateForFunctionPointer(
-					result,
-					typeof(SDL_LogOutputFunction)
-				);
+				callback = Marshal.GetDelegateForFunctionPointer<SDL_LogOutputFunction>(result);
 			}
 			else
 			{
@@ -1278,7 +1275,7 @@ namespace SDL2
 
 			if (messageboxdata.colorScheme != null)
 			{
-				data.colorScheme = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(SDL_MessageBoxColorScheme)));
+				data.colorScheme = Marshal.AllocHGlobal(Marshal.SizeOf<SDL_MessageBoxColorScheme>());
 				Marshal.StructureToPtr(messageboxdata.colorScheme.Value, data.colorScheme, false);
 			}
 
@@ -4271,10 +4268,7 @@ namespace SDL2
 		public static bool SDL_MUSTLOCK(IntPtr surface)
 		{
 			SDL_Surface sur;
-			sur = (SDL_Surface) Marshal.PtrToStructure(
-				surface,
-				typeof(SDL_Surface)
-			);
+			sur = Marshal.PtrToStructure<SDL_Surface>(surface);
 			return (sur.flags & SDL_RLEACCEL) != 0;
 		}
 
@@ -5423,10 +5417,7 @@ namespace SDL2
 			SDL_bool retval = SDL_GetEventFilter(out result, out userdata);
 			if (result != IntPtr.Zero)
 			{
-				filter = (SDL_EventFilter) Marshal.GetDelegateForFunctionPointer(
-					result,
-					typeof(SDL_EventFilter)
-				);
+				filter = Marshal.GetDelegateForFunctionPointer<SDL_EventFilter>(result);
 			}
 			else
 			{
