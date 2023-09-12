@@ -103,7 +103,11 @@ namespace SysDVR.Client.Platform
             // Is this a library we provide ?
             yield return Path.Combine(BundledOsNativeFolder, libraryName);
 
-            // Otherwsie let the OS handle it
+            // Flatpak uses this path
+            if (OperatingSystem.IsLinux())
+                yield return Path.Combine("/app/lib", libraryName);
+
+            // Maybe it's in the working directory
             yield return libraryName;
         }
 
@@ -114,12 +118,26 @@ namespace SysDVR.Client.Platform
 
         static IntPtr BundledLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            foreach (var candidate in FindNativeLibrary(libraryName).Where(File.Exists))
+            var paths = FindNativeLibrary(libraryName)
+                .Concat(FindNativeLibrary("lib" + libraryName));
+
+            foreach (var candidate in paths.Where(File.Exists))
             {
                 if (NativeLibrary.TryLoad(candidate , out var result))
                     return result;
 
                 Console.WriteLine($"Failrd to load {candidate}");
+            }
+
+            // Try to load the library from the OS
+            {
+                IntPtr result = IntPtr.Zero;
+
+                if (NativeLibrary.TryLoad(libraryName, out result))
+                    return result;
+                
+                if (NativeLibrary.TryLoad($"lib{libraryName}", out result))
+                    return result;
             }
 
             Console.WriteLine($"Failed to find library: {libraryName}");

@@ -13,12 +13,7 @@
 		"--socket=pulseaudio",
 		"--filesystem=host"
 	],
-	"sdk-extensions": [
-		"org.freedesktop.Sdk.Extension.dotnet6"
-	],
 	"build-options": {
-		"append-path": "/usr/lib/sdk/dotnet6/bin",
-		"append-ld-library-path": "/usr/lib/sdk/dotnet6/lib",
 		"env": {
 			"PKG_CONFIG_PATH": "/app/lib/pkgconfig:/app/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib/sdk/dotnet6/lib/pkgconfig"
 		}
@@ -26,6 +21,24 @@
 	"modules": [
 		"shared-modules/SDL2/SDL2-no-libdecor.json",
 		"shared-modules/libusb/libusb.json",
+		{
+			"name": "SDL2_image",
+			"config-opts": ["--disable-static"],
+			"rm-configure": true,
+			"cleanup": [
+				"/include",
+				"/lib/pkgconfig",
+				"*.la",
+				"*.a"
+			],
+			"sources": [
+				{
+					"type": "archive",
+					"url": "https://github.com/libsdl-org/SDL_image/releases/download/release-2.6.3/SDL2_image-2.6.3.tar.gz",
+					"sha256": "931c9be5bf1d7c8fae9b7dc157828b7eee874e23c7f24b44ba7eff6b4836312c"
+				}
+			]
+		},
 		{
 			"name": "ffmpeg",
 			"cleanup": [ "/include", "/lib/pkgconfig", "/share/ffmpeg/examples" ],
@@ -48,29 +61,13 @@
 			"buildsystem": "simple",
 			"build-commands":
 			[
-				"install.sh",
-				"cp -r . /app"
+				"cp -r . /app/bin"
 			],
 			"sources":
 			[
 				{
 					"type": "dir",
 					"path": "dvr-build"
-				}
-			]
-		},
-		{
-			"name": "launcher",
-			"buildsystem": "simple",
-			"build-commands":
-			[
-				"install -D launcher.sh /app/bin/SysDVR-Client"
-			],
-			"sources":
-			[
-				{
-					"type": "dir",
-					"path": "flatpak-content"
 				}
 			]
 		}
