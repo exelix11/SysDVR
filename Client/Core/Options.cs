@@ -26,7 +26,8 @@ namespace SysDVR.Client.Core
     {
         public bool UncapStreaming;
         public bool UncapGUI;
-        public string RecordingsPath = DefaultPlatformSavePath();
+        public string RecordingsPath = DefaultPlatformVideoPath();
+        public string ScreenshotsPath = DefaultPlatformPicturePath();
         public bool HideSerials;
 
         // Usb logging options
@@ -48,17 +49,63 @@ namespace SysDVR.Client.Core
             _ => throw new NotImplementedException(),
         };
 
-        static string DefaultPlatformSavePath() 
+
+        public string GetFilePathForVideo()
+        {
+            var format = $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.np4";
+            return Path.Combine(RecordingsPath, format);
+        }
+
+        public string GetFilePathForScreenshot()
+        {
+            var format = $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.png";
+            return Path.Combine(ScreenshotsPath, format);
+        }
+
+        static string LinuxFallbackPath(string wantedFolderName) 
+        {
+            var wanted = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), wantedFolderName);
+            
+            if (!Directory.Exists(wanted))
+            {
+                wanted = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
+                
+                if (!Directory.Exists(wanted))
+                {
+                    wanted = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents");
+
+                    // WSL doesn't have the other folders by default
+                    if (!Directory.Exists(wanted))
+                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                }
+            }
+
+            return wanted;
+        }
+
+        static string DefaultPlatformVideoPath()
         {
 #if ANDROID_LIB
-            return "/sdcard/Movies";  
+            return "/sdcard/Pictures";  
 #else
             if (OperatingSystem.IsWindows())
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
             else
                 // like you realise ~/Videos is a thing on linux right
                 //                                                  -Blecc
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Videos");
+                return LinuxFallbackPath("Videos");
+#endif
+        }
+
+        static string DefaultPlatformPicturePath()
+        {
+#if ANDROID_LIB
+            return "/sdcard/Movies";  
+#else
+            if (OperatingSystem.IsWindows())
+                return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            else
+                return LinuxFallbackPath("Pictures");
 #endif
         }
     }

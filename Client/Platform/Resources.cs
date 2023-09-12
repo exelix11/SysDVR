@@ -55,12 +55,6 @@ namespace SysDVR.Client.Platform
         public readonly static LazyImage UsbIcon = new LazyImage(ResourcePath("ico_usb.png"));
         public readonly static LazyImage WifiIcon = new LazyImage(ResourcePath("ico_wifi.png"));
 
-        public static Stream OpenFileForRecording()
-        {
-            var path = Path.Combine(Program.Options.RecordingsPath, $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.np4");
-            return File.OpenWrite(path);
-        }
-
         public static string? GetBuildId() 
         {
             try
