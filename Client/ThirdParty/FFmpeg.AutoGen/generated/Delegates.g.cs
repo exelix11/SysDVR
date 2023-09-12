@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace FFmpeg.AutoGen;
 
+#pragma warning disable CS8981
+
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public unsafe delegate int _query_func (AVFilterContext* @p0);
 public unsafe struct _query_func_func

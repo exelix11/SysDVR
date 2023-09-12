@@ -2,6 +2,8 @@ using System.Collections.Generic;
 
 namespace FFmpeg.AutoGen;
 
+#pragma warning disable CS8981
+
 public static unsafe partial class ffmpeg
 {
     public static Dictionary<string, int> LibraryVersionMap = new Dictionary<string, int>

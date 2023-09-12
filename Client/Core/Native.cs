@@ -128,7 +128,7 @@ namespace SysDVR.Client.Core
 
             var repr = *(NativeInitRepr*)ptr;
 
-            if (repr.Sizeof != Marshal.SizeOf(typeof(NativeInitRepr)))
+            if (repr.Sizeof != Marshal.SizeOf<NativeInitRepr>())
             {
                 native = default;
                 return NativeError.NativeSizeMismatch;

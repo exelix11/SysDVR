@@ -2,6 +2,8 @@ using System;
 
 namespace FFmpeg.AutoGen;
 
+#pragma warning disable CS8981
+
 public static unsafe partial class ffmpeg
 {
     /// <summary>Compute ceil(log2(x)).</summary>

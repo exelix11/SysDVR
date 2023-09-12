@@ -83,7 +83,7 @@ namespace SysDVR.Client.Platform
             Program.Native.SysRequestFileAccess();
         }
 #else
-        static string BasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes");
+        static string BasePath = Path.Combine(AppContext.BaseDirectory, "runtimes");
         
         static string ResourcePath(string x) => Path.Combine(BasePath, "resources", x);
         

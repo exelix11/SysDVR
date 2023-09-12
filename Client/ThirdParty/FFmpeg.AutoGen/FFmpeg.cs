@@ -2,6 +2,8 @@
 
 namespace FFmpeg.AutoGen;
 
+#pragma warning disable CS8981
+
 public static partial class ffmpeg
 {
     public static readonly int EAGAIN;

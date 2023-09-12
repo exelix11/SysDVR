@@ -47,7 +47,7 @@ public abstract class UsbDescriptor
     /// <summary>
     /// Total size of this structure in bytes.
     /// </summary>
-    public static readonly int Size = Marshal.SizeOf(typeof(UsbDescriptor));
+    public static readonly int Size = Marshal.SizeOf<UsbDescriptor>();
 
     /// <summary>
     /// Length of structure reported by the associated usb device.

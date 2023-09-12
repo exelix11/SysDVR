@@ -1,5 +1,7 @@
 using System;
 
+#pragma warning disable CS0108
+
 namespace FFmpeg.AutoGen;
 
 public unsafe struct AVRational_array2 : IFixedArray<AVRational>
