@@ -10,7 +10,7 @@ public static unsafe partial class DynamicallyLoadedBindings
     
     public unsafe static void Initialize()
     {
-        if (FunctionResolver == null) FunctionResolver = FunctionResolverFactory.Create();
+        if (FunctionResolver == null) FunctionResolver = new FunctionResolver();
         
         vectors.av_abuffersink_params_alloc = () =>
         {

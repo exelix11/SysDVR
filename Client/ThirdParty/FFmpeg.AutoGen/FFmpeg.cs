@@ -20,14 +20,6 @@ public static partial class ffmpeg
         DynamicallyLoadedBindings.Initialize();
     }
 
-
-    /// <summary>
-    ///     Gets or sets the root path for loading libraries.
-    ///     Work out of box with companion ffmpeg distribution package like FFmpeg.AutoGen.Redist.windows.x64
-    /// </summary>
-    /// <value>The root path.</value>
-    public static string RootPath { get; set; } = AppDomain.CurrentDomain.BaseDirectory;
-
     public static ulong UINT64_C<T>(T a)
         => Convert.ToUInt64(a);
 

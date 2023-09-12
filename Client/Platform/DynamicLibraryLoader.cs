@@ -2,6 +2,7 @@
 using SDL2;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -41,25 +42,6 @@ namespace SysDVR.Client.Platform
 
         public static string? LibLoaderOverride = null;
 
-        static string OsLibFolder
-        {
-            get
-            {
-                if (LibLoaderOverride is not null)
-                    return LibLoaderOverride;
-
-                if (OperatingSystem.IsWindows())
-                    return BundledOsNativeFolder;
-
-                // Should we really account for misconfigured end user PCs ? See https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
-                if (OperatingSystem.IsMacOS())
-                    return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
-
-                // On linux we have to rely on the dlopen implementation to find the libs wherever they are 
-                return string.Empty;
-            }
-        }
-
 #if ANDROID_LIB
         static readonly string[] InvalidBuildHash = new[]
         {
@@ -89,11 +71,14 @@ namespace SysDVR.Client.Platform
         }
 
 #else
+        // TODO: figure out mac os support, it's currently broken
         static IEnumerable<string> FindMacOSLibrary(string libraryName)
         {
+            // TODO: Account for overide and https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
+            // if (OperatingSystem.IsMacOS())
+            //     return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
+
             var names = new[] {
-                Path.Combine(OsLibFolder, $"lib{libraryName}.dylib"),
-                Path.Combine(OsLibFolder, $"{libraryName}.dylib"),
                 Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"),
                 Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"),
                 $"lib{libraryName}.dylib",
@@ -104,16 +89,41 @@ namespace SysDVR.Client.Platform
             return names;
         }
 
-        static IntPtr WindowsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        static IEnumerable<string> FindNativeLibrary(string libraryName)
         {
-            var path = Path.Combine(OsLibFolder, libraryName + ".dll");
+            var libext = OperatingSystem.IsWindows() ? ".dll" : ".so";
             
-            // Is this a library we provide ?
-            if (File.Exists(path))
-                return NativeLibrary.Load(path);
+            if (!libraryName.EndsWith(libext))
+                libraryName += libext;
 
-            // Otherwise let windows handle it
-            return NativeLibrary.Load(libraryName);
+            // Is an override set ?
+            if (!string.IsNullOrWhiteSpace(LibLoaderOverride))
+                yield return Path.Combine(LibLoaderOverride, libraryName);
+
+            // Is this a library we provide ?
+            yield return Path.Combine(BundledOsNativeFolder, libraryName);
+
+            // Otherwsie let the OS handle it
+            yield return libraryName;
+        }
+
+        public static IntPtr TryLoadLibrary(string name) 
+        {
+            return BundledLibraryLoader(name, null, null);
+        }
+
+        static IntPtr BundledLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            foreach (var candidate in FindNativeLibrary(libraryName).Where(File.Exists))
+            {
+                if (NativeLibrary.TryLoad(candidate , out var result))
+                    return result;
+
+                Console.WriteLine($"Failrd to load {candidate}");
+            }
+
+            Console.WriteLine($"Failed to find library: {libraryName}");
+            return IntPtr.Zero;
         }
 
         static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
@@ -158,8 +168,6 @@ namespace SysDVR.Client.Platform
 
         public static void Initialize()
         {
-            ffmpeg.RootPath = OsLibFolder;
-
 #if ANDROID_LIB
             AndroidQuerySysPaths(out var native, out var managed);
             if (!AndroidCheckDependencies(native, managed))
@@ -167,8 +175,8 @@ namespace SysDVR.Client.Platform
 #else
             // TODO: All of this has to be re-tested since now we bundle our own dependencies
             
-            if (OperatingSystem.IsWindows())
-                NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), WindowsLibraryLoader);
+            if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+                NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), BundledLibraryLoader);
 
             if (OperatingSystem.IsMacOS())
             {

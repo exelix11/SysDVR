@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SysDVR.Client.Platform;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace FFmpeg.AutoGen;
 
-public abstract class FunctionResolverBase : IFunctionResolver
+public class FunctionResolver : IFunctionResolver
 {
     public static readonly Dictionary<string, string[]> LibraryDependenciesMap =
         new()
@@ -68,21 +69,48 @@ public abstract class FunctionResolverBase : IFunctionResolver
 
             var version = ffmpeg.LibraryVersionMap[libraryName];
             var nativeLibraryName = GetNativeLibraryName(libraryName, version);
-            var libraryPath = Path.Combine(ffmpeg.RootPath, nativeLibraryName);
-            ptr = LoadNativeLibrary(libraryPath);
+            ptr = LoadNativeLibrary(nativeLibraryName);
 
             if (ptr != IntPtr.Zero) _loadedLibraries.Add(libraryName, ptr);
             else if (throwOnError)
             {
                 throw new DllNotFoundException(
-                    $"Unable to load DLL '{libraryName}.{version} under {ffmpeg.RootPath}': The specified module could not be found.");
+                    $"Unable to load DLL '{libraryName}.{version}': The specified module could not be found.");
             }
 
             return ptr;
         }
     }
 
-    protected abstract string GetNativeLibraryName(string libraryName, int version);
-    protected abstract IntPtr LoadNativeLibrary(string libraryName);
-    protected abstract IntPtr FindFunctionPointer(IntPtr nativeLibraryHandle, string functionName);
+    protected string GetNativeLibraryName(string libraryName, int version)
+    {
+        // Currently android needs a special ifdef due to bflat not supporting this API yet
+#if ANDROID_LIB
+        return $"lib{libraryName}.so";
+#else
+        if (OperatingSystem.IsWindows())
+            return $"{libraryName}-{version}.dll";
+        else if (OperatingSystem.IsAndroid())
+            return $"lib{libraryName}.so";
+        else if (OperatingSystem.IsMacOS())
+            return $"lib{libraryName}.{version}.dylib";
+        else if (OperatingSystem.IsLinux())
+            return $"lib{libraryName}.so.{version}";
+
+        return libraryName;
+#endif
+    }
+
+    protected IntPtr LoadNativeLibrary(string libraryName) 
+    {
+        return DynamicLibraryLoader.TryLoadLibrary(libraryName);
+    }
+    
+    protected IntPtr FindFunctionPointer(IntPtr nativeLibraryHandle, string functionName)
+    {
+        if (!NativeLibrary.TryGetExport(nativeLibraryHandle, functionName, out var addr))
+            return IntPtr.Zero;
+
+        return addr;
+    }
 }

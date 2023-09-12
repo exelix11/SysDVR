@@ -1,6 +1,7 @@
 using System;
 
-#pragma warning disable CS0108
+#pragma warning disable CS0649
+#pragma warning disable CS0169
 
 namespace FFmpeg.AutoGen;
 
