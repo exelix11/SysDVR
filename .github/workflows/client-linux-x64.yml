@@ -1,7 +1,9 @@
-name: SysDVR-Client flatpak
+name: SysDVR-Client flatpak linux x64
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ "6.0" ]
 
 jobs:
   build:
