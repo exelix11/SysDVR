@@ -19,6 +19,9 @@ using ImGuiNET;
 using SysDVR.Client.Platform;
 using System.Threading.Channels;
 using System.Diagnostics;
+using SDL2;
+using SysDVR.Client.Targets;
+using System.Numerics;
 
 namespace SysDVR.Client.GUI
 {
@@ -45,8 +48,9 @@ namespace SysDVR.Client.GUI
     internal class PlayerView : View
     {
         readonly bool HasAudio;
-        readonly AudioPlayer? Audio;
         readonly bool HasVideo;
+
+        readonly AudioPlayer? Audio;
         readonly VideoPlayer? Video;
 
         readonly FramerateCounter fps = new();
@@ -227,33 +231,50 @@ namespace SysDVR.Client.GUI
             {
                 OverlayY = OverlayY * 6 / 10;
                 ImGui.SetCursorPosY(OverlayY + ImGui.GetStyle().WindowPadding.Y);
-
+                
                 var width = ImGui.GetWindowSize().X;
-                var btnwidth = width * 3 / 6;
 
-                ImGui.SetCursorPosX(width / 2 - btnwidth / 2);
-                if (ImGui.Button("Start recording", new(btnwidth, 0))) ButtonStartRecording();
-                
-                ImGui.SetCursorPosX(width / 2 - btnwidth / 2);
-                if (ImGui.Button("Stop streaming", new(btnwidth, 0))) ButtonQuit();
-                
-                ImGui.SetCursorPosX(width / 2 - btnwidth / 2);
-                if (ImGui.Button("Toggle statistics", new(btnwidth, 0))) ButtonStats();
-                
-                ImGui.SetCursorPosX(width / 2 - btnwidth / 2);
-                if (ImGui.Button("Full screen", new(btnwidth, 0))) ButtonFullscreen();
+                var btnwidth = width * 3 / 6;
+                var btnheight = (ImGui.GetWindowSize().Y - ImGui.GetCursorPosY()) / 8;
+                var btnsize = new Vector2(btnwidth, btnheight);
+
+                var center = width / 2 - btnwidth / 2;
+
+                if (HasVideo)
+                {
+                    ImGui.SetCursorPosX(center);
+                    if (ImGui.Button("Screenshot", btnsize)) ButtonScreenshot();
+                }
+
+                ImGui.SetCursorPosX(center);
+                if (ImGui.Button("Start recording", btnsize)) ButtonStartRecording();
+
+                ImGui.SetCursorPosX(center);
+                if (ImGui.Button("Stop streaming", btnsize)) ButtonQuit();
+
+                ImGui.SetCursorPosX(center);
+                if (ImGui.Button("Toggle statistics", btnsize)) ButtonStats();
+
+                ImGui.SetCursorPosX(center);
+                if (ImGui.Button("Full screen", btnsize)) ButtonFullscreen();
             }
             else
             {
                 OverlayY = OverlayY * 5 / 6;
+                var spacing = ImGui.GetStyle().ItemSpacing.X * 3;
 
                 ImGui.SetCursorPosY(OverlayY + ImGui.GetStyle().WindowPadding.Y);
 
                 uiOptCenter.StartHere();
+                if (HasVideo)
+                {
+                    if (ImGui.Button("Screenshot")) ButtonScreenshot();
+                    ImGui.SameLine();
+                }
                 if (ImGui.Button("Start recording")) ButtonStartRecording();
-                ImGui.SameLine();
+                ImGui.SameLine(0, spacing);
                 if (ImGui.Button("Stop streaming")) ButtonQuit();
-                ImGui.SameLine();
+                ImGui.SameLine(0, spacing);
                 if (ImGui.Button("Toggle statistics")) ButtonStats();
                 ImGui.SameLine();
                 if (ImGui.Button("Full screen")) ButtonFullscreen();
@@ -286,6 +307,21 @@ namespace SysDVR.Client.GUI
 
                 ImGui.EndPopup();
             }
+        }
+
+        void ButtonScreenshot() 
+        {
+            try 
+            {
+                var path = Program.Options.GetFilePathForScreenshot();
+                SDLCapture.ExportTexture(Video.TargetTexture, path);
+                MessageUi("Screenshot saved to " + path);
+            }
+            catch (Exception ex)
+            {
+                MessageUi("Failed to save screenshot: " + ex.Message);
+                Console.WriteLine(ex);
+            }            
         }
 
         void ButtonStartRecording()
