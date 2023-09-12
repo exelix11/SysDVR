@@ -37,7 +37,7 @@ namespace SysDVR.Client.Targets
             try
             {
                 var renderer = Program.Instance.SdlRenderer;
-                var tex = SDL_CreateTexture(renderer, format, (int)SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, width, height)
+                var tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, (int)SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, width, height)
                     .AssertNotNull(SDL_GetError);
 
                 try

@@ -58,7 +58,7 @@ public class ClientApp
     int SDLThreadId;
 
     // Debug window state
-    public bool ShowDebugInfo = Debugger.IsAttached;
+    public bool ShowDebugInfo = false;
     Vector2 PixelSize;
     Vector2 WantedDPIScale;
     bool IsWantedScale;
@@ -344,8 +344,6 @@ public class ClientApp
                     // The only event that is guaranteed to fire is the keyup event so we use it to determine when a key has been pressed and then released
                     CurrentView.OnKeyPressed(evt.key.keysym);
                 }
-
-                Console.WriteLine(evt.type);
 
                 ImGuiSDL2Impl.ProcessEvent(in evt);
 

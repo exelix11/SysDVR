@@ -39,12 +39,59 @@ namespace SysDVR.Client.Platform
 
         static string BasePath = "";        
         static string ResourcePath(string x) => x;
+
+        public static bool HasDiskAccessPermission() 
+        {
+            if (!Program.Native.PlatformSupportsDiskAccess)
+                return false;
+
+            if (Program.Native.SysGetFileAccessInfo(out var canWrite, out _))
+                return canWrite;
+            else 
+                Console.WriteLine("SysGetFileAccessInfo failed");
+
+            return false;
+        }
+
+        public static bool CanRequestDiskAccessPermission() 
+        {
+            if (!Program.Native.PlatformSupportsDiskAccess)
+                return false;
+
+            if (Program.Native.SysGetFileAccessInfo(out _, out var canRequest))
+                return canRequest;
+            else
+                Console.WriteLine("SysGetFileAccessInfo failed");
+
+            return false;
+        }
+
+        public static void RequestDiskAccessPermission()
+        {
+            if (!Program.Native.PlatformSupportsDiskAccess)
+                throw new NotImplementedException();
+
+            if (!Program.Native.SysGetFileAccessInfo(out var hasPermission, out var canRequest))
+                throw new NotImplementedException();
+
+            if (hasPermission)
+                return;
+
+            if (!canRequest)
+                return;
+
+            Program.Native.SysRequestFileAccess();
+        }
 #else
         static string BasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes");
         
         static string ResourcePath(string x) => Path.Combine(BasePath, "resources", x);
         
         public static byte[] ReadResouce(string path) => File.ReadAllBytes(path);
+
+        public static bool HasDiskAccessPermission() => true;
+        public static bool CanRequestDiskAccessPermission() => true;
+        public static void RequestDiskAccessPermission() => throw new NotImplementedException();
 #endif
 
         public static string RuntimesFolder => BasePath;
