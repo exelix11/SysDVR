@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SDL2;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
@@ -34,6 +35,8 @@ namespace SysDVR.Client.GUI
         public virtual void EnterForeground() { }
         public virtual void Destroy() { }
         public virtual void LeaveForeground() { }
+
+        public virtual void OnKeyPressed(SDL.SDL_Keysym key) { }
     }
 
     public static class Gui 

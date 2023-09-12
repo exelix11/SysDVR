@@ -319,7 +319,7 @@ public class ClientApp
             while (SDL_PollEvent(out var evt) != 0)
             {
                 Cap.OnEvent(true);
-                
+
                 if (evt.type == SDL_EventType.SDL_QUIT ||
                     (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
                 {
@@ -337,6 +337,15 @@ public class ClientApp
                 {
                     CurrentView.BackPressed();
                 }
+                else if (evt.type == SDL_EventType.SDL_KEYUP)
+                {
+                    // At least on Windows keeping a key pressed spams of keydown and textinput events due to the text input behavior
+                    // This also affects imgui IO keydown events.
+                    // The only event that is guaranteed to fire is the keyup event so we use it to determine when a key has been pressed and then released
+                    CurrentView.OnKeyPressed(evt.key.keysym);
+                }
+
+                Console.WriteLine(evt.type);
 
                 ImGuiSDL2Impl.ProcessEvent(in evt);
 
