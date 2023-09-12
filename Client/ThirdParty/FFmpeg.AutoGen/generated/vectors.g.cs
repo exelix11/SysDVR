@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace FFmpeg.AutoGen;
 
+#pragma warning disable CS8981
+
 public static unsafe partial class vectors
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

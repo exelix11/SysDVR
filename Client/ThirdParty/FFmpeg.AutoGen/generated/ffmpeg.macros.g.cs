@@ -1,5 +1,7 @@
 namespace FFmpeg.AutoGen;
 
+#pragma warning disable CS8981
+
 public static unsafe partial class ffmpeg
 {
     /// <summary>_WIN32_WINNT = 0x602</summary>
