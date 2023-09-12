@@ -86,7 +86,7 @@ namespace SysDVR.Client.Core
         static string DefaultPlatformVideoPath()
         {
 #if ANDROID_LIB
-            return "/sdcard/Pictures";  
+            return "/sdcard/Movies";  
 #else
             if (OperatingSystem.IsWindows())
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
@@ -100,7 +100,7 @@ namespace SysDVR.Client.Core
         static string DefaultPlatformPicturePath()
         {
 #if ANDROID_LIB
-            return "/sdcard/Movies";  
+            return "/sdcard/Pictures";  
 #else
             if (OperatingSystem.IsWindows())
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);

@@ -26,6 +26,8 @@ struct NativeInitBlock
 	// Util
 	void* SysOpenURL;
 	void* SysGetClipboard;
+	void* SysGetFileAccessInfo;
+	void* SysRequestFileAccess;
 };
 
 // Forward declare needed functions
@@ -48,6 +50,8 @@ void UsbCloseHandle(void* handle);
 void SysInit();
 bool SysOpenUrl(const jchar* string);
 void SysGetClipboard(char* buffer, int size);
+bool SysGetFileAccessInfo(bool* hasPermission, bool* canRequest);
+void SysRequestFileAccess();
 
 #define L(...) __android_log_print(ANDROID_LOG_ERROR, "SysDVRLogger", __VA_ARGS__)
 
@@ -74,6 +78,8 @@ struct NativeInitBlock g_native =
 
     .SysOpenURL = SysOpenUrl,
     .SysGetClipboard = SysGetClipboard,
+	.SysGetFileAccessInfo = SysGetFileAccessInfo,
+	.SysRequestFileAccess = SysRequestFileAccess
 };
 
 extern int sysdvr_entrypoint(struct NativeInitBlock* init);

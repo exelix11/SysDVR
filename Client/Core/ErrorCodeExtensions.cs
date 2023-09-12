@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,40 +15,53 @@ namespace SysDVR.Client.Core
             throw new Exception(message);
         }
 
-        public static void AssertEqual(this int code, int expectedValue, Func<string> MessageFun = null)
+        static string ErrorMessage(Func<string>? MessageFun)
+        {
+            if (MessageFun == null)
+                return "Unknown error function";
+            
+            var msg = MessageFun();
+
+            if (string.IsNullOrWhiteSpace(msg))
+                return "Unknown error";
+
+            return msg;
+        }
+
+        public static void AssertEqual(this int code, int expectedValue, Func<string> MessageFun = null, [CallerMemberName] string? caller = null)
         {
             if (code != expectedValue)
-                FailImpl($"Assertion failed {code} != {expectedValue} : {MessageFun?.Invoke() ?? "Unknown error:"}");
+                FailImpl($"Call in {caller} failed: {code} != {expectedValue} {ErrorMessage(MessageFun)}");
         }
 
-        public static void AssertNotZero(this uint code, Func<string> MessageFun = null)
+        public static void AssertNotZero(this uint code, Func<string> MessageFun = null, [CallerMemberName] string? caller = null)
         {
             if (code == 0)
-                FailImpl($"Assertion failed: {code} {MessageFun?.Invoke() ?? "Unknown error"}");
+                FailImpl($"Call in {caller} failed: {code} {ErrorMessage(MessageFun)}");
         }
 
-        public static void AssertZero(this int code, Func<string> MessageFun = null)
+        public static void AssertZero(this int code, Func<string> MessageFun = null, [CallerMemberName] string? caller = null)
         {
             if (code != 0)
-                FailImpl($"Assertion failed: {code} {MessageFun?.Invoke() ?? "Unknown error"}");
+                FailImpl($"Call in {caller} failed: {code} {ErrorMessage(MessageFun)}");
         }
 
-        public static void AssertNotNeg(this int code, Func<string> MessageFun = null)
+        public static void AssertNotNeg(this int code, Func<string> MessageFun = null, [CallerMemberName] string? caller = null)
         {
             if (code < 0)
-                FailImpl($"Assertion failed: {code} {MessageFun?.Invoke() ?? "Unknown error"}");
+                FailImpl($"Call in {caller} failed: {code} {ErrorMessage(MessageFun)}");
         }
 
-        public static void AssertZero(this int code, string Message)
+        public static void AssertZero(this int code, string Message, [CallerMemberName] string? caller = null)
         {
             if (code != 0)
-                FailImpl($"Assertion failed: {code} {Message}");
+                FailImpl($"Call in {caller} failed: {code} {Message}");
         }
 
-        public static IntPtr AssertNotNull(this IntPtr val, Func<string> MessageFun = null)
+        public static IntPtr AssertNotNull(this IntPtr val, Func<string> MessageFun = null, [CallerMemberName] string? caller = null)
         {
             if (val == IntPtr.Zero)
-                FailImpl($"Assertion failed: pointer is null {MessageFun?.Invoke() ?? "Unknown error"}");
+                FailImpl($"Call in {caller} failed: pointer is null {ErrorMessage(MessageFun)}");
             return val;
         }
     }

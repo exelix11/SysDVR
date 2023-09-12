@@ -57,6 +57,8 @@ namespace SysDVR.Client.GUI
 
         readonly PlayerManager Manager;
 
+        bool OverlayAlwaysShowing = false;
+
         SDL_Rect DisplayRect = new SDL_Rect();
 
         List<PendingUiNotif> notifications = new();
@@ -144,6 +146,11 @@ namespace SysDVR.Client.GUI
                 Audio = new(manager.AudioTarget);
                 manager.AudioTarget.SyncHelper = sync;
             }
+
+            if (!HasVideo)
+                OverlayAlwaysShowing = true;
+
+            drawUi = OverlayAlwaysShowing;
         }
 
         private void Manager_OnErrorMessage(string obj) => 
@@ -172,6 +179,7 @@ namespace SysDVR.Client.GUI
             {
                 Gui.H2();
                 Gui.CenterText("No video stream has been set.");
+                ImGui.PopFont();
             }
 
             for (int i = 0; i < notifications.Count; i++)
@@ -216,6 +224,9 @@ namespace SysDVR.Client.GUI
 
         void DrawOverlayToggleArea() 
         {
+            if (OverlayAlwaysShowing)
+                return;
+
             var rect = new ImRect()
             {
                 Min = ImGui.GetWindowPos(),
@@ -288,8 +299,11 @@ namespace SysDVR.Client.GUI
                 uiOptCenter.EndHere();
             }
 
-            ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - ImGui.CalcTextSize("A").Y - ImGui.GetStyle().WindowPadding.Y);
-            Gui.CenterText("Tap anywhere to hide the overlay");
+            if (!OverlayAlwaysShowing)
+            {
+                ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - ImGui.CalcTextSize("A").Y - ImGui.GetStyle().WindowPadding.Y);
+                Gui.CenterText("Tap anywhere to hide the overlay");
+            }
             
             ImGui.GetBackgroundDrawList().AddRectFilled(new(0, OverlayY), ImGui.GetWindowSize(), 0xe0000000);
         }
@@ -326,9 +340,12 @@ namespace SysDVR.Client.GUI
             }
             catch (Exception ex)
             {
-                MessageUi("Failed to save screenshot: " + ex.Message);
+                MessageUi("Error: " + ex.Message);
                 Console.WriteLine(ex);
-            }            
+#if ANDROID_LIB
+                MessageUi("Make sure you enabled file access permissions to the app !");
+#endif
+            }
         }
 
         void ButtonStartRecording()

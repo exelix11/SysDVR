@@ -48,6 +48,8 @@ namespace SysDVR.Client.GUI
                 if (autoConnect == "" || info.Serial.EndsWith(autoConnect, StringComparison.InvariantCultureIgnoreCase))
                     ConnectToDevice(info);
             }
+
+            SignalEvent();
         }
 
         private void OnFailure(string obj)

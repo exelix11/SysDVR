@@ -21,6 +21,9 @@ namespace SysDVR.Client.GUI
         readonly bool IsWindows;
         readonly string Heading;
 
+        bool HasDiskPermission;
+        bool CanRequesDiskPermission;
+
         public MainView()
         {
             Heading = "SysDVR-Client " + Program.Version;
@@ -30,8 +33,16 @@ namespace SysDVR.Client.GUI
                 UsbModeWarn = "Requires USB drivers to be installed.";
             else if (OperatingSystem.IsLinux())
                 UsbModeWarn = "Requires udev rules to be configured correctly.";
+
+            UpdateDiskPermissionStatus();
         }
 
+        void UpdateDiskPermissionStatus() 
+        {
+            HasDiskPermission = Resources.HasDiskAccessPermission();
+            if (!HasDiskPermission)
+                CanRequesDiskPermission = Resources.CanRequestDiskAccessPermission();
+        }
 
         StreamKind channels = StreamKind.Video;
 
@@ -121,6 +132,20 @@ namespace SysDVR.Client.GUI
             centerRadios.EndHere();
 
             ImGui.NewLine();
+
+            if (!HasDiskPermission)
+            {
+                ImGui.TextWrapped("Warning: File access permission was not granted, saving recordings may fail.");
+                if (CanRequesDiskPermission)
+                {
+                    if (Gui.CenterButton("Request permission"))
+                    {
+                        Resources.RequestDiskAccessPermission();
+                        UpdateDiskPermissionStatus();
+                    }
+                }
+                ImGui.NewLine();
+            }
 
             centerOptions.StartHere();
             if (ImGui.Button("Open the github page"))

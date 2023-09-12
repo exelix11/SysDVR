@@ -11,7 +11,7 @@ bool SysOpenUrl(const jchar* string)
     DECLARE_JNI;
     jmethodID mid = STATIC_METHOD(sys, "OpenURL", "(Ljava/lang/String;)Z");
     jstring str = (*env)->NewString(env, string, jstrlen(string));
-    jboolean result = (jstring)(*env)->CallStaticBooleanMethod(env, sys, mid, str);
+    jboolean result = (jboolean)(*env)->CallStaticBooleanMethod(env, sys, mid, str);
     (*env)->DeleteLocalRef(env, str);
     return result;
 }
@@ -49,6 +49,26 @@ void SysGetClipboard(char* buffer, int size)
     (*env)->DeleteLocalRef(env, str2);
     (*env)->DeleteLocalRef(env, ctx);
     (*env)->DeleteLocalRef(env, cmgr);
+}
+
+bool SysGetFileAccessInfo(bool* hasPermission, bool* canRequest)
+{
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(sys, "QueryPermissionInfo", "()I");
+    jint result = (jint)(*env)->CallStaticIntMethod(env, sys, mid);
+
+    bool success = result & 1;
+    *hasPermission = result & 2;
+    *canRequest = result & 4;
+
+    return success;
+}
+
+void SysRequestFileAccess()
+{
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(sys, "RequestFilePermission", "()V");
+    (*env)->CallStaticVoidMethod(env, sys, mid);
 }
 
 void SysInit()

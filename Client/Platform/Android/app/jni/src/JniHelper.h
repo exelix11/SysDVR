@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <jni.h>
 #include <android/log.h>
+#include <stdbool.h>
 
 #define L(...) __android_log_print(ANDROID_LOG_ERROR, "SysDVRLogger", __VA_ARGS__)
 

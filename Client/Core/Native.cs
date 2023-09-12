@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace SysDVR.Client.Core
@@ -39,6 +40,11 @@ namespace SysDVR.Client.Core
         public delegate bool SysOpenURL([MarshalAs(UnmanagedType.LPWStr)] string url);
 
         public delegate void SysGetDynamicLibInfo(byte[] buffer, int length);
+
+        // Returns true if success, the two flags indicate if we can write files and if we can request permissions
+        public delegate bool GetFileAccessPermissionInfo(out bool hasWriteAccess, out bool canRequestAccess);
+
+        public delegate void RequestFileAccessPermission();
     }
 
     public enum NativeError : int 
@@ -72,10 +78,17 @@ namespace SysDVR.Client.Core
         public NativeContracts.SysOpenURL SysOpenURL;
         public NativeContracts.SysGetDynamicLibInfo SysGetDynamicLibInfo;
 
+        // System utilities, can be null
+        public NativeContracts.GetFileAccessPermissionInfo SysGetFileAccessInfo;
+        public NativeContracts.RequestFileAccessPermission SysRequestFileAccess;
+
         public bool PlatformSupportsUsb => 
             UsbAcquireSnapshot != null && UsbReleaseSnapshot != null &&
             UsbGetSnapshotDeviceSerial != null && UsbOpenHandle != null &&
             UsbCloseHandle != null && UsbGetLastError != null;
+
+        public bool PlatformSupportsDiskAccess =>
+            SysGetFileAccessInfo != null;
 
         // This is the native representation of the init block which we must unmarshal manually
         // [MarshalAs(UnmanagedType.FunctionPtr)] doesn't seem to work on delegates...
@@ -101,6 +114,8 @@ namespace SysDVR.Client.Core
             // System utilities
             public IntPtr SysOpenURL;
             public IntPtr SysGetDynamicLibInfo;
+            public IntPtr SysGetFileAccessInfo;
+            public IntPtr SysRequestFileAccess;
         }
 
         public unsafe static NativeError Read(IntPtr ptr, out NativeInitBlock native)
@@ -141,6 +156,9 @@ namespace SysDVR.Client.Core
 
                 SysOpenURL = repr.SysOpenURL == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.SysOpenURL>(repr.SysOpenURL),
                 SysGetDynamicLibInfo = repr.SysGetDynamicLibInfo == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.SysGetDynamicLibInfo>(repr.SysGetDynamicLibInfo),
+                
+                SysGetFileAccessInfo = repr.SysGetFileAccessInfo == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.GetFileAccessPermissionInfo>(repr.SysGetFileAccessInfo),
+                SysRequestFileAccess = repr.SysRequestFileAccess == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.RequestFileAccessPermission>(repr.SysRequestFileAccess),
             };
 
             return NativeError.Success;

@@ -37,6 +37,11 @@ namespace SysDVR.Client.GUI
         public virtual void LeaveForeground() { }
 
         public virtual void OnKeyPressed(SDL.SDL_Keysym key) { }
+
+        protected void SignalEvent() 
+        {
+            Program.Instance.KickRendering(false);
+        }
     }
 
     public static class Gui 
