@@ -207,6 +207,13 @@ namespace SysDVR.Client.GUI
             ImGui.End();
         }
 
+        public override void OnKeyPressed(SDL_Keysym key)
+        {
+            // Handle hotkeys
+            if (key.sym == SDL_Keycode.SDLK_c)
+                ButtonScreenshot();
+        }
+
         void DrawOverlayToggleArea() 
         {
             var rect = new ImRect()
@@ -253,7 +260,7 @@ namespace SysDVR.Client.GUI
                 if (ImGui.Button("Stop streaming", btnsize)) ButtonQuit();
 
                 ImGui.SetCursorPosX(center);
-                if (ImGui.Button("Toggle statistics", btnsize)) ButtonStats();
+                if (ImGui.Button("Debug info", btnsize)) ButtonStats();
 
                 ImGui.SetCursorPosX(center);
                 if (ImGui.Button("Full screen", btnsize)) ButtonFullscreen();
@@ -275,7 +282,7 @@ namespace SysDVR.Client.GUI
                 ImGui.SameLine(0, spacing);
                 if (ImGui.Button("Stop streaming")) ButtonQuit();
                 ImGui.SameLine(0, spacing);
-                if (ImGui.Button("Toggle statistics")) ButtonStats();
+                if (ImGui.Button("Debug info")) ButtonStats();
                 ImGui.SameLine();
                 if (ImGui.Button("Full screen")) ButtonFullscreen();
                 uiOptCenter.EndHere();
