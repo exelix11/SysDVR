@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CS0108
+
 namespace FFmpeg.AutoGen;
 
 public unsafe partial struct _GUID

@@ -17,7 +17,6 @@ namespace SysDVR.Client.GUI
 {
     internal class MainView : View
     {
-        readonly string UsbModeWarn;
         readonly bool IsWindows;
         readonly string Heading;
 
@@ -27,13 +26,8 @@ namespace SysDVR.Client.GUI
         public MainView()
         {
             Heading = "SysDVR-Client " + Program.Version;
-
             IsWindows = OperatingSystem.IsWindows();
-            if (OperatingSystem.IsWindows())
-                UsbModeWarn = "Requires USB drivers to be installed.";
-            else if (OperatingSystem.IsLinux())
-                UsbModeWarn = "Requires udev rules to be configured correctly.";
-
+            
             UpdateDiskPermissionStatus();
         }
 
