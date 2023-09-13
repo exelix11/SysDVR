@@ -76,7 +76,7 @@ namespace SysDVR.Client.Core
 
                     // WSL doesn't have the other folders by default
                     if (!Directory.Exists(wanted))
-                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        wanted = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                 }
             }
 
