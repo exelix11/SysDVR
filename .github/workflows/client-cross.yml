@@ -1,0 +1,12 @@
+name: SysDVR-Client dotnet build
+
+# This workflow is not implemented in the main branch yet, it's here so github lets us run it in the 6.0 branch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
