@@ -89,61 +89,6 @@ namespace SysDVR.Client.Platform
             return names;
         }
 
-        static IEnumerable<string> FindNativeLibrary(string libraryName)
-        {
-            var libext = OperatingSystem.IsWindows() ? ".dll" : ".so";
-            
-            if (!libraryName.EndsWith(libext))
-                libraryName += libext;
-
-            // Is an override set ?
-            if (!string.IsNullOrWhiteSpace(LibLoaderOverride))
-                yield return Path.Combine(LibLoaderOverride, libraryName);
-
-            // Is this a library we provide ?
-            yield return Path.Combine(BundledOsNativeFolder, libraryName);
-
-            // Flatpak uses this path
-            if (OperatingSystem.IsLinux())
-                yield return Path.Combine("/app/lib", libraryName);
-
-            // Maybe it's in the working directory
-            yield return libraryName;
-        }
-
-        public static IntPtr TryLoadLibrary(string name) 
-        {
-            return BundledLibraryLoader(name, null, null);
-        }
-
-        static IntPtr BundledLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            var paths = FindNativeLibrary(libraryName)
-                .Concat(FindNativeLibrary("lib" + libraryName));
-
-            foreach (var candidate in paths.Where(File.Exists))
-            {
-                if (NativeLibrary.TryLoad(candidate , out var result))
-                    return result;
-
-                Console.WriteLine($"Failrd to load {candidate}");
-            }
-
-            // Try to load the library from the OS
-            {
-                IntPtr result = IntPtr.Zero;
-
-                if (NativeLibrary.TryLoad(libraryName, out result))
-                    return result;
-                
-                if (NativeLibrary.TryLoad($"lib{libraryName}", out result))
-                    return result;
-            }
-
-            Console.WriteLine($"Failed to find library: {libraryName}");
-            return IntPtr.Zero;
-        }
-
         static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             IntPtr result = IntPtr.Zero;
@@ -183,6 +128,61 @@ namespace SysDVR.Client.Platform
             }
         }
 #endif
+
+        static IEnumerable<string> FindNativeLibrary(string libraryName)
+        {
+            var libext = OperatingSystem.IsWindows() ? ".dll" : ".so";
+
+            if (!libraryName.EndsWith(libext))
+                libraryName += libext;
+
+            // Is an override set ?
+            if (!string.IsNullOrWhiteSpace(LibLoaderOverride))
+                yield return Path.Combine(LibLoaderOverride, libraryName);
+
+            // Is this a library we provide ?
+            yield return Path.Combine(BundledOsNativeFolder, libraryName);
+
+            // Flatpak uses this path
+            if (OperatingSystem.IsLinux())
+                yield return Path.Combine("/app/lib", libraryName);
+
+            // Maybe it's in the working directory
+            yield return libraryName;
+        }
+
+        public static IntPtr TryLoadLibrary(string name)
+        {
+            return BundledLibraryLoader(name, null, null);
+        }
+
+        static IntPtr BundledLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            var paths = FindNativeLibrary(libraryName)
+                .Concat(FindNativeLibrary("lib" + libraryName));
+
+            foreach (var candidate in paths.Where(File.Exists))
+            {
+                if (NativeLibrary.TryLoad(candidate, out var result))
+                    return result;
+
+                Console.WriteLine($"Failrd to load {candidate}");
+            }
+
+            // Try to load the library from the OS
+            {
+                IntPtr result = IntPtr.Zero;
+
+                if (NativeLibrary.TryLoad(libraryName, out result))
+                    return result;
+
+                if (NativeLibrary.TryLoad($"lib{libraryName}", out result))
+                    return result;
+            }
+
+            Console.WriteLine($"Failed to find library: {libraryName}");
+            return IntPtr.Zero;
+        }
 
         public static void Initialize()
         {
