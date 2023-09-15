@@ -23,37 +23,37 @@ namespace SysDVR.Client.GUI
         bool HasDiskPermission;
         bool CanRequesDiskPermission;
 
-        public MainView()
-        {
-            Heading = "SysDVR-Client " + Program.Version;
-            IsWindows = OperatingSystem.IsWindows();
-            
-            UpdateDiskPermissionStatus();
-        }
-
-        void UpdateDiskPermissionStatus() 
-        {
-            HasDiskPermission = Resources.HasDiskAccessPermission();
-            if (!HasDiskPermission)
-                CanRequesDiskPermission = Resources.CanRequestDiskAccessPermission();
-        }
-
         StreamKind channels = StreamKind.Video;
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
-        Gui.Popup infoPoprup = new Gui.Popup("ErrorMessage");
+
+        Gui.Popup infoPoprup = new Gui.Popup("Info");
+        Gui.Popup initErrorPopup = new Gui.Popup("Initialization error");
 
         float uiScale;
         int ModeButtonWidth;
         int ModeButtonHeight;
 
-        public override void BackPressed()
+        public MainView()
         {
-            if (infoPoprup.HandleBackButton())
-                return;
+            Popups.Add(infoPoprup);
+            Popups.Add(initErrorPopup);
 
-            base.BackPressed();
+            Heading = "SysDVR-Client " + Program.Version;
+            IsWindows = OperatingSystem.IsWindows();
+
+            UpdateDiskPermissionStatus();
+
+            if (DynamicLibraryLoader.CriticalWarning != null)
+                Popups.Open(initErrorPopup);
+        }
+
+        void UpdateDiskPermissionStatus()
+        {
+            HasDiskPermission = Resources.HasDiskAccessPermission();
+            if (!HasDiskPermission)
+                CanRequesDiskPermission = Resources.CanRequestDiskAccessPermission();
         }
 
         public override void ResolutionChanged()
@@ -144,21 +144,38 @@ namespace SysDVR.Client.GUI
             centerOptions.StartHere();
             if (ImGui.Button("Open the github page"))
                 SystemUtil.OpenURL("https://github.com/exelix11/SysDVR");
-            
+
             if (IsWindows)
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Install USB driver"))
-                    infoPoprup.RequestOpen();
+                    Popups.Open(infoPoprup);
             }
+
             ImGui.SameLine();
             if (ImGui.Button("Settings"))
-                infoPoprup.RequestOpen();
+                Popups.Open(infoPoprup);
             centerOptions.EndHere();
 
             DrawUnimplmentedPopup();
+            DrawInitErroPopup();
 
             Gui.EndWindow();
+        }
+
+        void DrawInitErroPopup()
+        {
+            if (initErrorPopup.Begin())
+            {
+                ImGui.Text(DynamicLibraryLoader.CriticalWarning);
+
+                ImGui.NewLine();
+
+                if (ImGui.Button("Close"))
+                    initErrorPopup.RequestClose();
+
+                ImGui.EndPopup();
+            }
         }
 
         void DrawUnimplmentedPopup() 

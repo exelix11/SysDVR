@@ -1,27 +1,14 @@
-﻿using FFmpeg.AutoGen;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Numerics;
+using ImGuiNET;
 using SysDVR.Client.Core;
 using SysDVR.Client.Targets.Player;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using SysDVR.Client.Platform;
+using SysDVR.Client.Targets;
 
 using static SDL2.SDL;
-using static FFmpeg.AutoGen.ffmpeg;
-using System.Security.Cryptography;
-using ImGuiNET;
-using SysDVR.Client.Platform;
-using System.Threading.Channels;
-using System.Diagnostics;
-using SDL2;
-using SysDVR.Client.Targets;
-using System.Numerics;
 
 namespace SysDVR.Client.GUI
 {
@@ -66,6 +53,7 @@ namespace SysDVR.Client.GUI
         Gui.CenterGroup uiOptCenter;
         Gui.Popup quitConfirm = new("Confirm quit");
         Gui.Popup fatalError = new("Fatal error");
+        
         bool drawUi;
         string fatalMessage;
 
@@ -114,6 +102,9 @@ namespace SysDVR.Client.GUI
 
         public PlayerView(PlayerManager manager)
         {
+            Popups.Add(quitConfirm);
+            Popups.Add(fatalError);
+
             Manager = manager;
             HasVideo = manager.VideoTarget is not null;
             HasAudio = manager.AudioTarget is not null;
@@ -158,17 +149,8 @@ namespace SysDVR.Client.GUI
 
         private void Manager_OnFatalError(Exception obj)
         {
-            if (quitConfirm.IsOpen)
-                quitConfirm.RequestClose();
-
             fatalMessage = obj.ToString();
-            fatalError.RequestOpen();
-        }
-
-        public override void BackPressed()
-        {
-            if (!quitConfirm.HandleBackButton() && !fatalError.HandleBackButton())
-                quitConfirm.RequestOpen();
+            Popups.Open(fatalError);
         }
 
         public override void Draw()
@@ -220,6 +202,17 @@ namespace SysDVR.Client.GUI
             // Handle hotkeys
             if (key.sym == SDL_Keycode.SDLK_c)
                 ButtonScreenshot();
+        }
+
+        public override void BackPressed()
+        {
+            if (Popups.AnyOpen)
+            {
+                base.BackPressed();
+                return;
+            }
+            
+            Popups.Open(quitConfirm);
         }
 
         void DrawOverlayToggleArea() 
