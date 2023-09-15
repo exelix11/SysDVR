@@ -8,6 +8,9 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install dependencies
+      shell: bash
+      run: brew install dmg2img
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
