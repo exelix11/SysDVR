@@ -1,4 +1,4 @@
-name: SysDVR-Client android
+name: SysDVR-Client macos (cross platform)
 
 # This workflow is not implemented in the main branch yet, it's here so github lets us run it in the 6.0 branch
 
