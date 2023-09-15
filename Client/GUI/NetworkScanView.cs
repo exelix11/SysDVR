@@ -29,6 +29,8 @@ namespace SysDVR.Client.GUI
 
         public NetworkScanView(StreamKind channels, string? autoConnect = null)
         {
+            Popups.Add(ipEnterPopup);
+
             this.channels = channels;
             this.autoConnect = autoConnect;
 
@@ -90,7 +92,7 @@ namespace SysDVR.Client.GUI
 
         void ButtonEnterIp()
         {
-            ipEnterPopup.RequestOpen();
+            Popups.Open(ipEnterPopup);
         }
 
         void ConnectToDevice(DeviceInfo info)

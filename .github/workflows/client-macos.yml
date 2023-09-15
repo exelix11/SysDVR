@@ -1,0 +1,32 @@
+name: SysDVR-Client macos (cross platform)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: "8.x"
+        dotnet-quality: 'preview'
+    - name: Run build script
+      shell: bash
+      run: |
+        cd Client/Platform/
+        chmod +x BuildMacos.sh
+        ./BuildMacos.sh
+    - name: Upload artifact (intel)
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Cilent macos intel
+        path: Client/MacOsBuild-x64
+    - name: Upload artifact (arm)
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Cilent macos arm
+        path: Client/MacOsBuild-arm64
+      

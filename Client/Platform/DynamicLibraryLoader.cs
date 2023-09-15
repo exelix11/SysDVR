@@ -2,6 +2,7 @@
 using SDL2;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -17,6 +19,9 @@ namespace SysDVR.Client.Platform
 {
     internal static class DynamicLibraryLoader
     {
+        // If something goes wrong and we want to show a critical warning to the user, we'll set this (assuming we get that far)
+        public static string? CriticalWarning;
+
         static string ArchName => RuntimeInformation.ProcessArchitecture switch
         {
             Architecture.X64 => "-x64",
@@ -68,70 +73,25 @@ namespace SysDVR.Client.Platform
 
             // no check on managed paths for now...
             return true;
-        }
-
-#else
-        // TODO: figure out mac os support, it's currently broken
-        static IEnumerable<string> FindMacOSLibrary(string libraryName)
-        {
-            // TODO: Account for overide and https://apple.stackexchange.com/questions/40704/homebrew-installed-libraries-how-do-i-use-them
-            // if (OperatingSystem.IsMacOS())
-            //     return RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "/opt/homebrew/lib/" : "/usr/local/lib/";
-
-            var names = new[] {
-                Path.Combine(BundledOsNativeFolder, $"lib{libraryName}.dylib"),
-                Path.Combine(BundledOsNativeFolder, $"{libraryName}.dylib"),
-                $"lib{libraryName}.dylib",
-                $"{libraryName}.dylib",
-                libraryName
-            };
-
-            return names;
-        }
-
-        static IntPtr MacOsLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr result = IntPtr.Zero;
-            foreach (var name in FindMacOSLibrary(libraryName))
-                if (NativeLibrary.TryLoad(name, out result))
-                    break;
-
-            if (result == IntPtr.Zero)
-                Console.Error.WriteLine($"Warning: couldn't load {libraryName} for {assembly.FullName} ({searchPath}).");
-
-            return result;
-        }
-
-        static void SetupMacOSLibrarySymlinks()
-        {
-            // This is a terrible hack but seems to work, we'll create symlinks to the OS libraries in the program folder
-            // The alternative is to fork libusbdotnet to add a way to load its native lib from a cusstom folder
-            // See https://github.com/exelix11/SysDVR/issues/192
-
-            var thisExePath = Path.GetDirectoryName(AppContext.BaseDirectory);
-
-            // We only need to link libusb as ffmpeg has a global root path variable and for SDL we set the custom NativeLoader callback
-            var libNames = new[] {
-                        ("libusb-1.0", "libusb-1.0.dylib")
-                    };
-
-            foreach (var (libName, fileName) in libNames)
-            {
-                if (File.Exists(Path.Combine(thisExePath, fileName)))
-                    continue;
-
-                var path = FindMacOSLibrary(libName).Where(File.Exists).FirstOrDefault();
-                if (string.IsNullOrWhiteSpace(path))
-                    Console.Error.WriteLine($"Couldn't find a library to symlink: {libName} ({fileName}). You might need to install it with brew.");
-                else
-                    File.CreateSymbolicLink(Path.Combine(thisExePath, fileName), path);
-            }
-        }
+        }        
 #endif
+
+        static readonly Regex versionNumberRegex = new Regex(@"^(.*?)[\.\-][\d\.]+\.(dylib|dll)$", RegexOptions.IgnoreCase);
+        static string? StripVersionNumber(string libraryName)
+        {
+            var match = versionNumberRegex.Match(libraryName);
+            if (match.Success)
+                return match.Groups[1].Value + Path.GetExtension(libraryName);
+            else
+                return null;
+        }
 
         static IEnumerable<string> FindNativeLibrary(string libraryName)
         {
-            var libext = OperatingSystem.IsWindows() ? ".dll" : ".so";
+            var libext = ".so";
+                
+            if (OperatingSystem.IsWindows()) libext = ".dll";
+            else if (OperatingSystem.IsMacOS()) libext = ".dylib";
 
             if (!libraryName.EndsWith(libext))
                 libraryName += libext;
@@ -169,7 +129,8 @@ namespace SysDVR.Client.Platform
                 Console.WriteLine($"Failrd to load {candidate}");
             }
 
-            // Try to load the library from the OS
+            // Try to load the library from the OS.
+            // This is not included in the above search because it's filtered by the File.Exists
             {
                 IntPtr result = IntPtr.Zero;
 
@@ -180,7 +141,13 @@ namespace SysDVR.Client.Platform
                     return result;
             }
 
-            Console.WriteLine($"Failed to find library: {libraryName}");
+            // Try again, but without the version number
+            if (StripVersionNumber(libraryName) is string withoutNumber)
+            {
+                return BundledLibraryLoader(withoutNumber, assembly, searchPath);
+            }
+
+            Console.WriteLine("Failed to load " +  libraryName);
             return IntPtr.Zero;
         }
 
@@ -193,21 +160,21 @@ namespace SysDVR.Client.Platform
 #else
             // TODO: All of this has to be re-tested since now we bundle our own dependencies
             
-            if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
-                NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), BundledLibraryLoader);
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), BundledLibraryLoader);
 
             if (OperatingSystem.IsMacOS())
             {
                 if (RuntimeInformation.OSArchitecture == Architecture.Arm64 && RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("You're using the intel version of dotnet on an arm mac, this is not supported and will likely not work.");
-                    Console.WriteLine("Delete intel dotnet and install the native arm64 one.");
+                    
+                    CriticalWarning =
+                        "You're using the intel version of dotnet on an arm mac, this is not supported and will likely not work." + Environment.NewLine +
+                        "Delete intel dotnet and install the native arm64 one.";
+
+                    Console.WriteLine(CriticalWarning);
                     Console.ResetColor();
                 }
-
-                NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), MacOsLibraryLoader);
-                SetupMacOSLibrarySymlinks();
             }
 #endif
         }

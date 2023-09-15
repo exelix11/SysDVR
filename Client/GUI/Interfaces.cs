@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using SDL2;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Linq;
@@ -8,12 +9,14 @@ using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.GUI
 {
     public abstract class View
     {
         public FramerateCapOptions RenderMode = FramerateCapOptions.Adaptive();
+        protected readonly Gui.PopupManager Popups = new();
 
         public abstract void Draw();
 
@@ -28,6 +31,9 @@ namespace SysDVR.Client.GUI
 
         public virtual void BackPressed()
         {
+            if (Popups.HandleBackButton())
+                return;
+
             Program.Instance.PopView();
         }
 
@@ -89,6 +95,58 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        public class PopupManager : IEnumerable<Popup>
+        {
+            readonly List<Popup> popups = new();
+
+            public bool AnyOpen => popups.Any(x => x.IsOpen);
+
+            public void Add(Popup popup) =>
+                popups.Add(popup);
+
+            public bool HandleBackButton()
+            {
+                return popups.Any(x => x.HandleBackButton());
+            }
+
+            public bool CloseAll() 
+            {
+                bool any = false;
+                foreach (var popup in popups)
+                {
+                    if (popup.IsOpen)
+                    {
+                        popup.RequestClose();
+                        any = true;
+                    }
+                }
+                return any;
+            }
+
+            public void Open(Popup toOpen)
+            {
+                bool opened = false;
+                foreach (var popup in popups)
+                {
+                    if (popup == toOpen)
+                    {
+                        popup.OpenInternal();
+                        opened = true;
+                    }
+                    else if (popup.IsOpen)
+                    {
+                        popup.RequestClose();
+                    }
+                }
+
+                if (!opened)
+                    throw new Exception("Unregistered popup");
+            }
+
+            public IEnumerator<Popup> GetEnumerator() => popups.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => popups.GetEnumerator();
+        }
+
         public class Popup 
         {
             public readonly string Name;
@@ -101,7 +159,7 @@ namespace SysDVR.Client.GUI
                 Name = name;
             }
 
-            public void RequestOpen() 
+            internal void OpenInternal() 
             {
                 shouldOpen = true;
             }
