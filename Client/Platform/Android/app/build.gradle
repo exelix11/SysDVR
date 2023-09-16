@@ -8,18 +8,18 @@ else {
 }
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 34
     defaultConfig {
         if (buildAsApplication) {
             applicationId "exelix11.sysdvr"
         }
         minSdkVersion 23
-        targetSdkVersion 31
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
             ndkBuild {
-                arguments "APP_PLATFORM=android-16"
+                arguments "APP_PLATFORM=android-19"
                 abiFilters 'arm64-v8a'
             }
             // cmake {

@@ -14,12 +14,12 @@ echo Checking dependencies...
 # Ensure SDL sources are present
 if [ ! -d "app/jni/SDL/src" ]; then
 	echo Downloading SDL sources...
-	wget https://github.com/libsdl-org/SDL/releases/download/release-2.28.1/SDL2-2.28.1.tar.gz
-	tar xf SDL2-2.28.1.tar.gz
-	mv $(pwd)/SDL2-2.28.1/src ./app/jni/SDL/
-	mv $(pwd)/SDL2-2.28.1/include ./app/jni/SDL/
-	rm -rf SDL2-2.28.1
-	rm SDL2-2.28.1.tar.gz
+	wget https://github.com/libsdl-org/SDL/releases/download/release-2.28.3/SDL2-2.28.3.tar.gz
+	tar xf SDL2-2.28.3.tar.gz
+	mv $(pwd)/SDL2-2.28.3/src ./app/jni/SDL/
+	mv $(pwd)/SDL2-2.28.3/include ./app/jni/SDL/
+	rm -rf SDL2-2.28.3
+	rm SDL2-2.28.3.tar.gz
 	# Apply patches
 	# patches are created with `diff -Naur source_file modified_file > out.patch`
 	patch ./app/jni/SDL/src/core/android/SDL_android.c ./patches/SDL_android.c.patch
