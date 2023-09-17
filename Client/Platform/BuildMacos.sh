@@ -59,13 +59,8 @@ fi
 # so we're doing it the windows way(tm) with no signatures at all
 codesign --remove-signature -v macos-deps/*.dylib
 
-echo This script is meant for CI as it patches the csproj file to use the correct version of dotnet
-echo This will be fixed once dotnet8 is released as stable
-
-sed -i '' -e "s/net7.0/net8.0/g" Client.csproj
-
 echo Building x64 client...
-dotnet publish -c Release -r osx-x64
+dotnet publish -c Release -r osx-x64 /p:SysDvrTarget=macos
 
 mkdir MacOsBuild-x64
 cp -r bin/Release/net8.0/osx-x64/publish/* MacOsBuild-x64/
@@ -77,7 +72,7 @@ zip -r ../SysDVRClient-MacOs-x64.zip *
 cd ..
 
 echo Building arm64 client...
-dotnet publish -c Release -r osx-arm64
+dotnet publish -c Release -r osx-arm64 /p:SysDvrTarget=macos
 
 mkdir MacOsBuild-arm64
 cp -r bin/Release/net8.0/osx-x64/publish/* MacOsBuild-arm64/

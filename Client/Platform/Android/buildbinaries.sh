@@ -89,17 +89,6 @@ if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
 	rm ffmpeg-kit-full-5.1.LTS.aar
 fi
 
-BFLAT=$(pwd)/bflat/bflat
-
-# Check if bflat is available
-if [ ! -e $BFLAT ]; then
-	echo Downloading bflat...
-	wget https://github.com/bflattened/bflat/releases/download/v7.0.2/bflat-7.0.2-linux-glibc-x64.tar.gz
-	mkdir bflat
-	tar xf bflat-7.0.2-linux-glibc-x64.tar.gz --strip-components=1 -C bflat
-	rm bflat-7.0.2-linux-glibc-x64.tar.gz
-fi
-
 git rev-parse --short HEAD > app/src/main/assets/buildid.txt
 
 echo Building client...
@@ -107,10 +96,7 @@ echo Building client...
 # Move to client root
 cd ../../
 
-# Seems to be needed to avoid conflicts with the dotnet build system
-rm -rf obj/
+dotnet publish -r linux-bionic-arm64 /p:SysDvrTarget=android
 
-$BFLAT build --os:linux --arch:arm64 --libc:bionic --no-reflection --no-globalization -d ANDROID_LIB -d NETSTANDARD2_0 -d NETSTANDARD2_1 -d NETSTANDARD2_1_OR_GREATER --ldflags "-soname libClient.so"
-
-mv libClient.so Platform/Android/app/jni/Client/libClient.so
+mv bin/Release/net8.0/linux-bionic-arm64/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/
 cd Platform/Android/

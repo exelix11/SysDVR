@@ -84,7 +84,7 @@ public class FunctionResolver : IFunctionResolver
 
     protected string GetNativeLibraryName(string libraryName, int version)
     {
-        // Currently android needs a special ifdef due to bflat not supporting this API yet
+        // Currently android needs a special ifdef due to dotnet8 not supporting this API yet (i think it's cause the target is linux-bionic rather than android ?)
 #if ANDROID_LIB
         return $"lib{libraryName}.so";
 #else

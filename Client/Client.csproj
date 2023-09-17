@@ -1,50 +1,79 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Platforms>AnyCPU</Platforms>
+		<AssemblyName>SysDVR-Client</AssemblyName>
+		<Description>https://github.com/exelix11/SysDVR</Description>
+		<Authors>exelix</Authors>
+		<Company />
+		<PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
+		<Version>5.5.0.6</Version>
+		<RootNamespace>SysDVR.Client</RootNamespace>
+		<AssemblyVersion>5.5.0.6</AssemblyVersion>
+		<FileVersion>5.5.0.6</FileVersion>
+		<Configurations>Debug;Release</Configurations>
+		<ApplicationIcon>Client.ico</ApplicationIcon>
+		<RollForward>Major</RollForward>
+		<Nullable>annotations</Nullable>
+		<PublishAot>true</PublishAot>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <Platforms>AnyCPU</Platforms>
-    <AssemblyName>SysDVR-Client</AssemblyName>
-    <Description>https://github.com/exelix11/SysDVR</Description>
-    <Authors>exelix</Authors>
-    <Company />
-    <PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-    <Version>5.5.0.6</Version>
-    <RootNamespace>SysDVR.Client</RootNamespace>
-    <AssemblyVersion>5.5.0.6</AssemblyVersion>
-    <FileVersion>5.5.0.6</FileVersion>
-    <Configurations>Debug;Release</Configurations>
-    <ApplicationIcon>Client.ico</ApplicationIcon>
-	<RollForward>Major</RollForward>
-	<Nullable>annotations</Nullable>
-	<PublishAot>true</PublishAot>
-  </PropertyGroup>
+	<Choose>
+		<!--Android and macos builds use dotnet 8 preview-->
+		<!--TODO: change this once dotnet 8 is out of preview-->
+		<When Condition="$(SysDvrTarget)=='android'">
+			<PropertyGroup>
+				<TargetFramework>net8.0</TargetFramework>
+				<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>
+				<PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
+			</PropertyGroup>
+			<ItemGroup>
+				<!--Android needs a proper soname property or it will refuse to load the library-->
+				<LinkerArg Include="-Wl,-soname,SysDVR-Client.so" />
+			</ItemGroup>
+		</When>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Optimize>false</Optimize>
-    <DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
-    <!--<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>-->
-  </PropertyGroup>
+		<When Condition="$(SysDvrTarget)=='macos'">
+			<PropertyGroup>
+				<!--Unlike android, macos has output type exe for standalone executables-->
+				<OutputType>Exe</OutputType>
+				<TargetFramework>net8.0</TargetFramework>
+			</PropertyGroup>
+		</When>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugType>none</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-    <DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
-  </PropertyGroup>
+		<!--Windows and linux platforms-->
+		<Otherwise>
+			<PropertyGroup>
+				<OutputType>Exe</OutputType>
+				<TargetFramework>net7.0</TargetFramework>
+			</PropertyGroup>
+		</Otherwise>
+	</Choose>
+	
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Optimize>false</Optimize>
+		<DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
+		<!--<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>-->
+	</PropertyGroup>
 
-  <ItemGroup>
-	<ContentWithTargetPath Include="$(ProjectDir)\Platform\Resources\**">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		<TargetPath>runtimes\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
-	</ContentWithTargetPath>
-	<Compile Remove="Platform\Android\**" />
-	<Compile Remove="Platform\Linux\**" />
-	<EmbeddedResource Remove="Platform\Android\**" />
-	<EmbeddedResource Remove="Platform\Linux\**" />
-	<None Remove="Platform\Android\**" />
-	<None Remove="Platform\Linux\**" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ContentWithTargetPath Include="$(ProjectDir)\Platform\Resources\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>runtimes\%(RecursiveDir)\%(Filename)%(Extension)</TargetPath>
+		</ContentWithTargetPath>
+		<Compile Remove="Platform\Android\**" />
+		<Compile Remove="Platform\Linux\**" />
+		<EmbeddedResource Remove="Platform\Android\**" />
+		<EmbeddedResource Remove="Platform\Linux\**" />
+		<None Remove="Platform\Android\**" />
+		<None Remove="Platform\Linux\**" />
+	</ItemGroup>
 </Project>
