@@ -38,7 +38,7 @@ namespace SysDVR.Client.Platform
                 if (OperatingSystem.IsWindows())
                     return "win";
                 if (OperatingSystem.IsMacOS())
-                    return "mac";
+                    return "osx";
                 else return "linux";
             }
         }
@@ -121,8 +121,16 @@ namespace SysDVR.Client.Platform
             var paths = FindNativeLibrary(libraryName)
                 .Concat(FindNativeLibrary("lib" + libraryName));
 
-            foreach (var candidate in paths.Where(File.Exists))
+            foreach (var candidate in paths)
             {
+                if (!File.Exists(candidate))
+                {
+                    Console.WriteLine($"Candidate library does not exist {candidate}");
+                    continue;
+                }
+
+                Console.WriteLine($"Trying to load {candidate}");
+
                 if (NativeLibrary.TryLoad(candidate, out var result))
                     return result;
 
