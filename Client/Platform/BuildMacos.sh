@@ -52,6 +52,11 @@ if [ ! -e "macos-deps/libusb-1.0.0.dylib" ]; then
 	curl -L https://github.com/exelix11/libusb-builds/releases/download/v0/libusb-1.0.0.dylib -o macos-deps/libusb-1.0.0.dylib
 fi
 
+echo This script is meant for CI as it patches the csproj file to use the correct version of dotnet
+echo This will be fixed once dotnet8 is released as stable
+
+sed -i '' -e "s/net7.0/net8.0/g" Client.csproj
+
 echo Building x64 client...
 dotnet publish -c Release -r osx-x64
 
