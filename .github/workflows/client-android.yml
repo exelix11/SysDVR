@@ -37,6 +37,7 @@ jobs:
         restore-keys: deps-cache-${{ hashFiles('Client/Platform/Android/buildbinaries.sh') }}-${{ hashFiles('Client/Platform/Android/patches') }}
     - name: Build client native lib
       run: |
+        set PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH
         cd ./Client/Platform/Android
         ls -la
         ln -s $(pwd)/../Resources/resources $(pwd)/app/src/main/assets
