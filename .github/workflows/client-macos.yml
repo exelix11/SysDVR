@@ -25,10 +25,10 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: SysDVR-Cilent macos intel
-        path: Client/MacOsBuild-x64
+        path: Client/SysDVRClient-MacOs-x64.zip
     - name: Upload artifact (arm)
       uses: actions/upload-artifact@v3
       with:
         name: SysDVR-Cilent macos arm
-        path: Client/MacOsBuild-arm64
+        path: Client/SysDVRClient-MacOs-arm64.zip
       
