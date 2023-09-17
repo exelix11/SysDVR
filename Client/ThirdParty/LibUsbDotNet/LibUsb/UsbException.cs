@@ -59,12 +59,6 @@ public class UsbException : Exception
     {
     }
 
-    /// <inheritdoc />
-    protected UsbException(SerializationInfo info, StreamingContext context)
-        : base(info, context)
-    {
-    }
-
     /// <summary>
     /// The libusb <see cref="Error"/> code.
     /// </summary>
