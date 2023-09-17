@@ -13,9 +13,11 @@ public class sysdvrActivity extends SDLActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        Log("SysDVRActivity onCreate()");
+		super.onCreate(savedInstanceState);
         instance = this;
         CheckPackageName();
+		Log("SysDVRActivity created");
     }
 
     static boolean checkOnce = true;
@@ -31,7 +33,7 @@ public class sysdvrActivity extends SDLActivity
 
         checkOnce = false;
 
-        if (getPackageName().equals("exelix" + ((Integer)11).toString() + "../../../hello.txt".charAt(3) + "sysdvr"))
+        if (getPackageName().equals("exelix" + ((Integer)11).toString() + getString(R.string.hello_txt).charAt(3) + "sysdvr"))
             return;
 
         AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
