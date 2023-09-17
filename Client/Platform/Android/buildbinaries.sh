@@ -9,15 +9,28 @@ if [ ! -e app/src/main/assets/OpenSans.ttf ]; then
 	exit 1
 fi
 
+if [ "$1" = "--force" ]; then
+	echo Cleaning dependencies...
+	set +e
+	rm -rf app/jni/SDL/*
+	rm -rf app/jni/SDL_Image
+	rm -rf app/jni/cimgui/cimgui
+	rm -rf app/jni/libusb
+	rm -rf app/libs
+	set -e
+fi
+
 echo Checking dependencies...
 
 # Ensure SDL sources are present
 if [ ! -d "app/jni/SDL/src" ]; then
 	echo Downloading SDL sources...
+	# If you update SDL C sources make sure to also maunally update the java classes
 	wget https://github.com/libsdl-org/SDL/releases/download/release-2.28.3/SDL2-2.28.3.tar.gz
 	tar xf SDL2-2.28.3.tar.gz
 	mv $(pwd)/SDL2-2.28.3/src ./app/jni/SDL/
 	mv $(pwd)/SDL2-2.28.3/include ./app/jni/SDL/
+	mv $(pwd)/SDL2-2.28.3/Android.mk ./app/jni/SDL/
 	rm -rf SDL2-2.28.3
 	rm SDL2-2.28.3.tar.gz
 	# Apply patches
