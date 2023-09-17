@@ -4,7 +4,7 @@ Since I don't want to maintain a separate codebase just for android I decided to
 
 The android build process is rather convoluted, in short:
 1) Build SysDVR-Client as a native AOT library
-  - currently this is done using [bflat](https://github.com/bflattened/bflat) which is kind of an hack, i plan to move to the dotnet SDK once dotnet 8 is released since it should bring official android support.
+  - currently this uses the dotnet 8 preview, we'll move to stable as soon as it's out.
 2) Gather all the native libraries as source code
 3) Build the whole thing as an android app with gradle/android studio
 
