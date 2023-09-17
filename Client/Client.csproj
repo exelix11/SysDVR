@@ -24,6 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>false</Optimize>
+    <DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
     <!--<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>-->
   </PropertyGroup>
 
@@ -31,6 +32,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
+    <DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
