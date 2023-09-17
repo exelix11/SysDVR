@@ -49,8 +49,14 @@ fi
 
 if [ ! -e "macos-deps/libusb-1.0.0.dylib" ]; then
 	echo Downloading libusb
-	curl -L https://github.com/exelix11/libusb-builds/releases/download/v0/libusb-1.0.0.dylib -o macos-deps/libusb-1.0.0.dylib
+	# Note the name difference 1.0.0 -> 1.0
+	curl -L https://github.com/exelix11/libusb-builds/releases/download/v0/libusb-1.0.0.dylib -o macos-deps/libusb-1.0.dylib
 fi
+
+# Stip all dylibs signatures, this is a complicated mess to figure out and i don't have a mac
+# so we're doing it the windows way(tm) with no signatures at all
+
+codesign --remove-signature -v macos-deps/*.dylib
 
 echo This script is meant for CI as it patches the csproj file to use the correct version of dotnet
 echo This will be fixed once dotnet8 is released as stable
