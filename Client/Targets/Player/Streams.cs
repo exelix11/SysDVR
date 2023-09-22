@@ -7,80 +7,27 @@ using System.Runtime.InteropServices;
 using SysDVR.Client.Core;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Linq;
+using SDL2;
 
 namespace SysDVR.Client.Targets.Player
 {
-    static class AudioStreamTargetNative
-    {
-        public static unsafe void SDLCallback(IntPtr userdata, IntPtr buf, int len) =>
-            ((AudioStreamTarget)GCHandle.FromIntPtr(userdata).Target).SDLCallback(new Span<byte>(buf.ToPointer(), len));
-    }
-
     class AudioStreamTarget : OutStream
     {
-        readonly BlockingCollection<(PoolBuffer, ulong)> samples = new BlockingCollection<(PoolBuffer, ulong)>(20);
         readonly bool log = DebugOptions.Current.Log;
-
-        public int Pending;
         public StreamSynchronizationHelper SyncHelper;
 
-        PoolBuffer currentBlock;
-        int currentOffset = -1;
-        public void SDLCallback(Span<byte> buffer)
+        public uint DeviceId;
+
+        protected unsafe override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            while (buffer.Length != 0 && !Cancel.IsCancellationRequested)
-            {
-                if (currentOffset != -1)
-                {
-                    int toCopy = Math.Min(currentBlock.Length - currentOffset, buffer.Length);
-                    currentBlock.RawBuffer.AsSpan().Slice(currentOffset, toCopy).CopyTo(buffer);
+            fixed (byte* ptr = block.Span)
+                SDL.SDL_QueueAudio(DeviceId, ptr, (uint)block.Span.Length);
 
-                    buffer = buffer.Slice(toCopy);
-                    currentOffset += toCopy;
-                }
-
-                if (currentOffset >= currentBlock.Length)
-                {
-                    currentOffset = -1;
-                    currentBlock.Free();
-                }
-
-                if (currentOffset == -1 && buffer.Length != 0)
-                {
-                    try
-                    {
-                    again:
-                        var (block, ts) = samples.Take(Cancel);
-                        if (!SyncHelper.CheckTimestamp(false, ts))
-                        {
-                            if (log)
-                                Console.WriteLine($"Dropping audio packet with ts {ts}");
-                            goto again;
-                        }
-
-                        currentBlock = block;
-                        currentOffset = 0;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
-                }
-            }
-        }
-
-        protected override void SendDataImpl(PoolBuffer block, ulong ts)
-        {
-            samples.Add((block, ts), Cancel);
-            Pending = samples.Count;
-            // Free is called by the consumer thread...
+            block.Free();
         }
 
         public override void Dispose()
-        {
-            // Free any remaining elements
-            samples.ToList().ForEach(x => x.Item1.Free());
-            
+        {       
             base.Dispose();
         }
     }
