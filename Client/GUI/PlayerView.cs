@@ -160,7 +160,7 @@ namespace SysDVR.Client.GUI
             if (!HasVideo)
             {
                 Gui.H2();
-                Gui.CenterText("No video stream has been set.");
+                Gui.CenterText("Streaming is set to audio-only mode.");
                 ImGui.PopFont();
             }
 

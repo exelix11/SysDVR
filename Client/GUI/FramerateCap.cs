@@ -49,7 +49,7 @@ namespace SysDVR.Client.GUI
         // Thread safety: may be called by any thread
         public void OnEvent(bool important) 
         {
-            eventCounter = important ? 10 : 4;
+            eventCounter = important ? 10 : 1;
         }
 
         // Called in the render loop, returns true if the frame should be skipped
@@ -66,7 +66,7 @@ namespace SysDVR.Client.GUI
                     return false;
                 }
                 
-                SDL.SDL_Delay(30);
+                SDL.SDL_Delay(20);
                 return true;
             }
 

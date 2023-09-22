@@ -96,6 +96,8 @@ echo Building client...
 # Move to client root
 cd ../../
 
+# This needs android clang before system clang in path. Something like:
+#	export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH
 dotnet publish -r linux-bionic-arm64 /p:SysDvrTarget=android
 
 mv bin/Release/net8.0/linux-bionic-arm64/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/
