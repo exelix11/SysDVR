@@ -125,6 +125,8 @@ namespace SysDVR.Client.Targets.Player
 
                         if (res == AVERROR(EAGAIN))
                         {
+                            Program.Instance.KickRendering(false);
+
                             // Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
                             // However it also seems to happen for some specific games so simply dropping packets will cause visual artifacts
                             // Wait for the next frame and submit again
