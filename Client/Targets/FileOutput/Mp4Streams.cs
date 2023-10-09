@@ -32,7 +32,7 @@ namespace SysDVR.Client.Targets.FileOutput
         }
     }
 
-    unsafe class Mp4AudioTarget : OutStream, IDisposable
+    unsafe class Mp4AudioTarget : OutStream
     {
         AVFormatContext* outCtx;
         object ctxSync;
@@ -142,7 +142,12 @@ namespace SysDVR.Client.Targets.FileOutput
 
         private unsafe void SendFrame(AVFrame* frame)
         {
-            avcodec_send_frame(codecCtx, frame).AssertZero();
+            var result = avcodec_send_frame(codecCtx, frame);
+
+            // Seems that flush frames now cause an error but the documentation still claims that's the correct way to flush with this API
+            if (frame != null)
+                result.AssertZero();
+
             while (avcodec_receive_packet(codecCtx, packet) == 0)
             {
                 packet->stream_index = channelId;

@@ -28,6 +28,12 @@ namespace SysDVR.Client.Core
             return msg;
         }
 
+        public static void AssertTrue(this bool value, string message, [CallerMemberName] string? caller = null)
+        {
+            if (!value)
+                FailImpl($"Call in {caller} failed: {value} is false {message}");
+        }
+
         public static void AssertEqual(this int code, int expectedValue, Func<string> MessageFun = null, [CallerMemberName] string? caller = null)
         {
             if (code != expectedValue)

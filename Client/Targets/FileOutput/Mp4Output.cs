@@ -63,26 +63,26 @@ namespace SysDVR.Client.Targets.FileOutput
         AVFormatContext* OutCtx;
         AVStream* VStream, AStream;
 
-        Mp4VideoTarget? Vid;
-        Mp4AudioTarget? Aud;
+        internal Mp4VideoTarget? VideoTarget;
+        internal Mp4AudioTarget? AudioTarget;
 
         public Mp4Output(string filename, Mp4VideoTarget? vTarget, Mp4AudioTarget? aTarget)
         {
-            Vid = vTarget;
-            Aud = aTarget;
+            VideoTarget = vTarget;
+            AudioTarget = aTarget;
             Filename = filename;
         }
 
         public void Start()
         {
-            var OutFmt = av_guess_format(null, Filename, null);
+            var OutFmt = av_guess_format(null, Path.GetFileName(Filename), null);
             if (OutFmt == null) throw new Exception("Couldn't find output format");
 
             AVFormatContext* ctx = null;
             avformat_alloc_output_context2(&ctx, OutFmt, null, null).AssertNotNeg();
             OutCtx = ctx != null ? ctx : throw new Exception("Couldn't allocate output context");
 
-            if (Vid is not null)
+            if (VideoTarget is not null)
             {
                 VStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_H264));
                 if (VStream == null) throw new Exception("Couldn't allocate video stream");
@@ -102,12 +102,12 @@ namespace SysDVR.Client.Targets.FileOutput
                 //VStream->codecpar->extradata_size = sz;
             }
 
-            if (Aud is not null)
+            if (AudioTarget is not null)
             {
                 AStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP2));
                 if (AStream == null) throw new Exception("Couldn't allocate audio stream");
 
-                AStream->id = Vid == null ? 0 : 1;
+                AStream->id = VideoTarget == null ? 0 : 1;
                 AStream->codecpar->codec_id = AVCodecID.AV_CODEC_ID_MP2;
                 AStream->codecpar->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
                 AStream->codecpar->sample_rate = StreamInfo.AudioSampleRate;
@@ -121,8 +121,8 @@ namespace SysDVR.Client.Targets.FileOutput
             avformat_write_header(OutCtx, null).AssertZero();
 
             object sync = new object();
-            Vid?.StartWithContext(OutCtx, sync);
-            Aud?.StartWithContext(OutCtx, sync, AStream->id);
+            VideoTarget?.StartWithContext(OutCtx, sync);
+            AudioTarget?.StartWithContext(OutCtx, sync, AStream->id);
 
             var defColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
@@ -134,8 +134,8 @@ namespace SysDVR.Client.Targets.FileOutput
 
         public unsafe void Stop()
         {
-            Aud?.Stop();
-            Vid?.Stop();
+            AudioTarget?.Stop();
+            VideoTarget?.Stop();
 
             Console.WriteLine("Finalizing file...");
 
@@ -146,7 +146,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
             Running = false;
 
-            Aud?.Dispose();
+            AudioTarget?.Dispose();
         }
 
         private bool disposedValue;

@@ -59,7 +59,7 @@ namespace SysDVR.Client.Core
 
         public string GetFilePathForVideo()
         {
-            var format = $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.np4";
+            var format = $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.mp4";
             return Path.Combine(RecordingsPath, format);
         }
 
