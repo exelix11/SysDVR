@@ -39,7 +39,7 @@ namespace SysDVR.Client.Targets.FileOutput
             data.Free();
         }
 
-        public override void Dispose()
+        protected override void DisposeImpl()
         {
             mem.Dispose();
             bin.Dispose();

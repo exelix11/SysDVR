@@ -22,6 +22,13 @@ namespace SysDVR.Client.Core
         Best
     }
 
+    public enum SDLAudioMode 
+    {
+        Enable,
+        Disable,
+        Auto
+    }
+
     public class Options
     {
         public bool UncapStreaming;
@@ -40,6 +47,7 @@ namespace SysDVR.Client.Core
         // SDL options
         public bool ForceSoftwareRenderer;
         public ScaleMode RendererScale = ScaleMode.Linear;
+        public SDLAudioMode AudioPlayerMode = SDLAudioMode.Auto;
 
         public string ScaleHintForSDL => RendererScale switch
         {
@@ -48,7 +56,6 @@ namespace SysDVR.Client.Core
             ScaleMode.Best => "best",
             _ => throw new NotImplementedException(),
         };
-
 
         public string GetFilePathForVideo()
         {

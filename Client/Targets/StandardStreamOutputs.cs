@@ -95,7 +95,7 @@ namespace SysDVR.Client.Core
             block.Free();
         }
 
-        public override void Dispose()
+        protected override void DisposeImpl()
         {
             if (processHandle is not null)
             {

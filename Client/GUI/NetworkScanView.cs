@@ -66,7 +66,7 @@ namespace SysDVR.Client.GUI
         {
             scanner.StartScanning();
             
-            if (Debugger.IsAttached)
+            //if (Debugger.IsAttached)
                 devices.Add(DeviceInfo.Stub());
             
             base.EnterForeground();
