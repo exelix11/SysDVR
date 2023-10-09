@@ -77,7 +77,8 @@ namespace SysDVR.Client.GUI
                     fpsval = f;
             
             ImGui.Text($"Video fps: {fpsval} DispRect {DisplayRect.x} {DisplayRect.y} {DisplayRect.w} {DisplayRect.h}");
-            ImGui.Text($"Pending: {Manager.AudioTarget?.Pending} {Manager.VideoTarget?.Pending}");
+            ImGui.Text($"Video pending packets: {Manager.VideoTarget?.Pending}");
+            ImGui.Text($"IsCompatibleAudioStream: {Manager.IsCompatibleAudioStream}");
         }
 
         void ShowPlayerOptionMessage() 
@@ -106,8 +107,8 @@ namespace SysDVR.Client.GUI
             Popups.Add(fatalError);
 
             Manager = manager;
-            HasVideo = manager.VideoTarget is not null;
-            HasAudio = manager.AudioTarget is not null;
+            HasVideo = manager.HasVideo;
+            HasAudio = manager.HasAudio;
 
             if (!HasAudio && !HasVideo)
                 throw new Exception("Can't start a player with no streams");
@@ -133,10 +134,9 @@ namespace SysDVR.Client.GUI
             }
 
             if (HasAudio)
-            {
                 Audio = new(manager.AudioTarget);
-                manager.AudioTarget.SyncHelper = sync;
-            }
+
+            manager.UseSyncManager(sync);
 
             if (!HasVideo)
                 OverlayAlwaysShowing = true;

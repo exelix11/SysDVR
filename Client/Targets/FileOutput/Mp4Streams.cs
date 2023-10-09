@@ -181,7 +181,7 @@ namespace SysDVR.Client.Targets.FileOutput
             block.Free();
         }
 
-        public override void Dispose()
+        protected override void DisposeImpl()
         {
             FreeNativeResource();
             base.Dispose();

@@ -8165,9 +8165,9 @@ namespace SDL2
 		 * Only available in 2.0.4 or higher.
 		 */
 		[DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
-		public static extern int SDL_QueueAudio(
+		public unsafe static extern int SDL_QueueAudio(
 			uint dev,
-			IntPtr data,
+			byte* data,
 			UInt32 len
 		);
 

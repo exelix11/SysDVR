@@ -41,34 +41,73 @@ namespace SysDVR.Client.Targets.Player
 
     class PlayerManager : BaseStreamManager
     {
-        public new H264StreamTarget VideoTarget;
-        public new AudioStreamTarget AudioTarget;
+        internal new H264StreamTarget VideoTarget;
+        internal new OutStream AudioTarget;
 
-        public PlayerManager(bool HasVideo, bool HasAudio, CancellationTokenSource cancel) : base(
-            HasVideo ? new H264StreamTarget() : null,
-            HasAudio ? new AudioStreamTarget() : null,
-            cancel)
+        public bool IsCompatibleAudioStream;
+
+        static OutStream? MakeAudioStream(bool hasAudio) 
+        {
+            if (!hasAudio)
+                return null;
+
+            var useCompat = Program.Options.AudioPlayerMode switch
+            {
+                SDLAudioMode.Enable => true,
+                SDLAudioMode.Disable => false,
+                _ => RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+            };
+
+            if (useCompat)
+                return new QueuedStreamAudioTarget();
+            else
+                return new AudioStreamTarget(); 
+        }
+
+        static OutStream? MakeVideoStream(bool hasVideo)
+        {
+            if (!hasVideo)
+                return null;
+
+            return new H264StreamTarget();
+        }
+
+        public void UseSyncManager(StreamSynchronizationHelper manager)
+        {
+            if (AudioTarget is AudioStreamTarget)
+            {
+                ((AudioStreamTarget)AudioTarget).SyncHelper = manager;
+            }
+        }
+
+        public PlayerManager(bool HasVideo, bool HasAudio, CancellationTokenSource cancel) :
+            base(MakeVideoStream(HasVideo), MakeAudioStream(HasAudio), cancel)
         {
             VideoTarget = base.VideoTarget as H264StreamTarget;
-            AudioTarget = base.AudioTarget as AudioStreamTarget;
+            AudioTarget = base.AudioTarget;
+            IsCompatibleAudioStream = AudioTarget is QueuedStreamAudioTarget;
         }
     }
 
     class AudioPlayer : IDisposable
     {
-        uint DeviceID;
+        readonly uint DeviceID;
+        
+        // Are we using the MacOS strategy ?
+        readonly bool IsCompatiblePlayer;
+        
         // Keep a reference to the callback to prevent GC from collecting it
-        SDL_AudioCallback CallbackDelegate;
+        SDL_AudioCallback? CallbackDelegate;
+
         // Manually pin the Target object so it can be used as opaque pointer for the native code
         GCHandle TargetHandle;
 
-        public AudioPlayer(AudioStreamTarget target) 
+        public AudioPlayer(OutStream target) 
         {
             Program.Instance.BugCheckThreadId();
 
-            TargetHandle = GCHandle.Alloc(target, GCHandleType.Normal);
+            IsCompatiblePlayer = target is QueuedStreamAudioTarget;
 
-            CallbackDelegate = AudioStreamTargetNative.SDLCallback;
             SDL_AudioSpec wantedSpec = new SDL_AudioSpec()
             {
                 channels = StreamInfo.AudioChannels,
@@ -78,9 +117,15 @@ namespace SysDVR.Client.Targets.Player
                 // however SDL will pick its preferred buffer size since we pass SDL_AUDIO_ALLOW_SAMPLES_CHANGE,
                 // this is fine since we have our own buffering.
                 samples = StreamInfo.MinAudioSamplesPerPayload,
-                callback = CallbackDelegate,
-                userdata = GCHandle.ToIntPtr(TargetHandle)
             };
+
+            if (!IsCompatiblePlayer)
+            {
+                TargetHandle = GCHandle.Alloc(target, GCHandleType.Normal);
+                CallbackDelegate = AudioStreamTargetNative.SDLCallback;
+                wantedSpec.callback = CallbackDelegate;
+                wantedSpec.userdata = GCHandle.ToIntPtr(TargetHandle);
+            }
 
             DeviceID = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out var obtained, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 
@@ -88,6 +133,11 @@ namespace SysDVR.Client.Targets.Player
 
             if (DebugOptions.Current.Log)
                 Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
+
+            if (IsCompatiblePlayer)
+            {
+                ((QueuedStreamAudioTarget)(target)).DeviceID = DeviceID;
+            }
         }
 
         public void Pause() 

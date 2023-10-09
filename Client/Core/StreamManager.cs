@@ -71,6 +71,7 @@ namespace SysDVR.Client.Core
     {
         protected OutStream? Next;
         protected CancellationToken Cancel;
+        bool _disposed;
 
         public void ChainStream(OutStream toAdd)
         {
@@ -124,8 +125,19 @@ namespace SysDVR.Client.Core
                 block.Free();
         }
 
-        public virtual void Dispose() 
+        protected virtual void DisposeImpl()
         {
+            
+        }
+
+        public void Dispose() 
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            
+            DisposeImpl();
             Next?.Dispose();
         }
     }
