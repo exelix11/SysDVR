@@ -57,11 +57,18 @@ namespace SysDVR.Client.Targets.Player
     class AudioPlayer : IDisposable
     {
         uint DeviceID;
+        // Keep a reference to the callback to prevent GC from collecting it
+        SDL_AudioCallback CallbackDelegate;
+        // Manually pin the Target object so it can be used as opaque pointer for the native code
+        GCHandle TargetHandle;
 
         public AudioPlayer(AudioStreamTarget target) 
         {
             Program.Instance.BugCheckThreadId();
 
+            TargetHandle = GCHandle.Alloc(target, GCHandleType.Normal);
+
+            CallbackDelegate = AudioStreamTargetNative.SDLCallback;
             SDL_AudioSpec wantedSpec = new SDL_AudioSpec()
             {
                 channels = StreamInfo.AudioChannels,
@@ -71,13 +78,13 @@ namespace SysDVR.Client.Targets.Player
                 // however SDL will pick its preferred buffer size since we pass SDL_AUDIO_ALLOW_SAMPLES_CHANGE,
                 // this is fine since we have our own buffering.
                 samples = StreamInfo.MinAudioSamplesPerPayload,
-                callback = IntPtr.Zero,
+                callback = CallbackDelegate,
+                userdata = GCHandle.ToIntPtr(TargetHandle)
             };
 
             DeviceID = SDL_OpenAudioDevice(IntPtr.Zero, 0, ref wantedSpec, out var obtained, (int)SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 
             DeviceID.AssertNotZero(SDL_GetError);
-            target.DeviceId = DeviceID;
 
             if (DebugOptions.Current.Log)
                 Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
@@ -97,6 +104,7 @@ namespace SysDVR.Client.Targets.Player
         {
             Pause();
             SDL_CloseAudioDevice(DeviceID);
+            TargetHandle.Free();
         }
     }
 

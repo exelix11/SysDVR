@@ -77,7 +77,7 @@ namespace SysDVR.Client.GUI
                     fpsval = f;
             
             ImGui.Text($"Video fps: {fpsval} DispRect {DisplayRect.x} {DisplayRect.y} {DisplayRect.w} {DisplayRect.h}");
-            ImGui.Text($"Pending: - {Manager.VideoTarget?.Pending}");
+            ImGui.Text($"Pending: {Manager.AudioTarget?.Pending} {Manager.VideoTarget?.Pending}");
         }
 
         void ShowPlayerOptionMessage() 
