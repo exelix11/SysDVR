@@ -7944,7 +7944,7 @@ namespace SDL2
 			public byte silence;
 			public ushort samples;
 			public uint size;
-			public IntPtr callback;
+			public SDL_AudioCallback callback;
 			public IntPtr userdata; // void*
 		}
 
@@ -8165,9 +8165,9 @@ namespace SDL2
 		 * Only available in 2.0.4 or higher.
 		 */
 		[DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
-		public unsafe static extern int SDL_QueueAudio(
+		public static extern int SDL_QueueAudio(
 			uint dev,
-			byte* ptr,
+			IntPtr data,
 			UInt32 len
 		);
 
