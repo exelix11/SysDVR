@@ -9,6 +9,7 @@ using SysDVR.Client.Platform;
 using SysDVR.Client.Targets;
 
 using static SDL2.SDL;
+using SysDVR.Client.Targets.FileOutput;
 
 namespace SysDVR.Client.GUI
 {
@@ -56,6 +57,10 @@ namespace SysDVR.Client.GUI
         
         bool drawUi;
         string fatalMessage;
+
+        public bool IsRecording => videoRecorder is not null;
+        string recordingButtonText = "Start recording";
+        Mp4Output? videoRecorder;
 
         void MessageUi(string message)
         {
@@ -258,7 +263,7 @@ namespace SysDVR.Client.GUI
                 }
 
                 ImGui.SetCursorPosX(center);
-                if (ImGui.Button("Start recording", btnsize)) ButtonStartRecording();
+                if (ImGui.Button(recordingButtonText, btnsize)) ButtonToggleRecording();
 
                 ImGui.SetCursorPosX(center);
                 if (ImGui.Button("Stop streaming", btnsize)) ButtonQuit();
@@ -282,7 +287,7 @@ namespace SysDVR.Client.GUI
                     if (ImGui.Button("Screenshot")) ButtonScreenshot();
                     ImGui.SameLine();
                 }
-                if (ImGui.Button("Start recording")) ButtonStartRecording();
+                if (ImGui.Button(recordingButtonText)) ButtonToggleRecording();
                 ImGui.SameLine(0, spacing);
                 if (ImGui.Button("Stop streaming")) ButtonQuit();
                 ImGui.SameLine(0, spacing);
@@ -341,9 +346,39 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        void ButtonStartRecording()
+        void ButtonToggleRecording()
         {
-            MessageUi("Recording is not implemented yet"); 
+            if (videoRecorder is null)
+            {
+                try 
+                {
+                    var videoFile = Program.Options.GetFilePathForVideo();
+
+                    Mp4VideoTarget? v = HasVideo ? new() : null;
+                    Mp4AudioTarget? a = HasAudio ? new() : null; 
+
+                    videoRecorder = new Mp4Output(videoFile, v, a);
+                    videoRecorder.Start();
+
+                    Manager.ChainTargets(v, a);
+
+                    recordingButtonText = "Stop recording";
+                    MessageUi("Recording to " + videoFile);
+                }
+                catch (Exception ex)
+                {
+                    MessageUi("Failed to start recording: " + ex.ToString());
+                }
+            }
+            else 
+            {
+                Manager.UnchainTargets(videoRecorder.VideoTarget, videoRecorder.AudioTarget);
+                videoRecorder.Stop();
+                videoRecorder.Dispose();
+                videoRecorder = null;
+                recordingButtonText = "Start recording";
+                MessageUi("Finished recording");
+            }
         }
         
         void ButtonStats()
@@ -414,6 +449,9 @@ namespace SysDVR.Client.GUI
         public unsafe override void Destroy()
         {
             Program.Instance.BugCheckThreadId();
+
+            if (IsRecording)
+                ButtonToggleRecording();
 
             Manager.Stop();
 

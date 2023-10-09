@@ -81,17 +81,22 @@ namespace SysDVR.Client.Core
                 Next = toAdd;
         }
 
-        public void UnchainType<T>()
+        public bool UnchainStream(OutStream toRemove)
         {
-            if (Next is T)
+            if (Next == toRemove)
             {
                 var n = Next;
-                Next = Next.Next;
-                Next.Next = null;
+                
+                Next = n.Next;
+                n.Next = null;
+
                 n.Dispose();
+                return true;
             }
+            else if (Next is not null)
+                return Next.UnchainStream(toRemove);
             else
-                Next?.UnchainType<T>();
+                return false;
         }
 
         protected virtual void UseCancellationTokenImpl(CancellationToken tok)
@@ -199,6 +204,24 @@ namespace SysDVR.Client.Core
 
                 Streams = StreamKind.Both;
             }
+        }
+
+        public void ChainTargets(OutStream? nextVideo, OutStream? nextAudio)
+        {
+            if (nextVideo is not null)
+                VideoTarget?.ChainStream(nextVideo);
+            
+            if (nextAudio is not null)
+                AudioTarget?.ChainStream(nextAudio);
+        }
+
+        public void UnchainTargets(OutStream? nextVideo, OutStream? nextAudio)
+        {
+            if (nextVideo is not null)
+                VideoTarget?.UnchainStream(nextVideo).AssertTrue("The target was not in the streaming chain");
+
+            if (nextAudio is not null)
+                AudioTarget?.UnchainStream(nextAudio).AssertTrue("The target was not in the streaming chain");
         }
 
         public virtual void Begin()

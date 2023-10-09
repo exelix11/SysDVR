@@ -1,5 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 using SDL2;
+using SysDVR.Client.Core;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -121,20 +122,25 @@ namespace SysDVR.Client.Platform
             var paths = FindNativeLibrary(libraryName)
                 .Concat(FindNativeLibrary("lib" + libraryName));
 
+            var debug = DebugOptions.Current.DynLib;
+
             foreach (var candidate in paths)
             {
                 if (!File.Exists(candidate))
                 {
-                    Console.WriteLine($"Candidate library does not exist {candidate}");
+                    if (debug)
+                        Console.WriteLine($"Candidate library does not exist {candidate}");
                     continue;
                 }
 
-                Console.WriteLine($"Trying to load {candidate}");
+                if (debug)
+                    Console.WriteLine($"Trying to load {candidate}");
 
                 if (NativeLibrary.TryLoad(candidate, out var result))
                     return result;
 
-                Console.WriteLine($"Failrd to load {candidate}");
+                if (debug)
+                    Console.WriteLine($"Failrd to load {candidate}");
             }
 
             // Try to load the library from the OS.
