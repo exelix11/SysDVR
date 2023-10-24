@@ -10,7 +10,7 @@ namespace SysDVRClientGUI.Forms.DriverInstall
 
         public DriverInstallForm(bool fromCommandLine)
         {
-            InitializeComponent();
+            this.InitializeComponent();
             this.fromCommandLine = fromCommandLine;
         }
 
@@ -33,38 +33,38 @@ namespace SysDVRClientGUI.Forms.DriverInstall
 
         void ShowError(string message)
         {
-            button1.Text = "Error";
+            BTN_Install.Text = "Error";
             MessageBox.Show(message + "\r\n\r\nRestart this application and try again, if it keeps on happening open an issue on GitHub.\r\nYou can also try following the manual driver installation guide on GitHub", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        private async void button1_Click(object sender, EventArgs e)
+        private async void BTN_Install_Click(object sender, EventArgs e)
         {
             this.ControlBox = false;
-            button1.Enabled = false;
+            BTN_Install.Enabled = false;
             progressBar1.Visible = true;
             bool error = false;
 
-            button1.Text = "Downloading...";
+            BTN_Install.Text = "Downloading...";
             try
             {
                 await DriverHelper.DownloadDriver();
             }
             catch (Exception ex)
             {
-                ShowError("Driver download and extraction failed: " + ex.Message);
+                this.ShowError("Driver download and extraction failed: " + ex.Message);
                 error = true;
             }
 
             if (!error)
             {
-                button1.Text = "Installing...";
+                BTN_Install.Text = "Installing...";
                 try
                 {
                     DriverHelper.InstallDriver();
                 }
                 catch (Exception ex)
                 {
-                    ShowError("Driver installation failed: " + ex.Message);
+                    this.ShowError("Driver installation failed: " + ex.Message);
                     error = true;
                 }
             }
@@ -83,11 +83,11 @@ namespace SysDVRClientGUI.Forms.DriverInstall
 
             if (!error)
             {
-                button1.Text = "Done";
+                BTN_Install.Text = "Done";
             }
 
             MessageBox.Show("SysDVR-Client GUI will now close");
-            Environment.Exit(0);
+            Application.Exit();
         }
     }
 }
