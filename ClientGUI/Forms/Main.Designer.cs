@@ -180,12 +180,10 @@
             this.TXT_TcpIp.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.TXT_TcpIp.MaxLength = 15;
             this.TXT_TcpIp.Name = "TXT_TcpIp";
+            this.TXT_TcpIp.PlaceholderText = "IP Address";
             this.TXT_TcpIp.Size = new System.Drawing.Size(116, 23);
             this.TXT_TcpIp.TabIndex = 2;
-            this.TXT_TcpIp.Text = "IP address";
             this.TXT_TcpIp.TextChanged += this.TXT_TcpIp_TextChanged;
-            this.TXT_TcpIp.Enter += this.tbTcpIP_Enter;
-            this.TXT_TcpIp.Leave += this.tbTcpIP_Leave;
             // 
             // rbSrcUsb
             // 
