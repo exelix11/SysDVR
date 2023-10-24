@@ -19,6 +19,8 @@
 		<UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <Title>SysDVR-Client GUI</Title>
+    <AssemblyTitle>SysDVR-Client GUI</AssemblyTitle>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -31,6 +33,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
 	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
 	  <PackageReference Include="PInvoke.SetupApi" Version="0.7.124" />
 	  <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />

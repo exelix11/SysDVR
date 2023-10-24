@@ -28,20 +28,20 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
+            this.BTN_CreateBatch = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.rbChannelsBoth = new System.Windows.Forms.RadioButton();
             this.rbChannelsAudio = new System.Windows.Forms.RadioButton();
             this.rbChannelsVideo = new System.Windows.Forms.RadioButton();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label2 = new System.Windows.Forms.Label();
-            this.tbTcpIP = new System.Windows.Forms.TextBox();
+            this.TXT_TcpIp = new System.Windows.Forms.TextBox();
             this.rbSrcUsb = new System.Windows.Forms.RadioButton();
             this.rbSrcTcp = new System.Windows.Forms.RadioButton();
             this.label1 = new System.Windows.Forms.Label();
-            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
+            this.LLBL_ProjectWiki = new System.Windows.Forms.LinkLabel();
             this.pAdvOptions = new System.Windows.Forms.Panel();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.rbPlay = new System.Windows.Forms.RadioButton();
@@ -56,18 +56,23 @@
             this.cbUsbWarn = new System.Windows.Forms.CheckBox();
             this.StreamConfigPanel = new System.Windows.Forms.Panel();
             this.cbAdvOpt = new System.Windows.Forms.CheckBox();
-            this.button4 = new System.Windows.Forms.Button();
+            this.BTN_DriverInstall = new System.Windows.Forms.Button();
+            this.BTN_Exit = new System.Windows.Forms.Button();
+            this.ToolTip_BatchInfo = new System.Windows.Forms.ToolTip(this.components);
+            this.ERR_IpAddress = new System.Windows.Forms.ErrorProvider(this.components);
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).BeginInit();
             this.SuspendLayout();
             // 
             // button1
             // 
             this.button1.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            this.button1.Location = new System.Drawing.Point(643, 692);
+            this.button1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.button1.Location = new System.Drawing.Point(544, 693);
             this.button1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(88, 27);
@@ -76,29 +81,18 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += this.Launch;
             // 
-            // button2
+            // BTN_CreateBatch
             // 
-            this.button2.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            this.button2.Location = new System.Drawing.Point(407, 692);
-            this.button2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(211, 27);
-            this.button2.TabIndex = 7;
-            this.button2.Text = "Create quick launch shortcut";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += this.ExportBatch;
-            // 
-            // button3
-            // 
-            this.button3.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            this.button3.Location = new System.Drawing.Point(618, 692);
-            this.button3.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(22, 27);
-            this.button3.TabIndex = 8;
-            this.button3.Text = "?";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += this.BatchInfo;
+            this.BTN_CreateBatch.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+            this.BTN_CreateBatch.Location = new System.Drawing.Point(308, 693);
+            this.BTN_CreateBatch.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.BTN_CreateBatch.Name = "BTN_CreateBatch";
+            this.BTN_CreateBatch.Size = new System.Drawing.Size(211, 27);
+            this.BTN_CreateBatch.TabIndex = 7;
+            this.BTN_CreateBatch.Text = "Create quick launch shortcut";
+            this.ToolTip_BatchInfo.SetToolTip(this.BTN_CreateBatch, "This will create a bat file to launch SysDVR-Client with the selected options you will just need to double click it.");
+            this.BTN_CreateBatch.UseVisualStyleBackColor = true;
+            this.BTN_CreateBatch.Click += this.ExportBatch;
             // 
             // groupBox1
             // 
@@ -118,6 +112,7 @@
             // rbChannelsBoth
             // 
             this.rbChannelsBoth.AutoSize = true;
+            this.rbChannelsBoth.Checked = true;
             this.rbChannelsBoth.Location = new System.Drawing.Point(260, 22);
             this.rbChannelsBoth.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.rbChannelsBoth.Name = "rbChannelsBoth";
@@ -136,7 +131,6 @@
             this.rbChannelsAudio.Name = "rbChannelsAudio";
             this.rbChannelsAudio.Size = new System.Drawing.Size(57, 19);
             this.rbChannelsAudio.TabIndex = 1;
-            this.rbChannelsAudio.TabStop = true;
             this.rbChannelsAudio.Text = "Audio";
             this.rbChannelsAudio.UseVisualStyleBackColor = true;
             this.rbChannelsAudio.CheckedChanged += this.StreamKindSelected;
@@ -149,7 +143,6 @@
             this.rbChannelsVideo.Name = "rbChannelsVideo";
             this.rbChannelsVideo.Size = new System.Drawing.Size(55, 19);
             this.rbChannelsVideo.TabIndex = 0;
-            this.rbChannelsVideo.TabStop = true;
             this.rbChannelsVideo.Text = "Video";
             this.rbChannelsVideo.UseVisualStyleBackColor = true;
             this.rbChannelsVideo.CheckedChanged += this.StreamKindSelected;
@@ -158,7 +151,7 @@
             // 
             this.groupBox2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.groupBox2.Controls.Add(this.label2);
-            this.groupBox2.Controls.Add(this.tbTcpIP);
+            this.groupBox2.Controls.Add(this.TXT_TcpIp);
             this.groupBox2.Controls.Add(this.rbSrcUsb);
             this.groupBox2.Controls.Add(this.rbSrcTcp);
             this.groupBox2.Location = new System.Drawing.Point(7, 155);
@@ -180,22 +173,24 @@
             this.label2.TabIndex = 0;
             this.label2.Text = "Remember to switch to the correct mode with SysDVR-Settings on your console before beginning to stream. If you need help check the guide.";
             // 
-            // tbTcpIP
+            // TXT_TcpIp
             // 
-            this.tbTcpIP.Location = new System.Drawing.Point(197, 87);
-            this.tbTcpIP.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.tbTcpIP.MaxLength = 15;
-            this.tbTcpIP.Name = "tbTcpIP";
-            this.tbTcpIP.Size = new System.Drawing.Size(116, 23);
-            this.tbTcpIP.TabIndex = 2;
-            this.tbTcpIP.Text = "IP address";
-            this.tbTcpIP.TextChanged += this.tbTcpIP_TextChanged;
-            this.tbTcpIP.Enter += this.tbTcpIP_Enter;
-            this.tbTcpIP.Leave += this.tbTcpIP_Leave;
+            this.TXT_TcpIp.Enabled = false;
+            this.TXT_TcpIp.Location = new System.Drawing.Point(197, 87);
+            this.TXT_TcpIp.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.TXT_TcpIp.MaxLength = 15;
+            this.TXT_TcpIp.Name = "TXT_TcpIp";
+            this.TXT_TcpIp.Size = new System.Drawing.Size(116, 23);
+            this.TXT_TcpIp.TabIndex = 2;
+            this.TXT_TcpIp.Text = "IP address";
+            this.TXT_TcpIp.TextChanged += this.TXT_TcpIp_TextChanged;
+            this.TXT_TcpIp.Enter += this.tbTcpIP_Enter;
+            this.TXT_TcpIp.Leave += this.tbTcpIP_Leave;
             // 
             // rbSrcUsb
             // 
             this.rbSrcUsb.AutoSize = true;
+            this.rbSrcUsb.Checked = true;
             this.rbSrcUsb.Location = new System.Drawing.Point(12, 61);
             this.rbSrcUsb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.rbSrcUsb.Name = "rbSrcUsb";
@@ -214,10 +209,10 @@
             this.rbSrcTcp.Name = "rbSrcTcp";
             this.rbSrcTcp.Size = new System.Drawing.Size(170, 19);
             this.rbSrcTcp.TabIndex = 1;
-            this.rbSrcTcp.TabStop = true;
             this.rbSrcTcp.Tag = "";
             this.rbSrcTcp.Text = "TCP Bridge (network mode)";
             this.rbSrcTcp.UseVisualStyleBackColor = true;
+            this.rbSrcTcp.CheckedChanged += this.rbSrcTcp_CheckedChanged;
             // 
             // label1
             // 
@@ -231,19 +226,19 @@
             this.label1.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nIf you're not sure what to do here check out the guide on GitHub";
             this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
-            // linkLabel1
+            // LLBL_ProjectWiki
             // 
-            this.linkLabel1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.linkLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.linkLabel1.Location = new System.Drawing.Point(7, 55);
-            this.linkLabel1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(723, 23);
-            this.linkLabel1.TabIndex = 0;
-            this.linkLabel1.TabStop = true;
-            this.linkLabel1.Text = "Open the guide";
-            this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.linkLabel1.LinkClicked += this.linkLabel1_LinkClicked;
+            this.LLBL_ProjectWiki.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LLBL_ProjectWiki.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.LLBL_ProjectWiki.Location = new System.Drawing.Point(7, 55);
+            this.LLBL_ProjectWiki.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LLBL_ProjectWiki.Name = "LLBL_ProjectWiki";
+            this.LLBL_ProjectWiki.Size = new System.Drawing.Size(723, 23);
+            this.LLBL_ProjectWiki.TabIndex = 0;
+            this.LLBL_ProjectWiki.TabStop = true;
+            this.LLBL_ProjectWiki.Text = "Open the guide";
+            this.LLBL_ProjectWiki.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.LLBL_ProjectWiki.LinkClicked += this.LLBL_ProjectWiki_LinkClicked;
             // 
             // pAdvOptions
             // 
@@ -275,6 +270,7 @@
             // rbPlay
             // 
             this.rbPlay.AutoSize = true;
+            this.rbPlay.Checked = true;
             this.rbPlay.Location = new System.Drawing.Point(8, 22);
             this.rbPlay.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.rbPlay.Name = "rbPlay";
@@ -294,7 +290,6 @@
             this.rbSaveToFile.Name = "rbSaveToFile";
             this.rbSaveToFile.Size = new System.Drawing.Size(82, 19);
             this.rbSaveToFile.TabIndex = 2;
-            this.rbSaveToFile.TabStop = true;
             this.rbSaveToFile.Tag = "File";
             this.rbSaveToFile.Text = "Save to file";
             this.rbSaveToFile.UseVisualStyleBackColor = true;
@@ -308,7 +303,6 @@
             this.rbStreamRtsp.Name = "rbStreamRtsp";
             this.rbStreamRtsp.Size = new System.Drawing.Size(624, 19);
             this.rbStreamRtsp.TabIndex = 0;
-            this.rbStreamRtsp.TabStop = true;
             this.rbStreamRtsp.Tag = "RTSP";
             this.rbStreamRtsp.Text = "Relay to a different video player via RTSP -- This is not the RTSP option in SysDVR-settings, read the guide if unsure";
             this.rbStreamRtsp.UseVisualStyleBackColor = true;
@@ -322,7 +316,6 @@
             this.rbPlayMpv.Name = "rbPlayMpv";
             this.rbPlayMpv.Size = new System.Drawing.Size(289, 19);
             this.rbPlayMpv.TabIndex = 1;
-            this.rbPlayMpv.TabStop = true;
             this.rbPlayMpv.Tag = "Mpv";
             this.rbPlayMpv.Text = "Play in mpv with low latency (single channel only)";
             this.rbPlayMpv.UseVisualStyleBackColor = true;
@@ -413,8 +406,6 @@
             // 
             this.cbAdvOpt.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
             this.cbAdvOpt.AutoSize = true;
-            this.cbAdvOpt.Checked = true;
-            this.cbAdvOpt.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbAdvOpt.Location = new System.Drawing.Point(7, 698);
             this.cbAdvOpt.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cbAdvOpt.Name = "cbAdvOpt";
@@ -424,32 +415,53 @@
             this.cbAdvOpt.UseVisualStyleBackColor = true;
             this.cbAdvOpt.CheckedChanged += this.cbAdvOpt_CheckedChanged;
             // 
-            // button4
+            // BTN_DriverInstall
             // 
-            this.button4.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            this.button4.Location = new System.Drawing.Point(267, 692);
-            this.button4.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(133, 27);
-            this.button4.TabIndex = 6;
-            this.button4.Text = "Reinstall USB driver";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += this.button4_Click;
+            this.BTN_DriverInstall.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+            this.BTN_DriverInstall.Location = new System.Drawing.Point(168, 693);
+            this.BTN_DriverInstall.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.BTN_DriverInstall.Name = "BTN_DriverInstall";
+            this.BTN_DriverInstall.Size = new System.Drawing.Size(133, 27);
+            this.BTN_DriverInstall.TabIndex = 6;
+            this.BTN_DriverInstall.Text = "Reinstall USB driver";
+            this.BTN_DriverInstall.UseVisualStyleBackColor = true;
+            this.BTN_DriverInstall.Click += this.BTN_DriverInstall_Click;
+            // 
+            // BTN_Exit
+            // 
+            this.BTN_Exit.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+            this.BTN_Exit.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.BTN_Exit.Location = new System.Drawing.Point(637, 693);
+            this.BTN_Exit.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.BTN_Exit.Name = "BTN_Exit";
+            this.BTN_Exit.Size = new System.Drawing.Size(88, 27);
+            this.BTN_Exit.TabIndex = 10;
+            this.BTN_Exit.Text = "E&xit";
+            this.BTN_Exit.UseVisualStyleBackColor = true;
+            this.BTN_Exit.Click += this.BTN_Exit_Click;
+            // 
+            // ToolTip_BatchInfo
+            // 
+            this.ToolTip_BatchInfo.ToolTipTitle = "Create Batch Info";
+            // 
+            // ERR_IpAddress
+            // 
+            this.ERR_IpAddress.ContainerControl = this;
             // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(735, 723);
-            this.Controls.Add(this.button4);
+            this.Controls.Add(this.BTN_Exit);
+            this.Controls.Add(this.BTN_DriverInstall);
             this.Controls.Add(this.cbAdvOpt);
             this.Controls.Add(this.pAdvOptions);
-            this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.LLBL_ProjectWiki);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.button3);
-            this.Controls.Add(this.button2);
+            this.Controls.Add(this.BTN_CreateBatch);
             this.Controls.Add(this.button1);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MaximizeBox = false;
@@ -460,7 +472,7 @@
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "<Set in code>";
-            this.Load += this.Form1_Load;
+            this.Load += this.Main_Load;
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
@@ -470,6 +482,7 @@
             this.groupBox4.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -477,18 +490,17 @@
         #endregion
 
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button BTN_CreateBatch;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.RadioButton rbChannelsBoth;
         private System.Windows.Forms.RadioButton rbChannelsAudio;
         private System.Windows.Forms.RadioButton rbChannelsVideo;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.LinkLabel linkLabel1;
+        private System.Windows.Forms.LinkLabel LLBL_ProjectWiki;
         private System.Windows.Forms.RadioButton rbSrcTcp;
         private System.Windows.Forms.RadioButton rbSrcUsb;
-        private System.Windows.Forms.TextBox tbTcpIP;
+        private System.Windows.Forms.TextBox TXT_TcpIp;
         private System.Windows.Forms.Panel pAdvOptions;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.RadioButton rbPlay;
@@ -502,9 +514,12 @@
         private System.Windows.Forms.Panel StreamConfigPanel;
         private System.Windows.Forms.CheckBox cbAdvOpt;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button BTN_DriverInstall;
         private System.Windows.Forms.CheckBox cbIgnoreSync;
         private System.Windows.Forms.CheckBox cbLogStatus;
+        private System.Windows.Forms.Button BTN_Exit;
+        private System.Windows.Forms.ToolTip ToolTip_BatchInfo;
+        private System.Windows.Forms.ErrorProvider ERR_IpAddress;
     }
 }
 

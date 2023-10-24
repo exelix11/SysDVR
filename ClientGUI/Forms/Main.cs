@@ -8,10 +8,15 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using System.Windows.Input;
+using static SysDVRClientGUI.Logic.Constants;
+using static SysDVRClientGUI.Logic.HelperFunctions;
 
 namespace SysDVRClientGUI.Forms
 {
@@ -25,8 +30,6 @@ namespace SysDVRClientGUI.Forms
         readonly int DotnetMajorVersion;
         readonly bool DotnetIs32Bit;
 
-        const int RequiredDotnetMajor = 6;
-
         const string BatchLauncherFileCheckTemplate =
 @":: Ensure {1} file exists
 if not exist ""{0}"" (
@@ -37,49 +40,33 @@ if not exist ""{0}"" (
 )
 
 ";
-        static string VersionString()
-        {
-            var Version = typeof(Program).Assembly.GetName().Version;
-            if (Version == null) return "<unknown version>";
-            StringBuilder str = new StringBuilder();
-            str.Append(Version.Major);
-            str.Append(".");
-            str.Append(Version.Minor);
-
-            if (Version.Revision != 0)
-            {
-                str.Append(".");
-                str.Append(Version.Revision);
-            }
-
-            return str.ToString();
-        }
 
         public Main()
         {
+            this.InitializeComponent();
+            this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
+            this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
+            this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
+            this.StreamKindSelected(this.rbChannelsBoth, EventArgs.Empty);
+
             if (Program.ApplicationIcon != null)
                 this.Icon = Program.ApplicationIcon;
 
-            if (File.Exists("SysDVR-Client.dll"))
-                ClientDllPath = "SysDVR-Client.dll";
+            if (File.Exists(SYSDVR_DLL))
+                ClientDllPath = SYSDVR_DLL;
             // When in debug mode also search sysdvr's visual studio build folder
 #if DEBUG
-            else if (File.Exists(@"..\..\..\..\Client\bin\Debug\net7.0\SysDVR-Client.dll"))
-                ClientDllPath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net7.0\SysDVR-Client.dll");
+            else if (File.Exists(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}"))
+                ClientDllPath = Path.GetFullPath(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}");
 #endif
-
-            DotnetMajorVersion = Utils.FindDotnet(out DotnetPath, out DotnetIs32Bit);
-
-            InitializeComponent();
+            DotnetMajorVersion = FindDotnet(out DotnetPath, out DotnetIs32Bit);
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void Main_Load(object sender, EventArgs e)
         {
-            this.Text = "SysDVR-Client GUI " + VersionString();
-
             if (string.IsNullOrWhiteSpace(ClientDllPath))
             {
-                MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
+                MessageBox.Show($"{SYSDVR_DLL} not found, did you extract all the files in the same folder ?");
                 this.Close();
             }
 
@@ -98,18 +85,13 @@ if not exist ""{0}"" (
                 }
             }
 
-            if (DotnetMajorVersion < RequiredDotnetMajor)
+            if (DotnetMajorVersion < REQUIRED_DOTNET_MAJOR)
             {
                 if (MessageBox.Show("It seems you're running an outdated version of .NET. SysDVR-Client requires .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     Process.Start("https://dotnet.microsoft.com/download");
                 else
                     MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.");
             }
-
-            rbStreamRtsp.Checked = true;
-            rbChannelsBoth.Checked = true;
-            rbPlay.Checked = true;
-            cbAdvOpt.Checked = false;
         }
 
         private void StreamTargetSelected(object sender, EventArgs e)
@@ -117,7 +99,7 @@ if not exist ""{0}"" (
             if (!((RadioButton)sender).Checked)
                 return;
 
-            Dictionary<object, IStreamTargetControl> StreamControls = new Dictionary<object, IStreamTargetControl>
+            Dictionary<object, IStreamTargetControl> StreamControls = new()
             {
                 { rbStreamRtsp, new RTSPStreamOptControl() { Dock = DockStyle.Fill} },
                 { rbPlayMpv, new MpvStreamControl() { Dock = DockStyle.Fill} },
@@ -218,14 +200,14 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         LaunchCommand GetClientCommandLine()
         {
-            StringBuilder args = new StringBuilder();
+            StringBuilder args = new();
 
             args.Append($"\"{Path.GetFullPath(ClientDllPath)}\" ");
 
             if (rbSrcUsb.Checked)
                 args.Append("usb ");
             else if (rbSrcTcp.Checked)
-                args.AppendFormat("bridge {0} ", tbTcpIP.Text);
+                args.AppendFormat("bridge {0} ", TXT_TcpIp.Text);
             else
                 throw new Exception("Select a valid source.");
 
@@ -306,15 +288,15 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         private void ExportBatch(object sender, EventArgs e)
         {
-            var cmds = GetFinalCommand();
+            LaunchCommand[] cmds = GetFinalCommand();
             if (cmds == null)
                 return;
 
-            SaveFileDialog sav = new SaveFileDialog() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
+            SaveFileDialog sav = new() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
             if (sav.ShowDialog() != DialogResult.OK)
                 return;
 
-            StringBuilder bat = new StringBuilder();
+            StringBuilder bat = new();
 
             bat.AppendLine("@echo off");
             bat.AppendLine("title SysDVR Launcher");
@@ -352,28 +334,18 @@ Pressing no will try to start streaming regardless but it will probably fail."
                 Launch(sender, e);
         }
 
-        private void BatchInfo(object sender, EventArgs e) =>
-            MessageBox.Show("This will create a bat file to launch SysDVR-Client with the selected options you will just need to double click it.\r\n");
-
-        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
-            Process.Start("https://github.com/exelix11/SysDVR/wiki/");
+        private void LLBL_ProjectWiki_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start(GITHUB_PROJECT_URL_WIKI);
 
         private void tbTcpIP_Enter(object sender, EventArgs e)
         {
-            if (tbTcpIP.Text == "IP address")
-                tbTcpIP.Text = "";
+            if (TXT_TcpIp.Text == "IP address")
+                TXT_TcpIp.Text = "";
         }
 
         private void tbTcpIP_Leave(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(tbTcpIP.Text))
-                tbTcpIP.Text = "IP address";
-        }
-
-        private void tbTcpIP_TextChanged(object sender, EventArgs e)
-        {
-            if (tbTcpIP.Text != "IP address" && tbTcpIP.Text != "" && !rbSrcTcp.Checked)
-                rbSrcTcp.Checked = true;
+            if (string.IsNullOrWhiteSpace(TXT_TcpIp.Text))
+                TXT_TcpIp.Text = "IP address";
         }
 
         private void cbAdvOpt_CheckedChanged(object sender, EventArgs e)
@@ -382,83 +354,33 @@ Pressing no will try to start streaming regardless but it will probably fail."
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void BTN_DriverInstall_Click(object sender, EventArgs e)
         {
             new DriverInstallForm(false).ShowDialog();
         }
-    }
 
-    static class Utils
-    {
-        // We want to detect the dotnet version, there are simple registry keys but they don't seem documented
-        // ms just says to invoke dotnet https://learn.microsoft.com/en-us/dotnet/core/install/how-to-detect-installed-versions?pivots=os-windows
-
-        const string DotnetPath = @"SOFTWARE\dotnet\Setup\InstalledVersions\";
-
-        static readonly Regex VersionRegex = new Regex(@"^(\d+)\.(\d+)(\.(\d+))?", RegexOptions.Compiled);
-
-        public static int FindDotnet(out string path, out bool is32Bit)
+        private void BTN_Exit_Click(object sender, EventArgs e)
         {
-            // Search the 32bit hive for a x64 version
-            path = ParseDotnetRegistry(DotnetPath + "x64", out var version);
-            if (path != null)
+            if (MessageBox.Show($"Exit {typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title}?", "Exit Application", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                is32Bit = false;
-                return version;
+                this.Close();
             }
-
-            // Search a 32bit version to report the error
-            path = ParseDotnetRegistry(DotnetPath + "x86", out version);
-            if (path != null)
-            {
-                is32Bit = true;
-                return version;
-            }
-
-            is32Bit = false;
-            return 0;
         }
 
-        // This searches the 32-bit hive because it seems the 64-bit one has a different format, wtf ?
-        static string ParseDotnetRegistry(string Regpath, out int version)
+        private void rbSrcTcp_CheckedChanged(object sender, EventArgs e)
         {
-            version = 0;
-            try
-            {
-                using (var HKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
-                {
-                    var key = HKLM.OpenSubKey(Regpath, false);
-
-                    if (key == null)
-                        return null;
-
-                    var path = key.GetValue("InstallLocation") as string;
-                    path = Path.Combine(path, "dotnet.exe");
-
-                    if (!File.Exists(path))
-                        return null;
-
-                    var hosts = key.OpenSubKey("sharedfx")?.OpenSubKey("Microsoft.NETCore.App");
-
-                    if (hosts == null)
-                        return null;
-
-                    var major = hosts.GetValueNames()
-                        .Select(x => VersionRegex.Match(x))
-                        .Where(x => x.Success)
-                        .Select(x => int.Parse(x.Groups[1].Value))
-                        .OrderByDescending(x => x)
-                        .FirstOrDefault();
-
-                    if (major == default)
-                        return null;
-
-                    version = major;
-                    return path;
-                }
-            }
-            catch { return null; }
+            this.TXT_TcpIp.Enabled = ((RadioButton)sender).Checked;
         }
 
+        private void TXT_TcpIp_TextChanged(object sender, EventArgs e)
+        {
+            if (!IPAddress.TryParse(this.TXT_TcpIp.Text, out _))
+            {
+                this.ERR_IpAddress.SetError((TextBox)sender, "Invalid IP address");
+                return;
+            }
+
+            this.ERR_IpAddress.Clear();
+        }
     }
 }
