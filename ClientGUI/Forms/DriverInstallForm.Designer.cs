@@ -1,4 +1,4 @@
-﻿namespace SysDVRClientGUI.DriverInstall
+﻿namespace SysDVRClientGUI.Forms.DriverInstall
 {
     partial class DriverInstallForm
     {

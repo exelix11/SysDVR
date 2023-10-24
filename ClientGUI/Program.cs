@@ -1,4 +1,5 @@
-﻿using SysDVRClientGUI.DriverInstall;
+﻿using SysDVRClientGUI.Forms;
+using SysDVRClientGUI.Forms.DriverInstall;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -40,7 +41,7 @@ namespace SysDVRClientGUI
             }
 			else
 			{
-				mainForm = new Form1();
+				mainForm = new Main();
 			}
 
 			Application.Run(mainForm);

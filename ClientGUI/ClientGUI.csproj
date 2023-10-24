@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net4.5.1</TargetFramework>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
 		<AssemblyName>SysDVR-ClientGUI</AssemblyName>
 		<Description>https://github.com/exelix11/SysDVR</Description>
@@ -10,22 +10,21 @@
 		<Company />
 		<PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-		<Version>5.5.0.6</Version>
+		<Version>6.0</Version>
 		<RootNamespace>SysDVRClientGUI</RootNamespace>
-		<AssemblyVersion>5.5.0.6</AssemblyVersion>
-		<FileVersion>5.5.0.6</FileVersion>
+		<AssemblyVersion>6.0</AssemblyVersion>
+		<FileVersion>6.0</FileVersion>
 		<Configurations>Debug;Release</Configurations>
 		<ApplicationIcon>ClientGUI1.ico</ApplicationIcon>
 		<UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Optimize>false</Optimize>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DebugType>none</DebugType>
 		<DebugSymbols>false</DebugSymbols>
 	</PropertyGroup>

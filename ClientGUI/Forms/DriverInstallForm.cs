@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SysDVRClientGUI.DriverInstall;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SysDVRClientGUI.DriverInstall
+namespace SysDVRClientGUI.Forms.DriverInstall
 {
     public partial class DriverInstallForm : Form
     {

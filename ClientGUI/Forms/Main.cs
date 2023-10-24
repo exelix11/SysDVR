@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using SysDVRClientGUI.DriverInstall;
+using SysDVRClientGUI.Forms.DriverInstall;
 using SysDVRClientGUI.ModesUI;
 using System;
 using System.Collections.Generic;
@@ -12,13 +13,13 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace SysDVRClientGUI
+namespace SysDVRClientGUI.Forms
 {
-    public partial class Form1 : Form
+    public partial class Main : Form
     {
         StreamKind CurKind = StreamKind.Audio;
         IStreamTargetControl CurrentControl = null;
-        
+
         readonly string ClientDllPath;
         readonly string DotnetPath;
         readonly int DotnetMajorVersion;
@@ -26,7 +27,7 @@ namespace SysDVRClientGUI
 
         const int RequiredDotnetMajor = 6;
 
-        const string BatchLauncherFileCheckTemplate = 
+        const string BatchLauncherFileCheckTemplate =
 @":: Ensure {1} file exists
 if not exist ""{0}"" (
     echo.
@@ -54,19 +55,19 @@ if not exist ""{0}"" (
             return str.ToString();
         }
 
-        public Form1()
+        public Main()
         {
             if (Program.ApplicationIcon != null)
                 this.Icon = Program.ApplicationIcon;
 
             if (File.Exists("SysDVR-Client.dll"))
                 ClientDllPath = "SysDVR-Client.dll";
-// When in debug mode also search sysdvr's visual studio build folder
-#if DEBUG            
-            else if (File.Exists(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll"))
-                ClientDllPath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net6.0\SysDVR-Client.dll");
+            // When in debug mode also search sysdvr's visual studio build folder
+#if DEBUG
+            else if (File.Exists(@"..\..\..\..\Client\bin\Debug\net7.0\SysDVR-Client.dll"))
+                ClientDllPath = Path.GetFullPath(@"..\..\..\..\Client\bin\Debug\net7.0\SysDVR-Client.dll");
 #endif
-            
+
             DotnetMajorVersion = Utils.FindDotnet(out DotnetPath, out DotnetIs32Bit);
 
             InitializeComponent();
@@ -76,11 +77,11 @@ if not exist ""{0}"" (
         {
             this.Text = "SysDVR-Client GUI " + VersionString();
 
-			if (string.IsNullOrWhiteSpace(ClientDllPath))
-			{
-				MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
-				this.Close();
-			}
+            if (string.IsNullOrWhiteSpace(ClientDllPath))
+            {
+                MessageBox.Show("SysDVR-Client.dll not found, did you extract all the files in the same folder ?");
+                this.Close();
+            }
 
             if (DotnetMajorVersion == 0)
             {
@@ -96,7 +97,7 @@ if not exist ""{0}"" (
                     this.Close();
                 }
             }
-            
+
             if (DotnetMajorVersion < RequiredDotnetMajor)
             {
                 if (MessageBox.Show("It seems you're running an outdated version of .NET. SysDVR-Client requires .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -151,13 +152,13 @@ if not exist ""{0}"" (
 
             rbPlayMpv.Enabled = CurKind != StreamKind.Both;
         }
-        
+
         // Returns whether should cancel the operation
         bool CheckUSBDriver()
         {
         check_again:
-            var state = DriverInstall.DriverHelper.GetDriverInfo();
-            if (state == DriverInstall.DriverStatus.NotInstalled)
+            var state = DriverHelper.GetDriverInfo();
+            if (state == DriverStatus.NotInstalled)
             {
                 if (MessageBox.Show("You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
@@ -166,7 +167,7 @@ if not exist ""{0}"" (
                 }
                 else MessageBox.Show("Without installing the driver USB streaming may not work");
             }
-            else if (state == DriverInstall.DriverStatus.Unknown)
+            else if (state == DriverStatus.Unknown)
             {
                 var res = MessageBox.Show(
 @"You selected USB streaming but Windows reports that it has never seen the SysDVR USB device, before continuing try the following:
@@ -197,7 +198,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
             void append(string s) { str.Append(" "); str.Append(s); }
 
-            if (cbStats.Checked || cbIgnoreSync.Checked || cbLogStatus.Checked) 
+            if (cbStats.Checked || cbIgnoreSync.Checked || cbLogStatus.Checked)
             {
                 List<string> opt = new List<string>();
                 opt.Add("log");
@@ -215,7 +216,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
             return str.ToString();
         }
 
-        LaunchCommand GetClientCommandLine() 
+        LaunchCommand GetClientCommandLine()
         {
             StringBuilder args = new StringBuilder();
 
@@ -294,7 +295,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
             {
                 // Give sysdvr time to start then launch any extra commands
                 Thread.Sleep(2000);
-                
+
                 // Launch extra commands with /C so they close automatically
                 foreach (var cmd in cmds.Skip(1))
                     Process.Start("cmd", $"/C \"{cmd}\"");
@@ -306,7 +307,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
         private void ExportBatch(object sender, EventArgs e)
         {
             var cmds = GetFinalCommand();
-            if (cmds == null) 
+            if (cmds == null)
                 return;
 
             SaveFileDialog sav = new SaveFileDialog() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
@@ -323,8 +324,8 @@ Pressing no will try to start streaming regardless but it will probably fail."
             foreach (var cmd in cmds)
             {
                 bat.AppendFormat(BatchLauncherFileCheckTemplate, cmd.Executable, Path.GetFileName(cmd.Executable));
-                
-                if (cmd.FileDependencies != null) 
+
+                if (cmd.FileDependencies != null)
                     foreach (var dep in cmd.FileDependencies)
                         bat.AppendFormat(BatchLauncherFileCheckTemplate, dep, Path.GetFileName(dep));
             }
@@ -340,7 +341,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
             {
                 bat.AppendLine($"{prefix}{cmd}");
                 // If there are multiple commands wait a bit before launching the next one
-                
+
                 if (!string.IsNullOrWhiteSpace(prefix))
                     bat.AppendLine("timeout 2 > NUL");
             }

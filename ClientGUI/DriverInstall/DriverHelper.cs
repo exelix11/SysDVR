@@ -21,11 +21,11 @@ namespace SysDVRClientGUI.DriverInstall
         Installed
     }
 
-    internal static class DriverHelper
+    internal static partial class DriverHelper
     {
-        [DllImport("shell32.dll", SetLastError = true)]
+        [LibraryImport("shell32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool IsUserAnAdmin();
+        private static partial bool IsUserAnAdmin();
 
         private static unsafe string DriverInfoToString(SP_DRVINFO_DATA data)
         {
