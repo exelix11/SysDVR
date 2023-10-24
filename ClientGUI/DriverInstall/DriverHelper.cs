@@ -1,21 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using static PInvoke.SetupApi;
 
 namespace SysDVRClientGUI.DriverInstall
 {
-    public enum DriverStatus {
+    public enum DriverStatus
+    {
         Unknown,
         NotInstalled,
         Installed
@@ -63,13 +59,13 @@ namespace SysDVRClientGUI.DriverInstall
             {
                 drvInfo += DriverInfoToString(drvdata) + "\r\n\r\n";
             }
-            
-             Trace.WriteLine($"Current SysDVR driver: {drvInfo}");
 
-             return drvInfo.ToLower().Contains("android") ? DriverStatus.Installed : DriverStatus.NotInstalled;
+            Trace.WriteLine($"Current SysDVR driver: {drvInfo}");
+
+            return drvInfo.ToLower().Contains("android") ? DriverStatus.Installed : DriverStatus.NotInstalled;
         }
 
-        public static async Task DownloadDriver() 
+        public static async Task DownloadDriver()
         {
             if (Directory.Exists("usb_driver_r13-windows"))
             {
@@ -96,7 +92,7 @@ namespace SysDVRClientGUI.DriverInstall
             }
 
             File.WriteAllBytes("usb_driver_r13-windows.zip", driver);
-            
+
             ZipFile.ExtractToDirectory("usb_driver_r13-windows.zip", "usb_driver_r13-windows");
             File.Delete("usb_driver_r13-windows.zip");
 
@@ -106,7 +102,7 @@ namespace SysDVRClientGUI.DriverInstall
             }
         }
 
-        public static void DeleteTempDir() 
+        public static void DeleteTempDir()
         {
             if (Directory.Exists("usb_driver_r13-windows"))
             {

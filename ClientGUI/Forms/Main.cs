@@ -1,6 +1,6 @@
-﻿using Microsoft.Win32;
-using SysDVRClientGUI.DriverInstall;
+﻿using SysDVRClientGUI.DriverInstall;
 using SysDVRClientGUI.Forms.DriverInstall;
+using SysDVRClientGUI.Logic;
 using SysDVRClientGUI.ModesUI;
 using System;
 using System.Collections.Generic;
@@ -11,10 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using System.Windows.Input;
 using static SysDVRClientGUI.Logic.Constants;
 using static SysDVRClientGUI.Logic.HelperFunctions;
 
@@ -46,6 +44,7 @@ if not exist ""{0}"" (
             this.InitializeComponent();
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
+            this.LoadUserSettings();
             this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
             this.StreamKindSelected(this.rbChannelsBoth, EventArgs.Empty);
 
@@ -60,6 +59,61 @@ if not exist ""{0}"" (
                 ClientDllPath = Path.GetFullPath(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}");
 #endif
             DotnetMajorVersion = FindDotnet(out DotnetPath, out DotnetIs32Bit);
+        }
+
+        private void LoadUserSettings()
+        {
+            this.cbAdvOpt.Checked = RuntimeStorage.Config.Configuration.ShowAdvancedOptions;
+
+            switch (RuntimeStorage.Config.Configuration.ChannelsToStream)
+            {
+                case StreamKind.Video:
+                    this.rbChannelsVideo.Checked = true;
+                    break;
+                case StreamKind.Audio:
+                    this.rbChannelsAudio.Checked = true;
+                    break;
+                case StreamKind.Both:
+                    this.rbChannelsBoth.Checked = true;
+                    break;
+            }
+
+            switch (RuntimeStorage.Config.Configuration.StreamSource)
+            {
+                case StreamSource.Usb:
+                    this.rbSrcUsb.Checked = true;
+                    break;
+                case StreamSource.Tcp:
+                    this.rbSrcTcp.Checked = true;
+                    break;
+            }
+
+            if (RuntimeStorage.Config.Configuration.IpAddress != default)
+            {
+                this.TXT_TcpIp.Text = RuntimeStorage.Config.Configuration.IpAddress.ToString();
+            }
+
+            switch (RuntimeStorage.Config.Configuration.StreamMode)
+            {
+                case StreamMode.Play:
+                    this.rbPlay.Checked = true;
+                    break;
+                case StreamMode.PlayMpv:
+                    this.rbPlayMpv.Checked = true;
+                    break;
+                case StreamMode.Rtsp:
+                    this.rbStreamRtsp.Checked = true;
+                    break;
+                case StreamMode.SaveToFile:
+                    this.rbSaveToFile.Checked = true;
+                    break;
+            }
+
+            cbStats.Checked = RuntimeStorage.Config.Configuration.AdvancedOptions.LogTransferInfo;
+            cbIgnoreSync.Checked = RuntimeStorage.Config.Configuration.AdvancedOptions.IngoreAudioVideoSync;
+            cbLogStatus.Checked = RuntimeStorage.Config.Configuration.AdvancedOptions.LogStatusMsgs;
+            cbUsbWarn.Checked = RuntimeStorage.Config.Configuration.AdvancedOptions.PrintLibUsbWarnings;
+            cbUsbLog.Checked = RuntimeStorage.Config.Configuration.AdvancedOptions.PrintLibUsbDebug;
         }
 
         private void Main_Load(object sender, EventArgs e)
@@ -367,6 +421,54 @@ Pressing no will try to start streaming regardless but it will probably fail."
             }
         }
 
+        private void WriteUserSettings()
+        {
+            RuntimeStorage.Config.Configuration.ShowAdvancedOptions = this.cbAdvOpt.Checked;
+
+            if (this.rbChannelsBoth.Checked)
+            {
+                RuntimeStorage.Config.Configuration.ChannelsToStream = StreamKind.Both;
+            }
+            if (this.rbChannelsAudio.Checked)
+            {
+                RuntimeStorage.Config.Configuration.ChannelsToStream = StreamKind.Audio;
+            }
+            if (this.rbChannelsVideo.Checked)
+            {
+                RuntimeStorage.Config.Configuration.ChannelsToStream = StreamKind.Video;
+            }
+
+            RuntimeStorage.Config.Configuration.StreamSource = this.rbSrcUsb.Checked ? StreamSource.Usb : StreamSource.Tcp;
+
+            _ = IPAddress.TryParse(this.TXT_TcpIp.Text, out IPAddress ipa);
+            RuntimeStorage.Config.Configuration.IpAddress = ipa;
+
+            if (this.rbPlay.Checked)
+            {
+                RuntimeStorage.Config.Configuration.StreamMode = StreamMode.Play;
+            }
+            if (this.rbPlayMpv.Checked)
+            {
+                RuntimeStorage.Config.Configuration.StreamMode = StreamMode.PlayMpv;
+            }
+            if (this.rbStreamRtsp.Checked)
+            {
+                RuntimeStorage.Config.Configuration.StreamMode = StreamMode.Rtsp;
+            }
+            if (this.rbSaveToFile.Checked)
+            {
+                RuntimeStorage.Config.Configuration.StreamMode = StreamMode.SaveToFile;
+            }
+
+            RuntimeStorage.Config.Configuration.AdvancedOptions.LogTransferInfo = cbStats.Checked;
+            RuntimeStorage.Config.Configuration.AdvancedOptions.IngoreAudioVideoSync = cbIgnoreSync.Checked;
+            RuntimeStorage.Config.Configuration.AdvancedOptions.LogStatusMsgs = cbLogStatus.Checked;
+            RuntimeStorage.Config.Configuration.AdvancedOptions.PrintLibUsbWarnings = cbUsbWarn.Checked;
+            RuntimeStorage.Config.Configuration.AdvancedOptions.PrintLibUsbDebug = cbUsbLog.Checked;
+
+            RuntimeStorage.Config.Save();
+        }
+
         private void rbSrcTcp_CheckedChanged(object sender, EventArgs e)
         {
             this.TXT_TcpIp.Enabled = ((RadioButton)sender).Checked;
@@ -381,6 +483,11 @@ Pressing no will try to start streaming regardless but it will probably fail."
             }
 
             this.ERR_IpAddress.Clear();
+        }
+
+        private void Main_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.WriteUserSettings();
         }
     }
 }

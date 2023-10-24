@@ -1,35 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
+﻿using SysDVRClientGUI.Logic;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SysDVRClientGUI.ModesUI
 {
-	public partial class PlayStreamControl : UserControl, IStreamTargetControl
-	{
-		public PlayStreamControl()
-		{
-			InitializeComponent();
-		}
+    public partial class PlayStreamControl : UserControl, IStreamTargetControl
+    {
+        public PlayStreamControl()
+        {
+            this.InitializeComponent();
+            this.CHK_BestScaling.Checked = RuntimeStorage.Config.Configuration.PlayStreamControlOptions.BestScaling;
+            this.CHK_HwAcc.Checked = RuntimeStorage.Config.Configuration.PlayStreamControlOptions.HardwareAcceleration;
+        }
 
-		public string GetClientCommandLine()
-		{
-			StringBuilder sb = new StringBuilder();
+        public string GetClientCommandLine()
+        {
+            StringBuilder sb = new();
 
-			if (cbHwAcc.Checked)
-				sb.Append("--hw-acc ");
+            if (CHK_HwAcc.Checked)
+                sb.Append("--hw-acc ");
 
-			if (cbBestScaling.Checked)
-				sb.Append("--scale best");
+            if (CHK_BestScaling.Checked)
+                sb.Append("--scale best");
 
-			return sb.ToString().Trim();
-		}
+            return sb.ToString().Trim();
+        }
 
-		public LaunchCommand GetExtraCmd() => null;
-	}
+        public LaunchCommand GetExtraCmd() => null;
+
+        private void CHK_BestScaling_CheckedChanged(object sender, System.EventArgs e)
+        {
+            RuntimeStorage.Config.Configuration.PlayStreamControlOptions.BestScaling = ((CheckBox)sender).Checked;
+        }
+
+        private void CHK_HwAcc_CheckedChanged(object sender, System.EventArgs e)
+        {
+            RuntimeStorage.Config.Configuration.PlayStreamControlOptions.HardwareAcceleration = ((CheckBox)sender).Checked;
+        }
+    }
 }

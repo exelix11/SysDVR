@@ -1,20 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace SysDVRClientGUI
 {
-	[Flags]
-	public enum StreamKind : uint 
-	{
-		Video = 1,
-		Audio = 1 << 1,
-		Both = Video | Audio
-	}
-
     public class LaunchCommand
     {
         public string Executable { get; set; }
@@ -29,8 +16,8 @@ namespace SysDVRClientGUI
     }
 
     interface IStreamTargetControl : IContainerControl
-	{
-		string GetClientCommandLine();
+    {
+        string GetClientCommandLine();
         LaunchCommand GetExtraCmd();
-	}
+    }
 }

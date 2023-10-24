@@ -469,9 +469,9 @@
             this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(751, 351);
             this.Name = "Main";
-            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "<Set in code>";
+            this.FormClosing += this.Main_FormClosing;
             this.Load += this.Main_Load;
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
