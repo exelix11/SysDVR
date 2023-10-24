@@ -1,6 +1,9 @@
 ﻿using SysDVRClientGUI.DriverInstall;
+using static SysDVRClientGUI.Resources.Resources;
 using System;
 using System.Windows.Forms;
+using System.Reflection;
+using System.Threading;
 
 namespace SysDVRClientGUI.Forms.DriverInstall
 {
@@ -12,6 +15,9 @@ namespace SysDVRClientGUI.Forms.DriverInstall
         {
             this.InitializeComponent();
             this.fromCommandLine = fromCommandLine;
+            this.BTN_Install.Text = INSTALL;
+            this.Text = $"{DRIVER} {INSTALL}";
+            this.LBL_Infotext.Text = $"{DRIVERINSTALL_FORM_INFOTEXT}\r\n\r\n";
         }
 
         private void DriverInstallResultForm_Load(object sender, EventArgs e)
@@ -19,22 +25,22 @@ namespace SysDVRClientGUI.Forms.DriverInstall
             var info = DriverHelper.GetDriverInfo();
 
             if (info == DriverStatus.Installed)
-                label1.Text += "It seems the driver is already installed, unless you face issues, you DON'T need to install it again.";
+                LBL_Infotext.Text += DRIVERINSTALL_FORM_INSTALLED_ALREADY_INFO;
             else if (info == DriverStatus.NotInstalled)
-                label1.Text += "It seems the driver is not installed, you need to install it to use SysDVR.";
+                LBL_Infotext.Text += DRIVERINSTALL_FORM_NOT_INSTALLED;
             else
-                label1.Text += "It seems Windows has never detected the SysDVR device ID, enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
+                LBL_Infotext.Text += DRIVERINSTALL_FORM_NOT_DETECTED;
 
             if (fromCommandLine && info == DriverStatus.Installed)
             {
-                MessageBox.Show("The correct driver seems to be already installed, you don't need to install it again.");
+                MessageBox.Show(DRIVERINSTALL_FORM_INSTALLED_ALREADY);
             }
         }
 
         void ShowError(string message)
         {
-            BTN_Install.Text = "Error";
-            MessageBox.Show(message + "\r\n\r\nRestart this application and try again, if it keeps on happening open an issue on GitHub.\r\nYou can also try following the manual driver installation guide on GitHub", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            BTN_Install.Text = ERROR;
+            MessageBox.Show(message + DRIVERINSTALL_FORM_ERRORMESSAGE, ERROR, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private async void BTN_Install_Click(object sender, EventArgs e)
@@ -44,27 +50,27 @@ namespace SysDVRClientGUI.Forms.DriverInstall
             progressBar1.Visible = true;
             bool error = false;
 
-            BTN_Install.Text = "Downloading...";
+            BTN_Install.Text = $"{DOWNLOADING}...";
             try
             {
                 await DriverHelper.DownloadDriver();
             }
             catch (Exception ex)
             {
-                this.ShowError("Driver download and extraction failed: " + ex.Message);
+                this.ShowError($"{DRIVERINSTALL_EXTRACT_FAILED}: " + ex.Message);
                 error = true;
             }
 
             if (!error)
             {
-                BTN_Install.Text = "Installing...";
+                BTN_Install.Text = $"{INSTALLING}...";
                 try
                 {
                     DriverHelper.InstallDriver();
                 }
                 catch (Exception ex)
                 {
-                    this.ShowError("Driver installation failed: " + ex.Message);
+                    this.ShowError($"{DRIVERINSTALL_FAILED}: " + ex.Message);
                     error = true;
                 }
             }
@@ -83,10 +89,10 @@ namespace SysDVRClientGUI.Forms.DriverInstall
 
             if (!error)
             {
-                BTN_Install.Text = "Done";
+                BTN_Install.Text = DONE;
             }
 
-            MessageBox.Show("SysDVR-Client GUI will now close");
+            MessageBox.Show($"{typeof(DriverInstallForm).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {WILL_CLOSE_NOW}");
             Application.Exit();
         }
     }

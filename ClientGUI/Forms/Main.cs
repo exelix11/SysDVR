@@ -15,6 +15,7 @@ using System.Threading;
 using System.Windows.Forms;
 using static SysDVRClientGUI.Logic.Constants;
 using static SysDVRClientGUI.Logic.HelperFunctions;
+using static SysDVRClientGUI.Resources.Resources;
 
 namespace SysDVRClientGUI.Forms
 {
@@ -41,12 +42,15 @@ if not exist ""{0}"" (
 
         public Main()
         {
+            Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("de-DE");
             this.InitializeComponent();
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
             this.LoadUserSettings();
             this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
             this.StreamKindSelected(this.rbChannelsBoth, EventArgs.Empty);
+            this.BTN_Exit.Text = EXIT;
+            this.BTN_Launch.Text = LAUNCH;
 
             if (Program.ApplicationIcon != null)
                 this.Icon = Program.ApplicationIcon;

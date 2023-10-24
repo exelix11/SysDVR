@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.button1 = new System.Windows.Forms.Button();
+            this.BTN_Launch = new System.Windows.Forms.Button();
             this.BTN_CreateBatch = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.rbChannelsBoth = new System.Windows.Forms.RadioButton();
@@ -68,18 +68,18 @@
             ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).BeginInit();
             this.SuspendLayout();
             // 
-            // button1
+            // BTN_Launch
             // 
-            this.button1.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            this.button1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.button1.Location = new System.Drawing.Point(544, 693);
-            this.button1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(88, 27);
-            this.button1.TabIndex = 9;
-            this.button1.Text = "Launch";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += this.Launch;
+            this.BTN_Launch.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+            this.BTN_Launch.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.BTN_Launch.Location = new System.Drawing.Point(544, 693);
+            this.BTN_Launch.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.BTN_Launch.Name = "BTN_Launch";
+            this.BTN_Launch.Size = new System.Drawing.Size(88, 27);
+            this.BTN_Launch.TabIndex = 9;
+            this.BTN_Launch.Text = "Launch";
+            this.BTN_Launch.UseVisualStyleBackColor = true;
+            this.BTN_Launch.Click += this.Launch;
             // 
             // BTN_CreateBatch
             // 
@@ -462,7 +462,7 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.BTN_CreateBatch);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.BTN_Launch);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MaximizeBox = false;
             this.MaximumSize = new System.Drawing.Size(751, 762);
@@ -489,7 +489,7 @@
 
         #endregion
 
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button BTN_Launch;
         private System.Windows.Forms.Button BTN_CreateBatch;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.RadioButton rbChannelsBoth;

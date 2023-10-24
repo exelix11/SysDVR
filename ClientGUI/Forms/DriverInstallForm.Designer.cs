@@ -29,21 +29,21 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DriverInstallForm));
-            this.label1 = new System.Windows.Forms.Label();
+            this.LBL_Infotext = new System.Windows.Forms.Label();
             this.BTN_Install = new System.Windows.Forms.Button();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
-            // label1
+            // LBL_Infotext
             // 
-            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label1.Location = new System.Drawing.Point(14, 10);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(750, 181);
-            this.label1.TabIndex = 0;
-            this.label1.Text = resources.GetString("label1.Text");
+            this.LBL_Infotext.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_Infotext.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.LBL_Infotext.Location = new System.Drawing.Point(14, 10);
+            this.LBL_Infotext.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Infotext.Name = "LBL_Infotext";
+            this.LBL_Infotext.Size = new System.Drawing.Size(750, 181);
+            this.LBL_Infotext.TabIndex = 0;
+            this.LBL_Infotext.Text = resources.GetString("LBL_Infotext.Text");
             // 
             // BTN_Install
             // 
@@ -74,7 +74,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(778, 278);
             this.Controls.Add(this.BTN_Install);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.LBL_Infotext);
             this.Controls.Add(this.progressBar1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
@@ -89,7 +89,7 @@
 
         #endregion
 
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label LBL_Infotext;
         private System.Windows.Forms.Button BTN_Install;
         private System.Windows.Forms.ProgressBar progressBar1;
     }
