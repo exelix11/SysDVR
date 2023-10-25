@@ -164,15 +164,15 @@ namespace SysDVR.Client.Targets.FileOutput
             
             AVFrame* frame = this.frame;
             av_frame_free(&frame);
-            frame = null;
+            this.frame = null;
 
             AVPacket* packet = this.packet;
             av_packet_free(&packet);
-            packet = null;
+            this.packet = null;
 
             AVCodecContext* c = codecCtx;
             avcodec_free_context(&c);
-            c = null;
+            this.codecCtx = null;
         }
 
         ~Mp4AudioTarget()

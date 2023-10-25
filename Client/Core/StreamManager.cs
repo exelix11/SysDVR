@@ -29,12 +29,12 @@ namespace SysDVR.Client.Core
 
         public void Reference() 
         {
-            refcount++;
+            Interlocked.Increment(ref refcount);
         }
 
         public void Free()
         {
-            --refcount;
+            Interlocked.Decrement(ref refcount);
 
 #if DEBUG
             if (refcount < 0)

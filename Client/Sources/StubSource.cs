@@ -63,7 +63,7 @@ namespace SysDVR.Client.Sources
         {
             Cancellation = token;	
 			OnMessage?.Invoke("Connecting stub...");
-			await Task.Delay(2000, token).ConfigureAwait(false);
+			await Task.Delay(20, token).ConfigureAwait(false);
             OnMessage?.Invoke("Stub connected");
 			connected = true;
         }
