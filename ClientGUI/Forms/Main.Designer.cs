@@ -31,24 +31,24 @@
             this.components = new System.ComponentModel.Container();
             this.BTN_Launch = new System.Windows.Forms.Button();
             this.BTN_CreateBatch = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.GRP_StreamingChannels = new System.Windows.Forms.GroupBox();
             this.rbChannelsBoth = new System.Windows.Forms.RadioButton();
             this.rbChannelsAudio = new System.Windows.Forms.RadioButton();
             this.rbChannelsVideo = new System.Windows.Forms.RadioButton();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.label2 = new System.Windows.Forms.Label();
+            this.GRP_StreamingSource = new System.Windows.Forms.GroupBox();
+            this.LBL_StreamingSourceInfo = new System.Windows.Forms.Label();
             this.TXT_TcpIp = new System.Windows.Forms.TextBox();
             this.rbSrcUsb = new System.Windows.Forms.RadioButton();
             this.rbSrcTcp = new System.Windows.Forms.RadioButton();
-            this.label1 = new System.Windows.Forms.Label();
+            this.LBL_Infotext = new System.Windows.Forms.Label();
             this.LLBL_ProjectWiki = new System.Windows.Forms.LinkLabel();
             this.pAdvOptions = new System.Windows.Forms.Panel();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.GRP_StreamMode = new System.Windows.Forms.GroupBox();
             this.rbPlay = new System.Windows.Forms.RadioButton();
             this.rbSaveToFile = new System.Windows.Forms.RadioButton();
             this.rbStreamRtsp = new System.Windows.Forms.RadioButton();
             this.rbPlayMpv = new System.Windows.Forms.RadioButton();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.GRP_AdvOptions = new System.Windows.Forms.GroupBox();
             this.cbLogStatus = new System.Windows.Forms.CheckBox();
             this.cbIgnoreSync = new System.Windows.Forms.CheckBox();
             this.cbStats = new System.Windows.Forms.CheckBox();
@@ -60,11 +60,11 @@
             this.BTN_Exit = new System.Windows.Forms.Button();
             this.ToolTip_BatchInfo = new System.Windows.Forms.ToolTip(this.components);
             this.ERR_IpAddress = new System.Windows.Forms.ErrorProvider(this.components);
-            this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
+            this.GRP_StreamingChannels.SuspendLayout();
+            this.GRP_StreamingSource.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
-            this.groupBox4.SuspendLayout();
-            this.groupBox3.SuspendLayout();
+            this.GRP_StreamMode.SuspendLayout();
+            this.GRP_AdvOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).BeginInit();
             this.SuspendLayout();
             // 
@@ -94,20 +94,20 @@
             this.BTN_CreateBatch.UseVisualStyleBackColor = true;
             this.BTN_CreateBatch.Click += this.ExportBatch;
             // 
-            // groupBox1
+            // GRP_StreamingChannels
             // 
-            this.groupBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.groupBox1.Controls.Add(this.rbChannelsBoth);
-            this.groupBox1.Controls.Add(this.rbChannelsAudio);
-            this.groupBox1.Controls.Add(this.rbChannelsVideo);
-            this.groupBox1.Location = new System.Drawing.Point(7, 96);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(723, 52);
-            this.groupBox1.TabIndex = 1;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Channels to stream";
+            this.GRP_StreamingChannels.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.GRP_StreamingChannels.Controls.Add(this.rbChannelsBoth);
+            this.GRP_StreamingChannels.Controls.Add(this.rbChannelsAudio);
+            this.GRP_StreamingChannels.Controls.Add(this.rbChannelsVideo);
+            this.GRP_StreamingChannels.Location = new System.Drawing.Point(7, 96);
+            this.GRP_StreamingChannels.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_StreamingChannels.Name = "GRP_StreamingChannels";
+            this.GRP_StreamingChannels.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_StreamingChannels.Size = new System.Drawing.Size(723, 52);
+            this.GRP_StreamingChannels.TabIndex = 1;
+            this.GRP_StreamingChannels.TabStop = false;
+            this.GRP_StreamingChannels.Text = "Channels to stream";
             // 
             // rbChannelsBoth
             // 
@@ -147,31 +147,31 @@
             this.rbChannelsVideo.UseVisualStyleBackColor = true;
             this.rbChannelsVideo.CheckedChanged += this.StreamKindSelected;
             // 
-            // groupBox2
+            // GRP_StreamingSource
             // 
-            this.groupBox2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.groupBox2.Controls.Add(this.label2);
-            this.groupBox2.Controls.Add(this.TXT_TcpIp);
-            this.groupBox2.Controls.Add(this.rbSrcUsb);
-            this.groupBox2.Controls.Add(this.rbSrcTcp);
-            this.groupBox2.Location = new System.Drawing.Point(7, 155);
-            this.groupBox2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox2.Size = new System.Drawing.Size(723, 118);
-            this.groupBox2.TabIndex = 2;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Stream source";
+            this.GRP_StreamingSource.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.GRP_StreamingSource.Controls.Add(this.LBL_StreamingSourceInfo);
+            this.GRP_StreamingSource.Controls.Add(this.TXT_TcpIp);
+            this.GRP_StreamingSource.Controls.Add(this.rbSrcUsb);
+            this.GRP_StreamingSource.Controls.Add(this.rbSrcTcp);
+            this.GRP_StreamingSource.Location = new System.Drawing.Point(7, 155);
+            this.GRP_StreamingSource.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_StreamingSource.Name = "GRP_StreamingSource";
+            this.GRP_StreamingSource.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_StreamingSource.Size = new System.Drawing.Size(723, 118);
+            this.GRP_StreamingSource.TabIndex = 2;
+            this.GRP_StreamingSource.TabStop = false;
+            this.GRP_StreamingSource.Text = "Stream source";
             // 
-            // label2
+            // LBL_StreamingSourceInfo
             // 
-            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label2.Location = new System.Drawing.Point(13, 21);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(705, 38);
-            this.label2.TabIndex = 0;
-            this.label2.Text = "Remember to switch to the correct mode with SysDVR-Settings on your console before beginning to stream. If you need help check the guide.";
+            this.LBL_StreamingSourceInfo.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_StreamingSourceInfo.Location = new System.Drawing.Point(13, 21);
+            this.LBL_StreamingSourceInfo.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_StreamingSourceInfo.Name = "LBL_StreamingSourceInfo";
+            this.LBL_StreamingSourceInfo.Size = new System.Drawing.Size(705, 38);
+            this.LBL_StreamingSourceInfo.TabIndex = 0;
+            this.LBL_StreamingSourceInfo.Text = "Remember to switch to the correct mode with SysDVR-Settings on your console before beginning to stream. If you need help check the guide.";
             // 
             // TXT_TcpIp
             // 
@@ -212,17 +212,17 @@
             this.rbSrcTcp.UseVisualStyleBackColor = true;
             this.rbSrcTcp.CheckedChanged += this.rbSrcTcp_CheckedChanged;
             // 
-            // label1
+            // LBL_Infotext
             // 
-            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label1.Location = new System.Drawing.Point(7, 7);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(723, 81);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nIf you're not sure what to do here check out the guide on GitHub";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            this.LBL_Infotext.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_Infotext.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.LBL_Infotext.Location = new System.Drawing.Point(7, 7);
+            this.LBL_Infotext.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Infotext.Name = "LBL_Infotext";
+            this.LBL_Infotext.Size = new System.Drawing.Size(723, 81);
+            this.LBL_Infotext.TabIndex = 0;
+            this.LBL_Infotext.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nIf you're not sure what to do here check out the guide on GitHub";
+            this.LBL_Infotext.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // LLBL_ProjectWiki
             // 
@@ -241,8 +241,8 @@
             // pAdvOptions
             // 
             this.pAdvOptions.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.pAdvOptions.Controls.Add(this.groupBox4);
-            this.pAdvOptions.Controls.Add(this.groupBox3);
+            this.pAdvOptions.Controls.Add(this.GRP_StreamMode);
+            this.pAdvOptions.Controls.Add(this.GRP_AdvOptions);
             this.pAdvOptions.Controls.Add(this.StreamConfigPanel);
             this.pAdvOptions.Location = new System.Drawing.Point(7, 279);
             this.pAdvOptions.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
@@ -250,20 +250,20 @@
             this.pAdvOptions.Size = new System.Drawing.Size(723, 405);
             this.pAdvOptions.TabIndex = 3;
             // 
-            // groupBox4
+            // GRP_StreamMode
             // 
-            this.groupBox4.Controls.Add(this.rbPlay);
-            this.groupBox4.Controls.Add(this.rbSaveToFile);
-            this.groupBox4.Controls.Add(this.rbStreamRtsp);
-            this.groupBox4.Controls.Add(this.rbPlayMpv);
-            this.groupBox4.Location = new System.Drawing.Point(4, 3);
-            this.groupBox4.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox4.Size = new System.Drawing.Size(716, 129);
-            this.groupBox4.TabIndex = 0;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Stream mode";
+            this.GRP_StreamMode.Controls.Add(this.rbPlay);
+            this.GRP_StreamMode.Controls.Add(this.rbSaveToFile);
+            this.GRP_StreamMode.Controls.Add(this.rbStreamRtsp);
+            this.GRP_StreamMode.Controls.Add(this.rbPlayMpv);
+            this.GRP_StreamMode.Location = new System.Drawing.Point(4, 3);
+            this.GRP_StreamMode.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_StreamMode.Name = "GRP_StreamMode";
+            this.GRP_StreamMode.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_StreamMode.Size = new System.Drawing.Size(716, 129);
+            this.GRP_StreamMode.TabIndex = 0;
+            this.GRP_StreamMode.TabStop = false;
+            this.GRP_StreamMode.Text = "Stream mode";
             // 
             // rbPlay
             // 
@@ -319,22 +319,22 @@
             this.rbPlayMpv.UseVisualStyleBackColor = true;
             this.rbPlayMpv.CheckedChanged += this.StreamTargetSelected;
             // 
-            // groupBox3
+            // GRP_AdvOptions
             // 
-            this.groupBox3.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.groupBox3.Controls.Add(this.cbLogStatus);
-            this.groupBox3.Controls.Add(this.cbIgnoreSync);
-            this.groupBox3.Controls.Add(this.cbStats);
-            this.groupBox3.Controls.Add(this.cbUsbLog);
-            this.groupBox3.Controls.Add(this.cbUsbWarn);
-            this.groupBox3.Location = new System.Drawing.Point(8, 323);
-            this.groupBox3.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox3.Size = new System.Drawing.Size(709, 78);
-            this.groupBox3.TabIndex = 2;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Advanced/Debug options";
+            this.GRP_AdvOptions.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.GRP_AdvOptions.Controls.Add(this.cbLogStatus);
+            this.GRP_AdvOptions.Controls.Add(this.cbIgnoreSync);
+            this.GRP_AdvOptions.Controls.Add(this.cbStats);
+            this.GRP_AdvOptions.Controls.Add(this.cbUsbLog);
+            this.GRP_AdvOptions.Controls.Add(this.cbUsbWarn);
+            this.GRP_AdvOptions.Location = new System.Drawing.Point(8, 323);
+            this.GRP_AdvOptions.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_AdvOptions.Name = "GRP_AdvOptions";
+            this.GRP_AdvOptions.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_AdvOptions.Size = new System.Drawing.Size(709, 78);
+            this.GRP_AdvOptions.TabIndex = 2;
+            this.GRP_AdvOptions.TabStop = false;
+            this.GRP_AdvOptions.Text = "Advanced/Debug options";
             // 
             // cbLogStatus
             // 
@@ -456,9 +456,9 @@
             this.Controls.Add(this.cbAdvOpt);
             this.Controls.Add(this.pAdvOptions);
             this.Controls.Add(this.LLBL_ProjectWiki);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.LBL_Infotext);
+            this.Controls.Add(this.GRP_StreamingSource);
+            this.Controls.Add(this.GRP_StreamingChannels);
             this.Controls.Add(this.BTN_CreateBatch);
             this.Controls.Add(this.BTN_Launch);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
@@ -471,15 +471,15 @@
             this.Text = "<Set in code>";
             this.FormClosing += this.Main_FormClosing;
             this.Load += this.Main_Load;
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
+            this.GRP_StreamingChannels.ResumeLayout(false);
+            this.GRP_StreamingChannels.PerformLayout();
+            this.GRP_StreamingSource.ResumeLayout(false);
+            this.GRP_StreamingSource.PerformLayout();
             this.pAdvOptions.ResumeLayout(false);
-            this.groupBox4.ResumeLayout(false);
-            this.groupBox4.PerformLayout();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
+            this.GRP_StreamMode.ResumeLayout(false);
+            this.GRP_StreamMode.PerformLayout();
+            this.GRP_AdvOptions.ResumeLayout(false);
+            this.GRP_AdvOptions.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -489,29 +489,29 @@
 
         private System.Windows.Forms.Button BTN_Launch;
         private System.Windows.Forms.Button BTN_CreateBatch;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox GRP_StreamingChannels;
         private System.Windows.Forms.RadioButton rbChannelsBoth;
         private System.Windows.Forms.RadioButton rbChannelsAudio;
         private System.Windows.Forms.RadioButton rbChannelsVideo;
-        private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.GroupBox GRP_StreamingSource;
+        private System.Windows.Forms.Label LBL_Infotext;
         private System.Windows.Forms.LinkLabel LLBL_ProjectWiki;
         private System.Windows.Forms.RadioButton rbSrcTcp;
         private System.Windows.Forms.RadioButton rbSrcUsb;
         private System.Windows.Forms.TextBox TXT_TcpIp;
         private System.Windows.Forms.Panel pAdvOptions;
-        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.GroupBox GRP_StreamMode;
         private System.Windows.Forms.RadioButton rbPlay;
         private System.Windows.Forms.RadioButton rbSaveToFile;
         private System.Windows.Forms.RadioButton rbStreamRtsp;
         private System.Windows.Forms.RadioButton rbPlayMpv;
-        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.GroupBox GRP_AdvOptions;
         private System.Windows.Forms.CheckBox cbStats;
         private System.Windows.Forms.CheckBox cbUsbLog;
         private System.Windows.Forms.CheckBox cbUsbWarn;
         private System.Windows.Forms.Panel StreamConfigPanel;
         private System.Windows.Forms.CheckBox cbAdvOpt;
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label LBL_StreamingSourceInfo;
         private System.Windows.Forms.Button BTN_DriverInstall;
         private System.Windows.Forms.CheckBox cbIgnoreSync;
         private System.Windows.Forms.CheckBox cbLogStatus;

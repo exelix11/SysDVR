@@ -61,6 +61,24 @@ namespace SysDVRClientGUI.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Audio.
+        /// </summary>
+        internal static string AUDIO {
+            get {
+                return ResourceManager.GetString("AUDIO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Both.
+        /// </summary>
+        internal static string BOTH {
+            get {
+                return ResourceManager.GetString("BOTH", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Done.
         /// </summary>
         internal static string DONE {
@@ -205,6 +223,229 @@ namespace SysDVRClientGUI.Resources {
         internal static string LAUNCH {
             get {
                 return ResourceManager.GetString("LAUNCH", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Create quick launch shortcut.
+        /// </summary>
+        internal static string MAIN_CREATE_QUICKLAUNCH {
+            get {
+                return ResourceManager.GetString("MAIN_CREATE_QUICKLAUNCH", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to not found, did you extract all the files in the same folder ?.
+        /// </summary>
+        internal static string MAIN_DLL_NOT_FOUND {
+            get {
+                return ResourceManager.GetString("MAIN_DLL_NOT_FOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?.
+        /// </summary>
+        internal static string MAIN_DRIVER_NOT_FOUND {
+            get {
+                return ResourceManager.GetString("MAIN_DRIVER_NOT_FOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Without installing the driver USB streaming may not work.
+        /// </summary>
+        internal static string MAIN_DRIVER_NOT_FOUND_WARNING {
+            get {
+                return ResourceManager.GetString("MAIN_DRIVER_NOT_FOUND_WARNING", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You selected USB streaming but Windows reports that it has never seen the SysDVR USB device, before continuing try the following:
+        ///1) Open SysDVR settings on your console and select USB mode then click apply.
+        ///   - If the settings app says SysDVR is not running, reboot your console.
+        ///2) Launch a compatible game.
+        ///3) Connect the console to the PC.
+        ///
+        ///If you did everything correctly windows should play the device plugged in sound and possibly show a &apos;installing device&apos; screen, if that happens click YES on thi [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string MAIN_DRIVER_WARNING {
+            get {
+                return ResourceManager.GetString("MAIN_DRIVER_WARNING", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Exit Application.
+        /// </summary>
+        internal static string MAIN_EXIT_APPLICATION {
+            get {
+                return ResourceManager.GetString("MAIN_EXIT_APPLICATION", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Advanced/Debug options.
+        /// </summary>
+        internal static string MAIN_GRP_ADVANCEDOPTIONS {
+            get {
+                return ResourceManager.GetString("MAIN_GRP_ADVANCEDOPTIONS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Channels to stream.
+        /// </summary>
+        internal static string MAIN_GRP_STREAMCHANNELS {
+            get {
+                return ResourceManager.GetString("MAIN_GRP_STREAMCHANNELS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stream mode.
+        /// </summary>
+        internal static string MAIN_GRP_STREAMINGMODE {
+            get {
+                return ResourceManager.GetString("MAIN_GRP_STREAMINGMODE", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stream source.
+        /// </summary>
+        internal static string MAIN_GRP_STREAMINGSOURCE {
+            get {
+                return ResourceManager.GetString("MAIN_GRP_STREAMINGSOURCE", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Remember to switch to the correct mode with SysDVR-Settings on your console before beginning to stream. If you need help check the guide..
+        /// </summary>
+        internal static string MAIN_GRP_STREAMINGSOURCE_INFO {
+            get {
+                return ResourceManager.GetString("MAIN_GRP_STREAMINGSOURCE_INFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This utility will configure the SysDVR-Client command line automatically.
+        ///If you&apos;re not sure what to do here check out the guide on GitHub.
+        /// </summary>
+        internal static string MAIN_INFOTEXT {
+            get {
+                return ResourceManager.GetString("MAIN_INFOTEXT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid IP address.
+        /// </summary>
+        internal static string MAIN_INVALID_IP_ADDRESS {
+            get {
+                return ResourceManager.GetString("MAIN_INVALID_IP_ADDRESS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IP Address.
+        /// </summary>
+        internal static string MAIN_IP_ADDRESS {
+            get {
+                return ResourceManager.GetString("MAIN_IP_ADDRESS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Open the guide.
+        /// </summary>
+        internal static string MAIN_LINKLABEL_TEXT {
+            get {
+                return ResourceManager.GetString("MAIN_LINKLABEL_TEXT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .NET doesn&apos;t seem to be installed on this pc but it&apos;s needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version.
+        /// </summary>
+        internal static string MAIN_NET_NOT_FOUND {
+            get {
+                return ResourceManager.GetString("MAIN_NET_NOT_FOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to It seems you&apos;re running an outdated version of .NET. SysDVR-Client requires .NET 6 runtime or a more recent version. Do you want to open the download page ?.
+        /// </summary>
+        internal static string MAIN_NET_OLD {
+            get {
+                return ResourceManager.GetString("MAIN_NET_OLD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to If you don&apos;t upgrade the installed version SysDVR may not work..
+        /// </summary>
+        internal static string MAIN_NET_WARNING {
+            get {
+                return ResourceManager.GetString("MAIN_NET_WARNING", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to It seems you installed 32-bit .NET instead of the 64-bit one, SysDVR-CLient will not work.\r\n\r\nYou can download the 64-bit version from: https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe\r\n\r\nDo you want to open it now ?.
+        /// </summary>
+        internal static string MAIN_NET_WRONG_BIT {
+            get {
+                return ResourceManager.GetString("MAIN_NET_WRONG_BIT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reinstall USB driver.
+        /// </summary>
+        internal static string MAIN_REINSTALL_USB {
+            get {
+                return ResourceManager.GetString("MAIN_REINSTALL_USB", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show advanced options.
+        /// </summary>
+        internal static string MAIN_SHOW_ADVANCED_OPTIONS {
+            get {
+                return ResourceManager.GetString("MAIN_SHOW_ADVANCED_OPTIONS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to TCP Bridge (network mode).
+        /// </summary>
+        internal static string MAIN_STREAMING_TCP_INFO {
+            get {
+                return ResourceManager.GetString("MAIN_STREAMING_TCP_INFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to USB (Will automatically install driver, if needed).
+        /// </summary>
+        internal static string MAIN_STREAMING_USB_INFO {
+            get {
+                return ResourceManager.GetString("MAIN_STREAMING_USB_INFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Video.
+        /// </summary>
+        internal static string VIDEO {
+            get {
+                return ResourceManager.GetString("VIDEO", resourceCulture);
             }
         }
         

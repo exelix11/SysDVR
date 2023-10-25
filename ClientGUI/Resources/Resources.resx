@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AUDIO" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="BOTH" xml:space="preserve">
+    <value>Both</value>
+  </data>
   <data name="DONE" xml:space="preserve">
     <value>Done</value>
   </data>
@@ -168,6 +174,89 @@ This operation requires an internet connection</value>
   </data>
   <data name="LAUNCH" xml:space="preserve">
     <value>Launch</value>
+  </data>
+  <data name="MAIN_CREATE_QUICKLAUNCH" xml:space="preserve">
+    <value>Create quick launch shortcut</value>
+  </data>
+  <data name="MAIN_DLL_NOT_FOUND" xml:space="preserve">
+    <value>not found, did you extract all the files in the same folder ?</value>
+  </data>
+  <data name="MAIN_DRIVER_NOT_FOUND" xml:space="preserve">
+    <value>You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?</value>
+  </data>
+  <data name="MAIN_DRIVER_NOT_FOUND_WARNING" xml:space="preserve">
+    <value>Without installing the driver USB streaming may not work</value>
+  </data>
+  <data name="MAIN_DRIVER_WARNING" xml:space="preserve">
+    <value>You selected USB streaming but Windows reports that it has never seen the SysDVR USB device, before continuing try the following:
+1) Open SysDVR settings on your console and select USB mode then click apply.
+   - If the settings app says SysDVR is not running, reboot your console.
+2) Launch a compatible game.
+3) Connect the console to the PC.
+
+If you did everything correctly windows should play the device plugged in sound and possibly show a 'installing device' screen, if that happens click YES on this message box.
+if you don't see anything it is possible that your USB C cable does not support data connections and you should try a different one. USB C to C cables are known to cause issues.
+
+Do you want to try searching for the SysDVR USB device again ?
+Pressing no will try to start streaming regardless but it will probably fail.</value>
+  </data>
+  <data name="MAIN_EXIT_APPLICATION" xml:space="preserve">
+    <value>Exit Application</value>
+  </data>
+  <data name="MAIN_GRP_ADVANCEDOPTIONS" xml:space="preserve">
+    <value>Advanced/Debug options</value>
+  </data>
+  <data name="MAIN_GRP_STREAMCHANNELS" xml:space="preserve">
+    <value>Channels to stream</value>
+  </data>
+  <data name="MAIN_GRP_STREAMINGMODE" xml:space="preserve">
+    <value>Stream mode</value>
+  </data>
+  <data name="MAIN_GRP_STREAMINGSOURCE" xml:space="preserve">
+    <value>Stream source</value>
+  </data>
+  <data name="MAIN_GRP_STREAMINGSOURCE_INFO" xml:space="preserve">
+    <value>Remember to switch to the correct mode with SysDVR-Settings on your console before beginning to stream. If you need help check the guide.</value>
+  </data>
+  <data name="MAIN_INFOTEXT" xml:space="preserve">
+    <value>This utility will configure the SysDVR-Client command line automatically.
+If you're not sure what to do here check out the guide on GitHub</value>
+  </data>
+  <data name="MAIN_INVALID_IP_ADDRESS" xml:space="preserve">
+    <value>Invalid IP address</value>
+  </data>
+  <data name="MAIN_IP_ADDRESS" xml:space="preserve">
+    <value>IP Address</value>
+  </data>
+  <data name="MAIN_LINKLABEL_TEXT" xml:space="preserve">
+    <value>Open the guide</value>
+  </data>
+  <data name="MAIN_NET_NOT_FOUND" xml:space="preserve">
+    <value>.NET doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version</value>
+  </data>
+  <data name="MAIN_NET_OLD" xml:space="preserve">
+    <value>It seems you're running an outdated version of .NET. SysDVR-Client requires .NET 6 runtime or a more recent version. Do you want to open the download page ?</value>
+  </data>
+  <data name="MAIN_NET_WARNING" xml:space="preserve">
+    <value>If you don't upgrade the installed version SysDVR may not work.</value>
+  </data>
+  <data name="MAIN_NET_WRONG_BIT" xml:space="preserve">
+    <value>It seems you installed 32-bit .NET instead of the 64-bit one, SysDVR-CLient will not work.\r\n\r\nYou can download the 64-bit version from: https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe\r\n\r\nDo you want to open it now ?</value>
+  </data>
+  <data name="MAIN_REINSTALL_USB" xml:space="preserve">
+    <value>Reinstall USB driver</value>
+  </data>
+  <data name="MAIN_SHOW_ADVANCED_OPTIONS" xml:space="preserve">
+    <value>Show advanced options</value>
+  </data>
+  <data name="MAIN_STREAMING_TCP_INFO" xml:space="preserve">
+    <value>TCP Bridge (network mode)</value>
+  </data>
+  <data name="MAIN_STREAMING_USB_INFO" xml:space="preserve">
+    <value>USB (Will automatically install driver, if needed)</value>
+  </data>
+  <data name="VIDEO" xml:space="preserve">
+    <value>Video</value>
   </data>
   <data name="WILL_CLOSE_NOW" xml:space="preserve">
     <value>will now close</value>

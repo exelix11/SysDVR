@@ -42,15 +42,16 @@ if not exist ""{0}"" (
 
         public Main()
         {
+#if DEBUG
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("de-DE");
+#endif
             this.InitializeComponent();
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
             this.LoadUserSettings();
+            this.ApplyLocalization();
             this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
             this.StreamKindSelected(this.rbChannelsBoth, EventArgs.Empty);
-            this.BTN_Exit.Text = EXIT;
-            this.BTN_Launch.Text = LAUNCH;
 
             if (Program.ApplicationIcon != null)
                 this.Icon = Program.ApplicationIcon;
@@ -63,6 +64,28 @@ if not exist ""{0}"" (
                 ClientDllPath = Path.GetFullPath(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}");
 #endif
             DotnetMajorVersion = FindDotnet(out DotnetPath, out DotnetIs32Bit);
+        }
+
+        private void ApplyLocalization()
+        {
+            this.BTN_Exit.Text = EXIT;
+            this.BTN_Launch.Text = LAUNCH;
+            this.LBL_Infotext.Text = MAIN_INFOTEXT;
+            this.LLBL_ProjectWiki.Text = MAIN_LINKLABEL_TEXT;
+            this.rbChannelsBoth.Text = BOTH;
+            this.rbChannelsAudio.Text = AUDIO;
+            this.rbChannelsVideo.Text = VIDEO;
+            this.cbAdvOpt.Text = MAIN_SHOW_ADVANCED_OPTIONS;
+            this.BTN_CreateBatch.Text = MAIN_CREATE_QUICKLAUNCH;
+            this.BTN_DriverInstall.Text = MAIN_REINSTALL_USB;
+            this.TXT_TcpIp.PlaceholderText = MAIN_IP_ADDRESS;
+            this.GRP_StreamingChannels.Text = MAIN_GRP_STREAMCHANNELS;
+            this.GRP_StreamingSource.Text = MAIN_GRP_STREAMINGSOURCE;
+            this.GRP_StreamMode.Text = MAIN_GRP_STREAMINGMODE;
+            this.GRP_AdvOptions.Text = MAIN_GRP_ADVANCEDOPTIONS;
+            this.LBL_StreamingSourceInfo.Text = MAIN_GRP_STREAMINGSOURCE_INFO;
+            this.rbSrcUsb.Text = MAIN_STREAMING_USB_INFO;
+            this.rbSrcTcp.Text = MAIN_STREAMING_TCP_INFO;
         }
 
         private void LoadUserSettings()
@@ -124,19 +147,19 @@ if not exist ""{0}"" (
         {
             if (string.IsNullOrWhiteSpace(ClientDllPath))
             {
-                MessageBox.Show($"{SYSDVR_DLL} not found, did you extract all the files in the same folder ?");
+                MessageBox.Show($"{SYSDVR_DLL} {MAIN_DLL_NOT_FOUND}");
                 this.Close();
             }
 
             if (DotnetMajorVersion == 0)
             {
-                if (MessageBox.Show(".NET doesn't seem to be installed on this pc but it's needed for SysDVR-Client, do you want to open the download page ?\r\n\r\nYou need to download .NET 6 desktop x64 runtime or a more recent version", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    Process.Start("https://dotnet.microsoft.com/download");
+                if (MessageBox.Show(MAIN_NET_NOT_FOUND, "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    Process.Start(DOTNET_DOWNLOAD_URL);
                 this.Close();
             }
             else if (Environment.Is64BitOperatingSystem && DotnetIs32Bit)
             {
-                if (MessageBox.Show("It seems you installed 32-bit .NET instead of the 64-bit one, SysDVR-CLient will not work.\r\n\r\nYou can download the 64-bit version from: https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe\r\n\r\nDo you want to open it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(MAIN_NET_WRONG_BIT, "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     Process.Start("https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe");
                     this.Close();
@@ -145,10 +168,10 @@ if not exist ""{0}"" (
 
             if (DotnetMajorVersion < REQUIRED_DOTNET_MAJOR)
             {
-                if (MessageBox.Show("It seems you're running an outdated version of .NET. SysDVR-Client requires .NET 6 runtime or a more recent version. Do you want to open the download page ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    Process.Start("https://dotnet.microsoft.com/download");
+                if (MessageBox.Show(MAIN_NET_OLD, "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    Process.Start(DOTNET_DOWNLOAD_URL);
                 else
-                    MessageBox.Show("If you don't upgrade the installed version SysDVR may not work.");
+                    MessageBox.Show(MAIN_NET_WARNING);
             }
         }
 
@@ -200,29 +223,16 @@ if not exist ""{0}"" (
             var state = DriverHelper.GetDriverInfo();
             if (state == DriverStatus.NotInstalled)
             {
-                if (MessageBox.Show("You selected USB streaming but it seems that the SysDVR driver is not installed, do you want to install it now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(MAIN_DRIVER_NOT_FOUND, "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     new DriverInstallForm(false).ShowDialog();
                     return true;
                 }
-                else MessageBox.Show("Without installing the driver USB streaming may not work");
+                else MessageBox.Show(MAIN_DRIVER_NOT_FOUND_WARNING);
             }
             else if (state == DriverStatus.Unknown)
             {
-                var res = MessageBox.Show(
-@"You selected USB streaming but Windows reports that it has never seen the SysDVR USB device, before continuing try the following:
-1) Open SysDVR settings on your console and select USB mode then click apply.
-   - If the settings app says SysDVR is not running, reboot your console.
-2) Launch a compatible game.
-3) Connect the console to the PC.
-
-If you did everything correctly windows should play the device plugged in sound and possibly show a 'installing device' screen, if that happens click YES on this message box.
-if you don't see anything it is possible that your USB C cable does not support data connections and you should try a different one. USB C to C cables are known to cause issues.
-
-Do you want to try searching for the SysDVR USB device again ?
-Pressing no will try to start streaming regardless but it will probably fail."
-                , "", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
-
+                DialogResult res = MessageBox.Show(MAIN_DRIVER_WARNING, "", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
 
                 if (res == DialogResult.Yes)
                     goto check_again;
@@ -234,14 +244,16 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         string GetExtraArgs()
         {
-            StringBuilder str = new StringBuilder();
+            StringBuilder str = new();
 
-            void append(string s) { str.Append(" "); str.Append(s); }
+            void append(string s) { str.Append(' '); str.Append(s); }
 
             if (cbStats.Checked || cbIgnoreSync.Checked || cbLogStatus.Checked)
             {
-                List<string> opt = new List<string>();
-                opt.Add("log");
+                List<string> opt = new()
+                {
+                    "log"
+                };
 
                 if (cbStats.Checked)
                     opt.Add("stats");
@@ -298,8 +310,6 @@ Pressing no will try to start streaming regardless but it will probably fail."
             {
                 if (CurrentControl == null)
                     throw new Exception("Select all the options first");
-
-                var extra = CurrentControl.GetExtraCmd();
 
                 return new LaunchCommand[]
                 {
@@ -394,18 +404,6 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         private void LLBL_ProjectWiki_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start(GITHUB_PROJECT_URL_WIKI);
 
-        private void tbTcpIP_Enter(object sender, EventArgs e)
-        {
-            if (TXT_TcpIp.Text == "IP address")
-                TXT_TcpIp.Text = "";
-        }
-
-        private void tbTcpIP_Leave(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(TXT_TcpIp.Text))
-                TXT_TcpIp.Text = "IP address";
-        }
-
         private void cbAdvOpt_CheckedChanged(object sender, EventArgs e)
         {
             pAdvOptions.Visible = cbAdvOpt.Checked;
@@ -419,7 +417,7 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         private void BTN_Exit_Click(object sender, EventArgs e)
         {
-            if (MessageBox.Show($"Exit {typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title}?", "Exit Application", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show($"{EXIT} {typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title}?", MAIN_EXIT_APPLICATION, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 this.Close();
             }
@@ -480,9 +478,17 @@ Pressing no will try to start streaming regardless but it will probably fail."
 
         private void TXT_TcpIp_TextChanged(object sender, EventArgs e)
         {
-            if (!IPAddress.TryParse(this.TXT_TcpIp.Text, out _))
+            TextBox t = (TextBox)sender;
+
+            if (string.IsNullOrEmpty(t.Text))
             {
-                this.ERR_IpAddress.SetError((TextBox)sender, "Invalid IP address");
+                this.ERR_IpAddress.Clear();
+                return;
+            }
+
+            if (!IPAddress.TryParse(t.Text, out _))
+            {
+                this.ERR_IpAddress.SetError(t, MAIN_INVALID_IP_ADDRESS);
                 return;
             }
 
