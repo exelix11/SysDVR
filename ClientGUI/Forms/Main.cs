@@ -475,25 +475,6 @@ if not exist ""{0}"" (
             IPA_AddressBox.Enabled = ((RadioButton)sender).Checked;
         }
 
-        private void TXT_TcpIp_TextChanged(object sender, EventArgs e)
-        {
-            TextBox t = (TextBox)sender;
-
-            if (string.IsNullOrEmpty(t.Text))
-            {
-                this.ERR_IpAddress.Clear();
-                return;
-            }
-
-            if (!IPAddress.TryParse(t.Text, out _))
-            {
-                this.ERR_IpAddress.SetError(t, MAIN_INVALID_IP_ADDRESS);
-                return;
-            }
-
-            this.ERR_IpAddress.Clear();
-        }
-
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.WriteUserSettings();

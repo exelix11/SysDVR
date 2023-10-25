@@ -59,13 +59,11 @@
             this.BTN_DriverInstall = new System.Windows.Forms.Button();
             this.BTN_Exit = new System.Windows.Forms.Button();
             this.ToolTip_BatchInfo = new System.Windows.Forms.ToolTip(this.components);
-            this.ERR_IpAddress = new System.Windows.Forms.ErrorProvider(this.components);
             this.GRP_StreamingChannels.SuspendLayout();
             this.GRP_StreamingSource.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
             this.GRP_StreamMode.SuspendLayout();
             this.GRP_AdvOptions.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).BeginInit();
             this.SuspendLayout();
             // 
             // BTN_Launch
@@ -439,10 +437,6 @@
             // 
             this.ToolTip_BatchInfo.ToolTipTitle = "Create Batch Info";
             // 
-            // ERR_IpAddress
-            // 
-            this.ERR_IpAddress.ContainerControl = this;
-            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -477,7 +471,6 @@
             this.GRP_StreamMode.PerformLayout();
             this.GRP_AdvOptions.ResumeLayout(false);
             this.GRP_AdvOptions.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)this.ERR_IpAddress).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -513,7 +506,6 @@
         private System.Windows.Forms.CheckBox cbLogStatus;
         private System.Windows.Forms.Button BTN_Exit;
         private System.Windows.Forms.ToolTip ToolTip_BatchInfo;
-        private System.Windows.Forms.ErrorProvider ERR_IpAddress;
         private SysDVRClientGUI.Controls.IpAddressTextBox IPA_AddressBox;
     }
 }
