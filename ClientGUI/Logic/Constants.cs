@@ -9,6 +9,7 @@ namespace SysDVRClientGUI.Logic
         public const string SYSDVR_DLL = "SysDVR-Client.dll";
         public const string GITHUB_PROJECT_URL = "https://github.com/exelix11/SysDVR/";
         public const string DOTNET_DOWNLOAD_URL = "https://dotnet.microsoft.com/download";
+        public const string DOTNET_64BIT_DOWNLOAD_URL = "https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe";
         public const string GITHUB_PROJECT_URL_WIKI = "https://github.com/exelix11/SysDVR/wiki/";
         public const string MPV_INSTALL_URL = "https://mpv.io/installation/";
     }

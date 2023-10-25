@@ -45,7 +45,7 @@ if not exist ""{0}"" (
             this.InitializeComponent();
 #if DEBUG
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("de-DE");
-            this.IPA_AddressBox.IpAddressChanged += (o, e) => Debug.Print($"Adress is now: \"{e.IPAddressValue}\"");
+            this.IPA_AddressBox.IpAddressChanged += (o, e) => Debug.Print($"Address is now: \"{e.IPAddressValue}\"");
 #endif
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
@@ -157,13 +157,10 @@ if not exist ""{0}"" (
                     Process.Start(DOTNET_DOWNLOAD_URL);
                 this.Close();
             }
-            else if (Environment.Is64BitOperatingSystem && DotnetIs32Bit)
+            else if (Environment.Is64BitOperatingSystem && DotnetIs32Bit && MessageBox.Show(MAIN_NET_WRONG_BIT, "", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                if (MessageBox.Show(MAIN_NET_WRONG_BIT, "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                {
-                    Process.Start("https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe");
-                    this.Close();
-                }
+                Process.Start(DOTNET_64BIT_DOWNLOAD_URL);
+                this.Close();
             }
 
             if (DotnetMajorVersion < REQUIRED_DOTNET_MAJOR)
