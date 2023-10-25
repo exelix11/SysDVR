@@ -36,8 +36,8 @@
             this.rbChannelsAudio = new System.Windows.Forms.RadioButton();
             this.rbChannelsVideo = new System.Windows.Forms.RadioButton();
             this.GRP_StreamingSource = new System.Windows.Forms.GroupBox();
+            this.IPA_AddressBox = new Controls.IpAddressTextBox();
             this.LBL_StreamingSourceInfo = new System.Windows.Forms.Label();
-            this.TXT_TcpIp = new System.Windows.Forms.TextBox();
             this.rbSrcUsb = new System.Windows.Forms.RadioButton();
             this.rbSrcTcp = new System.Windows.Forms.RadioButton();
             this.LBL_Infotext = new System.Windows.Forms.Label();
@@ -150,8 +150,8 @@
             // GRP_StreamingSource
             // 
             this.GRP_StreamingSource.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.GRP_StreamingSource.Controls.Add(this.IPA_AddressBox);
             this.GRP_StreamingSource.Controls.Add(this.LBL_StreamingSourceInfo);
-            this.GRP_StreamingSource.Controls.Add(this.TXT_TcpIp);
             this.GRP_StreamingSource.Controls.Add(this.rbSrcUsb);
             this.GRP_StreamingSource.Controls.Add(this.rbSrcTcp);
             this.GRP_StreamingSource.Location = new System.Drawing.Point(7, 155);
@@ -163,6 +163,15 @@
             this.GRP_StreamingSource.TabStop = false;
             this.GRP_StreamingSource.Text = "Stream source";
             // 
+            // IPA_AddressBox
+            // 
+            this.IPA_AddressBox.Enabled = false;
+            this.IPA_AddressBox.Location = new System.Drawing.Point(190, 84);
+            this.IPA_AddressBox.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.IPA_AddressBox.Name = "IPA_AddressBox";
+            this.IPA_AddressBox.Size = new System.Drawing.Size(148, 31);
+            this.IPA_AddressBox.TabIndex = 3;
+            // 
             // LBL_StreamingSourceInfo
             // 
             this.LBL_StreamingSourceInfo.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
@@ -172,18 +181,6 @@
             this.LBL_StreamingSourceInfo.Size = new System.Drawing.Size(705, 38);
             this.LBL_StreamingSourceInfo.TabIndex = 0;
             this.LBL_StreamingSourceInfo.Text = "Remember to switch to the correct mode with SysDVR-Settings on your console before beginning to stream. If you need help check the guide.";
-            // 
-            // TXT_TcpIp
-            // 
-            this.TXT_TcpIp.Enabled = false;
-            this.TXT_TcpIp.Location = new System.Drawing.Point(197, 87);
-            this.TXT_TcpIp.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.TXT_TcpIp.MaxLength = 15;
-            this.TXT_TcpIp.Name = "TXT_TcpIp";
-            this.TXT_TcpIp.PlaceholderText = "IP Address";
-            this.TXT_TcpIp.Size = new System.Drawing.Size(116, 23);
-            this.TXT_TcpIp.TabIndex = 2;
-            this.TXT_TcpIp.TextChanged += this.TXT_TcpIp_TextChanged;
             // 
             // rbSrcUsb
             // 
@@ -498,7 +495,6 @@
         private System.Windows.Forms.LinkLabel LLBL_ProjectWiki;
         private System.Windows.Forms.RadioButton rbSrcTcp;
         private System.Windows.Forms.RadioButton rbSrcUsb;
-        private System.Windows.Forms.TextBox TXT_TcpIp;
         private System.Windows.Forms.Panel pAdvOptions;
         private System.Windows.Forms.GroupBox GRP_StreamMode;
         private System.Windows.Forms.RadioButton rbPlay;
@@ -518,6 +514,7 @@
         private System.Windows.Forms.Button BTN_Exit;
         private System.Windows.Forms.ToolTip ToolTip_BatchInfo;
         private System.Windows.Forms.ErrorProvider ERR_IpAddress;
+        private SysDVRClientGUI.Controls.IpAddressTextBox IPA_AddressBox;
     }
 }
 

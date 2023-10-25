@@ -42,10 +42,11 @@ if not exist ""{0}"" (
 
         public Main()
         {
+            this.InitializeComponent();
 #if DEBUG
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("de-DE");
+            this.IPA_AddressBox.IpAddressChanged += (o, e) => Debug.Print($"Adress is now: \"{e.IPAddressValue}\"");
 #endif
-            this.InitializeComponent();
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
             this.LoadUserSettings();
@@ -78,7 +79,6 @@ if not exist ""{0}"" (
             this.cbAdvOpt.Text = MAIN_SHOW_ADVANCED_OPTIONS;
             this.BTN_CreateBatch.Text = MAIN_CREATE_QUICKLAUNCH;
             this.BTN_DriverInstall.Text = MAIN_REINSTALL_USB;
-            this.TXT_TcpIp.PlaceholderText = MAIN_IP_ADDRESS;
             this.GRP_StreamingChannels.Text = MAIN_GRP_STREAMCHANNELS;
             this.GRP_StreamingSource.Text = MAIN_GRP_STREAMINGSOURCE;
             this.GRP_StreamMode.Text = MAIN_GRP_STREAMINGMODE;
@@ -117,7 +117,7 @@ if not exist ""{0}"" (
 
             if (RuntimeStorage.Config.Configuration.IpAddress != default)
             {
-                this.TXT_TcpIp.Text = RuntimeStorage.Config.Configuration.IpAddress.ToString();
+                IPA_AddressBox.SetIpAddress(RuntimeStorage.Config.Configuration.IpAddress);
             }
 
             switch (RuntimeStorage.Config.Configuration.StreamMode)
@@ -277,7 +277,7 @@ if not exist ""{0}"" (
             if (rbSrcUsb.Checked)
                 args.Append("usb ");
             else if (rbSrcTcp.Checked)
-                args.AppendFormat("bridge {0} ", TXT_TcpIp.Text);
+                args.AppendFormat("bridge {0} ", IPA_AddressBox.IPAddressValue.ToString());
             else
                 throw new Exception("Select a valid source.");
 
@@ -442,8 +442,7 @@ if not exist ""{0}"" (
 
             RuntimeStorage.Config.Configuration.StreamSource = this.rbSrcUsb.Checked ? StreamSource.Usb : StreamSource.Tcp;
 
-            _ = IPAddress.TryParse(this.TXT_TcpIp.Text, out IPAddress ipa);
-            RuntimeStorage.Config.Configuration.IpAddress = ipa;
+            RuntimeStorage.Config.Configuration.IpAddress = IPA_AddressBox.IPAddressValue;
 
             if (this.rbPlay.Checked)
             {
@@ -473,7 +472,7 @@ if not exist ""{0}"" (
 
         private void rbSrcTcp_CheckedChanged(object sender, EventArgs e)
         {
-            this.TXT_TcpIp.Enabled = ((RadioButton)sender).Checked;
+            IPA_AddressBox.Enabled = ((RadioButton)sender).Checked;
         }
 
         private void TXT_TcpIp_TextChanged(object sender, EventArgs e)
