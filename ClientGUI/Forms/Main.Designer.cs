@@ -59,6 +59,7 @@
             this.BTN_DriverInstall = new System.Windows.Forms.Button();
             this.BTN_Exit = new System.Windows.Forms.Button();
             this.ToolTip_BatchInfo = new System.Windows.Forms.ToolTip(this.components);
+            this.CMB_Languages = new System.Windows.Forms.ComboBox();
             this.GRP_StreamingChannels.SuspendLayout();
             this.GRP_StreamingSource.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
@@ -437,11 +438,22 @@
             // 
             this.ToolTip_BatchInfo.ToolTipTitle = "Create Batch Info";
             // 
+            // CMB_Languages
+            // 
+            this.CMB_Languages.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_Languages.FormattingEnabled = true;
+            this.CMB_Languages.Location = new System.Drawing.Point(614, 67);
+            this.CMB_Languages.Name = "CMB_Languages";
+            this.CMB_Languages.Size = new System.Drawing.Size(109, 23);
+            this.CMB_Languages.TabIndex = 11;
+            this.CMB_Languages.SelectedIndexChanged += this.CMB_Languages_SelectedIndexChanged;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(735, 723);
+            this.Controls.Add(this.CMB_Languages);
             this.Controls.Add(this.BTN_Exit);
             this.Controls.Add(this.BTN_DriverInstall);
             this.Controls.Add(this.cbAdvOpt);
@@ -507,6 +519,7 @@
         private System.Windows.Forms.Button BTN_Exit;
         private System.Windows.Forms.ToolTip ToolTip_BatchInfo;
         private SysDVRClientGUI.Controls.IpAddressTextBox IPA_AddressBox;
+        private System.Windows.Forms.ComboBox CMB_Languages;
     }
 }
 

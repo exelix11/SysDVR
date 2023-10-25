@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using System.Globalization;
 using static SysDVRClientGUI.Logic.Constants;
 using static SysDVRClientGUI.Logic.HelperFunctions;
 using static SysDVRClientGUI.Resources.Resources;
@@ -40,16 +41,27 @@ if not exist ""{0}"" (
 
 ";
 
+        private readonly Dictionary<string, string> availableLanguages = new()
+        {
+            { "en-EN","English" },
+            { "en-US","English" },
+            { "de-DE","German" }
+        };
+
         public Main()
         {
             this.InitializeComponent();
 #if DEBUG
-            Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("de-DE");
-            this.IPA_AddressBox.IpAddressChanged += (o, e) => Debug.Print($"Address is now: \"{e.IPAddressValue}\"");
+            this.IPA_AddressBox.IpAddressChanged += (o, e) => Debug.Print($"Selected ipv4 address is now: \"{e.IPAddressValue}\"");
 #endif
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
             this.LoadUserSettings();
+
+            this.CMB_Languages.DataSource = this.availableLanguages.DistinctBy(x => x.Value).ToArray();
+            this.CMB_Languages.DisplayMember = "Value";
+            this.CMB_Languages.SelectedItem = this.availableLanguages.FirstOrDefault(x => x.Key == Thread.CurrentThread.CurrentUICulture.IetfLanguageTag);
+
             this.ApplyLocalization();
             this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
             this.StreamKindSelected(this.rbChannelsBoth, EventArgs.Empty);
@@ -475,6 +487,21 @@ if not exist ""{0}"" (
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.WriteUserSettings();
+        }
+
+        private bool firstRun = true;
+        private void CMB_Languages_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (firstRun)
+            {
+                this.firstRun = false;
+                return;
+            }
+
+            string langIdentifier = this.availableLanguages.FirstOrDefault(x => x.Key == ((KeyValuePair<string, string>)this.CMB_Languages.SelectedItem).Key).Key;
+
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(langIdentifier);
+            this.ApplyLocalization();
         }
     }
 }
