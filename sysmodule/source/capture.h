@@ -1,8 +1,7 @@
 #pragma once
 #include <switch.h>
 
-#define STREAM_PACKET_MAGIC_VIDEO 0xDDDDDDDD
-#define STREAM_PACKET_MAGIC_AUDIO 0xEEEEEEEE
+#define STREAM_PACKET_HEADER 0xCCCCCCCC
 
 /*
 	This is higher than what suggested on switchbrw to fix https://github.com/exelix11/SysDVR/issues/91,
@@ -27,13 +26,39 @@
 */
 #define MaxABatching 2
 
+// One bit
+enum PacketTypeFlag 
+{
+	PacketType_Video = 0,
+	PacketType_Audio = 1
+};
+
+// Three bits, not a mask
+enum PacketContent 
+{
+	PacketContent_Data = 0,
+	// Only valid for video chanel, implies _Data, contains multiple NALs
+	PacketContent_Hash = 1,
+	PacketContent_MultiNAL = 2,
+};
+
 typedef struct {
 	u32 Magic;
 	u32 DataSize;
-	u64 Timestamp; //Note: timestamps are in usecs
+	u64 Timestamp; //timestamps are in usecs
+	union {
+		u8 Bytes[2];
+		struct
+		{
+			enum PacketTypeFlag Channel : 1;
+			enum PacketContent Content : 3;
+			u8 Reserved : 4;
+			u8 Reserved1;
+		} Struct;
+	} Meta;
 } PacketHeader;
 
-_Static_assert(sizeof(PacketHeader) == 16); //Ensure no padding, PACKED triggers a warning
+_Static_assert(sizeof(PacketHeader) == 18); //Ensure no padding, PACKED triggers a warning
 
 typedef struct {
 	PacketHeader Header;
@@ -55,15 +80,18 @@ extern AudioPacket APkt;
 Result CaptureInitialize();
 void CaptureFinalize();
 
-void CaptureSetAudioBatching(int batch);
-int CaptureGetAudioBatching();
-
-void CaptureResetStaticDropThreshold();
-void CaptureSetStaticDropThreshold(int maxConsecutive);
-int CaptureGetStaticDropThreshold();
-
 // Captures video with grc:d, if no game is running this blocks and there's no way to terminate the call
 bool CaptureReadVideo();
 
 // Captures audio with grc:d, if no game is running this blocks and there's no way to terminate the call
 bool CaptureReadAudio();
+
+// When a client first connects clear old data structures and prepare hashing modes
+void CaptureVideoConnected();
+void CaptureAudioConnected();
+
+// Configurable options
+void CaptureConfigResetDefault();
+int CaptureSetAudioBatching(int batch);
+void CaptureSetPPSSPSInject(bool value);
+void CaptureSetNalHashing(bool value);

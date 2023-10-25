@@ -38,6 +38,9 @@
     </ClCompile>
     <ClCompile Include="source\core.c" />
     <ClCompile Include="source\sysmodule\main.c" />
+    <ClCompile Include="source\modes\proto.c">
+      <Filter>modes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -76,6 +79,9 @@
       <Filter>net</Filter>
     </ClInclude>
     <ClInclude Include="source\core.h" />
+    <ClInclude Include="source\modes\proto.h">
+      <Filter>modes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">

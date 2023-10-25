@@ -18,6 +18,7 @@ namespace SysDVR.Client.GUI
     {
         readonly StreamKind channels;
         readonly DvrUsbContext? context;
+        readonly Gui.Popup incompatiblePopup = new("Error");
 
         IReadOnlyList<DvrUsbDevice> devices;
 
@@ -28,7 +29,9 @@ namespace SysDVR.Client.GUI
         {
             this.channels = channels;
             this.autoConnect = autoConnect;
-            
+
+            Popups.Add(incompatiblePopup);
+
             try
             {
                 context = new DvrUsbContext(Program.Options.UsbLogging);
@@ -83,6 +86,12 @@ namespace SysDVR.Client.GUI
 
         void ConnectToDevice(DvrUsbDevice info)
         {
+            if (!info.Info.IsProtocolSupported)
+            {
+                Popups.Open(incompatiblePopup);
+                return;
+            }
+
             autoConnect = null;
 
             devices.Where(x => x != info).ToList().ForEach(x => x.Dispose());
@@ -156,6 +165,17 @@ namespace SysDVR.Client.GUI
             if (Gui.CenterButton("Go back", sz))
             {
                 Program.Instance.PopView();
+            }
+
+            if (incompatiblePopup.Begin())
+            {
+                ImGui.Text("The selected device is not compatible with this version of the client.");
+                ImGui.Text("Make sure you're using the same version of SysDVR on both the console and this device.");
+
+                if (ImGui.Button("Go back"))
+                    incompatiblePopup.RequestClose();
+
+                ImGui.EndPopup();
             }
 
             Gui.EndWindow();

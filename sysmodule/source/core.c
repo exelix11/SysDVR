@@ -107,34 +107,6 @@ static Thread ModeSwitchThread;
 static Mutex ModeSwitchingMutex;
 static const StreamMode* SwitchModeTarget = NULL;
 
-// Configurable user parameters
-static UserOverrides Overrides = { false, 0, 0 };
-
-void ApplyUserOverrides(UserOverrides overrides)
-{
-	Overrides = overrides;
-	if (!overrides.Enabled)
-	{
-		if (CurrentMode)
-			CaptureSetAudioBatching(CurrentMode->AudioBatches);
-		CaptureResetStaticDropThreshold();
-	}
-	else
-	{
-		CaptureSetAudioBatching(overrides.AudioBatching);
-		CaptureSetStaticDropThreshold(overrides.StaticDropThreshold);
-	}
-}
-
-UserOverrides GetUserOverrides()
-{
-	UserOverrides res;
-	res.Enabled = Overrides.Enabled;
-	res.AudioBatching = CaptureGetAudioBatching();
-	res.StaticDropThreshold = CaptureGetStaticDropThreshold();
-	return res;
-}
-
 static const StreamMode* GetUserVisibleMode() {
 	mutexLock(&ModeSwitchingMutex);
 
@@ -162,9 +134,6 @@ static void EnterTargetMode()
 		LOG("Starting mode\n");
 		IsThreadRunning = true;
 		memset(&Buffers, 0, sizeof(Buffers));
-
-		// Reset capture options depending on the state of overrides
-		ApplyUserOverrides(Overrides);
 
 		LOG("Calling init fn\n");
 		if (CurrentMode->InitFn)
@@ -294,7 +263,6 @@ void SetModeID(u32 mode)
 #else
 void UsbOnlyEntrypoint() 
 {
-	CaptureSetAudioBatching(USB_MODE.AudioBatches);
 	USB_MODE.InitFn();
 	memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
 	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);

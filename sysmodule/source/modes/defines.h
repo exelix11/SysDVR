@@ -2,8 +2,8 @@
 
 // This is the main version shown to the user
 #define SYSDVR_VERSION_STRING  "6.0"
-//This is a version for the SysDVR net and usb protocol, it's included in the beacon and may be shown in the UI
-#define SYSDVR_PROTOCOL_VERSION "00"
+//This is a version for the SysDVR net and usb protocol, it's included in the beacon and may be shown in the UI. This is ascii so it's easy to insert in beacons for example as the serial of the USB device
+#define SYSDVR_PROTOCOL_VERSION "01"
 //This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
 #define SYSDVR_IPC_VERSION 12
 
@@ -52,25 +52,3 @@ _Static_assert(sizeof(SYSDVR_PROTOCOL_VERSION) == 3, "Proto version must be 2 ch
 
 // Crash the process so we can get a crash report to figure out what's going on, don't call it outside of dev tools
 #define CMD_DEBUG_CRASH 102
-
-// Options to tweak special options dynamically, uses the UserOverrides struct
-#define CMD_SET_USER_OVERRIDES 103
-#define CMD_GET_USER_OVERRIDES 104
-
-typedef struct {
-	// Globally enables or disables overrides, if this is false the following values are ignored in CMD_SET_USER_OVERRIDES
-	// If this is the result of GET_USER_OVERRIDES the other values are valid and represent the current options either previously set by the user or the hardcoded defaults.
-	char Enabled;
-	// Represents how many audio reads (0x1000 bytes) are batched together before being sent to the client, default is 1
-	// This is needed to reduce the amount of packets sent over the network, this is capped to the size of MaxABatching (since buffers are statically allocated)
-	// More info in the comment in capture.h
-	char AudioBatching;
-	// Workaround for a specific condition explained in capture.c in CaptureReadVideo, default value is 5, bigger values may cause glitches and visual artifacts,
-	// smaller values may increase latency or delay since we're sending more data over the channel.
-	// 0 Disables this option
-	char StaticDropThreshold;
-	// Currently unused
-	char Padding;
-} UserOverrides;
-
-_Static_assert(sizeof(UserOverrides) == 4, "UserOverrides size is wrong");

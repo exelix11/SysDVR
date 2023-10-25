@@ -22,6 +22,7 @@ static void RTSP_StreamVideo(void* _)
 
 		if (!IsThreadRunning) break;
 
+		CaptureVideoConnected();
 		LOG("RTSP VIDEO STREAMING\n");
 
 		while (true)
@@ -56,6 +57,7 @@ static void RTSP_StreamAudio(void* _)
 		if (!IsThreadRunning)
 			break;
 
+		CaptureAudioConnected();
 		LOG("RTSP AUDIO STREAMING\n");
 
 		while (IsThreadRunning)
@@ -77,6 +79,10 @@ static void RTSP_StreamAudio(void* _)
 
 static void RTSP_Init()
 {
+	CaptureConfigResetDefault();
+	// RTSP can't handle NAL hashing
+	CaptureSetNalHashing(false);
+
 	RTP_InitializeSequenceNumbers();
 	LaunchThread(&RTSPThread, RTSP_ServerThread, NULL, Buffers.RTSPMode.ServerThreadStackArea, sizeof(Buffers.RTSPMode.ServerThreadStackArea), 0x2D);
 }

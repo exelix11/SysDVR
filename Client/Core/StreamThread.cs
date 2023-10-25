@@ -1,5 +1,6 @@
 ﻿//#define EXCEPTION_DEBUG
 
+using SysDVR.Client.Sources;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -12,62 +13,13 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
 {
-    [StructLayout(LayoutKind.Sequential)]
-    struct PacketHeader
-    {
-        public uint Magic;
-        public int DataSize;
-        public ulong Timestamp;
-
-        public override string ToString() =>
-            $"Magic: {Magic:X8} Len: {DataSize + StructLength} Bytes - ts: {Timestamp}";
-
-        public const int StructLength = 16;
-
-        // Note: to make the TCP implementation easier these should be composed of 4 identical bytes
-        public const uint MagicResponseVideo = 0xDDDDDDDD;
-        public const uint MagicResponseAudio = 0xEEEEEEEE;
-
-        public const int MaxTransferSize = StreamInfo.MaxPayloadSize + StructLength;
-
-        static PacketHeader()
-        {
-            if (Marshal.SizeOf<PacketHeader>() != StructLength)
-                throw new Exception("PacketHeader struct binary size is wrong");
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsVideo() => Magic == MagicResponseVideo;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsAudio() => Magic == MagicResponseAudio;
-    }
-
-    interface IStreamingSource
-    {
-        // Note that the source should respect the target output type,
-        // this means that by the time it's added to a StreamManager
-        // this field should match the NoAudio/NoVideo state of the target
-        StreamKind SourceKind { get; }
-
-        event Action<string> OnMessage;
-
-        Task ConnectAsync(CancellationToken token);
-        void StopStreaming();
-
-        void Flush();
-
-        bool ReadHeader(byte[] buffer);
-        bool ReadPayload(byte[] buffer, int length);
-    }
-
     abstract class StreamThread : IDisposable
     {
         Thread DeviceThread;
         CancellationTokenSource Cancel;
 
         readonly BaseStreamManager Manager;
-        readonly public IStreamingSource Source;
+        readonly public StreamingSource Source;
         readonly public StreamKind Kind;
 
         protected abstract void SetCancellationToken(CancellationToken token);
@@ -85,7 +37,7 @@ namespace SysDVR.Client.Core
         }
 #endif
 
-        protected StreamThread(IStreamingSource source, BaseStreamManager manager)
+        protected StreamThread(StreamingSource source, BaseStreamManager manager)
         {
             Source = source;
             Kind = Source.SourceKind;
@@ -209,7 +161,7 @@ namespace SysDVR.Client.Core
     {
         readonly OutStream Target;
 
-        public SingleStreamThread(IStreamingSource source, OutStream target, BaseStreamManager manager) : base(source, manager)
+        public SingleStreamThread(StreamingSource source, OutStream target, BaseStreamManager manager) : base(source, manager)
         {
             Target = target;
         }
@@ -239,7 +191,7 @@ namespace SysDVR.Client.Core
         readonly OutStream VideoTarget;
         readonly OutStream AudioTarget;
 
-        public MultiStreamThread(IStreamingSource source, OutStream videoTarget, OutStream audioTarget, BaseStreamManager manager) : base(source, manager)
+        public MultiStreamThread(StreamingSource source, OutStream videoTarget, OutStream audioTarget, BaseStreamManager manager) : base(source, manager)
         {
             if (source.SourceKind != StreamKind.Both)
                 throw new Exception("Source must be able to provide both streams");

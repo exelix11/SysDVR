@@ -11,51 +11,23 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
 {
-	class UsbStreamingSource : IStreamingSource
+	class UsbStreamingSource : StreamingSource
 	{
-		protected static readonly byte[] MagicRequestVideo = { 0xBB, 0xBB, 0xBB, 0xBB };
-		protected static readonly byte[] MagicRequestAudio = { 0xCC, 0xCC, 0xCC, 0xCC };
-		protected static readonly byte[] MagicRequestBoth = { 0xAA, 0xAA, 0xAA, 0xAA };
-
-        public event Action<string> OnMessage;
-
 		CancellationToken Token;
-
-		// TODO: Remove tracing code
-		readonly private TimeTrace tracer = new();
-
-		protected TimeTrace BeginTrace(string extra = "", [CallerMemberName] string funcName = null) =>
-			tracer.Begin("usb", extra, funcName);
 
 		readonly DvrUsbDevice device;
 		protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
-
-		readonly bool HasAudio;
-		readonly bool HasVideo;
-
-		byte[] RequestMagic => (HasVideo, HasAudio) switch
-		{
-			(true, true) => MagicRequestBoth,
-			(true, false) => MagicRequestVideo,
-			(false, true) => MagicRequestAudio,
-			_ => throw new Exception("Invalid state")
-		};
-
-		public StreamKind SourceKind { get; private set; }
 
 		public UsbStreamingSource(DvrUsbDevice device, StreamKind kind)
         {
 			this.device = device;
 			SourceKind = kind;
 
-			HasVideo = kind is StreamKind.Both or StreamKind.Video;
-			HasAudio = kind is StreamKind.Both or StreamKind.Audio;
-
             (reader, writer) = device.Open();
         }
 
-		public void StopStreaming()
+		public override void StopStreaming()
 		{
 			device.Close();
 			device.Dispose();
@@ -63,7 +35,7 @@ namespace SysDVR.Client.Sources
 
 		bool Reconnect(string reason)
 		{
-            OnMessage?.Invoke($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
+            ReportMessage($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
 			if (device.TryReconnect())
 			{
 				(reader, writer) = device.Open();
@@ -72,7 +44,7 @@ namespace SysDVR.Client.Sources
 			return false;
 		}
 
-        public Task ConnectAsync(CancellationToken token)
+        public override Task ConnectAsync(CancellationToken token)
         {
             Token = token;
 			return Task.Run(WaitForConnection, token);
@@ -81,41 +53,25 @@ namespace SysDVR.Client.Sources
         void WaitForConnection()
 		{
 			bool printedTimeoutWarningOnce = false;
-			bool connected = true;
 			while (!Token.IsCancellationRequested)
 			{
-                //using var trace = BeginTrace();
-                OnMessage?.Invoke($"Sending USB connection request {BitConverter.ToString(RequestMagic)}");
-				LibUsbDotNet.Error err = LibUsbDotNet.Error.Success;
+                ReportMessage($"Sending USB connection request");
 				try
 				{
-					if (!connected)
-						err = LibUsbDotNet.Error.NoDevice;
-					else
-						err = writer.Write(RequestMagic, 1000, out int _);
+					DoHandshake();
 				}
 				catch (Exception e)
 				{
-					connected = Reconnect(e.Message);
-					continue;
-				}
+                    if (!printedTimeoutWarningOnce)
+                    {
+                        printedTimeoutWarningOnce = true;
+                        ReportMessage($"USB warning: Couldn't communicate with the console. Try entering a compatible game, unplugging your console or restarting it.");
+                    }
 
-				if (err != LibUsbDotNet.Error.Success)
-				{
-					if (err != LibUsbDotNet.Error.Timeout)
-					{
-						// We probably need reconnecting
-						connected = Reconnect(err.ToString());
-					}
-					else if (!printedTimeoutWarningOnce)
-					{
-						printedTimeoutWarningOnce = true;
-                        OnMessage?.Invoke($"USB warning: Couldn't communicate with the console ({err}). Try entering a compatible game, unplugging your console or restarting it.");
-					}
+                    if (!Token.IsCancellationRequested)
+                        Thread.Sleep(3000);
 
-					if (!Token.IsCancellationRequested)
-						Thread.Sleep(3000);
-
+                    Reconnect(e.Message);
 					continue;
 				}
 
@@ -123,7 +79,7 @@ namespace SysDVR.Client.Sources
 			}
 		}
 
-		public virtual void Flush()
+		public override void Flush()
 		{
 			if (Token.IsCancellationRequested)
 				return;
@@ -142,15 +98,13 @@ namespace SysDVR.Client.Sources
 		private int ReadSize = 0;
 		private byte[] ReadBuffer = new byte[PacketHeader.MaxTransferSize];
 
-        public bool ReadHeader(byte[] buffer)
+        public override bool ReadHeader(byte[] buffer)
 		{
-			//using var trace = BeginTrace();
-
 			var err = reader.Read(ReadBuffer, 0, PacketHeader.MaxTransferSize, 800, out ReadSize);
 			if (err != LibUsbDotNet.Error.Success)
 			{
 				if (DebugOptions.Current.Log)
-                    OnMessage?.Invoke($"Warning: libusb error {err} while reading header");
+                    ReportMessage($"Warning: libusb error {err} while reading header");
 
 				return false;
 			}
@@ -160,7 +114,7 @@ namespace SysDVR.Client.Sources
 			return true;
 		}
 
-		public bool ReadPayload(byte[] buffer, int length)
+		public override bool ReadPayload(byte[] buffer, int length)
 		{
 			if (length > ReadSize - PacketHeader.StructLength)
 				return false;
@@ -169,5 +123,25 @@ namespace SysDVR.Client.Sources
 
 			return true;
 		}
+
+		public override bool ReadRaw(byte[] buffer, int length)
+		{
+			var err = reader.Read(buffer, 0, length, 1500, out ReadSize);
+
+            if (err != LibUsbDotNet.Error.Success && DebugOptions.Current.Log)
+                ReportMessage($"Warning: libusb error {err} while reading data");
+
+            return err == LibUsbDotNet.Error.Success;
+        }
+
+        public override bool WriteData(byte[] buffer)
+        {
+			var err = writer.Write(buffer, 2000, out int _);
+
+			if (err != LibUsbDotNet.Error.Success && DebugOptions.Current.Log)
+				ReportMessage($"Warning: libusb error {err} while writing data");
+
+            return err == LibUsbDotNet.Error.Success;
+        }
     }
 }
