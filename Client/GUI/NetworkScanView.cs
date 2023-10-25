@@ -23,6 +23,7 @@ namespace SysDVR.Client.GUI
         string autoConnect;
 
         Gui.Popup ipEnterPopup = new("Enter console IP address");
+        Gui.Popup incompatiblePopup = new("Error");
         Gui.CenterGroup manualIpCenter = new();
         Gui.CenterGroup popupBtnCenter = new();
         string? lastError;
@@ -30,6 +31,7 @@ namespace SysDVR.Client.GUI
         public NetworkScanView(StreamKind channels, string? autoConnect = null)
         {
             Popups.Add(ipEnterPopup);
+            Popups.Add(incompatiblePopup);
 
             this.channels = channels;
             this.autoConnect = autoConnect;
@@ -97,6 +99,12 @@ namespace SysDVR.Client.GUI
 
         void ConnectToDevice(DeviceInfo info)
         {
+            if (!info.IsProtocolSupported)
+            {
+                Popups.Open(incompatiblePopup);
+                return;
+            }
+
             autoConnect = null;
             Program.Instance.PushView(new ConnectingView(info, channels));
         }
@@ -177,6 +185,17 @@ namespace SysDVR.Client.GUI
             }
 
             DrawIpEnterPopup();
+
+            if (incompatiblePopup.Begin())
+            {
+                ImGui.Text("The selected device is not compatible with this version of the client.");
+                ImGui.Text("Make sure you're using the same version of SysDVR on both the console and this device.");
+
+                if (ImGui.Button("Go back"))
+                    incompatiblePopup.RequestClose();
+
+                ImGui.EndPopup();
+            }
 
             Gui.EndWindow();
         }

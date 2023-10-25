@@ -1,4 +1,5 @@
 ﻿using LibUsbDotNet;
+using SysDVR.Client.Sources;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -48,7 +49,7 @@ namespace SysDVR.Client.Core
     public class DeviceInfo
     {
         private readonly string AdvertisementString;
-        private readonly int ProtocolVersion;
+        private readonly string ProtocolVersion;
         
         public readonly ConnectionType Source;
         public readonly string ConnectionString;
@@ -70,13 +71,9 @@ namespace SysDVR.Client.Core
             return source.Slice(0, nullStart);
         }
 
-        public bool CheckProtocolVersion(int current)
-        {
-            if (IsManualConnection)
-                return true;
-
-            return ProtocolVersion == current;
-        }
+        // In practice we only check in the UI since the actual communication will check the protocol again. We use this to filter out devices that are not compatible from their broadcasts.
+        // In case of IsManualConnection we can't know the real protocol version until we connect.
+        public bool IsProtocolSupported => IsManualConnection || ProtocolVersion == ProtoHandshakeRequest.CurrentProtocolString;
 
         private DeviceInfo(string name, ConnectionType source, string connectionString)
         {
@@ -86,7 +83,7 @@ namespace SysDVR.Client.Core
 
             this.AdvertisementString = "";
             this.Version = "0.0";
-            this.ProtocolVersion = 0;
+            this.ProtocolVersion = "00";
             this.Serial = "00000000";
 
             this.TextRepresentation = $"{name} @ {ConnectionString}";
@@ -113,7 +110,7 @@ namespace SysDVR.Client.Core
             if (protover.Length != "00".Length)
                 throw new Exception("Invalid protocol version format");
 
-            ProtocolVersion = int.Parse(protover, System.Globalization.NumberStyles.HexNumber);
+            ProtocolVersion = protover;
 
             Serial = parts[3];
 

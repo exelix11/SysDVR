@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SysDVR.Client.Sources;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -181,7 +182,7 @@ namespace SysDVR.Client.Core
             Cancel = cancel;
         }
 
-        public void AddSource(IStreamingSource source)
+        public void AddSource(StreamingSource source)
         {
             if (source.SourceKind == StreamKind.Video)
             {

@@ -130,24 +130,6 @@ static bool HandleCommand(const Request* req)
 			WritePayloadResponseToTLS(0, &mode, sizeof(mode));
 			return false;
 		}
-		case CMD_GET_USER_OVERRIDES: 
-		{
-			UserOverrides overrides = GetUserOverrides();
-			WritePayloadResponseToTLS(0, &overrides, sizeof(overrides));
-			return false;
-		}
-		case CMD_SET_USER_OVERRIDES:
-		{
-			UserOverrides overrides;
-			if (!ReadPayload(req, &overrides, sizeof(overrides)))
-			{
-				WriteResponseToTLS(ERR_IPC_INVALID_REQUEST);
-				return true;
-			}
-			ApplyUserOverrides(overrides);
-			WriteResponseToTLS(0);
-			return false;
-		}
 		case CMD_DEBUG_CRASH:
 		{
 			// Crash the process

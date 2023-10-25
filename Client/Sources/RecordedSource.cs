@@ -10,7 +10,7 @@ using SysDVR.Client.Core;
 namespace SysDVR.Client.Sources
 {
     // Playsback a recording made with LoggingTarget, useful for developing without a console
-    class RecordedSource : IStreamingSource
+    class RecordedSource : StreamingSource
 	{
         public event Action<string> OnMessage;
 

@@ -6,7 +6,7 @@ using SysDVR.Client.Core;
 namespace SysDVR.Client.Sources
 {
     // Stub source for testing SDL/Ffmpeg UI without a real console 
-    class StubSource : IStreamingSource
+    class StubSource : StreamingSource
 	{
         public event Action<string> OnMessage;
 

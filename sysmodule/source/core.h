@@ -50,10 +50,6 @@ void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 s
 void JoinThread(Thread* t);
 
 #ifndef USB_ONLY
-UserOverrides GetUserOverrides();
-
-void ApplyUserOverrides(UserOverrides overrides);
-
 void SetModeID(u32 mode);
 
 u32 GetCurrentMode();
