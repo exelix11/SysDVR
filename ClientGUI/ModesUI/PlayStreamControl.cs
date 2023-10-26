@@ -1,4 +1,5 @@
 ﻿using SysDVRClientGUI.Logic;
+using SysDVRClientGUI.Models;
 using System.Text;
 using System.Windows.Forms;
 

@@ -17,6 +17,7 @@ using System.Globalization;
 using static SysDVRClientGUI.Logic.Constants;
 using static SysDVRClientGUI.Logic.HelperFunctions;
 using static SysDVRClientGUI.Resources.Resources;
+using SysDVRClientGUI.Models;
 
 namespace SysDVRClientGUI.Forms
 {
@@ -29,17 +30,6 @@ namespace SysDVRClientGUI.Forms
         readonly string DotnetPath;
         readonly int DotnetMajorVersion;
         readonly bool DotnetIs32Bit;
-
-        const string BatchLauncherFileCheckTemplate =
-@":: Ensure {1} file exists
-if not exist ""{0}"" (
-    echo.
-    echo Could not find {1}, create a new launcher from the GUI.
-    pause
-    exit /b 1
-)
-
-";
 
         private readonly Dictionary<string, string> availableLanguages = new()
         {
@@ -315,24 +305,15 @@ if not exist ""{0}"" (
                 if (CheckUSBDriver())
                     return null;
 
-            try
-            {
-                if (CurrentControl == null)
-                    throw new Exception("Select all the options first");
+            if (CurrentControl == null)
+                throw new Exception("Select all the options first");
 
-                return new LaunchCommand[]
-                {
-                    GetClientCommandLine(),
-                    CurrentControl.GetExtraCmd()
-                }
-                .Where(x => x != null).ToArray();
-            }
-            catch (Exception ex)
+            return new LaunchCommand[]
             {
-                MessageBox.Show("Error: " + ex.Message);
+                GetClientCommandLine(),
+                CurrentControl.GetExtraCmd()
             }
-
-            return null;
+            .Where(x => x != null).ToArray();
         }
 
         private void Launch(object sender, EventArgs e)
@@ -373,39 +354,9 @@ if not exist ""{0}"" (
             if (sav.ShowDialog() != DialogResult.OK)
                 return;
 
-            StringBuilder bat = new();
-
-            bat.AppendLine("@echo off");
-            bat.AppendLine("title SysDVR Launcher");
-            bat.AppendLine("echo Launching SysDVR-Client...");
-
-            // Check all dependencies first
-            foreach (var cmd in cmds)
-            {
-                bat.AppendFormat(BatchLauncherFileCheckTemplate, cmd.Executable, Path.GetFileName(cmd.Executable));
-
-                if (cmd.FileDependencies != null)
-                    foreach (var dep in cmd.FileDependencies)
-                        bat.AppendFormat(BatchLauncherFileCheckTemplate, dep, Path.GetFileName(dep));
-            }
-
-            // cd to sysdvr folder so that the dll can be found
-            bat.AppendLine($"cd /D \"{Path.GetDirectoryName(Path.GetFullPath(ClientDllPath))}\"");
-
-            // If there are multiple commands use start to launch them in parallel
-            string prefix = cmds.Length > 1 ? "start " : "";
-
-            // Launch the commands
-            foreach (var cmd in cmds)
-            {
-                bat.AppendLine($"{prefix}{cmd}");
-                // If there are multiple commands wait a bit before launching the next one
-
-                if (!string.IsNullOrWhiteSpace(prefix))
-                    bat.AppendLine("timeout 2 > NUL");
-            }
-
-            File.WriteAllText(sav.FileName, bat.ToString());
+            CreateBatch b = new(this.ClientDllPath, cmds);
+            b.Create();
+            b.SaveToFile(sav.FileName);
 
             if (MessageBox.Show("Done, launch SysDVR-Client now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 Launch(sender, e);
