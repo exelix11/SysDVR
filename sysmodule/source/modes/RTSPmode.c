@@ -96,7 +96,6 @@ static void RTSP_Exit()
 const StreamMode RTSP_MODE = {
 	RTSP_Init, RTSP_Exit,
 	RTSP_StreamVideo, RTSP_StreamAudio, 
-	NULL, NULL,
-	1
+	NULL, NULL
 };
 #endif

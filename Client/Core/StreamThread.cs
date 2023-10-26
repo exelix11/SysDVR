@@ -95,7 +95,7 @@ namespace SysDVR.Client.Core
                     if (logStats)
                         Manager.ReportError($"[{Kind}] {Header}");
 
-                    if (Header.Magic is not PacketHeader.MagicResponseAudio and not PacketHeader.MagicResponseVideo)
+                    if (Header.Magic != PacketHeader.MagicResponse)
                     {
                         if (logDbg)
                             Manager.ReportError($"[{Kind}] Wrong header magic: {Header.Magic:X}");
@@ -111,6 +111,11 @@ namespace SysDVR.Client.Core
 
                         Source.Flush();
                         continue;
+                    }
+
+                    if (Header.IsHash)
+                    {
+                        // TODO....
                     }
 
                     var Data = PoolBuffer.Rent(Header.DataSize);
@@ -174,8 +179,8 @@ namespace SysDVR.Client.Core
         protected override bool DataReceived(in PacketHeader header, PoolBuffer body)
         {
             var valid =
-                Kind == StreamKind.Video && header.IsVideo() ||
-                Kind == StreamKind.Audio && header.IsAudio();
+                Kind == StreamKind.Video && header.IsVideo ||
+                Kind == StreamKind.Audio && header.IsAudio;
 
             if (!valid)
                 return false;
@@ -208,9 +213,9 @@ namespace SysDVR.Client.Core
 
         protected override bool DataReceived(in PacketHeader header, PoolBuffer body)
         {
-            if (header.IsVideo())
+            if (header.IsVideo)
                 VideoTarget.SendData(body, header.Timestamp);
-            else if (header.IsAudio())
+            else if (header.IsAudio)
                 AudioTarget.SendData(body, header.Timestamp);
             else
                 return false;

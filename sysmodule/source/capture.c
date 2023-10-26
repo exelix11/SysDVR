@@ -44,12 +44,17 @@ void CaptureAudioConnected()
 
 bool CaptureReadAudio()
 {
+	u32 dataSize; u64 timestamp;
+
 	Result rc = grcdServiceTransfer(
 		&grcdAudio, GrcStream_Audio,
 		APkt.Data, AbufSz,
 		NULL,
-		&APkt.Header.DataSize,
-		&APkt.Header.Timestamp);
+		&dataSize,
+		&timestamp);
+
+	APkt.Header.DataSize = dataSize;
+	APkt.Header.Timestamp = timestamp;
 
 	if (R_FAILED(rc))
 		return false;
@@ -140,14 +145,18 @@ void CaptureVideoConnected()
 
 bool CaptureReadVideo()
 {
-again:
+	u32 dataSize; u64 timestamp;
+
 	Result res = grcdServiceTransfer(
 		&grcdVideo, GrcStream_Video,
 		VPkt.Data, VbufSz,
 		NULL,
-		&VPkt.Header.DataSize,
-		&VPkt.Header.Timestamp);
+		&dataSize,
+		&timestamp);
 
+	VPkt.Header.DataSize = dataSize;
+	VPkt.Header.Timestamp = timestamp;
+	
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
 #ifndef RELEASE
