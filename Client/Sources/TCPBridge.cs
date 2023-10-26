@@ -200,21 +200,4 @@ namespace SysDVR.Client.Sources
         public override bool ReadRaw(byte[] buffer, int length) =>
             ReadPayload(buffer, length);
     }
-
-	static internal partial class Exten 
-	{
-		public static async Task ConnectAsync(this TcpClient tcpClient, string host, int port, CancellationToken cancellationToken)
-		{
-			if (tcpClient == null)
-				throw new ArgumentNullException(nameof(tcpClient));
-
-			cancellationToken.ThrowIfCancellationRequested();
-
-			using (cancellationToken.Register(() => tcpClient.Close()))
-			{
-				cancellationToken.ThrowIfCancellationRequested();
-				await tcpClient.ConnectAsync(host, port).ConfigureAwait(false);				
-			}
-		}
-	}
 }

@@ -77,14 +77,15 @@ static void WriteResponseToTLS(Result rc)
 	rawHeader->token = 0;
 }
 
-static bool ReadPayload(const Request* req, void* data, u32 len)
-{
-	if (req->dataSize < len || !req->data)
-		return false;
-
-	memcpy(data, req->data, len);
-	return true;
-}
+// Currently not used
+//static bool ReadPayload(const Request* req, void* data, u32 len)
+//{
+//	if (req->dataSize < len || !req->data)
+//		return false;
+//
+//	memcpy(data, req->data, len);
+//	return true;
+//}
 
 static void WritePayloadResponseToTLS(Result rc, const void* payload, u32 len)
 {

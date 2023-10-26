@@ -28,7 +28,7 @@ ProtoParsedHandshake ProtoHandshake(uint8_t* data, int length)
 	ProtoHandshakeResult rc = ProtoHandshakeVersion(data, length, &req);
 	
 	ProtoParsedHandshake res = {
-		.Result = result
+		.Result = rc
 	};
 
 	if (rc != Handshake_Ok)

@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 
 // This header defines the sysdvr protocol used for the initial handshake over USB and TCPBridge
 // The handshake happens seprately for both streams
@@ -29,27 +30,27 @@ typedef struct {
 // Sent by the client to set up streaming
 struct ProtoHandshakeRequest
 {
-	u32 Magic;
+	uint32_t Magic;
 	// Two ascii chars from SYSDVR_PROTOCOL_VERSION
-	u16 ProtoVer;
+	uint16_t ProtoVer;
 
 	struct {
-		u8 Audio : 1;
-		u8 Video : 1;
-		u8 Reserved : 6;
+		uint8_t Audio : 1;
+		uint8_t Video : 1;
+		uint8_t Reserved : 6;
 	} Meta;
 
 	struct {
-		u8 Batching;
+		uint8_t Batching;
 	} Audio;
 
 	struct {
-		u8 UseNalHash : 1;
-		u8 InjectPPSSPS : 1;
-		u8 Reserved : 6;
+		uint8_t UseNalHash : 1;
+		uint8_t InjectPPSSPS : 1;
+		uint8_t Reserved : 6;
 	} Video;
 
-	u8 Reserved[7];
+	uint8_t Reserved[7];
 };
 
 _Static_assert(sizeof(struct ProtoHandshakeRequest) == 16);

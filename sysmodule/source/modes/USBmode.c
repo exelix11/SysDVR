@@ -68,6 +68,7 @@ bool USB_ConnectClient()
 		CaptureAudioConnected();
 	
 	LastConnection = armGetSystemTick();
+	return true;
 }
 
 static void USB_VideoStreamThread(void*)

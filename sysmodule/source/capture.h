@@ -54,11 +54,11 @@ typedef struct {
 			enum PacketContent Content : 3;
 			u8 Reserved : 4;
 			u8 Reserved1;
-		} Struct;
+		} __attribute__((packed)) Struct;
 	} Meta;
-} PacketHeader;
+} __attribute__((packed)) PacketHeader;
 
-_Static_assert(sizeof(PacketHeader) == 18); //Ensure no padding, PACKED triggers a warning
+_Static_assert(sizeof(PacketHeader) == 18);
 
 typedef struct {
 	PacketHeader Header;
