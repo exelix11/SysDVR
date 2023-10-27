@@ -80,7 +80,6 @@ namespace SysDVR.Client.Core
             SetCancellationToken(token);
 
             var HeaderData = new byte[PacketHeader.StructLength];
-            ref var Header = ref MemoryMarshal.Cast<byte, PacketHeader>(HeaderData)[0];
             try
             {
             loop_again:
@@ -91,6 +90,8 @@ namespace SysDVR.Client.Core
                         Source.Flush();
                         goto loop_again;
                     }
+
+                    var Header = MemoryMarshal.Read<PacketHeader>(HeaderData);
 
                     if (logStats)
                         Manager.ReportError($"[{Kind}] {Header}");

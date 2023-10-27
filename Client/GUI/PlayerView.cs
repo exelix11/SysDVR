@@ -192,10 +192,10 @@ namespace SysDVR.Client.GUI
             if (fatalError.Begin(ImGui.GetIO().DisplaySize * 0.95f))
             {
                 ImGui.TextWrapped(fatalMessage);
-                Gui.MakeWindowScrollable();
                 if (Gui.CenterButton("  Ok  "))
-                    fatalError.RequestClose();
+                    Program.Instance.PopView();
 
+                Gui.MakeWindowScrollable();
                 ImGui.EndPopup();
             }
 
