@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
 {
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     struct PacketHeader
     {
         // Note: to make the TCP implementation easier these should be composed of 4 identical bytes
@@ -18,17 +18,25 @@ namespace SysDVR.Client.Sources
         public const int StructLength = 18;
         public const int MaxTransferSize = StreamInfo.MaxPayloadSize + StructLength;
 
+        const byte MetaIsVideo = 1 << 0;
+        const byte MetaIsAudio = 1 << 1;
+        
+        const byte MetaIsData = 1 << 2;
+        const byte MetaIsHash = 1 << 3;
+        const byte MetaIsMultiNAL = 1 << 4;
+
         public uint Magic;
         public int DataSize;
         public ulong Timestamp;
 
         byte Flags;
-        byte flags1;
+        byte Reserved;
 
-        public readonly bool IsVideo => (Flags & 1) == 0;
-        public readonly bool IsAudio => (Flags & 1) == 1;
+        public readonly bool IsVideo => (Flags & MetaIsVideo) != 0;
+        public readonly bool IsAudio => (Flags & MetaIsAudio) != 0;
 
-        public readonly bool IsHash => ((Flags >> 1) & 3) == 1;
+        public readonly bool IsHash => (Flags & MetaIsHash) != 0;
+        public readonly bool IsMultiNAL => (Flags & MetaIsMultiNAL) != 0;
 
         public override string ToString() =>
             $"Magic: {Magic:X8} Len: {DataSize + StructLength} Bytes - ts: {Timestamp}";
@@ -53,43 +61,45 @@ namespace SysDVR.Client.Sources
 
         public uint Magic;
         public ushort Version;
-
-        byte Meta;
+        
+        private byte MetaFlags;
+        private byte VideoFlags;
         public byte AudioBatching;
-        byte Video;
 
         fixed byte Reserved[7];
+
+        static int Bit(int i) => 1 << i;
 
         static void SetBit(ref byte b, int i, bool v)
         {
             if (v)
-                b |= (byte)(1 << i);
+                b |= (byte)Bit(i);
             else
-                b &= (byte)~(1 << i);
+                b &= (byte)~Bit(i);
         }
 
         public bool IsVideoPacket
         {
-            get => (Meta & 2) == 1;
-            set => SetBit(ref Meta, 2, value);
+            get => (MetaFlags & Bit(0)) != 0;
+            set => SetBit(ref MetaFlags, 0, value);
         }
 
         public bool IsAudioPacket
         {
-            get => (Meta & 1) == 1;
-            set => SetBit(ref Meta, 1, value);
+            get => (MetaFlags & Bit(1)) != 0;
+            set => SetBit(ref MetaFlags, 1, value);
         }
 
         public bool UseNalhashes 
         {
-            get => (Video & 1) == 1;
-            set => SetBit(ref Video, 1, value);
+            get => (VideoFlags & Bit(0)) != 0;
+            set => SetBit(ref VideoFlags, 0, value);
         }
 
         public bool InjectPPSSPS
         {
-            get => (Video & 2) == 1;
-            set => SetBit(ref Video, 2, value);
+            get => (VideoFlags & Bit(1)) != 0;
+            set => SetBit(ref VideoFlags, 1, value);
         }
 
         static ProtoHandshakeRequest() 

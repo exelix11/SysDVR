@@ -8,10 +8,6 @@ namespace SysDVR.Client.Sources
     // Stub source for testing SDL/Ffmpeg UI without a real console 
     class StubSource : StreamingSource
 	{
-        public event Action<string> OnMessage;
-
-        readonly StreamKind kind;
-		public StreamKind SourceKind => kind;
 		CancellationToken Cancellation;
 
 		// Check for bugs
@@ -19,7 +15,7 @@ namespace SysDVR.Client.Sources
 
 		public StubSource(bool hasVideo, bool hasAudio)
 		{
-            kind = (hasVideo, hasAudio) switch
+            SourceKind = (hasVideo, hasAudio) switch
 			{
 				(true, true) => StreamKind.Both,
 				(true, false) => StreamKind.Video,
@@ -28,9 +24,9 @@ namespace SysDVR.Client.Sources
 			};
 		}
 
-        public void Flush() { }
+        public override void Flush() { }
 
-		public bool ReadHeader(byte[] buffer)
+		public override bool ReadHeader(byte[] buffer)
 		{
             if (!connected)
                 throw new Exception("Stub not connected");
@@ -41,7 +37,7 @@ namespace SysDVR.Client.Sources
 			return false;
         }
 
-		public bool ReadPayload(byte[] buffer, int length)
+		public override bool ReadPayload(byte[] buffer, int length)
 		{
 			if (!connected)
 				throw new Exception("Stub not connected");
@@ -52,20 +48,25 @@ namespace SysDVR.Client.Sources
             return false;
         }
 
-		public void StopStreaming() { }
+		public override void StopStreaming() { }
 
-		public void UseCancellationToken(CancellationToken tok)
-		{
-			Cancellation = tok;
-		}
-
-        public async Task ConnectAsync(CancellationToken token)
+        public override async Task ConnectAsync(CancellationToken token)
         {
             Cancellation = token;	
-			OnMessage?.Invoke("Connecting stub...");
+			ReportMessage("Connecting stub...");
 			await Task.Delay(20, token).ConfigureAwait(false);
-            OnMessage?.Invoke("Stub connected");
+            ReportMessage("Stub connected");
 			connected = true;
+        }
+
+        public override bool ReadRaw(byte[] buffer, int length)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool WriteData(byte[] buffer)
+        {
+            throw new NotImplementedException();
         }
     }
 }
