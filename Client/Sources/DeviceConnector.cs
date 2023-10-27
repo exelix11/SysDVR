@@ -18,7 +18,7 @@ namespace SysDVR.Client.Sources
         readonly DeviceInfo Info;
         readonly CancellationTokenSource Token;
         readonly bool IsForPlayer;
-        readonly StreamKind Kind;
+        readonly StreamingOptions Options;
 
         readonly bool HasVideo;
         readonly bool HasAudio;
@@ -29,17 +29,17 @@ namespace SysDVR.Client.Sources
             OnMessage?.Invoke(msg);
         }
 
-        public DeviceConnector(DeviceInfo info, CancellationTokenSource token, StreamKind kind)
+        public DeviceConnector(DeviceInfo info, CancellationTokenSource token, StreamingOptions opt)
         {
             Info = info;
             Token = token;
-            Kind = kind;
+            Options = opt;
 
             // TODO
             IsForPlayer = true;
             
-            HasVideo = Kind is StreamKind.Video or StreamKind.Both;
-            HasAudio = Kind is StreamKind.Audio or StreamKind.Both;
+            HasVideo = opt.Kind is StreamKind.Video or StreamKind.Both;
+            HasAudio = opt.Kind is StreamKind.Audio or StreamKind.Both;
         }
 
         BaseStreamManager GetManager()
@@ -74,7 +74,7 @@ namespace SysDVR.Client.Sources
         async Task<BaseStreamManager> BeginStub()
         {
             Console.WriteLine("Stub");
-            var src = new StubSource(HasVideo, HasAudio);
+            var src = new StubSource(Options);
             src.OnMessage += MessageReceived;
 
             try
@@ -96,7 +96,7 @@ namespace SysDVR.Client.Sources
             if (Info.ConnectionHandle is not DvrUsbDevice dev)
                 throw new Exception("Wrong connection handle");
 
-            var source = new UsbStreamingSource(dev, Kind);
+            var source = new UsbStreamingSource(dev, Options);
             source.OnMessage += MessageReceived;
 
             try
@@ -116,13 +116,13 @@ namespace SysDVR.Client.Sources
         async Task<BaseStreamManager> BeginNet() 
         {
             // Tcp bridge is single channel, needs two instances.
-            TCPBridgeSource? vTcp = HasVideo ? new TCPBridgeSource(Info, StreamKind.Video) : null;
-            TCPBridgeSource? aTcp = HasAudio ? new TCPBridgeSource(Info, StreamKind.Audio) : null;
+            TCPBridgeSource? vTcp = HasVideo ? new TCPBridgeSource(Info, Options, StreamKind.Video) : null;
+            TCPBridgeSource? aTcp = HasAudio ? new TCPBridgeSource(Info, Options, StreamKind.Audio) : null;
 
             if (vTcp is not null) vTcp.OnMessage += MessageReceived;
             if (aTcp is not null) aTcp.OnMessage += MessageReceived;
 
-            Task conn = Kind == StreamKind.Both ?
+            Task conn = Options.Kind == StreamKind.Both ?
                 Task.WhenAll(vTcp!.ConnectAsync(Token.Token), aTcp!.ConnectAsync(Token.Token)) :
                 vTcp?.ConnectAsync(Token.Token) ?? aTcp!.ConnectAsync(Token.Token);
 

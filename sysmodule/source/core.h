@@ -6,31 +6,31 @@
 #define LOGGING_ENABLED (UDP_LOGGING || FILE_LOGGING || CUSTOM_LOGGING)
 
 #if (UDP_LOGGING + FILE_LOGGING + CUSTOM_LOGGING) > 1
-#pragma error "UDP and file logging are mutually exclusive"
+	#pragma error "UDP and file logging are mutually exclusive"
 #endif
 
 #define NEEDS_FS (!defined(USB_ONLY) || FILE_LOGGING)
 #define NEEDS_SOCKETS (!defined(USB_ONLY) || UDP_LOGGING)
 
 #if LOGGING_ENABLED
-#if FILE_LOGGING
-#include <stdio.h>
-#define LogFunctionImpl(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
-#else
-void LogFunctionImpl(const char* fmt, ...);
-#endif
+	#if FILE_LOGGING
+		#include <stdio.h>
+		#define LogFunctionImpl(...) do { printf(__VA_ARGS__); fflush(stdout); } while (0)
+	#else
+		void LogFunctionImpl(const char* fmt, ...);
+	#endif
 
-#define LOG(...) do { LogFunctionImpl(__VA_ARGS__); } while (0)
+	#define LOG(...) do { LogFunctionImpl(__VA_ARGS__); } while (0)
 
-#ifdef VERBOSE_LOGGING
-void LogVerboseFunctionImpl(const char* fmt, ...);
-#define LOG_V(...) do { LogVerboseFunctionImpl(__VA_ARGS__); } while (0)
-#else
-#define LOG_V(...) do { } while (0)
-#endif
+	#ifdef VERBOSE_LOGGING
+		void LogVerboseFunctionImpl(const char* fmt, ...);
+		#define LOG_V(...) do { LogVerboseFunctionImpl(__VA_ARGS__); } while (0)
+	#else
+		#define LOG_V(...) do { } while (0)
+	#endif
 
-// This is also added to thread stacks so must be 0x1000-aligned	
-#define LOGGING_HEAP_BOOST 0x1000
+	// This is also added to thread stacks so must be 0x1000-aligned	
+	#define LOGGING_HEAP_BOOST 0x1000
 #else
 #define LOG(...) do { } while (0)
 #define LOG_V(...) do { } while (0)

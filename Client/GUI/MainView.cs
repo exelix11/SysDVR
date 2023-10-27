@@ -1,17 +1,8 @@
 ﻿using ImGuiNET;
-using LibUsbDotNet;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
-using SysDVR.Client.Sources;
-using SysDVR.Client.Targets.Player;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SysDVR.Client.GUI
 {
@@ -23,7 +14,7 @@ namespace SysDVR.Client.GUI
         bool HasDiskPermission;
         bool CanRequesDiskPermission;
 
-        StreamKind channels = StreamKind.Video;
+        StreamingOptions options = new StreamingOptions();
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
@@ -109,9 +100,9 @@ namespace SysDVR.Client.GUI
             }
 
             if (usb)
-                Program.Instance.PushView(new UsbDevicesView(channels));
+                Program.Instance.PushView(new UsbDevicesView(options));
             else if (wifi)
-                Program.Instance.PushView(new NetworkScanView(channels));
+                Program.Instance.PushView(new NetworkScanView(options));
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
@@ -194,8 +185,8 @@ namespace SysDVR.Client.GUI
 
         void ChannelRadio(string name, StreamKind target)
         {
-            if (ImGui.RadioButton(name, channels == target))
-                channels = target;
+            if (ImGui.RadioButton(name, options.Kind == target))
+                options.Kind = target;
         }
 
         bool ModeButton(Image image, string title, int width, int height)

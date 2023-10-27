@@ -81,7 +81,7 @@ static void RTSP_Init()
 {
 	CaptureConfigResetDefault();
 	// RTSP can't handle NAL hashing
-	CaptureSetNalHashing(false);
+	CaptureSetNalHashing(false, false);
 
 	RTP_InitializeSequenceNumbers();
 	LaunchThread(&RTSPThread, RTSP_ServerThread, NULL, Buffers.RTSPMode.ServerThreadStackArea, sizeof(Buffers.RTSPMode.ServerThreadStackArea), 0x2D);

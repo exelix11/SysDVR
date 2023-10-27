@@ -19,8 +19,8 @@ namespace SysDVR.Client.Sources
 		const int TcpBridgeVideoPort = 9911;
 		const int TcpBridgeAudioPort = 9922;
                 
-		int Port => 
-			SourceKind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
+		int Port =>
+            StreamProduced == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
 
         readonly string IpAddress;
 		readonly byte HeaderMagicByte;
@@ -31,12 +31,12 @@ namespace SysDVR.Client.Sources
 
         bool InSync = false;
 
-        public TCPBridgeSource(DeviceInfo ip, StreamKind kind)
+        public TCPBridgeSource(DeviceInfo ip, StreamingOptions opt, StreamKind channel) : base(opt)
 		{
-            if (kind == StreamKind.Both)
+            if (channel == StreamKind.Both)
                 throw new Exception("Tcp bridge can't stream both channels over a single connection");
 
-            SourceKind = kind;
+            StreamProduced = channel;
 			IpAddress = ip.ConnectionString;
 
             HeaderMagicByte = unchecked((byte)PacketHeader.MagicResponse);
@@ -61,7 +61,7 @@ namespace SysDVR.Client.Sources
             for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++)
             {
                 if (i != 0 || DebugOptions.Current.Log) // Don't show error for the first attempt
-                    ReportMessage($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
+                    ReportMessage($"[{StreamProduced} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
 
                 try
                 {
@@ -88,7 +88,7 @@ namespace SysDVR.Client.Sources
 
             if (!Sock.Connected)
             {
-                ReportMessage($"Connection to {SourceKind} stream failed. Throwing exception.");
+                ReportMessage($"Connection to {StreamProduced} stream failed. Throwing exception.");
                 throw ReportException ?? new Exception("No exception provided");
             }
         }
@@ -111,7 +111,7 @@ namespace SysDVR.Client.Sources
 				Sock?.Dispose();
 				Sock = null;
 
-                ReportMessage($"{SourceKind} stream connection lost, reconnecting...");
+                ReportMessage($"{StreamProduced} stream connection lost, reconnecting...");
                 Thread.Sleep(800);
 				
                 ConnectAsync(Token).GetAwaiter().GetResult();
@@ -131,7 +131,7 @@ namespace SysDVR.Client.Sources
             else
             {
 				if (DebugOptions.Current.Log)
-                    ReportMessage($"{SourceKind} Resyncing....");
+                    ReportMessage($"{StreamProduced} Resyncing....");
 
                 // TCPBridge is a raw stream of data, search for an header
                 for (int i = 0; i < 4 && !Token.IsCancellationRequested;)

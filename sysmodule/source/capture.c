@@ -23,23 +23,24 @@ static atomic_bool capturing = false;
 static int AudioBatching = MaxABatching;
 static bool InjectSpsPps = true;
 static bool HashNals = false;
+static bool HashOnlyKeyframes = true;
 
-static void PacketMakeHash(PacketHeader* packet, u32 hash)
+static void PacketMakeHash(VideoPacket* packet, u32 hash)
 {
-	packet->Meta.Struct.Content = PacketContent_Hash;
-	packet->DataSize = sizeof(hash);
-	memcpy(packet + sizeof(PacketHeader), &hash, sizeof(hash));
+	packet->Header.MetaData = (packet->Header.MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Hash;
+	packet->Header.DataSize = sizeof(hash);
+	memcpy(packet->Data, &hash, sizeof(hash));
 }
 
 static void PacketMakeData(PacketHeader* packet)
 {
-	packet->Meta.Struct.Content = PacketContent_Data;
-	packet->Meta.Struct.Channel = PacketType_Audio;
+	packet->MetaData = (packet->MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Data;
 }
 
 void CaptureAudioConnected()
 {
 	APkt.Header.Magic = STREAM_PACKET_HEADER;
+	APkt.Header.MetaData = PacketMeta_Type_Audio | PacketMeta_Content_Data;
 }
 
 bool CaptureReadAudio()
@@ -87,25 +88,33 @@ DEFINE_UNALIGNED_ACCESSOR(u64);
 DEFINE_UNALIGNED_ACCESSOR(u32);
 DEFINE_UNALIGNED_ACCESSOR(u16);
 
-static u32 crc32_arm64_hw(u32 crc, const u8* p, unsigned int len)
+u32 crc32_arm64_hw(const u8* p, unsigned int len)
 {
+	u32 crc = 0xffffffff;
+
 	s64 length = len;
-	while ((length -= sizeof(u64)) >= 0) {
+	while (length >= sizeof(u64)) {
 		CRC32X(crc, get_unaligned_u64(p));
 		p += sizeof(u64);
+		length -= sizeof(u64);
 	}
-	/* The following is more efficient than the straight loop */
-	if (length & sizeof(u32)) {
+	
+	if (length >= sizeof(u32)) {
 		CRC32W(crc, get_unaligned_u32(p));
 		p += sizeof(u32);
+		length -= sizeof(u32);
 	}
-	if (length & sizeof(u16)) {
+
+	if (length >= sizeof(u16)) {
 		CRC32H(crc, get_unaligned_u16(p));
 		p += sizeof(u16);
+		length -= sizeof(u16);
 	}
-	if (length & sizeof(u8))
+
+	if (length)
 		CRC32B(crc, *p);
-	return crc;
+	
+	return ~crc;
 }
 
 static u32 NalHashes[20];
@@ -113,26 +122,26 @@ static u32 NalHashIdx = 0;
 
 bool CheckVideoPacket(const u8* data, size_t len, u32* outHash)
 {
-	if (HashNals)
-		return false;
+	u32 hash = crc32_arm64_hw(data, len);
 
-	u32 hash = crc32_arm64_hw(0, data, len);
-	bool found = false;
+	// This is unlikely but we use hash = 0 to indicate uninitialized entry
+	if (!hash)
+		return false;
 
 	for (int i = 0; i < sizeof(NalHashes) / sizeof(NalHashes[0]); i++)
 	{
 		if (NalHashes[i] == hash)
 		{
 			*outHash = hash;
-			found = true;
-			break;
+			// note how the hash table is not updated if we already know the hash
+			return true;
 		}
 	}
 
 	NalHashes[NalHashIdx++] = hash;
 	NalHashIdx %= sizeof(NalHashes) / sizeof(NalHashes[0]);
 
-	return found;
+	return false;
 }
 
 void CaptureVideoConnected()
@@ -140,7 +149,7 @@ void CaptureVideoConnected()
 	memset(NalHashes, 0, sizeof(NalHashes));
 	NalHashIdx = 0;
 	VPkt.Header.Magic = STREAM_PACKET_HEADER;
-	VPkt.Header.Meta.Struct.Channel = PacketType_Video;
+	VPkt.Header.MetaData = PacketMeta_Type_Video;
 }
 
 bool CaptureReadVideo()
@@ -164,7 +173,7 @@ bool CaptureReadVideo()
 	// These big NALs are not common and even if they're missed they only cause graphical glitches, it's better not to fatal in release builds
 	// Error code should be 2212-0006
 	if (R_FAILED(res))
-		fatalThrow(res);
+		LOG("Failed to read video: %x\n", res);
 #endif
 
 	if (!result) {
@@ -178,12 +187,13 @@ bool CaptureReadVideo()
 	// Static images are particularly bad for sysdvr cause they cause the video encoder
 	// to emit really big keyframes, all to produce a static image. So here's a trick:
 	// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
-	// this is a static images so we kan just not send it with no consequences to free
+	// this is a static images so we can just not send it with no consequences to free
 	// up bandwidth for audio and reduce delay once the image changes
 	u32 hash;
-	if (isIDRFrame && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize, &hash)) {
+	const bool UseHash = HashNals && (isIDRFrame || !HashOnlyKeyframes);
+	if (UseHash && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize, &hash)) {
 		LOG("Sending packet hash instead\n");
-		PacketMakeHash(&VPkt.Header, hash);
+		PacketMakeHash(&VPkt, hash);
 		return true;
 	}
 
@@ -208,7 +218,7 @@ bool CaptureReadVideo()
 			memcpy(VPkt.Data, SPS, sizeof(SPS));
 			memcpy(VPkt.Data + sizeof(SPS), PPS, sizeof(PPS));
 			VPkt.Header.DataSize += sizeof(SPS) + sizeof(PPS);
-			VPkt.Header.Meta.Struct.Content = PacketContent_MultiNAL;
+			VPkt.Header.MetaData |= PacketMeta_Content_MultiNal;
 		}
 	}
 
@@ -235,15 +245,16 @@ void CaptureSetPPSSPSInject(bool value)
 	InjectSpsPps = value;
 }
 
-void CaptureSetNalHashing(bool value)
+void CaptureSetNalHashing(bool enabled, bool onlyKeyframes)
 {
-	LOG("CaptureSetNalHashing(%d)\n", value);
-	HashNals = value;
+	LOG("CaptureSetNalHashing(%d, %d)\n", enabled, onlyKeyframes);
+	HashNals = enabled;
+	HashOnlyKeyframes = onlyKeyframes;
 }
 
 void CaptureConfigResetDefault()
 {
-	CaptureSetNalHashing(true);
+	CaptureSetNalHashing(true, true);
 	CaptureSetPPSSPSInject(true);
 	CaptureSetAudioBatching(MaxABatching);
 }

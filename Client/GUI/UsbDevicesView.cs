@@ -16,7 +16,7 @@ namespace SysDVR.Client.GUI
 {
     internal class UsbDevicesView : View
     {
-        readonly StreamKind channels;
+        readonly StreamingOptions options;
         readonly DvrUsbContext? context;
         readonly Gui.Popup incompatiblePopup = new("Error");
 
@@ -25,9 +25,9 @@ namespace SysDVR.Client.GUI
         string? autoConnect;
         string? lastError;
 
-        public UsbDevicesView(StreamKind channels, string? autoConnect = null)
+        public UsbDevicesView(StreamingOptions options, string? autoConnect = null)
         {
-            this.channels = channels;
+            this.options = options;
             this.autoConnect = autoConnect;
 
             Popups.Add(incompatiblePopup);
@@ -97,7 +97,7 @@ namespace SysDVR.Client.GUI
             devices.Where(x => x != info).ToList().ForEach(x => x.Dispose());
             devices = new List<DvrUsbDevice>();
 
-            Program.Instance.PushView(new ConnectingView(info.Info, channels));
+            Program.Instance.PushView(new ConnectingView(info.Info, options));
         }
 
         public override void Draw()

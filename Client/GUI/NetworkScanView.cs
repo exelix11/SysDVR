@@ -15,7 +15,7 @@ namespace SysDVR.Client.GUI
 {
     internal class NetworkScanView : View
     {
-        readonly StreamKind channels;
+        readonly StreamingOptions options;
         readonly NetworkScan scanner = new();
         readonly List<DeviceInfo> devices = new List<DeviceInfo>();
         readonly byte[] IpAddressTextBuf = new byte[256];
@@ -28,12 +28,12 @@ namespace SysDVR.Client.GUI
         Gui.CenterGroup popupBtnCenter = new();
         string? lastError;
 
-        public NetworkScanView(StreamKind channels, string? autoConnect = null)
+        public NetworkScanView(StreamingOptions opt, string? autoConnect = null)
         {
             Popups.Add(ipEnterPopup);
             Popups.Add(incompatiblePopup);
 
-            this.channels = channels;
+            this.options = opt;
             this.autoConnect = autoConnect;
 
             scanner.OnDeviceFound += OnDeviceFound;
@@ -106,7 +106,7 @@ namespace SysDVR.Client.GUI
             }
 
             autoConnect = null;
-            Program.Instance.PushView(new ConnectingView(info, channels));
+            Program.Instance.PushView(new ConnectingView(info, options));
         }
 
         public override void Draw()

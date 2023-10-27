@@ -27,6 +27,19 @@ typedef struct {
 	bool RequestedVideo;
 } ProtoParsedHandshake;
 
+enum ProtoMetaFlags // 8 bits
+{
+	ProtoMeta_Video = (1 << 0),
+	ProtoMeta_Audio = (1 << 1),
+};
+
+enum ProtoMetaVideoFlags // 8 bits
+{
+	ProtoMetaVideo_UseNalHash = (1 << 0),
+	ProtoMetaVideo_InjectPPSSPS = (1 << 1),
+	ProtoMetaVideo_NalHashOnlyIDR = (1 << 2),
+};
+
 // Sent by the client to set up streaming
 struct ProtoHandshakeRequest
 {
@@ -34,21 +47,10 @@ struct ProtoHandshakeRequest
 	// Two ascii chars from SYSDVR_PROTOCOL_VERSION
 	uint16_t ProtoVer;
 
-	struct {
-		uint8_t Audio : 1;
-		uint8_t Video : 1;
-		uint8_t Reserved : 6;
-	} Meta;
+	uint8_t MetaFlags; // ProtoMetaFlags
 
-	struct {
-		uint8_t Batching;
-	} Audio;
-
-	struct {
-		uint8_t UseNalHash : 1;
-		uint8_t InjectPPSSPS : 1;
-		uint8_t Reserved : 6;
-	} Video;
+	uint8_t VideoFlags; // ProtoMetaVideoFlags
+	uint8_t AudioBatching;
 
 	uint8_t Reserved[7];
 };
