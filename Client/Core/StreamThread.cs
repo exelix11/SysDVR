@@ -71,6 +71,12 @@ namespace SysDVR.Client.Core
             DeviceThread.Join();
         }
 
+        void OnError() 
+        {
+            Hashes.Flush();
+            Source.Flush();
+        }
+
         TimeTrace trace = new TimeTrace();
         void DeviceThreadMain(CancellationToken token)
         {
@@ -80,6 +86,9 @@ namespace SysDVR.Client.Core
 #endif
             var logStats = DebugOptions.Current.Stats;
             var logDbg = DebugOptions.Current.Log;
+
+            var useHash = Source.Options.UseNALHashing;
+            var hashIDROnly = Source.Options.UseNALHashingOnlyOnKeyframes;
 
             SetCancellationToken(token);
 
@@ -91,7 +100,7 @@ namespace SysDVR.Client.Core
                 {
                     while (!Source.ReadHeader(HeaderData))
                     {
-                        Source.Flush();
+                        OnError();
                         goto loop_again;
                     }
 
@@ -105,7 +114,7 @@ namespace SysDVR.Client.Core
                         if (logDbg)
                             Manager.ReportError($"[{Kind}] Wrong header magic: {Header.Magic:X}");
 
-                        Source.Flush();
+                        OnError();
                         continue;
                     }
 
@@ -114,7 +123,7 @@ namespace SysDVR.Client.Core
                         if (logDbg)
                             Manager.ReportError($"[{Kind}] Data size exceeds max size: {Header.DataSize:X}");
 
-                        Source.Flush();
+                        OnError();
                         continue;
                     }
                     
@@ -124,24 +133,29 @@ namespace SysDVR.Client.Core
                         if (logDbg)
                             Manager.ReportError($"[{Kind}] Read payload failed.");
 
-                        Source.Flush();
                         Data.Free();
+                        OnError();
                         continue;
                     }
 
-                    if (Header.IsHash)
+                    if (useHash && Header.IsVideo)
                     {
-                        var hash = BitConverter.ToUInt32(Data.Span);
-                        Data.Free();
-                        if (!Hashes.LookupHash(hash, out Data))
+                        if (Header.IsHash)
                         {
-                            throw new Exception();
+                            var hash = BitConverter.ToUInt32(Data.Span);
+                            Data.Free();
+                            if (!Hashes.LookupHash(hash, out Data))
+                            {
+                                Manager.ReportError("Unknown hash value");
+                                OnError();
+                                continue;
+                            }
+                            Console.WriteLine("Hash HIT ! ");
                         }
-                        Console.WriteLine("Hash HIT ! ");   
-                    }
-                    else if (Kind == StreamKind.Video)
-                    {
-                        Hashes.OnNewBlock(Data);
+                        else if (!hashIDROnly || (Data.Span[4] & 0x1F) == 5) /* hash everything || is IDR */
+                        {
+                            Hashes.OnNewBlock(Data);
+                        }
                     }
 
                     if (!DataReceived(Header, Data))
