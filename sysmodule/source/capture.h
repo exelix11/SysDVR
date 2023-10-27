@@ -7,7 +7,7 @@
 	This is higher than what suggested on switchbrw to fix https://github.com/exelix11/SysDVR/issues/91,
 	See the comment in ReadVideoStream()
 */
-#define VbufSz 0x50000
+#define VbufSz 0x54000
 
 /*
 	Audio is 16bit pcm at 48000hz stereo. In official software it's read in 0x1000 chunks
@@ -27,35 +27,24 @@
 #define MaxABatching 2
 
 // One bit
-enum PacketTypeFlag 
+enum PacketMeta 
 {
-	PacketType_Video = 0,
-	PacketType_Audio = 1
-};
+	PacketMeta_Type_Mask = BIT(0) | BIT(1),
+	PacketMeta_Type_Video = BIT(0),
+	PacketMeta_Type_Audio = BIT(1),
 
-// Three bits, not a mask
-enum PacketContent 
-{
-	PacketContent_Data = 0,
-	// Only valid for video chanel, implies _Data, contains multiple NALs
-	PacketContent_Hash = 1,
-	PacketContent_MultiNAL = 2,
+	PacketMeta_Content_Mask = BIT(2) | BIT(3) | BIT(4),
+	PacketMeta_Content_Data = BIT(2),
+	PacketMeta_Content_Hash = BIT(3),	// Only if PacketMeta_Type_Video
+	PacketMeta_Content_MultiNal = BIT(4) // Only if PacketMeta_Type_Video
 };
 
 typedef struct {
 	u32 Magic;
 	u32 DataSize;
 	u64 Timestamp; //timestamps are in usecs
-	union {
-		u8 Bytes[2];
-		struct
-		{
-			enum PacketTypeFlag Channel : 1;
-			enum PacketContent Content : 3;
-			u8 Reserved : 4;
-			u8 Reserved1;
-		} __attribute__((packed)) Struct;
-	} Meta;
+	u8 MetaData;
+	u8 Reserved;
 } __attribute__((packed)) PacketHeader;
 
 _Static_assert(sizeof(PacketHeader) == 18);
@@ -94,4 +83,4 @@ void CaptureAudioConnected();
 void CaptureConfigResetDefault();
 int CaptureSetAudioBatching(int batch);
 void CaptureSetPPSSPSInject(bool value);
-void CaptureSetNalHashing(bool value);
+void CaptureSetNalHashing(bool enabled, bool onlyKeyframes);

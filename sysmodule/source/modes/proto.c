@@ -2,6 +2,7 @@
 #include "proto.h"
 #include "../capture.h"
 #include "defines.h"
+#include "../core.h"
 
 static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, struct ProtoHandshakeRequest* out_req)
 {
@@ -16,7 +17,10 @@ static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, str
 	if (memcmp(&out_req->ProtoVer, SYSDVR_PROTOCOL_VERSION, 2))
 		return Handshake_WrongVersion;
 
-	if (!out_req->Meta.Video && !out_req->Meta.Audio)
+	bool video = out_req->MetaFlags & ProtoMeta_Video;
+	bool audio = out_req->MetaFlags & ProtoMeta_Audio;
+
+	if (!video && !audio)
 		return Handshake_InvalidMeta;
 
 	return Handshake_Ok;
@@ -31,20 +35,22 @@ ProtoParsedHandshake ProtoHandshake(uint8_t* data, int length)
 		.Result = rc
 	};
 
-	if (rc != Handshake_Ok)
+	if (rc != Handshake_Ok) {
+		LOG("Handshake failed with code %d\n", rc);
 		return res;
+	}
 
-	if (req.Meta.Video) 
+	if (req.MetaFlags & ProtoMeta_Video) 
 	{
-		CaptureSetNalHashing(req.Video.UseNalHash);
-		CaptureSetPPSSPSInject(req.Video.InjectPPSSPS);
+		CaptureSetNalHashing(req.VideoFlags & ProtoMetaVideo_UseNalHash, req.VideoFlags & ProtoMetaVideo_NalHashOnlyIDR);
+		CaptureSetPPSSPSInject(req.VideoFlags & ProtoMetaVideo_InjectPPSSPS);
 
 		res.RequestedVideo = true;
 	}
 
-	if (req.Meta.Audio)
+	if (req.MetaFlags & ProtoMeta_Audio)
 	{
-		if (CaptureSetAudioBatching(req.Audio.Batching) != req.Audio.Batching)
+		if (CaptureSetAudioBatching(req.AudioBatching) != req.AudioBatching)
 			res.Result = Handshake_InvalidArg;
 
 		res.RequestedAudio = true;

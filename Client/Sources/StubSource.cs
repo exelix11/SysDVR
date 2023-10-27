@@ -13,15 +13,9 @@ namespace SysDVR.Client.Sources
 		// Check for bugs
 		bool connected;
 
-		public StubSource(bool hasVideo, bool hasAudio)
+		public StubSource(StreamingOptions opt) : base(opt)
 		{
-            SourceKind = (hasVideo, hasAudio) switch
-			{
-				(true, true) => StreamKind.Both,
-				(true, false) => StreamKind.Video,
-				(false, true) => StreamKind.Audio,
-				_ => throw new NotSupportedException()
-			};
+            StreamProduced = opt.Kind;
 		}
 
         public override void Flush() { }

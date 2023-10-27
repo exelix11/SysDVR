@@ -1,4 +1,5 @@
-﻿using SDL2;
+﻿using Force.Crc32;
+using SDL2;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;

@@ -19,10 +19,10 @@ namespace SysDVR.Client.Sources
 		protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
 
-		public UsbStreamingSource(DvrUsbDevice device, StreamKind kind)
+		public UsbStreamingSource(DvrUsbDevice device, StreamingOptions opt) : base(opt)
         {
 			this.device = device;
-			SourceKind = kind;
+			StreamProduced = opt.Kind;
 
             (reader, writer) = device.Open();
         }

@@ -18,7 +18,21 @@ namespace SysDVR.Client.Core
         Audio
     };
 
-    struct PoolBuffer
+    class StreamingOptions 
+    {
+        public StreamKind Kind = StreamKind.Both;
+        public int AudioBatching = 2;
+        public bool UseNALHashing = true;
+        public bool UseNALHashingOnlyOnKeyframes = true;
+
+        public void Validate() 
+        {
+            if (AudioBatching < 0 || AudioBatching > 2)
+                throw new Exception("Invalid audio batching value");
+        }
+    }
+
+    class PoolBuffer
     {
         private readonly static ArrayPool<byte> pool = ArrayPool<byte>.Shared;
 
@@ -184,21 +198,21 @@ namespace SysDVR.Client.Core
 
         public void AddSource(StreamingSource source)
         {
-            if (source.SourceKind == StreamKind.Video)
+            if (source.StreamProduced == StreamKind.Video)
             {
                 if (HasVideo) throw new Exception("Already has a video source");
                 Thread1 = new SingleStreamThread(source, VideoTarget, this);
 
                 Streams = HasAudio ? StreamKind.Both : StreamKind.Video;
             }
-            else if (source.SourceKind == StreamKind.Audio)
+            else if (source.StreamProduced == StreamKind.Audio)
             {
                 if (HasAudio) throw new Exception("Already has an audio source");
                 Thread2 = new SingleStreamThread(source, AudioTarget, this);
 
                 Streams = HasVideo ? StreamKind.Both : StreamKind.Audio;
             }
-            else if (source.SourceKind == StreamKind.Both)
+            else if (source.StreamProduced == StreamKind.Both)
             {
                 if (HasAudio || HasVideo) throw new Exception("Already has a multi source");
                 Thread1 = new MultiStreamThread(source, VideoTarget, AudioTarget, this);

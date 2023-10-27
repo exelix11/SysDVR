@@ -4,6 +4,7 @@ using SysDVR.Client.Sources;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
@@ -21,6 +22,9 @@ namespace SysDVR.Client.Core
         readonly BaseStreamManager Manager;
         readonly public StreamingSource Source;
         readonly public StreamKind Kind;
+        
+        // This is only used for video streams when NAL hashes are enabled
+        readonly PacketHashTable Hashes = new();
 
         protected abstract void SetCancellationToken(CancellationToken token);
         protected abstract bool DataReceived(in PacketHeader header, PoolBuffer body);
@@ -40,7 +44,7 @@ namespace SysDVR.Client.Core
         protected StreamThread(StreamingSource source, BaseStreamManager manager)
         {
             Source = source;
-            Kind = Source.SourceKind;
+            Kind = Source.Options.Kind;
             Manager = manager;
 
             source.OnMessage += Manager.ReportError;
@@ -113,12 +117,7 @@ namespace SysDVR.Client.Core
                         Source.Flush();
                         continue;
                     }
-
-                    if (Header.IsHash)
-                    {
-                        // TODO....
-                    }
-
+                    
                     var Data = PoolBuffer.Rent(Header.DataSize);
                     if (!Source.ReadPayload(Data.RawBuffer, Header.DataSize))
                     {
@@ -128,6 +127,21 @@ namespace SysDVR.Client.Core
                         Source.Flush();
                         Data.Free();
                         continue;
+                    }
+
+                    if (Header.IsHash)
+                    {
+                        var hash = BitConverter.ToUInt32(Data.Span);
+                        Data.Free();
+                        if (!Hashes.LookupHash(hash, out Data))
+                        {
+                            throw new Exception();
+                        }
+                        Console.WriteLine("Hash HIT ! ");   
+                    }
+                    else if (Kind == StreamKind.Video)
+                    {
+                        Hashes.OnNewBlock(Data);
                     }
 
                     if (!DataReceived(Header, Data))
@@ -159,6 +173,7 @@ namespace SysDVR.Client.Core
             if (DeviceThread.IsAlive)
                 throw new Exception($"{Kind} Thread is still running");
 
+            Hashes.Dispose();
             Cancel.Dispose();
         }
     }
@@ -199,7 +214,7 @@ namespace SysDVR.Client.Core
 
         public MultiStreamThread(StreamingSource source, OutStream videoTarget, OutStream audioTarget, BaseStreamManager manager) : base(source, manager)
         {
-            if (source.SourceKind != StreamKind.Both)
+            if (source.StreamProduced != StreamKind.Both)
                 throw new Exception("Source must be able to provide both streams");
 
             VideoTarget = videoTarget;

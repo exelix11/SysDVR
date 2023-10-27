@@ -98,10 +98,11 @@ restart:
 		int client = SocketTcpAccept(listen, NULL, NULL);
 		if (client != SOCKET_INVALID)
 		{
-			LOG("TCP %d Accepted client %d\n", (int)stream, client);
+			LOG("TCP %d Got connection %d\n", (int)stream, client);
 			
 			if (TCP_DoHandshake(stream, client))
 			{
+				LOG("TCP %d Accepted client %d\n", (int)stream, client);
 				ret = client;
 				goto leave;
 			}

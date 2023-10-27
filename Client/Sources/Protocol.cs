@@ -90,10 +90,16 @@ namespace SysDVR.Client.Sources
             set => SetBit(ref MetaFlags, 1, value);
         }
 
-        public bool UseNalhashes 
+        public bool UseNalhashes
         {
             get => (VideoFlags & Bit(0)) != 0;
             set => SetBit(ref VideoFlags, 0, value);
+        }
+
+        public bool UseNalHashesOnlyForKeyframes
+        {
+            get => (VideoFlags & Bit(2)) != 0;
+            set => SetBit(ref VideoFlags, 2, value);
         }
 
         public bool InjectPPSSPS
@@ -114,7 +120,17 @@ namespace SysDVR.Client.Sources
         // Note that the source should respect the target output type,
         // this means that by the time it's added to a StreamManager
         // this field should match the NoAudio/NoVideo state of the target
-        public StreamKind SourceKind { get; protected init; }
+        public StreamingOptions Options { get; private init; }
+        
+        public StreamingSource(StreamingOptions options)
+        {       
+            Options = options;
+        }
+
+        // This field delcares which particular stream will this instance produce
+        // it may be different from Options.Kind when multiple streams are needed for both channels
+        // Example: TCP uses two sources each from a different socket while USB uses a single source
+        public StreamKind StreamProduced { get; protected init; }
 
         public event Action<string> OnMessage;
 
@@ -141,12 +157,13 @@ namespace SysDVR.Client.Sources
             req.Magic = ProtoHandshakeRequest.RequestMagic;
             req.Version = ProtoHandshakeRequest.CurrentProtocolVersion;
 
-            req.AudioBatching = 2;
-            req.UseNalhashes = false;
+            req.AudioBatching = (byte)Options.AudioBatching;
+            req.UseNalhashes = Options.UseNALHashing;
+            req.UseNalHashesOnlyForKeyframes = Options.UseNALHashingOnlyOnKeyframes;
             req.InjectPPSSPS = true;
 
-            req.IsVideoPacket = SourceKind is StreamKind.Both or StreamKind.Video;
-            req.IsAudioPacket = SourceKind is StreamKind.Both or StreamKind.Audio;
+            req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;
+            req.IsAudioPacket = StreamProduced is StreamKind.Both or StreamKind.Audio;
 
             var buf = new byte[Marshal.SizeOf<ProtoHandshakeRequest>()];
             MemoryMarshal.Write(buf, ref req);
