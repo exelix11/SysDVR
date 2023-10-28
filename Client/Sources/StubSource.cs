@@ -7,60 +7,41 @@ namespace SysDVR.Client.Sources
 {
     // Stub source for testing SDL/Ffmpeg UI without a real console 
     class StubSource : StreamingSource
-	{
-		CancellationToken Cancellation;
+    {
+        // Check for bugs
+        bool connected;
 
-		// Check for bugs
-		bool connected;
+        public StubSource(StreamingOptions options, CancellationToken cancellation) : 
+            base(options, cancellation) { }
 
-		public StubSource(StreamingOptions opt) : base(opt)
-		{
-            StreamProduced = opt.Kind;
-		}
+        public override async Task Connect()
+        {
+            await Task.Delay(500, Cancellation).ConfigureAwait(false);
+            connected = true;
+        }
 
-        public override void Flush() { }
+        public override async Task Flush()
+        {
+            await Task.Delay(500, Cancellation).ConfigureAwait(false);
+        }
 
-		public override bool ReadHeader(byte[] buffer)
-		{
+        public override async Task<ReceivedPacket> ReadNextPacket()
+        {
             if (!connected)
-                throw new Exception("Stub not connected");
+                throw new Exception("Not connected");
 
-			while (!Cancellation.IsCancellationRequested)
-				Thread.Sleep(1000);
-
-			return false;
+            await Task.Delay(-1, Cancellation).ConfigureAwait(false);
+            throw new Exception();
         }
 
-		public override bool ReadPayload(byte[] buffer, int length)
-		{
-			if (!connected)
-				throw new Exception("Stub not connected");
-
-            while (!Cancellation.IsCancellationRequested)
-                Thread.Sleep(1000);
-
-            return false;
-        }
-
-		public override void StopStreaming() { }
-
-        public override async Task ConnectAsync(CancellationToken token)
+        public override Task StopStreaming()
         {
-            Cancellation = token;	
-			ReportMessage("Connecting stub...");
-			await Task.Delay(20, token).ConfigureAwait(false);
-            ReportMessage("Stub connected");
-			connected = true;
+            return Task.CompletedTask;
         }
 
-        public override bool ReadRaw(byte[] buffer, int length)
+        protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
         {
-            throw new NotImplementedException();
-        }
-
-        public override bool WriteData(byte[] buffer)
-        {
-            throw new NotImplementedException();
+            return Task.FromResult(ProtoHandshakeRequest.HandshakeOKCode);
         }
     }
 }

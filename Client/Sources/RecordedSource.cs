@@ -1,83 +1,79 @@
-﻿#if DEBUG
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using SysDVR.Client.Core;
+﻿//#if DEBUG
+//using System;
+//using System.Diagnostics;
+//using System.IO;
+//using System.Runtime.InteropServices;
+//using System.Threading;
+//using System.Threading.Tasks;
+//using SysDVR.Client.Core;
 
-namespace SysDVR.Client.Sources
-{
-    // Playsback a recording made with LoggingTarget, useful for developing without a console
-    class RecordedSource : StreamingSource
-	{
-        public event Action<string> OnMessage;
+//namespace SysDVR.Client.Sources
+//{
+//    // Playsback a recording made with LoggingTarget, useful for developing without a console
+//    class RecordedSource : StreamingSource
+//	{
+//		readonly string FileName;
+//		BinaryReader Source;
 
-        public StreamKind SourceKind { get; private init; }
+//		public RecordedSource(StreamKind kind, string basePath)
+//		{
+//			if (kind == StreamKind.Both)
+//				throw new Exception("Can't use both streams in RecordedSource");
 
-		readonly string FileName;
-		BinaryReader Source;
+//			SourceKind = kind;
 
-		public RecordedSource(StreamKind kind, string basePath)
-		{
-			if (kind == StreamKind.Both)
-				throw new Exception("Can't use both streams in RecordedSource");
+//            var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
+//			FileName = Path.Combine(basePath, name);
+//        }
 
-			SourceKind = kind;
+//		public override void Flush() { }
 
-            var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
-			FileName = Path.Combine(basePath, name);
-        }
+//		Int64 ms;
+//		public override bool ReadHeader(byte[] buffer)
+//		{
+//			if (Source.PeekChar() < 0)
+//				return false;
 
-		public void Flush() { }
+//			var sourceMagic = Source.ReadUInt32();
 
-		Int64 ms;
-		public bool ReadHeader(byte[] buffer)
-		{
-			if (Source.PeekChar() < 0)
-				return false;
+//			if (sourceMagic != PacketHeader.MagicResponseAudio && sourceMagic != PacketHeader.MagicResponseVideo)
+//				throw new Exception("");
 
-			var sourceMagic = Source.ReadUInt32();
+//			var header = MemoryMarshal.Cast<byte, PacketHeader>(buffer.AsSpan());
+//			ref var h = ref header[0];
 
-			if (sourceMagic != PacketHeader.MagicResponseAudio && sourceMagic != PacketHeader.MagicResponseVideo)
-				throw new Exception("");
+//			sw.Restart();
 
-			var header = MemoryMarshal.Cast<byte, PacketHeader>(buffer.AsSpan());
-			ref var h = ref header[0];
+//			ms = Source.ReadInt64();
+//			h.Magic = sourceMagic;
+//			h.Timestamp = Source.ReadUInt64();
+//			h.DataSize = Source.ReadInt32();
 
-			sw.Restart();
+//			return true;
+//		}
 
-			ms = Source.ReadInt64();
-			h.Magic = sourceMagic;
-			h.Timestamp = Source.ReadUInt64();
-			h.DataSize = Source.ReadInt32();
+//		Stopwatch sw = new Stopwatch();
 
-			return true;
-		}
+//        public override bool ReadPayload(byte[] buffer, int length)
+//		{
+//			sw.Stop();
+//			if (sw.ElapsedMilliseconds < ms)
+//				System.Threading.Thread.Sleep((int)(ms - sw.ElapsedMilliseconds));
 
-		Stopwatch sw = new Stopwatch();
+//			Source.Read(buffer, 0, length);
+//			return true;
+//		}
 
-        public bool ReadPayload(byte[] buffer, int length)
-		{
-			sw.Stop();
-			if (sw.ElapsedMilliseconds < ms)
-				System.Threading.Thread.Sleep((int)(ms - sw.ElapsedMilliseconds));
+//		public override void StopStreaming()
+//		{
 
-			Source.Read(buffer, 0, length);
-			return true;
-		}
+//		}
 
-		public void StopStreaming()
-		{
-
-		}
-
-        public Task ConnectAsync(CancellationToken token)
-        {
-            Source = new BinaryReader(File.OpenRead(FileName));
-            return Task.CompletedTask;
-        }
-    }
-}
-#endif
+//        public override Task ConnectAsync(CancellationToken token)
+//        {
+//            Source = new BinaryReader(File.OpenRead(FileName));
+//            return Task.CompletedTask;
+//        }
+//    }
+//}
+//#endif

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.IO;
 using SysDVR.Client.Core;
+using SysDVR.Client.Sources;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
@@ -18,7 +19,8 @@ namespace SysDVR.Client.Targets.FileOutput
         private bool disposedValue;
         readonly Mp4Output output;
 
-        public Mp4OutputManager(string filename, bool HasVideo, bool HasAudio, CancellationTokenSource cancel) : base(
+        public Mp4OutputManager(StreamingSource source, string filename, bool HasVideo, bool HasAudio, CancellationTokenSource cancel) : base(
+            source,
             HasVideo ? new Mp4VideoTarget() : null,
             HasAudio ? new Mp4AudioTarget() : null,
             cancel)
@@ -33,11 +35,11 @@ namespace SysDVR.Client.Targets.FileOutput
             base.Begin();
         }
 
-        public override void Stop()
+        public override async Task Stop()
         {
             // Close the output first because sometimes the other threads can get stuck (especially with USB) and prevent the recorder from finalizing the file.
             output.Stop();
-            base.Stop();
+            await base.Stop().ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)
