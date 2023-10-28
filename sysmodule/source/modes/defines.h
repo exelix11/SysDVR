@@ -7,7 +7,6 @@
 //This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
 #define SYSDVR_IPC_VERSION 12
 
-_Static_assert(sizeof(SYSDVR_PROTOCOL_VERSION) == 3, "Proto version must be 2 chars");
 
 #define SYSDVR_CRASH_MODULEID 0x69
 
@@ -31,6 +30,7 @@ _Static_assert(sizeof(SYSDVR_PROTOCOL_VERSION) == 3, "Proto version must be 2 ch
 #define ERR_MAIN_UNEXPECTED_MODE MAKERESULT(SYSDVR_CRASH_MODULEID, 22)
 #define ERR_MAIN_NOTRUNNING MAKERESULT(SYSDVR_CRASH_MODULEID, 18)
 #define ERR_INIT_FAILED MAKERESULT(SYSDVR_CRASH_MODULEID, 21)
+#define ERR_MAIN_ALLOC_DISABLED MAKERESULT(SYSDVR_CRASH_MODULEID, 24)
 
 #define ERR_HIPC_UNKREQ MAKERESULT(11, 403)
 

@@ -45,7 +45,7 @@ typedef union {
 	struct {
 		char VideoSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 		char AudioSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
-		u8 alignas(0x1000) ServerThreadStackArea[0x2000 + LOGGING_HEAP_BOOST];
+		u8 alignas(0x1000) ServerThreadStackArea[0x2000 + LOGGING_STACK_BOOST];
 	} RTSPMode;
 #endif
 } StaticBuffers;

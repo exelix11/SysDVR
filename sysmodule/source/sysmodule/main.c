@@ -7,11 +7,52 @@
 #include "../modes/modes.h"
 #include "../capture.h"
 
-// Memory is carefully calculated, for development and logging it is increased
-// Note that sysdvr makes an effort to not use any dynamic allocation, this memory is only needed by libnx itself
-// All big buffers needed by sysdvr are statically allocated in the compile units where they're needed
+// As of SysDVR 6.0 the sysmodule can run with no dynamic allocations at all
+// All big buffers are statically allocated in the compile units where they're needed
 // For buffers that are mutually exclusive like ones used by the different streaming modes, we use the StaticBuffers union
-#define INNER_HEAP_SIZE (10 * 1024 + LOGGING_HEAP_BOOST)
+// To make this work we override some libnx symbols to ensure the linker won't include malloc and its implementation
+#define USE_HEAP 0
+
+#if !USE_HEAP
+void* __libnx_aligned_alloc(size_t alignment, size_t size)
+{
+	fatalThrow(ERR_MAIN_ALLOC_DISABLED);
+	return NULL;
+}
+
+void __libnx_free(void* p)
+{
+	fatalThrow(ERR_MAIN_ALLOC_DISABLED);
+}
+
+void __libnx_initheap(void)
+{
+	// Newlib
+	extern char* fake_heap_start;
+	extern char* fake_heap_end;
+
+	fake_heap_start = NULL;
+	fake_heap_end = NULL;
+}
+#else
+#define INNER_HEAP_SIZE (1 * 1024 * 1024)
+
+size_t nx_inner_heap_size = INNER_HEAP_SIZE;
+char nx_inner_heap[INNER_HEAP_SIZE];
+
+void __libnx_initheap(void)
+{
+	void* addr = nx_inner_heap;
+	size_t size = nx_inner_heap_size;
+
+	// Newlib
+	extern char* fake_heap_start;
+	extern char* fake_heap_end;
+
+	fake_heap_start = (char*)addr;
+	fake_heap_end = (char*)addr + size;
+}
+#endif
 
 /*
 	Build with USB_ONLY to have a smaller impact on memory,
@@ -31,25 +72,14 @@
 	#include "../net/sockets.h"
 #endif
 
+#if NEEDS_FS
+	static Result fsInitResult;
+	static FsFileSystem sdCard;
+#endif
+
 u32 __nx_applet_type = AppletType_None;
 u32 __nx_fs_num_sessions = 1;
 u32 __nx_fsdev_direntry_cache_size = 1;
-
-size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-char nx_inner_heap[INNER_HEAP_SIZE];
-
-void __libnx_initheap(void)
-{
-	void* addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
-
-	// Newlib
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
-
-	fake_heap_start = (char*)addr;
-	fake_heap_end = (char*)addr + size;
-}
 
 void __attribute__((weak)) __appInit(void)
 {
@@ -84,8 +114,10 @@ void __attribute__((weak)) __appInit(void)
 	if (R_FAILED(rc))
 		fatalThrow(rc);
 
-#if NEEDS_FS
-	fsdevMountSdmc();
+#if NEEDS_FS	
+	// Ignore erorrs, at most we won't be able to read the default mode
+	// We use this directly because we don't want to depend on fsdev which requires malloc
+	fsInitResult = fsOpenSdCardFileSystem(&sdCard);
 #endif
 }
 
@@ -95,7 +127,8 @@ void __attribute__((weak)) __appExit(void)
 	SocketDeinit();
 #endif
 #if NEEDS_FS
-	fsdevUnmountAll();
+	if (R_SUCCEEDED(fsInitResult))
+		fsFsClose(&sdCard);
 	fsExit();
 #endif
 	smExit();
@@ -104,9 +137,15 @@ void __attribute__((weak)) __appExit(void)
 #ifndef USB_ONLY
 static bool FileExists(const char* fname)
 {
-	FILE* f = fopen(fname, "rb");
-	if (f)
-		return fclose(f), true;
+	if (R_FAILED(fsInitResult))
+		return false;
+
+	FsFile file;
+	if (R_SUCCEEDED(fsFsOpenFile(&sdCard, fname, FsOpenMode_Read, &file)))
+	{
+		fsFileClose(&file);
+		return true;
+	}
 	return false;
 }
 #endif

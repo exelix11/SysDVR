@@ -467,7 +467,6 @@ static inline void RTSP_MainLoop()
 					ports[targetStream].data = atoi(portSettings);
 					ports[targetStream].control = 0;
 
-					assert(ports[targetStream].data);
 					*endPort1 = oldChar;
 
 					if (!ports[targetStream].data)
@@ -482,14 +481,12 @@ static inline void RTSP_MainLoop()
 						SocketClose(&clientVideo);
 						clientVideo = SocketUdp();
 						updateAddr = &clientVAddr;
-						assert(clientVideo >= 0);
 					}
 					else
 					{
 						SocketClose(&clientAudio);
 						clientAudio = SocketUdp();
 						updateAddr = &clientAAddr;
-						assert(clientAudio >= 0);
 					}
 
 					*updateAddr = clientAddress;
