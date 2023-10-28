@@ -26,6 +26,7 @@ namespace SysDVR.Client.GUI
         Gui.Popup incompatiblePopup = new("Error");
         Gui.CenterGroup manualIpCenter = new();
         Gui.CenterGroup popupBtnCenter = new();
+        Gui.CenterGroup popupTbCenter = new();
         string? lastError;
 
         public NetworkScanView(StreamingOptions opt, string? autoConnect = null)
@@ -174,7 +175,7 @@ namespace SysDVR.Client.GUI
 
             if (lastError is not null)
             {
-                ImGui.Text(lastError);
+                ImGui.TextWrapped(lastError);
             }
 
             sz.Y = Gui.ButtonHeight();
@@ -188,10 +189,10 @@ namespace SysDVR.Client.GUI
 
             if (incompatiblePopup.Begin())
             {
-                ImGui.Text("The selected device is not compatible with this version of the client.");
-                ImGui.Text("Make sure you're using the same version of SysDVR on both the console and this device.");
+                ImGui.TextWrapped("The selected device is not compatible with this version of the client.");
+                ImGui.TextWrapped("Make sure you're using the same version of SysDVR on both the console and this device.");
 
-                if (ImGui.Button("Go back"))
+                if (Gui.CenterButton("Go back"))
                     incompatiblePopup.RequestClose();
 
                 ImGui.EndPopup();
@@ -204,7 +205,9 @@ namespace SysDVR.Client.GUI
         {
             if (ipEnterPopup.Begin())
             {
+                popupTbCenter.StartHere();
                 ImGui.InputText("##ip", IpAddressTextBuf, (uint)IpAddressTextBuf.Length);
+                popupTbCenter.EndHere();
                 ImGui.Spacing();
                 popupBtnCenter.StartHere();
                 if (ImGui.Button("   Connect   "))

@@ -30,12 +30,12 @@ namespace SysDVR.Client.Sources
         public ulong Timestamp;
 
         public byte Flags;
-        byte Reserved;
+        public byte ReplaySlot;
 
         public readonly bool IsVideo => (Flags & MetaIsVideo) != 0;
         public readonly bool IsAudio => (Flags & MetaIsAudio) != 0;
 
-        public readonly bool IsHash => (Flags & MetaIsHash) != 0;
+        public readonly bool IsReplay => (Flags & MetaIsHash) != 0;
         public readonly bool IsMultiNAL => (Flags & MetaIsMultiNAL) != 0;
 
         public override string ToString() =>
@@ -117,7 +117,7 @@ namespace SysDVR.Client.Sources
         }
     }
 
-    record struct ReceivedPacket(PacketHeader Header, PoolBuffer Buffer);
+    record struct ReceivedPacket(PacketHeader Header, PoolBuffer? Buffer);
 
     abstract class StreamingSource
     {
@@ -130,7 +130,7 @@ namespace SysDVR.Client.Sources
         public StreamingSource(StreamingOptions options, CancellationToken cancellation)
         {       
             Options = options;
-            this.Cancellation = Cancellation;
+            Cancellation = cancellation;
         }
 
         public event Action<string> OnMessage;
@@ -170,8 +170,8 @@ namespace SysDVR.Client.Sources
             req.Version = ProtoHandshakeRequest.CurrentProtocolVersion;
 
             req.AudioBatching = (byte)Options.AudioBatching;
-            req.UseNalhashes = Options.UseNALHashing;
-            req.UseNalHashesOnlyForKeyframes = Options.UseNALHashingOnlyOnKeyframes;
+            req.UseNalhashes = Options.UseNALReplay;
+            req.UseNalHashesOnlyForKeyframes = Options.UseNALReplayOnlyOnKeyframes;
             req.InjectPPSSPS = true;
 
             req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;

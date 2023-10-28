@@ -108,6 +108,9 @@ namespace SysDVR.Client.GUI
 
         public PlayerView(PlayerManager manager)
         {
+            // Adaptive rendering causes a lot of stuttering, for now avoid it in the video player
+            RenderMode = FramerateCapOptions.Target(36);
+
             Popups.Add(quitConfirm);
             Popups.Add(fatalError);
 
@@ -173,7 +176,7 @@ namespace SysDVR.Client.GUI
             {
                 var notif = notifications[i];
                 ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1, 0, 0, 1));
-                ImGui.Text(notif.Text);
+                ImGui.TextWrapped(notif.Text);
                 ImGui.PopStyleColor();
                 if (notif.ShouldRemove)
                 {
@@ -446,7 +449,7 @@ namespace SysDVR.Client.GUI
             DisplayRect.y = h / 2 - DisplayRect.h / 2;
         }
 
-        public unsafe override void Destroy()
+        public override void Destroy()
         {
             Program.Instance.BugCheckThreadId();
 

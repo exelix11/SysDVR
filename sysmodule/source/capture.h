@@ -26,7 +26,7 @@
 */
 #define MaxABatching 2
 
-// One bit
+// five bits
 enum PacketMeta 
 {
 	PacketMeta_Type_Mask = BIT(0) | BIT(1),
@@ -35,7 +35,7 @@ enum PacketMeta
 
 	PacketMeta_Content_Mask = BIT(2) | BIT(3) | BIT(4),
 	PacketMeta_Content_Data = BIT(2),
-	PacketMeta_Content_Hash = BIT(3),	// Only if PacketMeta_Type_Video
+	PacketMeta_Content_Replay = BIT(3),	// Only if PacketMeta_Type_Video
 	PacketMeta_Content_MultiNal = BIT(4) // Only if PacketMeta_Type_Video
 };
 
@@ -44,7 +44,11 @@ typedef struct {
 	u32 DataSize;
 	u64 Timestamp; //timestamps are in usecs
 	u8 MetaData;
-	u8 Reserved;
+	// Used by packet Replaying to indicate which slot identifies this packet
+	// When MetaData & Data the client should cache this packet with this ID
+	// When MetaData & Replay the client should replay the cached packet with this ID
+	// 0xFF indicates no hash, for example when streaming with audio or with hashes disabled
+	u8 ReplaySlot; 
 } __attribute__((packed)) PacketHeader;
 
 _Static_assert(sizeof(PacketHeader) == 18);

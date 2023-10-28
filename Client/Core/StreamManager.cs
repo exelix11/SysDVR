@@ -24,8 +24,8 @@ namespace SysDVR.Client.Core
     {
         public StreamKind Kind = StreamKind.Both;
         public int AudioBatching = 2;
-        public bool UseNALHashing = true;
-        public bool UseNALHashingOnlyOnKeyframes = true;
+        public bool UseNALReplay = true;
+        public bool UseNALReplayOnlyOnKeyframes = false;
 
         public bool HasVideo => Kind is StreamKind.Video or StreamKind.Both;
         public bool HasAudio => Kind is StreamKind.Audio or StreamKind.Both;
@@ -68,8 +68,12 @@ namespace SysDVR.Client.Core
             }
         }
 
-        public static PoolBuffer Rent(int len) =>
-            new PoolBuffer(pool.Rent(len), len);
+        public static PoolBuffer Rent(int len)
+        {
+            if (len == 0)
+                throw new Exception("Invalid lngth");
+            return new PoolBuffer(pool.Rent(len), len);
+        }
 
         private PoolBuffer(byte[] buf, int len)
         {
@@ -104,6 +108,7 @@ namespace SysDVR.Client.Core
                 Next = toAdd;
         }
 
+        // The caller must keep a reference to the stream as it must be manually disposed
         public bool UnchainStream(OutStream toRemove)
         {
             if (Next == toRemove)
@@ -113,7 +118,6 @@ namespace SysDVR.Client.Core
                 Next = n.Next;
                 n.Next = null;
 
-                n.Dispose();
                 return true;
             }
             else if (Next is not null)
@@ -189,7 +193,7 @@ namespace SysDVR.Client.Core
         public bool HasAudio => Options.HasAudio;
 
         // This is only used for video streams when NAL hashes are enabled
-        readonly PacketHashTable Hashes = new();
+        readonly PacketReplayTable Replay = new();
 
         readonly CancellationTokenSource Cancel;
 
@@ -247,50 +251,59 @@ namespace SysDVR.Client.Core
 
         async Task StreamTask() 
         {
-            var useHash = Options.UseNALHashing;
-            var hashOnlyIDR = Options.UseNALHashingOnlyOnKeyframes;
-
-            VideoTarget?.UseCancellationToken(Cancel.Token);
-            AudioTarget?.UseCancellationToken(Cancel.Token);
-
-            while (!Cancel.IsCancellationRequested)
+            try
             {
-                ReceivedPacket packet;
+                var useHash = Options.UseNALReplay;
+                var token = Cancel.Token;
 
-                try
-                {
-                    packet = await Source.ReadNextPacket().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    OnErrorMessage?.Invoke($"Error reading next packet: {ex.Message}");
-                    await Source.Flush().ConfigureAwait(false);
-                    continue;
-                }
+                VideoTarget?.UseCancellationToken(token);
+                AudioTarget?.UseCancellationToken(token);
 
-                if (packet.Header.IsAudio)
-                    AudioTarget.SendData(packet.Buffer, packet.Header.Timestamp);
-                else
+                while (!token.IsCancellationRequested)
                 {
-                    var data = packet.Buffer;
-                    if (useHash)
+                    ReceivedPacket packet;
+
+                    try
                     {
-                        if (packet.Header.IsHash)
-                        {
-                            var hash = BitConverter.ToUInt32(data.Span);
-                            data.Free();
-                            if (!Hashes.LookupHash(hash, out data))
-                                throw new Exception("Unrecoverable error: unknown hash value");
-                            Console.WriteLine("Hash HIT ! ");
-                        }
-                        else if (!hashOnlyIDR || (data.Span[4] & 0x1F) == 5) /* hash everything || is IDR */
-                        {
-                            Hashes.OnNewBlock(data);
-                        }
+                        packet = await Source.ReadNextPacket().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnErrorMessage?.Invoke($"Error reading next packet: {ex.Message}");
+                        await Source.Flush().ConfigureAwait(false);
+                        continue;
                     }
 
-                    VideoTarget.SendData(data, packet.Header.Timestamp);
+                    if (packet.Header.IsAudio)
+                        AudioTarget.SendData(packet.Buffer, packet.Header.Timestamp);
+                    else
+                    {
+                        var data = packet.Buffer;
+                        if (useHash)
+                        {
+                            if (packet.Header.IsReplay)
+                            {
+                                if (!Replay.LookupSlot(packet.Header.ReplaySlot, out data))
+                                {
+                                    Console.WriteLine("Unknown hash value, skipping packet");
+                                    continue;
+                                }
+                                Console.WriteLine("Hash HIT ! ");
+                            }
+                            else if (packet.Header.ReplaySlot != 0xFF)
+                            {
+                                Replay.AssignSlot(data, packet.Header.ReplaySlot);
+                            }
+                        }
+
+                        VideoTarget.SendData(data, packet.Header.Timestamp);
+                    }
                 }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                ReportFatalError(ex);
             }
         }
 

@@ -31,9 +31,11 @@ namespace SysDVR.Client.Sources
         readonly Channel<ReceivedPacket> poolBuffers = Channel.CreateBounded<ReceivedPacket>(
             new BoundedChannelOptions(30)
             {
-                FullMode = BoundedChannelFullMode.DropOldest
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleWriter = false,
+                SingleReader = true
             },
-            x => x.Buffer.Free()
+            x => x.Buffer?.Free()
         );
 
         public TCPBridgeSource(DeviceInfo device, CancellationToken tok, StreamingOptions opt) : base(opt, tok)
@@ -223,7 +225,7 @@ namespace SysDVR.Client.Sources
                         if (i == MaxConnectionAttempts)
                             throw;
 
-                        await Task.Delay(ConnFailDelayMs).ConfigureAwait(false);
+                        await Task.Delay(ConnFailDelayMs, cancel).ConfigureAwait(false);
                     }
                 }
             }
@@ -291,8 +293,12 @@ namespace SysDVR.Client.Sources
                 if (!ValidatePacketHeader(in header))
                     return (false, default);
 
-                var data = PoolBuffer.Rent(header.DataSize);
-                await ReadExact(data.RawBuffer, 0, header.DataSize).ConfigureAwait(false);
+                PoolBuffer? data = null;
+                if (header.DataSize != 0)
+                {
+                    data = PoolBuffer.Rent(header.DataSize);
+                    await ReadExact(data.RawBuffer, 0, header.DataSize).ConfigureAwait(false);
+                }
 
                 return (true, new ReceivedPacket(header, data));
             }
