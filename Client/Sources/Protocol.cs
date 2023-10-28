@@ -18,18 +18,18 @@ namespace SysDVR.Client.Sources
         public const int StructLength = 18;
         public const int MaxTransferSize = StreamInfo.MaxPayloadSize + StructLength;
 
-        const byte MetaIsVideo = 1 << 0;
-        const byte MetaIsAudio = 1 << 1;
+        public const byte MetaIsVideo = 1 << 0;
+        public const byte MetaIsAudio = 1 << 1;
         
-        const byte MetaIsData = 1 << 2;
-        const byte MetaIsHash = 1 << 3;
-        const byte MetaIsMultiNAL = 1 << 4;
+        public const byte MetaIsData = 1 << 2;
+        public const byte MetaIsHash = 1 << 3;
+        public const byte MetaIsMultiNAL = 1 << 4;
 
         public uint Magic;
         public int DataSize;
         public ulong Timestamp;
 
-        byte Flags;
+        public byte Flags;
         byte Reserved;
 
         public readonly bool IsVideo => (Flags & MetaIsVideo) != 0;

@@ -1,79 +1,64 @@
-﻿//#if DEBUG
-//using System;
-//using System.Diagnostics;
-//using System.IO;
-//using System.Runtime.InteropServices;
-//using System.Threading;
-//using System.Threading.Tasks;
-//using SysDVR.Client.Core;
+﻿#if DEBUG
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using FFmpeg.AutoGen;
+using SysDVR.Client.Core;
 
-//namespace SysDVR.Client.Sources
-//{
-//    // Playsback a recording made with LoggingTarget, useful for developing without a console
-//    class RecordedSource : StreamingSource
-//	{
-//		readonly string FileName;
-//		BinaryReader Source;
+namespace SysDVR.Client.Sources
+{
+	// Playsback a recording made with LoggingTarget, useful for developing without a console
+	class RecordedSource : StreamingSource
+	{
+		readonly string FileName;
+		BinaryReader Source;
 
-//		public RecordedSource(StreamKind kind, string basePath)
-//		{
-//			if (kind == StreamKind.Both)
-//				throw new Exception("Can't use both streams in RecordedSource");
+        public RecordedSource(string fileName, StreamingOptions opt, CancellationToken cancel) : base(opt, cancel) 
+		{
+			FileName = fileName;
+		}
 
-//			SourceKind = kind;
+		public override Task Flush() => 
+            throw new Exception("Flush is not supported");
 
-//            var name = kind == StreamKind.Video ? "video.h264" : "audio.raw";
-//			FileName = Path.Combine(basePath, name);
-//        }
+		public override Task StopStreaming() => Task.CompletedTask;
 
-//		public override void Flush() { }
+		Stopwatch sw = new Stopwatch();
 
-//		Int64 ms;
-//		public override bool ReadHeader(byte[] buffer)
-//		{
-//			if (Source.PeekChar() < 0)
-//				return false;
+		public override Task Connect()
+		{
+			Source = new BinaryReader(File.OpenRead(FileName));
+			return Task.CompletedTask;
+		}
 
-//			var sourceMagic = Source.ReadUInt32();
+        public override async Task<ReceivedPacket> ReadNextPacket()
+        {
+            if (Source.PeekChar() < 0)
+                throw new Exception("File empty");
 
-//			if (sourceMagic != PacketHeader.MagicResponseAudio && sourceMagic != PacketHeader.MagicResponseVideo)
-//				throw new Exception("");
+            var headerBin = Source.ReadBytes(PacketHeader.StructLength);
+            var header = MemoryMarshal.Read<PacketHeader>(headerBin);
+            var body = PoolBuffer.Rent(header.DataSize);
 
-//			var header = MemoryMarshal.Cast<byte, PacketHeader>(buffer.AsSpan());
-//			ref var h = ref header[0];
+            await Source.BaseStream.ReadAsync(body.Memory, Cancellation);
 
-//			sw.Restart();
+            var tsDelay = Source.ReadUInt32();
 
-//			ms = Source.ReadInt64();
-//			h.Magic = sourceMagic;
-//			h.Timestamp = Source.ReadUInt64();
-//			h.DataSize = Source.ReadInt32();
+            sw.Stop();
+            if (sw.ElapsedMilliseconds < tsDelay)
+                await Task.Delay((int)(tsDelay - sw.ElapsedMilliseconds));
 
-//			return true;
-//		}
+            sw.Restart();
+            return new ReceivedPacket(header, body);
+        }
 
-//		Stopwatch sw = new Stopwatch();
-
-//        public override bool ReadPayload(byte[] buffer, int length)
-//		{
-//			sw.Stop();
-//			if (sw.ElapsedMilliseconds < ms)
-//				System.Threading.Thread.Sleep((int)(ms - sw.ElapsedMilliseconds));
-
-//			Source.Read(buffer, 0, length);
-//			return true;
-//		}
-
-//		public override void StopStreaming()
-//		{
-
-//		}
-
-//        public override Task ConnectAsync(CancellationToken token)
-//        {
-//            Source = new BinaryReader(File.OpenRead(FileName));
-//            return Task.CompletedTask;
-//        }
-//    }
-//}
-//#endif
+        protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+        {
+            return Task.FromResult(ProtoHandshakeRequest.HandshakeOKCode);
+        }
+    }
+}
+#endif
