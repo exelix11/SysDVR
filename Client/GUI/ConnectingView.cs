@@ -35,6 +35,7 @@ namespace SysDVR.Client.GUI
         {
             errorLine ??= "";
             errorLine += obj + "\n";
+            Program.Instance.KickRendering(true);
         }
 
         public override void BackPressed()

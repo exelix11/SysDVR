@@ -100,8 +100,12 @@ namespace SysDVR.Client.Sources
 			if (!ValidatePacketHeader(in header))
 				throw new Exception($"Invaid packet header: {header}");
 
-            var data = PoolBuffer.Rent(header.DataSize);
-			ReadBuffer.AsSpan(PacketHeader.StructLength, read - PacketHeader.StructLength).CopyTo(data.Span);
+			PoolBuffer? data = null;
+			if (header.DataSize != 0)
+			{
+				data = PoolBuffer.Rent(header.DataSize);
+				ReadBuffer.AsSpan(PacketHeader.StructLength, header.DataSize).CopyTo(data.Span);
+			}
 
             return new ReceivedPacket(header, data);
         }

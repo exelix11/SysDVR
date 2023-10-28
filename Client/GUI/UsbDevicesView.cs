@@ -158,7 +158,7 @@ namespace SysDVR.Client.GUI
             if (lastError is not null)
             {
                 Gui.CenterText("There was an error");
-                ImGui.Text(lastError);
+                ImGui.TextWrapped(lastError);
             }
 
             Gui.CursorFromBottom(sz.Y);
@@ -169,10 +169,10 @@ namespace SysDVR.Client.GUI
 
             if (incompatiblePopup.Begin())
             {
-                ImGui.Text("The selected device is not compatible with this version of the client.");
-                ImGui.Text("Make sure you're using the same version of SysDVR on both the console and this device.");
+                ImGui.TextWrapped("The selected device is not compatible with this version of the client.");
+                ImGui.TextWrapped("Make sure you're using the same version of SysDVR on both the console and this device.");
 
-                if (ImGui.Button("Go back"))
+                if (Gui.CenterButton("Go back"))
                     incompatiblePopup.RequestClose();
 
                 ImGui.EndPopup();

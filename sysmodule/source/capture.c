@@ -25,11 +25,10 @@ static bool InjectSpsPps = true;
 static bool HashNals = false;
 static bool HashOnlyKeyframes = true;
 
-static void PacketMakeHash(VideoPacket* packet, u32 hash)
+static void PacketMakeReplay(VideoPacket* packet)
 {
-	packet->Header.MetaData = (packet->Header.MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Hash;
-	packet->Header.DataSize = sizeof(hash);
-	memcpy(packet->Data, &hash, sizeof(hash));
+	packet->Header.MetaData = (packet->Header.MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Replay;
+	packet->Header.DataSize = 0;
 }
 
 static void PacketMakeData(PacketHeader* packet)
@@ -41,6 +40,7 @@ void CaptureAudioConnected()
 {
 	APkt.Header.Magic = STREAM_PACKET_HEADER;
 	APkt.Header.MetaData = PacketMeta_Type_Audio | PacketMeta_Content_Data;
+	APkt.Header.ReplaySlot = 0xFF;
 }
 
 bool CaptureReadAudio()
@@ -120,7 +120,7 @@ u32 crc32_arm64_hw(const u8* p, unsigned int len)
 static u32 NalHashes[20];
 static u32 NalHashIdx = 0;
 
-bool CheckVideoPacket(const u8* data, size_t len, u32* outHash)
+bool HashVideoPacket(const u8* data, size_t len, u8* outSlot)
 {
 	u32 hash = crc32_arm64_hw(data, len);
 
@@ -132,12 +132,13 @@ bool CheckVideoPacket(const u8* data, size_t len, u32* outHash)
 	{
 		if (NalHashes[i] == hash)
 		{
-			*outHash = hash;
+			*outSlot = (u8)i;
 			// note how the hash table is not updated if we already know the hash
 			return true;
 		}
 	}
 
+	*outSlot = (u8)NalHashIdx; 
 	NalHashes[NalHashIdx++] = hash;
 	NalHashIdx %= sizeof(NalHashes) / sizeof(NalHashes[0]);
 
@@ -150,6 +151,8 @@ void CaptureVideoConnected()
 	NalHashIdx = 0;
 	VPkt.Header.Magic = STREAM_PACKET_HEADER;
 	VPkt.Header.MetaData = PacketMeta_Type_Video;
+	VPkt.Header.ReplaySlot = 0xFF;
+	forceSPSPPS = true;
 }
 
 bool CaptureReadVideo()
@@ -189,11 +192,10 @@ bool CaptureReadVideo()
 	// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
 	// this is a static images so we can just not send it with no consequences to free
 	// up bandwidth for audio and reduce delay once the image changes
-	u32 hash;
 	const bool UseHash = HashNals && (isIDRFrame || !HashOnlyKeyframes);
-	if (UseHash && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize, &hash)) {
+	if (UseHash && HashVideoPacket(VPkt.Data, VPkt.Header.DataSize, &VPkt.Header.ReplaySlot)) {
 		LOG("Sending packet hash instead\n");
-		PacketMakeHash(&VPkt, hash);
+		PacketMakeReplay(&VPkt);
 		return true;
 	}
 

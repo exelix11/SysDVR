@@ -14,8 +14,8 @@
 		<Configurations>Debug;Release</Configurations>
 		<ApplicationIcon>Client.ico</ApplicationIcon>
 		<RollForward>Major</RollForward>
-		<Nullable>annotations</Nullable>
 		<PublishAot>true</PublishAot>
+		<Nullable>annotations</Nullable>
 	</PropertyGroup>
 
 	<Choose>
@@ -75,9 +75,5 @@
 		<EmbeddedResource Remove="Platform\Linux\**" />
 		<None Remove="Platform\Android\**" />
 		<None Remove="Platform\Linux\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Include="Crc32.NET" Version="1.2.0" />
 	</ItemGroup>
 </Project>

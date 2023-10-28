@@ -69,7 +69,7 @@ static inline int TCP_BeginListen(GrcStream stream)
 static inline bool TCP_DoHandshake(GrcStream stream, int socket)
 {
 	u8 buffer[PROTO_HANDSHAKE_SIZE];
-	if (!SocketRecv(socket, buffer, sizeof(buffer)))
+	if (!SocketRecevExact(socket, buffer, sizeof(buffer)))
 		return false;
 
 	ProtoParsedHandshake res = ProtoHandshake(buffer, sizeof(buffer));

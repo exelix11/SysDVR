@@ -47,6 +47,9 @@ namespace SysDVR.Client.Targets.FileOutput
         bool running = false;
         public void Stop()
         {
+            if (!running)
+                return;
+
             lock (this)
             {
                 running = false;
@@ -188,6 +191,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
         protected override void DisposeImpl()
         {
+            Stop();
             FreeNativeResource();
             base.Dispose();
         }

@@ -42,7 +42,7 @@ static bool HasNifm;
 static u8 alignas(0x1000) TmemBackingBuffer[TMEM_SIZE];
 
 #if UDP_LOGGING
-#define TARGET_DEBUG_IP "192.168.1.66"
+#define TARGET_DEBUG_IP "192.168.178.66"
 
 #include <stdarg.h>
 #include "../third_party/nanoprintf.h"
