@@ -30,11 +30,11 @@
 	#endif
 
 	// This is also added to thread stacks so must be 0x1000-aligned	
-	#define LOGGING_HEAP_BOOST 0x1000
+	#define LOGGING_STACK_BOOST 0x1000
 #else
 #define LOG(...) do { } while (0)
 #define LOG_V(...) do { } while (0)
-#define LOGGING_HEAP_BOOST 0
+#define LOGGING_STACK_BOOST 0
 #endif
 
 #define R_RET_ON_FAIL(x) do { Result rc = x; if (R_FAILED(rc)) return rc; } while (0)

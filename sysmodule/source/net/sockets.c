@@ -328,6 +328,21 @@ s32 SocketRecv(int socket, void* buffer, u32 size)
 	return (s32)r;
 }
 
+bool SocketRecevExact(int socket, void* buffer, u32 size)
+{
+	u32 received = 0;
+	while (received < size)
+	{
+		int res = SocketRecv(socket, (char*)buffer + received, size - received);
+		if (res <= 0)
+			return false;
+
+		received += res;
+	}
+
+	return true;
+}
+
 bool SocketMakeNonBlocking(int socket)
 {
 	return bsdFcntl(socket, F_SETFL, NX_O_NONBLOCK) != -1;
