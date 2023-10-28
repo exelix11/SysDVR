@@ -331,10 +331,10 @@ s32 SocketRecv(int socket, void* buffer, u32 size)
 bool SocketRecevExact(int socket, void* buffer, u32 size)
 {
 	u32 received = 0;
-	while (received < size)
+	while (received < size && IsThreadRunning)
 	{
 		int res = SocketRecv(socket, (char*)buffer + received, size - received);
-		if (res <= 0)
+		if (res < 0)
 			return false;
 
 		received += res;
