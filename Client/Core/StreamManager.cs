@@ -8,6 +8,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.Core
 {
@@ -24,6 +26,9 @@ namespace SysDVR.Client.Core
         public int AudioBatching = 2;
         public bool UseNALHashing = true;
         public bool UseNALHashingOnlyOnKeyframes = true;
+
+        public bool HasVideo => Kind is StreamKind.Video or StreamKind.Both;
+        public bool HasAudio => Kind is StreamKind.Audio or StreamKind.Both;
 
         public void Validate() 
         {
@@ -92,7 +97,7 @@ namespace SysDVR.Client.Core
         {
             if (Next is not null)
                 Next.ChainStream(toAdd);
-            else 
+            else
                 Next = toAdd;
         }
 
@@ -117,6 +122,7 @@ namespace SysDVR.Client.Core
         protected virtual void UseCancellationTokenImpl(CancellationToken tok)
         {
             Cancel = tok;
+            Next?.UseCancellationToken(tok);
         }
 
         protected abstract void SendDataImpl(PoolBuffer block, ulong ts);
@@ -166,20 +172,21 @@ namespace SysDVR.Client.Core
     {
         private bool disposedValue;
 
-        public event Action<Exception> OnFatalError;
-        public event Action<string> OnErrorMessage;
+        public event Action<Exception>? OnFatalError;
+        public event Action<string>? OnErrorMessage;
 
-        // Usb streaming may require a single thread
-        private StreamThread Thread1;
-        private StreamThread? Thread2;
+        private Task? StreamingTask;
+        
+        protected OutStream? VideoTarget { get; set; }
+        protected OutStream? AudioTarget { get; set; }
+        protected StreamingSource Source { get; set; }
+        protected StreamingOptions Options => Source.Options;
 
-        protected OutStream VideoTarget { get; set; }
-        protected OutStream AudioTarget { get; set; }
+        public bool HasVideo => Options.HasVideo;
+        public bool HasAudio => Options.HasAudio;
 
-        public StreamKind? Streams { get; private set; }
-
-        public bool HasVideo => Streams is StreamKind.Both or StreamKind.Video;
-        public bool HasAudio => Streams is StreamKind.Both or StreamKind.Audio;
+        // This is only used for video streams when NAL hashes are enabled
+        readonly PacketHashTable Hashes = new();
 
         readonly CancellationTokenSource Cancel;
 
@@ -189,36 +196,12 @@ namespace SysDVR.Client.Core
         public void ReportFatalError(Exception ex) =>
             OnFatalError?.Invoke(ex);
 
-        public BaseStreamManager(OutStream videoTarget, OutStream audioTarget, CancellationTokenSource cancel)
+        public BaseStreamManager(StreamingSource source, OutStream? videoTarget, OutStream? audioTarget, CancellationTokenSource cancel)
         {
+            Source = source;
             VideoTarget = videoTarget;
             AudioTarget = audioTarget;
             Cancel = cancel;
-        }
-
-        public void AddSource(StreamingSource source)
-        {
-            if (source.StreamProduced == StreamKind.Video)
-            {
-                if (HasVideo) throw new Exception("Already has a video source");
-                Thread1 = new SingleStreamThread(source, VideoTarget, this);
-
-                Streams = HasAudio ? StreamKind.Both : StreamKind.Video;
-            }
-            else if (source.StreamProduced == StreamKind.Audio)
-            {
-                if (HasAudio) throw new Exception("Already has an audio source");
-                Thread2 = new SingleStreamThread(source, AudioTarget, this);
-
-                Streams = HasVideo ? StreamKind.Both : StreamKind.Audio;
-            }
-            else if (source.StreamProduced == StreamKind.Both)
-            {
-                if (HasAudio || HasVideo) throw new Exception("Already has a multi source");
-                Thread1 = new MultiStreamThread(source, VideoTarget, AudioTarget, this);
-
-                Streams = StreamKind.Both;
-            }
         }
 
         public void ChainTargets(OutStream? nextVideo, OutStream? nextAudio)
@@ -242,29 +225,87 @@ namespace SysDVR.Client.Core
         public virtual void Begin()
         {
             // Sanity checks
-            if (Streams is null)
+            if (Source is null)
                 throw new Exception("No streams have been set");
 
-            if (Streams == StreamKind.Video && AudioTarget != null)
-                throw new Exception("There should be no audio target for a video only stream");
-            if (Streams == StreamKind.Audio && VideoTarget != null)
-                throw new Exception("There should be no video target for an audio only stream");
-            if (Streams == StreamKind.Both && (VideoTarget == null || AudioTarget == null))
-                throw new Exception("One or more targets are not set");
+            if (StreamingTask is not null)
+                throw new Exception("The streaming has already started");
+
+            if (Options.HasAudio && AudioTarget is null)
+                throw new Exception("The audio target is missing");
+            if (Options.HasVideo && VideoTarget is null)
+                throw new Exception("The video target is missing");
 
             if (DebugOptions.Current.RequiresH264Analysis && VideoTarget is not null)
                 VideoTarget.ChainStream(new H264LoggingTarget());
 
-            Thread1?.Start();
-            Thread2?.Start();
+            StreamingTask = StreamTask();
         }
 
-        public virtual void Stop()
+        async Task StreamTask() 
         {
-            Cancel.Cancel();
-            Thread1?.Stop();
-            Thread2?.Stop();
+            var useHash = Options.UseNALHashing;
+            var hashOnlyIDR = Options.UseNALHashingOnlyOnKeyframes;
 
+            VideoTarget?.UseCancellationToken(Cancel.Token);
+            AudioTarget?.UseCancellationToken(Cancel.Token);
+
+            while (!Cancel.IsCancellationRequested)
+            {
+                ReceivedPacket packet;
+
+                try
+                {
+                    packet = await Source.ReadNextPacket().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    OnErrorMessage?.Invoke($"Error reading next packet: {ex.Message}");
+                    await Source.Flush().ConfigureAwait(false);
+                    continue;
+                }
+
+                if (packet.Header.IsAudio)
+                    AudioTarget.SendData(packet.Buffer, packet.Header.Timestamp);
+                else
+                {
+                    var data = packet.Buffer;
+                    if (useHash)
+                    {
+                        if (packet.Header.IsHash)
+                        {
+                            var hash = BitConverter.ToUInt32(data.Span);
+                            data.Free();
+                            if (!Hashes.LookupHash(hash, out data))
+                                throw new Exception("Unrecoverable error: unknown hash value");
+                            Console.WriteLine("Hash HIT ! ");
+                        }
+                        else if (!hashOnlyIDR || (data.Span[4] & 0x1F) == 5) /* hash everything || is IDR */
+                        {
+                            Hashes.OnNewBlock(data);
+                        }
+                    }
+
+                    VideoTarget.SendData(data, packet.Header.Timestamp);
+                }
+            }
+        }
+
+        public virtual async Task Stop()
+        {
+            if (StreamingTask is null)
+                return;
+
+            Cancel.Cancel();
+            try
+            {
+                await StreamingTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) 
+            {
+                // Ignore
+            }
+            StreamingTask = null;
 #if MEASURE_STATS
 			var vDiff = DateTime.Now - VideoThread.FirstByteTs;
 			var aDiff = DateTime.Now - AudioThread.FirstByteTs;
@@ -277,9 +318,6 @@ namespace SysDVR.Client.Core
 			Console.WriteLine($"\tVideo: {VideoThread.ReceivedBytes} bytes in {vDiff.TotalSeconds} s, avg of {VideoThread.ReceivedBytes / vDiff.TotalSeconds} B/s");
 			Console.WriteLine($"\tAudio: {AudioThread.ReceivedBytes} bytes in {aDiff.TotalSeconds} s, avg of {AudioThread.ReceivedBytes / aDiff.TotalSeconds} B/s");
 #endif
-
-            Thread1?.Join();
-            Thread2?.Join();
         }
 
         protected virtual void Dispose(bool disposing)
@@ -288,9 +326,10 @@ namespace SysDVR.Client.Core
             {
                 if (disposing)
                 {
-                    Thread1?.Dispose();
-                    Thread2?.Dispose();
+                    Stop().GetAwaiter().GetResult();
 
+                    if (Source is IDisposable s)
+                        s.Dispose();
                     if (VideoTarget is IDisposable iv)
                         iv.Dispose();
                     if (AudioTarget is IDisposable ia)

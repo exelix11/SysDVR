@@ -453,7 +453,7 @@ namespace SysDVR.Client.GUI
             if (IsRecording)
                 ButtonToggleRecording();
 
-            Manager.Stop();
+            Manager.Stop().GetAwaiter().GetResult();
 
             // Dispose of unmanaged resources
             Audio?.Dispose();

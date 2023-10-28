@@ -78,12 +78,12 @@ namespace SysDVR.Client.Targets.Player
 
 #if DEBUG
                 // This should never happen...
-                if (currentOffset > currentBlock.Length)
+                if (currentBlock is not null && currentOffset > currentBlock.Length)
                     Debugger.Break();
 #endif
 
                 // If the block is exhausted get rid of it
-                if (currentOffset >= currentBlock.Length)
+                if (currentBlock is not null && currentOffset >= currentBlock.Length)
                 {
                     currentOffset = -1;
                     currentBlock.Free();

@@ -57,7 +57,9 @@ namespace SysDVR.Client.Sources
         public static readonly string CurrentProtocolString = $"{ProtoHigh}{ProtoLow}";
         public const ushort CurrentProtocolVersion = ProtoHigh | (ProtoLow << 8);
 
+        public const int StructureSize = 16;
         public const uint RequestMagic = 0xAAAAAAAA;
+        public const uint HandshakeOKCode = 6;
 
         public uint Magic;
         public ushort Version;
@@ -110,10 +112,12 @@ namespace SysDVR.Client.Sources
 
         static ProtoHandshakeRequest() 
         {
-            if (Marshal.SizeOf<ProtoHandshakeRequest>() != 16)
+            if (Marshal.SizeOf<ProtoHandshakeRequest>() != StructureSize)
                 throw new Exception("Invalid structure size, check the sysmodule source");
         }
     }
+
+    record struct ReceivedPacket(PacketHeader Header, PoolBuffer Buffer);
 
     abstract class StreamingSource
     {
@@ -121,16 +125,13 @@ namespace SysDVR.Client.Sources
         // this means that by the time it's added to a StreamManager
         // this field should match the NoAudio/NoVideo state of the target
         public StreamingOptions Options { get; private init; }
-        
-        public StreamingSource(StreamingOptions options)
+        protected CancellationToken Cancellation { get; private init; }
+
+        public StreamingSource(StreamingOptions options, CancellationToken cancellation)
         {       
             Options = options;
+            this.Cancellation = Cancellation;
         }
-
-        // This field delcares which particular stream will this instance produce
-        // it may be different from Options.Kind when multiple streams are needed for both channels
-        // Example: TCP uses two sources each from a different socket while USB uses a single source
-        public StreamKind StreamProduced { get; protected init; }
 
         public event Action<string> OnMessage;
 
@@ -139,21 +140,32 @@ namespace SysDVR.Client.Sources
             OnMessage?.Invoke(message);
         }
 
-        public abstract Task ConnectAsync(CancellationToken token);
-        public abstract void StopStreaming();
+        public abstract Task Connect();
+        public abstract Task StopStreaming();
 
-        public abstract void Flush();
+        // Flush may cause a reconnection
+        public abstract Task Flush();
 
-        public abstract bool ReadHeader(byte[] buffer);
-        public abstract bool ReadPayload(byte[] buffer, int length);
-        
-        public abstract bool ReadRaw(byte[] buffer, int length);
-        public abstract bool WriteData(byte[] buffer);
+        public abstract Task<ReceivedPacket> ReadNextPacket();
 
-        protected void DoHandshake()
+        protected abstract Task<uint> SendHandshakePacket(ProtoHandshakeRequest req);
+
+        protected void ThrowOnHandshakeCode(string tag, uint code)
+        {
+            if (code == ProtoHandshakeRequest.HandshakeOKCode)
+                return;
+
+            if (code == 1) //Handshake_WrongVersion
+                throw new Exception($"{tag} handshake failed: Wrong protocol version. Update SysDVR");
+
+            // Other codes are internal checks so shouldn't happen often
+            throw new Exception($"{tag} handshake failed: error code {code}");
+        }
+
+        protected async Task DoHandshake(StreamKind StreamProduced)
         {
             ProtoHandshakeRequest req = new();
-            
+
             req.Magic = ProtoHandshakeRequest.RequestMagic;
             req.Version = ProtoHandshakeRequest.CurrentProtocolVersion;
 
@@ -165,18 +177,19 @@ namespace SysDVR.Client.Sources
             req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;
             req.IsAudioPacket = StreamProduced is StreamKind.Both or StreamKind.Audio;
 
-            var buf = new byte[Marshal.SizeOf<ProtoHandshakeRequest>()];
-            MemoryMarshal.Write(buf, ref req);
+            uint res = await SendHandshakePacket(req).ConfigureAwait(false);
+            ThrowOnHandshakeCode("Console", res);
+        }
 
-            if (!WriteData(buf))
-                throw new Exception("Handshake failed while sending the request");
+        static protected bool ValidatePacketHeader(in PacketHeader header)
+        {
+            if (header.Magic != PacketHeader.MagicResponse)
+                return false;
 
-            if (!ReadRaw(buf, 4))
-                throw new Exception("Handshake failed while receiving the result");
+            if (header.DataSize > PacketHeader.MaxTransferSize)
+                return false;
 
-            uint res = BitConverter.ToUInt32(buf);
-            if (res != 6)
-                throw new Exception("Handshake failed with error code " + res);
+            return true;
         }
     }
 }

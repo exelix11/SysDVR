@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
@@ -16,11 +17,11 @@ namespace SysDVR.Client.Sources
     {
         protected readonly DvrUsbContext Context;
         public readonly DeviceInfo Info;
-        
+
         public IUsbDevice DeviceHandle { get; protected set; }
 
         protected DvrUsbDevice(DvrUsbContext context, DeviceInfo deviceInfo)
-        {            
+        {
             Context = context;
             Info = deviceInfo;
         }
@@ -97,6 +98,8 @@ namespace SysDVR.Client.Sources
 #if ANDROID_LIB
         public IReadOnlyList<DvrUsbDevice> FindSysdvrDevices()
         {            
+
+        aaaaaaa;
             if (!Program.Native.UsbAcquireSnapshot(SysDVRVid, SysDVRPid, out var count))
                 throw new Exception(Program.Native.UsbGetLastError());
 
@@ -231,7 +234,7 @@ namespace SysDVR.Client.Sources
 
             if (!DeviceHandle.ClaimInterface(0))
                 throw new Exception($"Couldn't claim device interface");
-         
+
             return base.Open();
         }
 

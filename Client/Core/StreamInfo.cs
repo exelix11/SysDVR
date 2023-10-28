@@ -12,7 +12,7 @@ namespace SysDVR.Client.Core
         public static readonly byte[] PPS = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
         // This is VideoPayloadSize, which is also the max payload possible over the SysDVR protocol
-        public const int MaxPayloadSize = 0x50000;
+        public const int MaxPayloadSize = 0x54000;
 
         public const int VideoWidth = 1280;
         public const int VideoHeight = 720;
