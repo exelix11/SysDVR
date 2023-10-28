@@ -81,6 +81,9 @@ namespace SysDVR.Client.Core
         public Span<byte> Span =>
             new Span<byte>(RawBuffer, 0, Length);
 
+        public Memory<byte> Memory =>
+            new Memory<byte>(RawBuffer, 0, Length);
+
         public ArraySegment<byte> ArraySegment =>
             new ArraySegment<byte>(RawBuffer, 0, Length);
 

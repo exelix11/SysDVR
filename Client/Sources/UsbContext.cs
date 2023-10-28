@@ -97,9 +97,9 @@ namespace SysDVR.Client.Sources
 
 #if ANDROID_LIB
         public IReadOnlyList<DvrUsbDevice> FindSysdvrDevices()
-        {            
+        {
+            Program.Native.EnsureThreadAttached();
 
-        aaaaaaa;
             if (!Program.Native.UsbAcquireSnapshot(SysDVRVid, SysDVRPid, out var count))
                 throw new Exception(Program.Native.UsbGetLastError());
 
