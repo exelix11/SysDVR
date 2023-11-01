@@ -216,9 +216,8 @@ namespace SysDVRClientGUI.Forms
         }
 
         // Returns whether should cancel the operation
-        bool CheckUSBDriver()
+        public static bool CheckUSBDriver()
         {
-        check_again:
             var state = DriverHelper.GetDriverInfo();
             if (state == DriverStatus.NotInstalled)
             {
@@ -234,18 +233,18 @@ namespace SysDVRClientGUI.Forms
                 DialogResult res = MessageBox.Show(MAIN_DRIVER_WARNING, "", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
 
                 if (res == DialogResult.Yes)
-                    goto check_again;
+                    return CheckUSBDriver();
                 else if (res == DialogResult.Cancel)
                     return true;
             }
             return false;
         }
 
-        string GetExtraArgs()
+        private string GetExtraArgs()
         {
             StringBuilder str = new();
 
-            void append(string s) { str.Append(' '); str.Append(s); }
+            void Append(string s) { str.Append(' '); str.Append(s); }
 
             if (cbStats.Checked || cbIgnoreSync.Checked || cbLogStatus.Checked)
             {
@@ -260,14 +259,14 @@ namespace SysDVRClientGUI.Forms
                 if (cbIgnoreSync.Checked)
                     opt.Add("nosync");
 
-                append("--debug " + string.Join(",", opt));
+                Append("--debug " + string.Join(",", opt));
             }
-            if (cbUsbLog.Checked) append("--usb-debug");
-            if (cbUsbWarn.Checked) append("--usb-warn");
+            if (cbUsbLog.Checked) Append("--usb-debug");
+            if (cbUsbWarn.Checked) Append("--usb-warn");
             return str.ToString();
         }
 
-        LaunchCommand GetClientCommandLine()
+        private LaunchCommand GetClientCommandLine()
         {
             StringBuilder args = new();
 
@@ -277,8 +276,6 @@ namespace SysDVRClientGUI.Forms
                 args.Append("usb ");
             else if (rbSrcTcp.Checked)
                 args.AppendFormat("bridge {0} ", IPA_AddressBox.IPAddressValue.ToString());
-            else
-                throw new Exception("Select a valid source.");
 
             if (CurKind == StreamKind.Audio)
                 args.Append("--no-video ");
@@ -287,9 +284,9 @@ namespace SysDVRClientGUI.Forms
 
             args.Append(CurrentControl.GetClientCommandLine());
             if (args[args.Length - 1] != ' ')
-                args.Append(" ");
+                args.Append(' ');
 
-            args.Append(GetExtraArgs());
+            args.Append(this.GetExtraArgs());
 
             return new LaunchCommand
             {
@@ -299,27 +296,23 @@ namespace SysDVRClientGUI.Forms
             };
         }
 
-        LaunchCommand[] GetFinalCommand()
+        private IEnumerable<LaunchCommand> GetFinalCommand()
         {
-            if (rbSrcUsb.Checked)
-                if (CheckUSBDriver())
-                    return null;
-
-            if (CurrentControl == null)
-                throw new Exception("Select all the options first");
+            if (rbSrcUsb.Checked && CheckUSBDriver())
+                return Array.Empty<LaunchCommand>();
 
             return new LaunchCommand[]
             {
-                GetClientCommandLine(),
+                this.GetClientCommandLine(),
                 CurrentControl.GetExtraCmd()
             }
-            .Where(x => x != null).ToArray();
+            .Where(x => x != null);
         }
 
         private void Launch(object sender, EventArgs e)
         {
-            var cmds = GetFinalCommand();
-            if (cmds == null)
+            IEnumerable<LaunchCommand> cmds = this.GetFinalCommand();
+            if (cmds == null || !cmds.Any())
                 return;
 
             // Launch SysDVR-Client with /K so any error is shown to the user
@@ -328,10 +321,10 @@ namespace SysDVRClientGUI.Forms
                 UseShellExecute = false,
                 FileName = "cmd",
                 // Cursed quote escaping https://superuser.com/questions/1213094/how-to-escape-in-cmd-exe-c-parameters
-                Arguments = $"/K \"{cmds[0]}\""
+                Arguments = $"/K \"{cmds.First()}\""
             });
 
-            if (cmds.Length > 1)
+            if (cmds.Count() > 1)
             {
                 // Give sysdvr time to start then launch any extra commands
                 Thread.Sleep(2000);
@@ -346,8 +339,8 @@ namespace SysDVRClientGUI.Forms
 
         private void ExportBatch(object sender, EventArgs e)
         {
-            LaunchCommand[] cmds = GetFinalCommand();
-            if (cmds == null)
+            IEnumerable<LaunchCommand> cmds = this.GetFinalCommand();
+            if (cmds == null || !cmds.Any())
                 return;
 
             SaveFileDialog sav = new() { Filter = "batch file|*.bat", InitialDirectory = AppDomain.CurrentDomain.BaseDirectory, RestoreDirectory = false, FileName = "SysDVR Launcher.bat" };
@@ -359,7 +352,7 @@ namespace SysDVRClientGUI.Forms
             b.SaveToFile(sav.FileName);
 
             if (MessageBox.Show("Done, launch SysDVR-Client now ?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                Launch(sender, e);
+                this.Launch(sender, e);
         }
 
         private void LLBL_ProjectWiki_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start(GITHUB_PROJECT_URL_WIKI);
