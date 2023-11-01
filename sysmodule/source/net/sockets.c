@@ -42,7 +42,7 @@ static bool HasNifm;
 static u8 alignas(0x1000) TmemBackingBuffer[TMEM_SIZE];
 
 #if UDP_LOGGING
-#define TARGET_DEBUG_IP "192.168.1.66"
+#define TARGET_DEBUG_IP "192.168.178.66"
 
 #include <stdarg.h>
 #include "../third_party/nanoprintf.h"
@@ -326,6 +326,21 @@ s32 SocketRecv(int socket, void* buffer, u32 size)
 			return -1;
 	}
 	return (s32)r;
+}
+
+bool SocketRecevExact(int socket, void* buffer, u32 size)
+{
+	u32 received = 0;
+	while (received < size && IsThreadRunning)
+	{
+		int res = SocketRecv(socket, (char*)buffer + received, size - received);
+		if (res < 0)
+			return false;
+
+		received += res;
+	}
+
+	return true;
 }
 
 bool SocketMakeNonBlocking(int socket)

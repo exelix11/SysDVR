@@ -9,6 +9,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Linq;
 using SDL2;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Threading.Channels;
 
 namespace SysDVR.Client.Targets.Player
 {
@@ -78,12 +80,12 @@ namespace SysDVR.Client.Targets.Player
 
 #if DEBUG
                 // This should never happen...
-                if (currentOffset > currentBlock.Length)
+                if (currentBlock is not null && currentOffset > currentBlock.Length)
                     Debugger.Break();
 #endif
 
                 // If the block is exhausted get rid of it
-                if (currentOffset >= currentBlock.Length)
+                if (currentBlock is not null && currentOffset >= currentBlock.Length)
                 {
                     currentOffset = -1;
                     currentBlock.Free();
@@ -139,85 +141,93 @@ namespace SysDVR.Client.Targets.Player
         }
     }
 
-    unsafe class H264StreamTarget : OutStream
+    class H264StreamTarget : OutStream
     {
-        readonly Thread VideoConsumerThread;
-        readonly BlockingCollection<(PoolBuffer, ulong)> videoBuffer = new BlockingCollection<(PoolBuffer, ulong)>(50);
+        Task VideoConsumerTask = null!;
+        
+        readonly Channel<(PoolBuffer, ulong)> videoBuffer = Channel.CreateBounded<(PoolBuffer, ulong)>(
+            new BoundedChannelOptions(50)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+                SingleWriter = true
+            },
+            (x) => {
+                x.Item1.Free();
+            }
+        );
 
         public int Pending;
 
         DecoderContext ctx;
         int timebase_den;
-        AVPacket* packet;
+        unsafe AVPacket* packet;
         StreamSynchronizationHelper sync;
         bool log;
         AutoResetEvent onFrame;
 
         // The video player consumer may block but we don't want that when streaming over USB
         // since the same thread handles both audio and video, we use a buffer to avoid blocking
-        void VideoConsumerMain()
+        async Task ConsumeVideoAsync()
         {
-            try
+            var reader = videoBuffer.Reader;
+            while (!Cancel.IsCancellationRequested)
             {
-                // We should not run out of capacity because the target will start dropping packets once their timestamp is too old
-                foreach (var (buf, ts) in videoBuffer.GetConsumingEnumerable(Cancel))
+                var (buf, ts) = await reader.ReadAsync(Cancel).ConfigureAwait(false);
+                bool success = false;
+                bool tsFailed = false;
+
+                Interlocked.Decrement(ref Pending);
+
+                // Try at most 5 times ( = 5 frames since we lock on the frame event)
+                for (int i = 0; i < 4; i++)
                 {
-                    bool success = false;
-                    bool tsFailed = false;
-
-                    // Try at most 5 times ( = 5 frames since we lock on the frame event)
-                    for (int i = 0; i < 4; i++)
+                    // Drop the packet if while we were trying to send it audio went out of sync
+                    if (!sync.CheckTimestamp(true, ts))
                     {
-                        // Drop the packet if while we were trying to send it audio went out of sync
-                        if (!sync.CheckTimestamp(true, ts))
-                        {
-                            tsFailed = true;
-                            break;
-                        }
-
-                        var res = DecodePacket(buf, ts);
-
-                        if (res == AVERROR(EAGAIN))
-                        {
-                            Program.Instance.KickRendering(false);
-
-                            // Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
-                            // However it also seems to happen for some specific games so simply dropping packets will cause visual artifacts
-                            // Wait for the next frame and submit again
-                            // Since we don't check this every frame we may wake up too early but only for a frame so it's fine
-                            onFrame.WaitOne(500);
-
-                            if (Cancel.IsCancellationRequested)
-                                break;
-                        }
-                        else if (res != 0)
-                        {
-                            Console.WriteLine($"avcodec_send_packet {res}");
-                            break;
-                        }
-                        else
-                        {
-                            success = true;
-                            // Tell the UI thread to start rendering again
-                            Program.Instance.KickRendering(false);
-                            break;
-                        }
+                        tsFailed = true;
+                        break;
                     }
 
-                    if (!success && log)
-                    {
-                        if (tsFailed)
-                            Console.WriteLine($"Dropping video packet with ts {ts} to resync audio");
-                        else
-                            Console.WriteLine($"Dropping video packet because the UI thread is too late");
-                    }
+                    var res = DecodePacket(buf, ts);
 
-                    buf.Free();
+                    if (res == AVERROR(EAGAIN))
+                    {
+                        // Adaptive rendering causes a lot of stuttering, for now avoid it in the video player
+                        //Program.Instance.KickRendering(false);
+
+                        // Normally this only happens if the UI thread is not pulling video frames like when the window is being dragged
+                        // However it also seems to happen for some specific games so simply dropping packets will cause visual artifacts
+                        // Wait for the next frame and submit again
+                        // Since we don't check this every frame we may wake up too early but only for a frame so it's fine
+                        onFrame.WaitOne(500);
+
+                        if (Cancel.IsCancellationRequested)
+                            break;
+                    }
+                    else if (res != 0)
+                    {
+                        Console.WriteLine($"avcodec_send_packet {res}");
+                        break;
+                    }
+                    else
+                    {
+                        success = true;
+                        // Tell the UI thread to start rendering again
+                        Program.Instance.KickRendering(false);
+                        break;
+                    }
                 }
-            }
-            catch
-            {
-                // Exception is thrown when consumer finishes or token is cancelled
+
+                if (!success && log)
+                {
+                    if (tsFailed)
+                        Console.WriteLine($"Dropping video packet with ts {ts} to resync audio");
+                    else
+                        Console.WriteLine($"Dropping video packet because the UI thread is too late");
+                }
+
+                buf.Free();
             }
         }
 
@@ -225,7 +235,6 @@ namespace SysDVR.Client.Targets.Player
         {
             packet = av_packet_alloc();
             log = DebugOptions.Current.Log;
-            VideoConsumerThread = new Thread(VideoConsumerMain);
         }
 
         unsafe ~H264StreamTarget()
@@ -246,15 +255,29 @@ namespace SysDVR.Client.Targets.Player
         {
             base.UseCancellationTokenImpl(tok);
             // Start the consumer only after the token is set
-            VideoConsumerThread.Start();
+            VideoConsumerTask = Task.Run(ConsumeVideoAsync);
         }
 
-        protected override void DisposeImpl()
+        protected override async void DisposeImpl()
         {
-            // If the cancellation token is not set, the consumer thread has probably already terminated
-            VideoConsumerThread.Join();
+            if (!Cancel.IsCancellationRequested)
+                throw new Exception("Disposing without cancelling the token first");
+
+            videoBuffer.Writer.Complete();
+
+            try
+            {
+                // If the cancellation token is not set, the consumer thread has probably already terminated
+                await VideoConsumerTask;
+            }
+            catch { /* ignore */ }
+
             // Free any remaining buffers
-            videoBuffer.ToList().ForEach(x => x.Item1.Free());
+            videoBuffer.Reader.ReadAllAsync()
+                .ToBlockingEnumerable()
+                .ToList()
+                .ForEach(x => x.Item1.Free());
+
             base.Dispose();
         }
 
@@ -281,8 +304,8 @@ namespace SysDVR.Client.Targets.Player
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            videoBuffer.Add((block, ts), Cancel);
-            Pending = videoBuffer.Count;
+            _ = videoBuffer.Writer.WriteAsync((block, ts), Cancel);
+            Interlocked.Increment(ref Pending);
             // Free is called by the consumer thread...
         }
     }

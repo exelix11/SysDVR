@@ -1,14 +1,13 @@
 #pragma once
 #include <switch.h>
 
-#define STREAM_PACKET_MAGIC_VIDEO 0xDDDDDDDD
-#define STREAM_PACKET_MAGIC_AUDIO 0xEEEEEEEE
+#define STREAM_PACKET_HEADER 0xCCCCCCCC
 
 /*
 	This is higher than what suggested on switchbrw to fix https://github.com/exelix11/SysDVR/issues/91,
 	See the comment in ReadVideoStream()
 */
-#define VbufSz 0x50000
+#define VbufSz 0x54000
 
 /*
 	Audio is 16bit pcm at 48000hz stereo. In official software it's read in 0x1000 chunks
@@ -27,13 +26,32 @@
 */
 #define MaxABatching 2
 
+// five bits
+enum PacketMeta 
+{
+	PacketMeta_Type_Mask = BIT(0) | BIT(1),
+	PacketMeta_Type_Video = BIT(0),
+	PacketMeta_Type_Audio = BIT(1),
+
+	PacketMeta_Content_Mask = BIT(2) | BIT(3) | BIT(4),
+	PacketMeta_Content_Data = BIT(2),
+	PacketMeta_Content_Replay = BIT(3),	// Only if PacketMeta_Type_Video
+	PacketMeta_Content_MultiNal = BIT(4) // Only if PacketMeta_Type_Video
+};
+
 typedef struct {
 	u32 Magic;
 	u32 DataSize;
-	u64 Timestamp; //Note: timestamps are in usecs
-} PacketHeader;
+	u64 Timestamp; //timestamps are in usecs
+	u8 MetaData;
+	// Used by packet Replaying to indicate which slot identifies this packet
+	// When MetaData & Data the client should cache this packet with this ID
+	// When MetaData & Replay the client should replay the cached packet with this ID
+	// 0xFF indicates no hash, for example when streaming with audio or with hashes disabled
+	u8 ReplaySlot; 
+} __attribute__((packed)) PacketHeader;
 
-_Static_assert(sizeof(PacketHeader) == 16); //Ensure no padding, PACKED triggers a warning
+_Static_assert(sizeof(PacketHeader) == 18);
 
 typedef struct {
 	PacketHeader Header;
@@ -55,15 +73,18 @@ extern AudioPacket APkt;
 Result CaptureInitialize();
 void CaptureFinalize();
 
-void CaptureSetAudioBatching(int batch);
-int CaptureGetAudioBatching();
-
-void CaptureResetStaticDropThreshold();
-void CaptureSetStaticDropThreshold(int maxConsecutive);
-int CaptureGetStaticDropThreshold();
-
 // Captures video with grc:d, if no game is running this blocks and there's no way to terminate the call
 bool CaptureReadVideo();
 
 // Captures audio with grc:d, if no game is running this blocks and there's no way to terminate the call
 bool CaptureReadAudio();
+
+// When a client first connects clear old data structures and prepare hashing modes
+void CaptureVideoConnected();
+void CaptureAudioConnected();
+
+// Configurable options
+void CaptureConfigResetDefault();
+int CaptureSetAudioBatching(int batch);
+void CaptureSetPPSSPSInject(bool value);
+void CaptureSetNalHashing(bool enabled, bool onlyKeyframes);

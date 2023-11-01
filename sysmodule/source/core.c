@@ -68,9 +68,9 @@ Result CoreInit()
 #ifndef USB_ONLY
 atomic_bool IsThreadRunning = false;
 
-static u8 alignas(0x1000) VStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
+static u8 alignas(0x1000) VStreamStackArea[0x2000 + LOGGING_STACK_BOOST];
 #endif
-static u8 alignas(0x1000) AStreamStackArea[0x2000 + LOGGING_HEAP_BOOST];
+static u8 alignas(0x1000) AStreamStackArea[0x2000 + LOGGING_STACK_BOOST];
 
 void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio)
 {
@@ -101,39 +101,11 @@ const StreamMode* CurrentMode = NULL;
 // Mode switching is complicated because the streaming thread can get stuck indefinitely waiting for grc when a game is not running
 // So we fake mode switching: when the user puts in a request a thread starts and waits for the streaming thread to exit
 // the request can be changed at any time while this thread is waiting, once the streaming threads actually exit the new request is processed
-static u8 alignas(0x1000) ModeSwitchingStackArea[0x2000 + LOGGING_HEAP_BOOST];
+static u8 alignas(0x1000) ModeSwitchingStackArea[0x2000 + LOGGING_STACK_BOOST];
 static atomic_bool IsModeSwitchPending = false;
 static Thread ModeSwitchThread;
 static Mutex ModeSwitchingMutex;
 static const StreamMode* SwitchModeTarget = NULL;
-
-// Configurable user parameters
-static UserOverrides Overrides = { false, 0, 0 };
-
-void ApplyUserOverrides(UserOverrides overrides)
-{
-	Overrides = overrides;
-	if (!overrides.Enabled)
-	{
-		if (CurrentMode)
-			CaptureSetAudioBatching(CurrentMode->AudioBatches);
-		CaptureResetStaticDropThreshold();
-	}
-	else
-	{
-		CaptureSetAudioBatching(overrides.AudioBatching);
-		CaptureSetStaticDropThreshold(overrides.StaticDropThreshold);
-	}
-}
-
-UserOverrides GetUserOverrides()
-{
-	UserOverrides res;
-	res.Enabled = Overrides.Enabled;
-	res.AudioBatching = CaptureGetAudioBatching();
-	res.StaticDropThreshold = CaptureGetStaticDropThreshold();
-	return res;
-}
 
 static const StreamMode* GetUserVisibleMode() {
 	mutexLock(&ModeSwitchingMutex);
@@ -162,9 +134,6 @@ static void EnterTargetMode()
 		LOG("Starting mode\n");
 		IsThreadRunning = true;
 		memset(&Buffers, 0, sizeof(Buffers));
-
-		// Reset capture options depending on the state of overrides
-		ApplyUserOverrides(Overrides);
 
 		LOG("Calling init fn\n");
 		if (CurrentMode->InitFn)
@@ -294,7 +263,6 @@ void SetModeID(u32 mode)
 #else
 void UsbOnlyEntrypoint() 
 {
-	CaptureSetAudioBatching(USB_MODE.AudioBatches);
 	USB_MODE.InitFn();
 	memset(AStreamStackArea, 0, sizeof(AStreamStackArea));
 	LaunchThread(&AudioThread, USB_MODE.AThread, USB_MODE.Aargs, AStreamStackArea, sizeof(AStreamStackArea), 0x2C);

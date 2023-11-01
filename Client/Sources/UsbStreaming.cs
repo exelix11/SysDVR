@@ -6,64 +6,34 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
 {
-	class UsbStreamingSource : IStreamingSource
+    class UsbStreamingSource : StreamingSource
 	{
-		protected static readonly byte[] MagicRequestVideo = { 0xBB, 0xBB, 0xBB, 0xBB };
-		protected static readonly byte[] MagicRequestAudio = { 0xCC, 0xCC, 0xCC, 0xCC };
-		protected static readonly byte[] MagicRequestBoth = { 0xAA, 0xAA, 0xAA, 0xAA };
-
-        public event Action<string> OnMessage;
-
-		CancellationToken Token;
-
-		// TODO: Remove tracing code
-		readonly private TimeTrace tracer = new();
-
-		protected TimeTrace BeginTrace(string extra = "", [CallerMemberName] string funcName = null) =>
-			tracer.Begin("usb", extra, funcName);
-
 		readonly DvrUsbDevice device;
 		protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
 
-		readonly bool HasAudio;
-		readonly bool HasVideo;
-
-		byte[] RequestMagic => (HasVideo, HasAudio) switch
+		public UsbStreamingSource(DvrUsbDevice device, StreamingOptions opt, CancellationToken cancel) : base(opt, cancel)
 		{
-			(true, true) => MagicRequestBoth,
-			(true, false) => MagicRequestVideo,
-			(false, true) => MagicRequestAudio,
-			_ => throw new Exception("Invalid state")
-		};
-
-		public StreamKind SourceKind { get; private set; }
-
-		public UsbStreamingSource(DvrUsbDevice device, StreamKind kind)
-        {
 			this.device = device;
-			SourceKind = kind;
+			(reader, writer) = device.Open();
+		}
 
-			HasVideo = kind is StreamKind.Both or StreamKind.Video;
-			HasAudio = kind is StreamKind.Both or StreamKind.Audio;
-
-            (reader, writer) = device.Open();
-        }
-
-		public void StopStreaming()
+		public override Task StopStreaming()
 		{
 			device.Close();
 			device.Dispose();
+			return Task.CompletedTask;
 		}
 
 		bool Reconnect(string reason)
 		{
-            OnMessage?.Invoke($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
+			ReportMessage($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
 			if (device.TryReconnect())
 			{
 				(reader, writer) = device.Open();
@@ -72,50 +42,30 @@ namespace SysDVR.Client.Sources
 			return false;
 		}
 
-        public Task ConnectAsync(CancellationToken token)
-        {
-            Token = token;
-			return Task.Run(WaitForConnection, token);
-        }
-
-        void WaitForConnection()
+		public override async Task Connect()
 		{
-			bool printedTimeoutWarningOnce = false;
-			bool connected = true;
-			while (!Token.IsCancellationRequested)
+			await WaitForConnection().ConfigureAwait(false);
+		}
+
+		async Task WaitForConnection()
+		{
+			while (!Cancellation.IsCancellationRequested)
 			{
-                //using var trace = BeginTrace();
-                OnMessage?.Invoke($"Sending USB connection request {BitConverter.ToString(RequestMagic)}");
-				LibUsbDotNet.Error err = LibUsbDotNet.Error.Success;
+				if (DebugOptions.Current.Log)
+					ReportMessage($"Sending USB connection request");
+				
 				try
 				{
-					if (!connected)
-						err = LibUsbDotNet.Error.NoDevice;
-					else
-						err = writer.Write(RequestMagic, 1000, out int _);
+					await DoHandshake(Options.Kind).ConfigureAwait(false);
 				}
 				catch (Exception e)
 				{
-					connected = Reconnect(e.Message);
-					continue;
-				}
+                    ReportMessage($"USB warning: Couldn't communicate with the console. Try entering a compatible game, unplugging your console or restarting it.");
 
-				if (err != LibUsbDotNet.Error.Success)
-				{
-					if (err != LibUsbDotNet.Error.Timeout)
-					{
-						// We probably need reconnecting
-						connected = Reconnect(err.ToString());
-					}
-					else if (!printedTimeoutWarningOnce)
-					{
-						printedTimeoutWarningOnce = true;
-                        OnMessage?.Invoke($"USB warning: Couldn't communicate with the console ({err}). Try entering a compatible game, unplugging your console or restarting it.");
-					}
+                    if (!Cancellation.IsCancellationRequested)
+						await Task.Delay(1000, Cancellation).ConfigureAwait(false);
 
-					if (!Token.IsCancellationRequested)
-						Thread.Sleep(3000);
-
+                    Reconnect(e.Message);
 					continue;
 				}
 
@@ -123,51 +73,58 @@ namespace SysDVR.Client.Sources
 			}
 		}
 
-		public virtual void Flush()
+		public override async Task Flush()
 		{
-			if (Token.IsCancellationRequested)
+			if (Cancellation.IsCancellationRequested)
 				return;
 
 			// Wait some time so the switch side timeouts
-			Thread.Sleep(3000);
+			await Task.Delay(3000, Cancellation).ConfigureAwait(false);
 
 			// Then attempt to connect again
-			WaitForConnection();
+			await WaitForConnection().ConfigureAwait(false);
 		}
 
-		// Not all USB implementations buffer data in the OS side,
-		// to support libusb we manually define the backing buffer and read everything in one shot
-		// At some point there was a different implementation for WinUSB since that does support buffering
-		// But it makes little sense to keep them separate as it doesn't grant any performance improvement.
-		private int ReadSize = 0;
 		private byte[] ReadBuffer = new byte[PacketHeader.MaxTransferSize];
+        public override async Task<ReceivedPacket> ReadNextPacket()
+        {
+            var (err, read) = await reader.ReadAsync(ReadBuffer, 800).ConfigureAwait(false);
+            if (err != LibUsbDotNet.Error.Success)
+				throw new Exception($"Warning: libusb error {err} while reading header");
 
-        public bool ReadHeader(byte[] buffer)
-		{
-			//using var trace = BeginTrace();
+			if (read < PacketHeader.StructLength)
+				throw new Exception("Libusb did not read enough data");
 
-			var err = reader.Read(ReadBuffer, 0, PacketHeader.MaxTransferSize, 800, out ReadSize);
-			if (err != LibUsbDotNet.Error.Success)
+			var header = MemoryMarshal.Read<PacketHeader>(ReadBuffer);
+
+			if (!ValidatePacketHeader(in header))
+				throw new Exception($"Invaid packet header: {header}");
+
+			PoolBuffer? data = null;
+			if (header.DataSize != 0)
 			{
-				if (DebugOptions.Current.Log)
-                    OnMessage?.Invoke($"Warning: libusb error {err} while reading header");
-
-				return false;
+				data = PoolBuffer.Rent(header.DataSize);
+				ReadBuffer.AsSpan(PacketHeader.StructLength, header.DataSize).CopyTo(data.Span);
 			}
 
-			Buffer.BlockCopy(ReadBuffer, 0, buffer, 0, PacketHeader.StructLength);
+            return new ReceivedPacket(header, data);
+        }
 
-			return true;
-		}
+        protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+        {
+			var buffer = new byte[ProtoHandshakeRequest.StructureSize];
+			MemoryMarshal.Write(buffer, ref req);
 
-		public bool ReadPayload(byte[] buffer, int length)
-		{
-			if (length > ReadSize - PacketHeader.StructLength)
-				return false;
+			var (err, transfer) = await writer.WriteAsync(buffer, 1500).ConfigureAwait(false);
 
-			Buffer.BlockCopy(ReadBuffer, PacketHeader.StructLength, buffer, 0, length);
+            if (err != LibUsbDotNet.Error.Success || transfer != buffer.Length)
+            	throw new Exception($"libusb write handshake failed, result: {err} len: {transfer}");
 
-			return true;
-		}
+            (err, transfer) = await reader.ReadAsync(buffer, 0, 4, 1500).ConfigureAwait(false);
+            if (err != LibUsbDotNet.Error.Success || transfer != 4)
+                throw new Exception($"libusb receive handshake failed, result: {err} len: {transfer}");
+
+			return BitConverter.ToUInt32(buffer, 0);
+        }
     }
 }

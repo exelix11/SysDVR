@@ -14,8 +14,8 @@
 		<Configurations>Debug;Release</Configurations>
 		<ApplicationIcon>Client.ico</ApplicationIcon>
 		<RollForward>Major</RollForward>
-		<Nullable>annotations</Nullable>
 		<PublishAot>true</PublishAot>
+		<Nullable>annotations</Nullable>
 	</PropertyGroup>
 
 	<Choose>

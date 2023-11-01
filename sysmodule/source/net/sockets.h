@@ -37,6 +37,8 @@ s32 SocketGetBroadcastAddress();
 // Returns 0 on timeout, -1 on error, otherwise the number of bytes received
 s32 SocketRecv(int socket, void* buffer, u32 size);
 
+bool SocketRecevExact(int socket, void* buffer, u32 size);
+
 bool SocketMakeNonBlocking(int socket);
 
 int SocketNativeErrno();

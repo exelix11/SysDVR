@@ -62,6 +62,7 @@
     <ClCompile Include="source\core.c" />
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\ipc\ipc.c" />
+    <ClCompile Include="source\modes\proto.c" />
     <ClCompile Include="source\modes\RTSPmode.c" />
     <ClCompile Include="source\modes\TCPmode.c" />
     <ClCompile Include="source\modes\USBmode.c" />
@@ -85,6 +86,7 @@
     <ClInclude Include="source\ipc\ipc.h" />
     <ClInclude Include="source\modes\defines.h" />
     <ClInclude Include="source\modes\modes.h" />
+    <ClInclude Include="source\modes\proto.h" />
     <ClInclude Include="source\net\sockets.h" />
     <ClInclude Include="source\rtsp\H264Packetizer.h" />
     <ClInclude Include="source\rtsp\LE16Packetizer.h" />

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SysDVR.Client.Sources;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,32 +13,32 @@ namespace SysDVR.Client.Core
     {
         private const string BaseArgs = "--profile=low-latency --no-cache --cache-secs=0 --demuxer-readahead-secs=0 --untimed --cache-pause=no --no-correct-pts";
 
-        private static OutStream GetVTarget(StreamKind kind, string path) =>
-            kind == StreamKind.Video ? StreamTarget.ForProcess(kind, path, "- --fps=30 " + BaseArgs) : null;
+        private static OutStream GetVTarget(bool enable, string path) =>
+            enable ? StreamTarget.ForProcess(StreamKind.Video, path, "- --fps=30 " + BaseArgs) : null;
 
-        private static OutStream GetATarget(StreamKind kind, string path) =>
-            kind == StreamKind.Audio ? StreamTarget.ForProcess(kind, path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
+        private static OutStream GetATarget(bool enable, string path) =>
+            enable ? StreamTarget.ForProcess(StreamKind.Audio, path, "- --no-video --demuxer=rawaudio --demuxer-rawaudio-rate=48000 " + BaseArgs) : null;
 
-        public MpvStdinManager(StreamKind kind, string path, CancellationTokenSource cancel) :
-            base(GetVTarget(kind, path), GetATarget(kind, path), cancel)
+        public MpvStdinManager(StreamingSource source, string path, CancellationTokenSource cancel) :
+            base(source, GetVTarget(source.Options.HasVideo, path), GetATarget(source.Options.HasAudio, path), cancel)
         {
-            if (kind == StreamKind.Both)
+            if (source.Options.Kind == StreamKind.Both)
                 throw new Exception("MpvStdinManager can only handle one stream");
         }
     }
 
     class StdOutManager : BaseStreamManager
     {
-        private static OutStream GetVTarget(StreamKind kind) =>
-            kind == StreamKind.Video ? StreamTarget.ForStdOut(kind) : null;
+        private static OutStream GetVTarget(bool enable) =>
+            enable ? StreamTarget.ForStdOut(StreamKind.Video) : null;
 
-        private static OutStream GetATarget(StreamKind kind) =>
-            kind == StreamKind.Audio ? StreamTarget.ForStdOut(kind) : null;
+        private static OutStream GetATarget(bool enable) =>
+            enable ? StreamTarget.ForStdOut(StreamKind.Audio) : null;
 
-        public StdOutManager(StreamKind kind, CancellationTokenSource cancel) :
-            base(GetVTarget(kind), GetATarget(kind), cancel)
+        public StdOutManager(StreamingSource source, CancellationTokenSource cancel) :
+            base(source, GetVTarget(source.Options.HasVideo), GetATarget(source.Options.HasVideo), cancel)
         {
-            if (kind == StreamKind.Both)
+            if (source.Options.Kind == StreamKind.Both)
                 throw new Exception("StdOutManager can only handle one stream");
         }
     }

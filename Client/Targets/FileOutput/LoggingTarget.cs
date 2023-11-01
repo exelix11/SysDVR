@@ -1,22 +1,32 @@
 ﻿#if DEBUG
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using SysDVR.Client.Core;
+using SysDVR.Client.Sources;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
-    class LoggingTarget : OutStream
+    class LoggingTarget
     {
         readonly BinaryWriter bin;
         readonly MemoryStream mem = new MemoryStream();
         readonly string filename;
 
+        readonly public OutStream VideoTarget;
+        readonly public OutStream AudioTarget;
+
         public LoggingTarget(string filename)
         {
             this.filename = filename;
             bin = new BinaryWriter(mem);
+
+            VideoTarget = new ChannelTarget(this, StreamKind.Video);
+            AudioTarget = new ChannelTarget(this, StreamKind.Audio);
         }
 
         public void FlushToDisk()
@@ -26,42 +36,83 @@ namespace SysDVR.Client.Targets.FileOutput
 
         Stopwatch sw = new Stopwatch();
 
-        protected override void SendDataImpl(PoolBuffer data, ulong ts)
+        protected void AddBuffer(StreamKind kind, PoolBuffer data, ulong ts)
         {
-            Console.WriteLine($"{filename} - ts: {ts}");
-            bin.Write(0xAAAAAAAA);
-            bin.Write(sw.ElapsedMilliseconds);
-            bin.Write(ts);
-            bin.Write(data.Length);
-            bin.Write(data.Span);
-            sw.Restart();
+            lock (this)
+            {
+                sw.Stop();
+                var elapsed = sw.ElapsedMilliseconds;
 
-            data.Free();
+                // Create a fake header
+                var header = new PacketHeader();
+                header.Magic = PacketHeader.MagicResponse;
+                header.Timestamp = ts;
+                header.DataSize = data.Length;
+
+                if (kind == StreamKind.Video)
+                    header.Flags = PacketHeader.MetaIsVideo;
+                else if (kind == StreamKind.Audio)
+                    header.Flags = PacketHeader.MetaIsAudio;
+                else
+                    throw new Exception("Unknown stream kind");
+
+                header.Flags |= PacketHeader.MetaIsData;
+
+                var headerBin = new byte[PacketHeader.StructLength];
+                MemoryMarshal.Write(headerBin, ref header);
+
+                bin.Write(headerBin);
+                bin.Write(data.Span);
+                bin.Write((uint)elapsed);
+                sw.Restart();
+
+                data.Free();
+            }
         }
 
-        protected override void DisposeImpl()
+        class ChannelTarget : OutStream
         {
-            mem.Dispose();
-            bin.Dispose();
-            base.Dispose();
+            readonly LoggingTarget parent;
+            readonly StreamKind streamKind;
+
+            public ChannelTarget(LoggingTarget parent, StreamKind streamKind)
+            {
+                this.parent = parent;
+                this.streamKind = streamKind;
+            }
+
+            protected override void SendDataImpl(PoolBuffer block, ulong ts)
+            {
+                parent.AddBuffer(streamKind, block, ts);
+            }
         }
     }
 
     class LoggingManager : BaseStreamManager
     {
-        public LoggingManager(string VPath, string APath, CancellationTokenSource cancel) : base(
-            VPath != null ? new LoggingTarget(VPath) : null,
-            APath != null ? new LoggingTarget(APath) : null,
+        static LoggingTarget target = null!;
+
+        static LoggingTarget GetTarget()
+        {
+            if (target is null)
+                target = new LoggingTarget("log.bin");
+
+            return target;
+        }
+
+        public LoggingManager(StreamingSource source, string VPath, string APath, CancellationTokenSource cancel) : base(
+            source,
+            VPath != null ? GetTarget().VideoTarget : null,
+            APath != null ? GetTarget().AudioTarget : null,
             cancel)
         {
 
         }
 
-        public override void Stop()
+        public override async Task Stop()
         {
-            base.Stop();
-            (VideoTarget as LoggingTarget)?.FlushToDisk();
-            (AudioTarget as LoggingTarget)?.FlushToDisk();
+            await base.Stop().ConfigureAwait(false);
+            target.FlushToDisk();
         }
     }
 }

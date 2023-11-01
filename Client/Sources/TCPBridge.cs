@@ -1,213 +1,336 @@
-﻿using LibUsbDotNet;
+﻿using FFmpeg.AutoGen;
+using LibUsbDotNet;
 using SysDVR.Client.Core;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
 {
-    class TCPBridgeSource : IStreamingSource
-	{
-        public StreamKind SourceKind { get; private init; }
-
+    class TCPBridgeSource : StreamingSource
+    {
         const int MaxConnectionAttempts = 5;
-		const int ConnFailDelayMs = 2000;
+        const int ConnFailDelayMs = 2000;
 
-		const int TcpBridgeVideoPort = 9911;
-		const int TcpBridgeAudioPort = 9922;
+        const int TcpBridgeVideoPort = 9911;
+        const int TcpBridgeAudioPort = 9922;
 
-		const int ProtocolVersion = 0;
-        
-		int Port => 
-			SourceKind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
+        readonly TcpBridgeSubStream? videoStream;
+        readonly TcpBridgeSubStream? audioStream;
 
-        readonly string IpAddress;
-		readonly byte HeaderMagicByte;
+        readonly Channel<ReceivedPacket> poolBuffers = Channel.CreateBounded<ReceivedPacket>(
+            new BoundedChannelOptions(30)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleWriter = false,
+                SingleReader = true
+            },
+            x => x.Buffer?.Free()
+        );
 
-        public event Action<string> OnMessage;
+        public TCPBridgeSource(DeviceInfo device, CancellationToken tok, StreamingOptions opt) : base(opt, tok)
+        {
+            if (Options.HasVideo)
+                videoStream = new(device.ConnectionString, StreamKind.Video, tok, OnBuffer, ReportMessage);
 
-        CancellationToken Token;
-		Socket Sock;
-        bool CommunicationException = false;
-
-        bool InSync = false;
-
-        public TCPBridgeSource(DeviceInfo ip, StreamKind kind)
-		{
-            if (kind == StreamKind.Both)
-                throw new Exception("Tcp bridge can't stream both channels over a single connection");
-
-			if (!ip.CheckProtocolVersion(ProtocolVersion))
-				throw new Exception($"Target protocol version is not supported, update your client and sysmodule");
-
-            SourceKind = kind;
-			IpAddress = ip.ConnectionString;
-
-            HeaderMagicByte = 
-				(byte)((kind == StreamKind.Video ? PacketHeader.MagicResponseVideo : PacketHeader.MagicResponseAudio) & 0xFF);
+            if (Options.HasAudio)
+                audioStream = new(device.ConnectionString, StreamKind.Audio, tok, OnBuffer, ReportMessage);
         }
 
-        public async Task ConnectAsync(CancellationToken tok)
+        async void OnBuffer(ReceivedPacket buffer)
         {
-            Token = tok;
-            Sock?.Close();
-            Sock?.Dispose();
-            CommunicationException = false;
-
-            Sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
-                Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
-                Sock.NoDelay = true;
+                await poolBuffers.Writer.WriteAsync(buffer, Cancellation);
             }
-            catch { }
-
-            Exception ReportException = null;
-            for (int i = 0; i < MaxConnectionAttempts && !Token.IsCancellationRequested; i++)
+            catch
             {
-                if (i != 0 || DebugOptions.Current.Log) // Don't show error for the first attempt
-                    OnMessage?.Invoke($"[{SourceKind} stream] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
-
-                try
-                {
-                    await Sock.ConnectAsync(IpAddress, Port, Token).ConfigureAwait(false);
-                    if (Sock.Connected)
-                    {
-                        Sock.NoDelay = true;
-                        Sock.ReceiveBufferSize = PacketHeader.MaxTransferSize;
-
-                        // Assume the connection starts in-sync and fall back to resync code only on failure
-                        InSync = true;
-                        break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ReportException = ex;
-                    await Task.Delay(ConnFailDelayMs).ConfigureAwait(false);
-                }
-            }
-
-            if (Token.IsCancellationRequested)
-                return;
-
-            if (!Sock.Connected)
-            {
-                OnMessage?.Invoke($"Connection to {SourceKind} stream failed. Throwing exception.");
-                throw ReportException ?? new Exception("No exception provided");
+                // This will throw on cancel
             }
         }
 
-		public void StopStreaming()
-		{
-			Sock?.Close();
-            Sock?.Dispose();
-		}
-
-		public void Flush() 
-		{
-            if (Token.IsCancellationRequested)
-                return;
-
-            InSync = false;
-			if (CommunicationException)
-			{
-				Sock?.Close();
-				Sock?.Dispose();
-				Sock = null;
-
-                OnMessage?.Invoke($"{SourceKind} stream connection lost, reconnecting...");
-                Thread.Sleep(800);
-				
-                ConnectAsync(Token).GetAwaiter().GetResult();
-			}
-        }
-
-        public bool ReadHeader(byte[] buffer)
+        async Task WaitAll(Task? first, Task? second)
         {
-            // What is this ? Isn't TCP supposed to be reliable ?
-			// Well turs out we have small-ish socket buffers on the console side and certain packets like video
-			// can be much bigger, this causes non-recoverable packet drops. This only happens in extreme situations
-			// so we just handle the error by ignoring dropped packets looking for an header
-            if (InSync)
-            {
-                return ReadPayload(buffer, PacketHeader.StructLength);
-            }
+            if (first is null && second is null)
+                return;
+
+            if (first is null)
+                await second!.ConfigureAwait(false);
+            else if (second is null)
+                await first!.ConfigureAwait(false);
             else
             {
-				if (DebugOptions.Current.Log)
-                    OnMessage?.Invoke($"{SourceKind} Resyncing....");
+                await Task.WhenAll(first, second).ConfigureAwait(false);
 
-                // TCPBridge is a raw stream of data, search for an header
-                for (int i = 0; i < 4 && !Token.IsCancellationRequested;)
-                {
-					if (!ReadExact(buffer.AsSpan().Slice(i, 1)))
-						return false;
-
-					if (buffer[i] != HeaderMagicByte)
-						i = 0;
-					else 
-						i++;
-                }
-
-				if (Token.IsCancellationRequested)
-					return false;
-
-                InSync = true;
-                return ReadExact(buffer.AsSpan().Slice(4, PacketHeader.StructLength - 4));
+                if (first.Exception is not null) throw first.Exception;
+                if (second.Exception is not null) throw second.Exception;
             }
         }
 
-        bool ReadExact(Span<byte> data)
-		{
-			try
-			{
-				while (data.Length > 0)
-				{
-					int r = Sock.Receive(data);
-					if (r <= 0)
-					{
-                        CommunicationException = true;
-                        return false;
-					}
+        public override async Task Connect()
+        {
+            List<Task> tasks = new();
 
-					data = data.Slice(r);
-				}
-			}
-			catch 
-			{
-                CommunicationException = true;
-                return false;
-			}
+            await WaitAll(videoStream?.Connect(), audioStream?.Connect()).ConfigureAwait(false);
 
-			return true;
-		}
+            await WaitAll(
+                videoStream is null ? null : DoHandshake(StreamKind.Video),
+                audioStream is null ? null : DoHandshake(StreamKind.Audio)
+            ).ConfigureAwait(false);
 
-		public bool ReadPayload(byte[] buffer, int length)
-		{
-			return ReadExact(buffer.AsSpan().Slice(0, length));
-		}
+            if (videoStream is not null)
+                videoStream.PendingLoop = videoStream.ProcessLoop().ContinueWith(x => LoopFinished(videoStream, x));
+
+            if (audioStream is not null)
+                audioStream.PendingLoop = audioStream.ProcessLoop().ContinueWith(x => LoopFinished(audioStream, x));
+        }
+
+        async void LoopFinished(TcpBridgeSubStream stream, Task task)
+        {
+            if (Cancellation.IsCancellationRequested)
+                return;
+
+            if (task.Exception is not null)
+                ReportMessage($"{stream.StreamName} connection error: {task.Exception.InnerException}");
+            else // Shouldn't happen unless the loop was cancelled
+                ReportMessage($"{stream.StreamName} disconnected but no error was reported.");
+
+            // Just try to reconnect until the user cancels the operation
+            while (!Cancellation.IsCancellationRequested)
+            {
+                try
+                {
+                    await stream.Connect().ConfigureAwait(false);
+                    // throws if handshake fails
+                    await DoHandshake(stream.Channel).ConfigureAwait(false);
+                    // Then restart the loop
+                    stream.PendingLoop = stream.ProcessLoop().ContinueWith(x => LoopFinished(stream, x));
+                    break;
+                }
+                catch
+                {
+                    ReportMessage($"{stream.StreamName} Fatal error: {task.Exception}");
+                }
+            }
+        }
+
+        public override async Task StopStreaming()
+        {
+            if (!Cancellation.IsCancellationRequested)
+                throw new Exception("StopStreaming called but the cancellation was not requested");
+
+            if (videoStream?.PendingLoop is not null)
+                await videoStream.PendingLoop.ConfigureAwait(false);
+
+            if (audioStream?.PendingLoop is not null)
+                await audioStream.PendingLoop.ConfigureAwait(false);
+        }
+
+        public override Task Flush()
+        {
+            if (Cancellation.IsCancellationRequested)
+                return Task.CompletedTask;
+
+            videoStream?.Flush();
+            audioStream?.Flush();
+
+            return Task.CompletedTask;
+        }
+
+        public override async Task<ReceivedPacket> ReadNextPacket()
+        {
+            return await poolBuffers.Reader.ReadAsync(Cancellation).ConfigureAwait(false);
+        }
+
+        protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+        {
+            byte[] buffer = new byte[ProtoHandshakeRequest.StructureSize];
+            MemoryMarshal.Write(buffer, ref req);
+
+            var stream = req.IsVideoPacket ? videoStream : audioStream;
+
+            // This is only invoked from the Connect8) method so stream is always guranteed to not be null
+            var h = await stream!.DoHandshake(buffer).ConfigureAwait(false);
+            return h;
+        }
+
+        // In TCP bridge each stream is carried by its own socket
+        class TcpBridgeSubStream
+        {
+            public bool IsConnected => socket?.Connected ?? false;
+            public readonly string StreamName;
+            public readonly StreamKind Channel;
+
+            public Task? PendingLoop;
+
+            readonly Action<ReceivedPacket> onBuffer;
+            readonly Action<string> reportMessage;
+
+            CancellationToken cancel;
+            byte[] headerBuffer = new byte[PacketHeader.StructLength];
+            string host;
+            int port = 0;
+            bool inSync = true;
+            Socket socket = null!;
+
+            public TcpBridgeSubStream(string host, StreamKind kind, CancellationToken token, Action<ReceivedPacket> onBuffer, Action<string> reportMessage)
+            {
+                if (kind == StreamKind.Both)
+                    throw new Exception("Invalid stream kind");
+
+                cancel = token;
+                this.onBuffer = onBuffer;
+                this.host = host;
+                this.Channel = kind;
+                this.port = kind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
+                this.StreamName = kind == StreamKind.Video ? "Video stream" : "Audio stream";
+                this.reportMessage = reportMessage;
+            }
+
+            public async Task Connect()
+            {
+                socket?.Dispose();
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                try
+                {
+                    socket.ReceiveTimeout = 2000;
+                    socket.SendTimeout = 2000;
+                    socket.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+                    socket.NoDelay = true;
+                }
+                catch { }
+
+                for (int i = 0; i < MaxConnectionAttempts && !cancel.IsCancellationRequested; i++)
+                {
+                    reportMessage($"[{StreamName}] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
+
+                    try
+                    {
+                        await socket.ConnectAsync(host, port, cancel).ConfigureAwait(false);
+                        if (socket.Connected)
+                            return;
+                    }
+                    catch
+                    {
+                        if (i == MaxConnectionAttempts)
+                            throw;
+
+                        await Task.Delay(ConnFailDelayMs, cancel).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            public void Flush()
+            {
+                inSync = false;
+            }
+
+            async Task ReadExact(byte[] data, int offset, int length)
+            {
+                while (length > 0)
+                {
+                    int r = await socket.ReceiveAsync(new ArraySegment<byte>(data, offset, length), cancel).ConfigureAwait(false);
+                    if (r <= 0)
+                        throw new Exception("Socket communication erorr");
+
+                    length -= r;
+                    offset += r;
+                }
+            }
+
+            async Task ResyncStream()
+            {
+                // This looks weird but since we have small socket buffers on the console side sometimes even TCCP may lose packets
+                // It's rare and only under bad conditions but we can save the connection by performing a manual resync
+                // Just read bytes until we find a valid header then continue normally
+
+                byte[] data = new byte[1];
+                int counter = 0;
+                var magicBypte = (byte)(PacketHeader.MagicResponse & 0xFF);
+
+                if (DebugOptions.Current.Log)
+                    Console.WriteLine($"TCP {StreamName} performing resync...");
+
+                while (!cancel.IsCancellationRequested)
+                {
+                    await ReadExact(data, 0, data.Length).ConfigureAwait(false);
+                    if (data[0] == magicBypte)
+                    {
+                        if (++counter == 4)
+                        {
+                            inSync = true;
+                            return;
+                        }
+                    }
+                    else counter = 0;
+                }
+            }
+
+            async Task<(bool, ReceivedPacket)> ReadData()
+            {
+                if (!inSync)
+                {
+                    await ResyncStream().ConfigureAwait(false);
+                    // If we just resynched the stream the header was cut, read only the remainig part of the packet
+                    await ReadExact(headerBuffer, 4, PacketHeader.StructLength - 4).ConfigureAwait(false);
+                    // Then fix the magic value manually
+                    BitConverter.TryWriteBytes(headerBuffer, PacketHeader.MagicResponse);
+                }
+                else
+                    await ReadExact(headerBuffer, 0, PacketHeader.StructLength).ConfigureAwait(false);
+
+                var header = MemoryMarshal.Read<PacketHeader>(headerBuffer);
+                if (!ValidatePacketHeader(in header))
+                    return (false, default);
+
+                PoolBuffer? data = null;
+                if (header.DataSize != 0)
+                {
+                    data = PoolBuffer.Rent(header.DataSize);
+                    await ReadExact(data.RawBuffer, 0, header.DataSize).ConfigureAwait(false);
+                }
+
+                return (true, new ReceivedPacket(header, data));
+            }
+
+            public async Task<uint> DoHandshake(byte[] reqBuffer)
+            {
+                if (await socket.SendAsync(reqBuffer, cancel).ConfigureAwait(false) <= 0)
+                    throw new Exception("Socket send error");
+
+                await ReadExact(headerBuffer, 0, sizeof(uint)).ConfigureAwait(false);
+
+                return MemoryMarshal.Read<uint>(headerBuffer);
+            }
+
+            public async Task ProcessLoop()
+            {
+                try
+                {
+                    while (!cancel.IsCancellationRequested)
+                    {
+                        var (result, data) = await ReadData().ConfigureAwait(false);
+                        if (!result)
+                            Flush();
+                        else
+                            onBuffer(data);
+                    }
+                }
+                finally
+                {
+                    socket.Dispose();
+                }
+            }
+        }
     }
-
-	static internal partial class Exten 
-	{
-		public static async Task ConnectAsync(this TcpClient tcpClient, string host, int port, CancellationToken cancellationToken)
-		{
-			if (tcpClient == null)
-				throw new ArgumentNullException(nameof(tcpClient));
-
-			cancellationToken.ThrowIfCancellationRequested();
-
-			using (cancellationToken.Register(() => tcpClient.Close()))
-			{
-				cancellationToken.ThrowIfCancellationRequested();
-				await tcpClient.ConnectAsync(host, port).ConfigureAwait(false);				
-			}
-		}
-	}
 }
