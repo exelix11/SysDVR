@@ -77,14 +77,15 @@ static void WriteResponseToTLS(Result rc)
 	rawHeader->token = 0;
 }
 
-static bool ReadPayload(const Request* req, void* data, u32 len)
-{
-	if (req->dataSize < len || !req->data)
-		return false;
-
-	memcpy(data, req->data, len);
-	return true;
-}
+// Currently not used
+//static bool ReadPayload(const Request* req, void* data, u32 len)
+//{
+//	if (req->dataSize < len || !req->data)
+//		return false;
+//
+//	memcpy(data, req->data, len);
+//	return true;
+//}
 
 static void WritePayloadResponseToTLS(Result rc, const void* payload, u32 len)
 {
@@ -128,24 +129,6 @@ static bool HandleCommand(const Request* req)
 		{
 			u32 mode = GetCurrentMode();
 			WritePayloadResponseToTLS(0, &mode, sizeof(mode));
-			return false;
-		}
-		case CMD_GET_USER_OVERRIDES: 
-		{
-			UserOverrides overrides = GetUserOverrides();
-			WritePayloadResponseToTLS(0, &overrides, sizeof(overrides));
-			return false;
-		}
-		case CMD_SET_USER_OVERRIDES:
-		{
-			UserOverrides overrides;
-			if (!ReadPayload(req, &overrides, sizeof(overrides)))
-			{
-				WriteResponseToTLS(ERR_IPC_INVALID_REQUEST);
-				return true;
-			}
-			ApplyUserOverrides(overrides);
-			WriteResponseToTLS(0);
 			return false;
 		}
 		case CMD_DEBUG_CRASH:

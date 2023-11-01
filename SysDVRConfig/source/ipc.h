@@ -31,10 +31,7 @@ extern "C" {
 	Result SysDvrGetMode(u32* out_mode);
 
 	Result SysDvrSetMode(u32 command);
-	
-	Result SysDvrSetUserOverrides(const UserOverrides* options);
-	Result SysDvrGetUserOverrides(UserOverrides* out_options);
-	
+		
 	Result SysDvrSetUSB();
 	Result SysDvrSetRTSP();
 	Result SysDvrSetTCP();

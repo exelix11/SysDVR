@@ -1,19 +1,8 @@
 ﻿using SDL2;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
-using SysDVR.Client.Sources;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SysDVR.Client
 {

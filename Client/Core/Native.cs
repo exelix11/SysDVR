@@ -62,9 +62,10 @@ namespace SysDVR.Client.Core
         // General info, must be populated
         public NativeContracts.PrintFunction Print;
 
-        // Threat management
-        public NativeContracts.NativeAttachThread NativeAttachThread;
-        public NativeContracts.NativeDetachThread NativeDetachThread;
+        // Threat management, keep private and only use it for EnsureThreadAttached()
+        // TODO: Currently we have no way of detaching .NET async worker threads
+        NativeContracts.NativeAttachThread NativeAttachThread;
+        NativeContracts.NativeDetachThread NativeDetachThread;
 
         // Usb control, if any is null then usb is not supported
         public NativeContracts.UsbSnapshotDevices UsbAcquireSnapshot;
@@ -89,6 +90,31 @@ namespace SysDVR.Client.Core
 
         public bool PlatformSupportsDiskAccess =>
             SysGetFileAccessInfo != null;
+
+        [ThreadStatic]
+        public static bool NativeThreadAttached;
+
+        // On android certain actions require the thread to be attached to the JVM
+        // However we use .NET async which may create worker threads without us knowing
+        // So must call this function before making any native calls in contextes where we may be running on async workers
+        // Right now, this only happens with the USB code
+        public void EnsureThreadAttached() 
+        {
+            if (!NativeThreadAttached)
+            {
+                NativeThreadAttached = true;
+                NativeAttachThread();
+            }
+        }
+
+        public void DetachThread() 
+        {
+            if (NativeThreadAttached)
+            {
+                NativeThreadAttached = false;
+                NativeDetachThread();
+            }
+        }
 
         // This is the native representation of the init block which we must unmarshal manually
         // [MarshalAs(UnmanagedType.FunctionPtr)] doesn't seem to work on delegates...

@@ -23,11 +23,11 @@ namespace SysDVR.Client.GUI
         bool isError;
         string? errorLine;
 
-        public ConnectingView(DeviceInfo info, StreamKind mode)
+        public ConnectingView(DeviceInfo info, StreamingOptions opt)
         {
             this.info = info;
          
-            conn = new DeviceConnector(info, src, mode);
+            conn = new DeviceConnector(info, src, opt);
             conn.OnMessage += Conn_OnMessage;
         }
 
@@ -35,6 +35,7 @@ namespace SysDVR.Client.GUI
         {
             errorLine ??= "";
             errorLine += obj + "\n";
+            Program.Instance.KickRendering(true);
         }
 
         public override void BackPressed()

@@ -37,27 +37,18 @@ void UsbStreamingExit()
 	usbSerialExit();
 }
 
-UsbStreamRequest UsbStreamingWaitConnection()
-{
-	u32 request = 0;
-	size_t read = 0;
-
-	do
-		read = usbSerialRead(&request, sizeof(request), 1E+9);
-	while (read == 0 && IsThreadRunning);
-
-	if (read != sizeof(request) || !IsThreadRunning)
-		return UsbStreamRequestFailed;
-
-	LOG("USB request received: %x\n", request);
-	if (request == UsbStreamRequestVideo || request == UsbStreamRequestAudio || request == UsbStreamRequestBoth)
-		return (UsbStreamRequest)request;
-
-	return UsbStreamRequestFailed;
-}
-
 bool UsbStreamingSend(const void* data, size_t length)
 {
 	size_t sent = usbSerialWrite(data, length, 1E+9);
 	return sent == length;
+}
+
+bool UsbStreamingReceive(void* data, size_t length, size_t* out_read)
+{
+	size_t read = usbSerialRead(data, length, 1E+9);
+	
+	if (out_read)
+		*out_read = read;
+	
+	return read != 0;
 }

@@ -170,8 +170,6 @@ int main(int argc, char* argv[])
 			app::FatalError("You're using an outdated version of SysDVR", "Please download the latest version from github, then reboot your console.");
 			goto mainloop;
 		}
-
-		scenes::InitDevScene();
 	}
 
 	scenes::InitModeSelect();
@@ -215,9 +213,6 @@ mainloop:
 			break;
 		case Scene::NoConnection:
 			scenes::NoConnection();
-			break;
-		case Scene::DevScene:
-			scenes::DevTestScene();
 			break;
 		default:
 			Glfw::SetShouldClose();

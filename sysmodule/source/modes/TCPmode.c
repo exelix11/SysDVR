@@ -2,6 +2,7 @@
 #include "modes.h"
 #include "../net/sockets.h"
 #include "../capture.h"
+#include "proto.h"
 
 static int UdpAdvertiseSocket = SOCKET_INVALID;
 
@@ -48,14 +49,12 @@ static inline void AdvertiseBroadcast(GrcStream stream)
 	{
 		InitBroadcast(stream);
 	}
-	else
+	
+	LOG("Sending UDP advertisement broadcast\n");
+	if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
 	{
-		LOG("Sending UDP advertisement broadcast\n");
-		if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
-		{
-			LOG("UDP advertisement failed: %d\n", SocketNativeErrno());
-			DeinitBroadcast(stream);
-		}
+		LOG("UDP advertisement failed: %d\n", SocketNativeErrno());
+		DeinitBroadcast(stream);
 	}
 }
 
@@ -67,17 +66,31 @@ static inline int TCP_BeginListen(GrcStream stream)
 	return SocketTcpListen(port);
 }
 
+static inline bool TCP_DoHandshake(GrcStream stream, int socket)
+{
+	u8 buffer[PROTO_HANDSHAKE_SIZE];
+	if (!SocketRecevExact(socket, buffer, sizeof(buffer)))
+		return false;
+
+	ProtoParsedHandshake res = ProtoHandshake(buffer, sizeof(buffer));
+
+	if (!SocketSendAll(socket, &res.Result, sizeof(res.Result)))
+		return false;
+
+	return res.Result == Handshake_Ok;
+}
+
 static inline int TCP_Accept(GrcStream stream)
 {
-	bool advertise = false;
 restart:
+	bool advertise = false;
 	int listen = TCP_BeginListen(stream);
+	int ret = SOCKET_INVALID;
 
 	if (listen == SOCKET_INVALID)
 	{
 		LOG("TCP %d Listen failed\n", (int)stream);
-		svcSleepThread(1E+9);
-		return SOCKET_INVALID;
+		goto leave;
 	}
 
 	while (IsThreadRunning)
@@ -85,18 +98,28 @@ restart:
 		int client = SocketTcpAccept(listen, NULL, NULL);
 		if (client != SOCKET_INVALID)
 		{
-			LOG("TCP %d Accepted client %d\n", (int)stream, client);
-			SocketClose(&listen);
-			DeinitBroadcast(stream);
-			return client;
+			LOG("TCP %d Got connection %d\n", (int)stream, client);
+			
+			if (TCP_DoHandshake(stream, client))
+			{
+				LOG("TCP %d Accepted client %d\n", (int)stream, client);
+				ret = client;
+				goto leave;
+			}
+
+			LOG("TCP %d Client %d handshake failed\n", (int)stream, client);
+			SocketClose(&client);
+		}
+
+		// Advertise every 2 seconds
+		if (stream == GrcStream_Video)
+		{
+			if (advertise)
+				AdvertiseBroadcast(stream);
+			advertise = !advertise;
 		}
 
 		svcSleepThread(1E+9);
-
-		// Advertise every 2 seconds
-		if (advertise)
-			AdvertiseBroadcast(stream);
-		advertise = !advertise;
 
 		if (SocketIsListenNetDown())
 		{
@@ -107,10 +130,11 @@ restart:
 		}
 	}
 
+leave:
 	SocketClose(&listen);
 	DeinitBroadcast(stream);
 
-	return SOCKET_INVALID;
+	return ret;
 }
 
 typedef struct
@@ -151,6 +175,11 @@ static void TCP_StreamThread(void* argConfig)
 			continue;
 		}
 
+		if (config.Type == GrcStream_Video)
+			CaptureVideoConnected();
+		else
+			CaptureAudioConnected();
+
 		// Give the client a few moments to be ready
 		svcSleepThread(5E+8);
 
@@ -182,20 +211,19 @@ static void TCP_StreamThread(void* argConfig)
 		svcSleepThread(2E+8);
 	}
 
+	DeinitBroadcast(config.Type);
 	LOG("TCP %d Thread terminating\n", (int)config.Type);
 }
 
 static void TCP_Init()
 {
-	VPkt.Header.Magic = STREAM_PACKET_MAGIC_VIDEO;
-	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
+	
 }
 
 const StreamMode TCP_MODE = {
 	TCP_Init, NULL,
 	TCP_StreamThread, TCP_StreamThread,
-	(void*)&VideoConfig, (void*)&AudioConfig,
-	1
+	(void*)&VideoConfig, (void*)&AudioConfig
 };
 
 #endif

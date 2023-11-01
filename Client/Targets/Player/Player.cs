@@ -14,6 +14,7 @@ using SysDVR.Client.Core;
 using SysDVR.Client.GUI;
 using ImGuiNET;
 using SDL2;
+using SysDVR.Client.Sources;
 
 namespace SysDVR.Client.Targets.Player
 {
@@ -80,8 +81,8 @@ namespace SysDVR.Client.Targets.Player
             }
         }
 
-        public PlayerManager(bool HasVideo, bool HasAudio, CancellationTokenSource cancel) :
-            base(MakeVideoStream(HasVideo), MakeAudioStream(HasAudio), cancel)
+        public PlayerManager(StreamingSource source, CancellationTokenSource cancel) :
+            base(source, MakeVideoStream(source.Options.HasVideo), MakeAudioStream(source.Options.HasAudio), cancel)
         {
             VideoTarget = base.VideoTarget as H264StreamTarget;
             AudioTarget = base.AudioTarget;

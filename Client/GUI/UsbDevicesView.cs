@@ -16,19 +16,22 @@ namespace SysDVR.Client.GUI
 {
     internal class UsbDevicesView : View
     {
-        readonly StreamKind channels;
+        readonly StreamingOptions options;
         readonly DvrUsbContext? context;
+        readonly Gui.Popup incompatiblePopup = new("Error");
 
         IReadOnlyList<DvrUsbDevice> devices;
 
         string? autoConnect;
         string? lastError;
 
-        public UsbDevicesView(StreamKind channels, string? autoConnect = null)
+        public UsbDevicesView(StreamingOptions options, string? autoConnect = null)
         {
-            this.channels = channels;
+            this.options = options;
             this.autoConnect = autoConnect;
-            
+
+            Popups.Add(incompatiblePopup);
+
             try
             {
                 context = new DvrUsbContext(Program.Options.UsbLogging);
@@ -83,12 +86,18 @@ namespace SysDVR.Client.GUI
 
         void ConnectToDevice(DvrUsbDevice info)
         {
+            if (!info.Info.IsProtocolSupported)
+            {
+                Popups.Open(incompatiblePopup);
+                return;
+            }
+
             autoConnect = null;
 
             devices.Where(x => x != info).ToList().ForEach(x => x.Dispose());
             devices = new List<DvrUsbDevice>();
 
-            Program.Instance.PushView(new ConnectingView(info.Info, channels));
+            Program.Instance.PushView(new ConnectingView(info.Info, options));
         }
 
         public override void Draw()
@@ -149,13 +158,24 @@ namespace SysDVR.Client.GUI
             if (lastError is not null)
             {
                 Gui.CenterText("There was an error");
-                ImGui.Text(lastError);
+                ImGui.TextWrapped(lastError);
             }
 
             Gui.CursorFromBottom(sz.Y);
             if (Gui.CenterButton("Go back", sz))
             {
                 Program.Instance.PopView();
+            }
+
+            if (incompatiblePopup.Begin())
+            {
+                ImGui.TextWrapped("The selected device is not compatible with this version of the client.");
+                ImGui.TextWrapped("Make sure you're using the same version of SysDVR on both the console and this device.");
+
+                if (Gui.CenterButton("Go back"))
+                    incompatiblePopup.RequestClose();
+
+                ImGui.EndPopup();
             }
 
             Gui.EndWindow();

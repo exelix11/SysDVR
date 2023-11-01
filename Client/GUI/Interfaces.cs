@@ -192,6 +192,12 @@ namespace SysDVR.Client.GUI
                 ImGuiWindowFlags flags = ImGuiWindowFlags.NoMove;
                 if (size == Vector2.Zero)
                 {
+                    if (Program.Instance.IsPortrait)
+                        size.X = ImGui.GetIO().DisplaySize.X;
+                    else
+                        size.X = ImGui.GetIO().DisplaySize.X * 0.75f;
+
+                    ImGui.SetNextWindowSize(size);
                     ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Appearing, new(0.5f, 0.5f));
                     flags |= ImGuiWindowFlags.AlwaysAutoResize;
                 }
