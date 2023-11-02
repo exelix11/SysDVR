@@ -46,7 +46,8 @@
 			<PropertyGroup>
 				<OutputType>Exe</OutputType>
 				<TargetFramework>net7.0</TargetFramework>
-			</PropertyGroup>
+        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+      </PropertyGroup>
 		</Otherwise>
 	</Choose>
 	
