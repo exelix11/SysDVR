@@ -415,6 +415,51 @@ namespace SysDVRClientGUI.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Ignore Audio/Video sync.
+        /// </summary>
+        internal static string MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC {
+            get {
+                return ResourceManager.GetString("MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Log status messages.
+        /// </summary>
+        internal static string MAIN_OPTIONS_LOG_STATUS {
+            get {
+                return ResourceManager.GetString("MAIN_OPTIONS_LOG_STATUS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Log transfer info.
+        /// </summary>
+        internal static string MAIN_OPTIONS_LOG_TRANSFER {
+            get {
+                return ResourceManager.GetString("MAIN_OPTIONS_LOG_TRANSFER", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Print LibUsb debug info.
+        /// </summary>
+        internal static string MAIN_OPTIONS_PRINT_LIBUSB_DEBUGINFO {
+            get {
+                return ResourceManager.GetString("MAIN_OPTIONS_PRINT_LIBUSB_DEBUGINFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Print LibUsb warnings.
+        /// </summary>
+        internal static string MAIN_OPTIONS_PRINT_LIBUSB_WARNINGS {
+            get {
+                return ResourceManager.GetString("MAIN_OPTIONS_PRINT_LIBUSB_WARNINGS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Reinstall USB driver.
         /// </summary>
         internal static string MAIN_REINSTALL_USB {

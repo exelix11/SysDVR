@@ -243,6 +243,21 @@ Wenn Sie nicht sicher sind, was Sie hier tun müssen, lesen Sie die Anleitung au
   <data name="MAIN_NET_WRONG_BIT" xml:space="preserve">
     <value>Es scheint, dass Sie 32-Bit .NET anstelle der 64-Bit-Version installiert haben, SysDVR-CLient wird nicht funktionieren.\r\n\r\nSie können die 64-Bit-Version herunterladen von: https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe\r\n\r\nMöchten Sie sie jetzt öffnen?</value>
   </data>
+  <data name="MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC" xml:space="preserve">
+    <value>Ignoriere Audio/Video sync</value>
+  </data>
+  <data name="MAIN_OPTIONS_LOG_STATUS" xml:space="preserve">
+    <value>Logge status Nachrichten</value>
+  </data>
+  <data name="MAIN_OPTIONS_LOG_TRANSFER" xml:space="preserve">
+    <value>Übertragung loggen</value>
+  </data>
+  <data name="MAIN_OPTIONS_PRINT_LIBUSB_DEBUGINFO" xml:space="preserve">
+    <value>Zeige LibUsb Debug</value>
+  </data>
+  <data name="MAIN_OPTIONS_PRINT_LIBUSB_WARNINGS" xml:space="preserve">
+    <value>Zeige LibUsb Warnungen</value>
+  </data>
   <data name="MAIN_REINSTALL_USB" xml:space="preserve">
     <value>Treiber installieren</value>
   </data>

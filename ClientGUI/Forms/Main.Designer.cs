@@ -62,6 +62,7 @@
             this.CMB_Languages = new System.Windows.Forms.ComboBox();
             this.PBX_Logo = new System.Windows.Forms.PictureBox();
             this.PNL_Header = new System.Windows.Forms.Panel();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.GRP_StreamingChannels.SuspendLayout();
             this.GRP_StreamingSource.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
@@ -69,6 +70,7 @@
             this.GRP_AdvOptions.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)this.PBX_Logo).BeginInit();
             this.PNL_Header.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // BTN_Launch
@@ -322,11 +324,7 @@
             // GRP_AdvOptions
             // 
             this.GRP_AdvOptions.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.GRP_AdvOptions.Controls.Add(this.cbLogStatus);
-            this.GRP_AdvOptions.Controls.Add(this.cbIgnoreSync);
-            this.GRP_AdvOptions.Controls.Add(this.cbStats);
-            this.GRP_AdvOptions.Controls.Add(this.cbUsbLog);
-            this.GRP_AdvOptions.Controls.Add(this.cbUsbWarn);
+            this.GRP_AdvOptions.Controls.Add(this.tableLayoutPanel1);
             this.GRP_AdvOptions.Location = new System.Drawing.Point(8, 323);
             this.GRP_AdvOptions.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.GRP_AdvOptions.Name = "GRP_AdvOptions";
@@ -339,7 +337,7 @@
             // cbLogStatus
             // 
             this.cbLogStatus.AutoSize = true;
-            this.cbLogStatus.Location = new System.Drawing.Point(348, 22);
+            this.cbLogStatus.Location = new System.Drawing.Point(466, 3);
             this.cbLogStatus.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cbLogStatus.Name = "cbLogStatus";
             this.cbLogStatus.Size = new System.Drawing.Size(134, 19);
@@ -350,7 +348,7 @@
             // cbIgnoreSync
             // 
             this.cbIgnoreSync.AutoSize = true;
-            this.cbIgnoreSync.Location = new System.Drawing.Point(163, 22);
+            this.cbIgnoreSync.Location = new System.Drawing.Point(235, 3);
             this.cbIgnoreSync.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cbIgnoreSync.Name = "cbIgnoreSync";
             this.cbIgnoreSync.Size = new System.Drawing.Size(157, 19);
@@ -361,7 +359,7 @@
             // cbStats
             // 
             this.cbStats.AutoSize = true;
-            this.cbStats.Location = new System.Drawing.Point(8, 22);
+            this.cbStats.Location = new System.Drawing.Point(4, 3);
             this.cbStats.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cbStats.Name = "cbStats";
             this.cbStats.Size = new System.Drawing.Size(113, 19);
@@ -372,7 +370,7 @@
             // cbUsbLog
             // 
             this.cbUsbLog.AutoSize = true;
-            this.cbUsbLog.Location = new System.Drawing.Point(163, 51);
+            this.cbUsbLog.Location = new System.Drawing.Point(235, 30);
             this.cbUsbLog.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cbUsbLog.Name = "cbUsbLog";
             this.cbUsbLog.Size = new System.Drawing.Size(151, 19);
@@ -383,7 +381,7 @@
             // cbUsbWarn
             // 
             this.cbUsbWarn.AutoSize = true;
-            this.cbUsbWarn.Location = new System.Drawing.Point(8, 52);
+            this.cbUsbWarn.Location = new System.Drawing.Point(4, 30);
             this.cbUsbWarn.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cbUsbWarn.Name = "cbUsbWarn";
             this.cbUsbWarn.Size = new System.Drawing.Size(141, 19);
@@ -472,6 +470,25 @@
             this.PNL_Header.Size = new System.Drawing.Size(560, 94);
             this.PNL_Header.TabIndex = 13;
             // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 3;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333321F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333359F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333359F));
+            this.tableLayoutPanel1.Controls.Add(this.cbUsbWarn, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.cbStats, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.cbIgnoreSync, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.cbUsbLog, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.cbLogStatus, 2, 0);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(7, 18);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(695, 54);
+            this.tableLayoutPanel1.TabIndex = 0;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -505,9 +522,10 @@
             this.GRP_StreamMode.ResumeLayout(false);
             this.GRP_StreamMode.PerformLayout();
             this.GRP_AdvOptions.ResumeLayout(false);
-            this.GRP_AdvOptions.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)this.PBX_Logo).EndInit();
             this.PNL_Header.ResumeLayout(false);
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -547,6 +565,7 @@
         private System.Windows.Forms.ComboBox CMB_Languages;
         private System.Windows.Forms.PictureBox PBX_Logo;
         private System.Windows.Forms.Panel PNL_Header;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }
 

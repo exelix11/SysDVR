@@ -118,6 +118,11 @@ namespace SysDVRClientGUI.Forms
             this.LBL_StreamingSourceInfo.Text = MAIN_GRP_STREAMINGSOURCE_INFO;
             this.rbSrcUsb.Text = MAIN_STREAMING_USB_INFO;
             this.rbSrcTcp.Text = MAIN_STREAMING_TCP_INFO;
+            this.cbUsbWarn.Text = MAIN_OPTIONS_PRINT_LIBUSB_WARNINGS;
+            this.cbUsbLog.Text = MAIN_OPTIONS_PRINT_LIBUSB_DEBUGINFO;
+            this.cbStats.Text = MAIN_OPTIONS_LOG_STATUS;
+            this.cbIgnoreSync.Text = MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC;
+            this.cbLogStatus.Text = MAIN_OPTIONS_LOG_TRANSFER;
         }
 
         private void LoadUserSettings()
