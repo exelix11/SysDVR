@@ -18,7 +18,7 @@ namespace SysDVRClientGUI
         [STAThread]
         static void Main(string[] args)
         {
-            // When build with dotnet instead of msbuld including binary resources like the icon in form
+            // When build with dotnet instead of msbuild including binary resources like the icon in form
             // resources requires an extra dependency that is only available from netfx 4.6+ and we target 4.5,
             // since we only need the icon we can just get it from the main executable instead.
             try
