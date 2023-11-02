@@ -67,10 +67,23 @@ namespace SysDVRClientGUI.Forms
 
             if (File.Exists(SYSDVR_DLL))
                 ClientDllPath = SYSDVR_DLL;
-            // When in debug mode also search sysdvr's visual studio build folder
+
 #if DEBUG
-            else if (File.Exists(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}"))
-                ClientDllPath = Path.GetFullPath(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}");
+            // When in debug mode also search sysdvr's visual studio build folder
+            else if (Directory.Exists(@$"..\..\..\..\Client\bin\Debug\net7.0") && Directory.GetFiles(@$"..\..\..\..\Client\bin\Debug\net7.0").Length > 0)
+            {
+                string currentPath = Path.GetDirectoryName(typeof(Main).Assembly.Location);
+                foreach (string f in Directory.GetFiles(@$"..\..\..\..\Client\bin\Debug\net7.0"))
+                {
+                    File.Copy(f, Path.GetFileName(f), true);
+                }
+                foreach (string d in Directory.GetDirectories(@$"..\..\..\..\Client\bin\Debug\net7.0"))
+                {
+                    Directory.CreateDirectory(Path.GetFileName(d));
+                    CopyFilesRecursively(d, Path.Combine(currentPath, Path.GetFileName(d)));
+                }
+                ClientDllPath = SYSDVR_DLL;
+            }
 #endif
             DotnetMajorVersion = FindDotnet(out DotnetPath, out DotnetIs32Bit);
 
