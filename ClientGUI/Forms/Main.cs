@@ -18,6 +18,9 @@ using static SysDVRClientGUI.Logic.Constants;
 using static SysDVRClientGUI.Logic.HelperFunctions;
 using static SysDVRClientGUI.Resources.Resources;
 using SysDVRClientGUI.Models;
+using System.Threading.Tasks;
+using System.Drawing;
+using SysDVRClientGUI.ViewLogic;
 
 namespace SysDVRClientGUI.Forms
 {
@@ -37,6 +40,11 @@ namespace SysDVRClientGUI.Forms
             { "en-US","English" },
             { "de-DE","German" }
         };
+
+        private readonly PictureboxSlideAnimation slideAnimation;
+#pragma warning disable S4487,IDE0052
+        private readonly PictureboxBounceAnimation bounceAnimation;
+#pragma warning restore S4487,IDE0052
 
         public Main()
         {
@@ -67,6 +75,9 @@ namespace SysDVRClientGUI.Forms
                 ClientDllPath = Path.GetFullPath(@$"..\..\..\..\Client\bin\Debug\net7.0\{SYSDVR_DLL}");
 #endif
             DotnetMajorVersion = FindDotnet(out DotnetPath, out DotnetIs32Bit);
+
+            this.slideAnimation = new(this.PBX_Logo);
+            this.bounceAnimation = new(this.PBX_Logo);
         }
 
         private void ApplyLocalization()
@@ -172,6 +183,8 @@ namespace SysDVRClientGUI.Forms
                 else
                     MessageBox.Show(MAIN_NET_WARNING);
             }
+
+            this.slideAnimation.Start();
         }
 
         private void StreamTargetSelected(object sender, EventArgs e)
