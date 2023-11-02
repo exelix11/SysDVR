@@ -49,11 +49,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Resources\Resources.de-DE.Designer.cs">
-	    <DependentUpon>Resources.de-DE.resx</DependentUpon>
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	  </Compile>
 	  <Compile Update="Resources\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>

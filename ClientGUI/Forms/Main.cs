@@ -37,7 +37,8 @@ namespace SysDVRClientGUI.Forms
         {
             { "en-EN","English" },
             { "en-US","English" },
-            { "de-DE","German" }
+            { "de-DE","German" },
+            { "pl-Pl","Polish" }
         };
 
         private readonly PictureboxSlideAnimation slideAnimation;

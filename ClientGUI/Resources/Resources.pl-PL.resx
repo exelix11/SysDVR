@@ -1,0 +1,324 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AUDIO" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="BOTH" xml:space="preserve">
+    <value>Obydwa</value>
+  </data>
+  <data name="DONE" xml:space="preserve">
+    <value>Gotowy</value>
+  </data>
+  <data name="DOWNLOADING" xml:space="preserve">
+    <value>Pobieranie</value>
+  </data>
+  <data name="DRIVER" xml:space="preserve">
+    <value>Sterownik</value>
+  </data>
+  <data name="DRIVERINSTALL_EXTRACT_FAILED" xml:space="preserve">
+    <value>Pobieranie i rozpakowywanie sterownika nie powiodło się</value>
+  </data>
+  <data name="DRIVERINSTALL_FAILED" xml:space="preserve">
+    <value>Instalacja sterownika nie powiodła się</value>
+  </data>
+  <data name="DRIVERINSTALL_FORM_ERRORMESSAGE" xml:space="preserve">
+    <value>\r\n\r\nUruchom ponownie aplikację i spróbuj ponownie. Jeśli problem nadal występuje, otwórz wiadomość na GitHub.\r\nMożesz także spróbować postępować zgodnie z instrukcjami ręcznej instalacji sterownika na GitHub.</value>
+  </data>
+  <data name="DRIVERINSTALL_FORM_INFOTEXT" xml:space="preserve">
+    <value>Na tej stronie można zainstalować sterownik USB.
+Od wersji 5.5 SysDVR używa standardowego sterownika Android dostarczonego przez Google.
+
+Po kliknięciu przycisku "Zainstaluj" instalator pobierze najnowszy sterownik dostarczony przez Google z oficjalnego łącza i wyświetli monit o jego zainstalowanie.
+Proces ten wymaga połączenia z Internetem</value>
+  </data>
+  <data name="DRIVERINSTALL_FORM_INSTALLED_ALREADY" xml:space="preserve">
+    <value>Wygląda na to, że prawidłowy sterownik jest już zainstalowany i nie trzeba go instalować ponownie.</value>
+  </data>
+  <data name="DRIVERINSTALL_FORM_INSTALLED_ALREADY_INFO" xml:space="preserve">
+    <value>Prawidłowy sterownik wydaje się być już zainstalowany, więc dopóki nie ma problemów, nie ma potrzeby ponownej instalacji.</value>
+  </data>
+  <data name="DRIVERINSTALL_FORM_NOT_DETECTED" xml:space="preserve">
+    <value>Wygląda na to, że system Windows nigdy nie rozpoznał identyfikatora urządzenia SysDVR. Włącz tryb USB w ustawieniach SysDVR i podłącz konsolę. Należy pamiętać, że kable USB-C do C mogą nie działać.</value>
+  </data>
+  <data name="DRIVERINSTALL_FORM_NOT_INSTALLED" xml:space="preserve">
+    <value>Wygląda na to, że sterownik nie jest zainstalowany. Należy go zainstalować, aby móc korzystać z SysDVR.</value>
+  </data>
+  <data name="ERROR" xml:space="preserve">
+    <value>Błąd</value>
+  </data>
+  <data name="EXIT" xml:space="preserve">
+    <value>Wyjście</value>
+  </data>
+  <data name="FILESTREAM_CONTROL_INFO" xml:space="preserve">
+    <value>Powoduje to zapisanie strumienia w pliku mp4. Strumień jest edytowany tylko w minimalnym stopniu: Plik wyjściowy może być duży lub w formacie nieobsługiwanym przez niektóre odtwarzacze. Zaleca się ponowne zakodowanie pliku za pomocą ffmpeg lub innego konwertera po zakończeniu nagrywania.</value>
+  </data>
+  <data name="INSTALL" xml:space="preserve">
+    <value>Instalacja</value>
+  </data>
+  <data name="INSTALLING" xml:space="preserve">
+    <value>Instalowanie</value>
+  </data>
+  <data name="LAUNCH" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="MAIN_CREATE_QUICKLAUNCH" xml:space="preserve">
+    <value>Utwórz link</value>
+  </data>
+  <data name="MAIN_DLL_NOT_FOUND" xml:space="preserve">
+    <value>nie znaleziono, czy rozpakowałeś wszystkie pliki do tego samego folderu?</value>
+  </data>
+  <data name="MAIN_DRIVER_NOT_FOUND" xml:space="preserve">
+    <value>Wybrałeś strumieniowanie USB, ale wygląda na to, że sterownik SysDVR nie jest zainstalowany. Czy chcesz go teraz zainstalować?</value>
+  </data>
+  <data name="MAIN_DRIVER_NOT_FOUND_WARNING" xml:space="preserve">
+    <value>Przesyłanie strumieniowe USB może nie działać bez zainstalowania sterownika</value>
+  </data>
+  <data name="MAIN_DRIVER_WARNING" xml:space="preserve">
+    <value>Wybrano strumieniowanie USB, ale system Windows zgłasza, że nigdy nie widział urządzenia USB SysDVR; przed kontynuowaniem spróbuj wykonać poniższe czynności:
+1) Otwórz ustawienia SysDVR na konsoli, wybierz tryb USB, a następnie kliknij Zastosuj.
+   - Jeśli aplikacja ustawień zgłasza, że SysDVR nie jest uruchomiony, uruchom ponownie konsolę.
+2) Uruchom kompatybilną grę.
+3) Podłącz konsolę do komputera.
+
+Jeśli wszystko zostało wykonane poprawnie, system Windows powinien odtworzyć dźwięk "Urządzenie podłączone" i ewentualnie wyświetlić ekran "Instalowanie urządzenia".
+Jeśli nic nie widzisz, możliwe, że twój kabel USB-C nie obsługuje połączeń danych i powinieneś użyć innego kabla. Kable USB-C do C są znane z powodowania problemów.
+
+Czy chcesz spróbować ponownie wyszukać urządzenie USB SysDVR?
+Jeśli naciśniesz "Nie", spróbuj mimo wszystko rozpocząć transfer, ale prawdopodobnie zakończy się on niepowodzeniem.</value>
+  </data>
+  <data name="MAIN_EXIT_APPLICATION" xml:space="preserve">
+    <value>Program zakończenia</value>
+  </data>
+  <data name="MAIN_GRP_ADVANCEDOPTIONS" xml:space="preserve">
+    <value>Opcje zaawansowane/debugowania</value>
+  </data>
+  <data name="MAIN_GRP_STREAMCHANNELS" xml:space="preserve">
+    <value>Kanały do transmisji</value>
+  </data>
+  <data name="MAIN_GRP_STREAMINGMODE" xml:space="preserve">
+    <value>Tryb transmisji</value>
+  </data>
+  <data name="MAIN_GRP_STREAMINGSOURCE" xml:space="preserve">
+    <value>Źródło transmisji</value>
+  </data>
+  <data name="MAIN_GRP_STREAMINGSOURCE_INFO" xml:space="preserve">
+    <value>Pamiętaj, aby zmienić tryb na właściwy w ustawieniach SysDVR na konsoli przed rozpoczęciem przesyłania strumieniowego. Jeśli potrzebujesz pomocy, przeczytaj instrukcje.</value>
+  </data>
+  <data name="MAIN_INFOTEXT" xml:space="preserve">
+    <value>Ten program automatycznie konfiguruje wiersz poleceń klienta SysDVR.
+Jeśli nie jesteś pewien, co tutaj zrobić, przeczytaj instrukcje na GitHubie</value>
+  </data>
+  <data name="MAIN_INVALID_IP_ADDRESS" xml:space="preserve">
+    <value>Nieprawidłowy adres</value>
+  </data>
+  <data name="MAIN_IP_ADDRESS" xml:space="preserve">
+    <value>Adres IP</value>
+  </data>
+  <data name="MAIN_LINKLABEL_TEXT" xml:space="preserve">
+    <value>Otwórz przewodnik</value>
+  </data>
+  <data name="MAIN_NET_NOT_FOUND" xml:space="preserve">
+    <value>.NET nie wydaje się być zainstalowany na tym komputerze, ale jest wymagany dla klienta SysDVR. Czy chcesz otworzyć stronę pobierania? Musisz pobrać .NET 6 Desktop x64 Runtime lub nowszą wersję.</value>
+  </data>
+  <data name="MAIN_NET_OLD" xml:space="preserve">
+    <value>Wygląda na to, że używasz nieaktualnej wersji .NET. SysDVR-Client wymaga .NET 6 Runtime lub nowszej wersji. Czy chcesz otworzyć stronę pobierania?</value>
+  </data>
+  <data name="MAIN_NET_WARNING" xml:space="preserve">
+    <value>Jeśli nie zaktualizujesz zainstalowanej wersji, SysDVR może nie działać.</value>
+  </data>
+  <data name="MAIN_NET_WRONG_BIT" xml:space="preserve">
+    <value>Wygląda na to, że zainstalowałeś 32-bitową wersję .NET zamiast 64-bitowej, SysDVR-CLient nie będzie działać. 64-bitową wersję można pobrać ze strony: https://aka.ms/dotnet/6.0/windowsdesktop-runtime-win-x64.exe\r\n\r\nChcesz ją teraz otworzyć?</value>
+  </data>
+  <data name="MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC" xml:space="preserve">
+    <value>Ignorowanie sync audio/wideo</value>
+  </data>
+  <data name="MAIN_OPTIONS_LOG_STATUS" xml:space="preserve">
+    <value>Log dziennika</value>
+  </data>
+  <data name="MAIN_OPTIONS_LOG_TRANSFER" xml:space="preserve">
+    <value>Log Transmisja</value>
+  </data>
+  <data name="MAIN_OPTIONS_PRINT_LIBUSB_DEBUGINFO" xml:space="preserve">
+    <value>Pokaż LibUsb Debug</value>
+  </data>
+  <data name="MAIN_OPTIONS_PRINT_LIBUSB_WARNINGS" xml:space="preserve">
+    <value>Pokaż LibUsb Ostrzeżenia</value>
+  </data>
+  <data name="MAIN_REINSTALL_USB" xml:space="preserve">
+    <value>Zainstaluj sterownik</value>
+  </data>
+  <data name="MAIN_SHOW_ADVANCED_OPTIONS" xml:space="preserve">
+    <value>Opcje zaawansowane</value>
+  </data>
+  <data name="MAIN_STREAMING_TCP_INFO" xml:space="preserve">
+    <value>Mostek TCP (tryb sieciowy)</value>
+  </data>
+  <data name="MAIN_STREAMING_USB_INFO" xml:space="preserve">
+    <value>USB (w razie potrzeby automatycznie instaluje sterownik)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_FILE" xml:space="preserve">
+    <value>Zapisz do pliku</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY" xml:space="preserve">
+    <value>Zintegrowany odtwarzacz wideo (zalecane)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY_MVP" xml:space="preserve">
+    <value>Odtwarzanie w formacie MPV z niskim opóźnieniem (tylko jeden kanał)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY_RTSP" xml:space="preserve">
+    <value>Przekazywanie do innych odtwarzaczy wideo przez RTSP -- To nie jest opcja RTSP w ustawieniach SysDVR, przeczytaj instrukcje</value>
+  </data>
+  <data name="MPVSTREAM_DOWNLOAD" xml:space="preserve">
+    <value>Pobierz mpv z oficjalnej strony internetowej</value>
+  </data>
+  <data name="MPVSTREAM_INFO" xml:space="preserve">
+    <value>Aby przesyłać strumieniowo przez mpv, należy określić ścieżkę pliku wykonywalnego (mpv.com dla Windows)</value>
+  </data>
+  <data name="OPTIONS" xml:space="preserve">
+    <value>Opcje</value>
+  </data>
+  <data name="PATH" xml:space="preserve">
+    <value>Ścieżka</value>
+  </data>
+  <data name="PLAYSTREAM_SCALING" xml:space="preserve">
+    <value>Użycie filtrowania anizotropowego do skalowania (tylko renderer direct3d)</value>
+  </data>
+  <data name="PLAYSTREAM_USEACC" xml:space="preserve">
+    <value>Użyj akceleracji sprzętowej do dekodowania (niezalecane, ponieważ automatyczne wykrywanie może się nie powieść; lepiej użyć opcji --decoder w cmd).</value>
+  </data>
+  <data name="RTSPSTREAM_INFO" xml:space="preserve">
+    <value>Aby połączyć się ze strumieniem RTSP, otwórz odtwarzacz wideo (zalecany jest mpv) i połącz się z rtsp://127.0.0.1:6666/ (jest to stały adres twojego komputera, nie musisz go zmieniać).</value>
+  </data>
+  <data name="RTSPSTREAM_LAUNCHINFO" xml:space="preserve">
+    <value>Uruchomić strumień automatycznie? Wybierz plik wykonywalny Mpv (opcjonalnie)</value>
+  </data>
+  <data name="RTSPSTREAM_LOWLAT" xml:space="preserve">
+    <value>Tryb RTSP z niskim opóźnieniem</value>
+  </data>
+  <data name="RTSPSTREAM_UNTIMED" xml:space="preserve">
+    <value>Nie czekaj na synchronizację (--untimed)</value>
+  </data>
+  <data name="VIDEO" xml:space="preserve">
+    <value>Wideo</value>
+  </data>
+  <data name="WILL_CLOSE_NOW" xml:space="preserve">
+    <value>zostanie zamknięty</value>
+  </data>
+</root>
