@@ -55,8 +55,16 @@ namespace SysDVRClientGUI.Forms
 
             this.CMB_Languages.DataSource = this.availableLanguages.DistinctBy(x => x.Value).ToArray();
             this.CMB_Languages.DisplayMember = "Value";
-            this.CMB_Languages.SelectedItem = this.availableLanguages.FirstOrDefault(x => x.Key == Thread.CurrentThread.CurrentUICulture.IetfLanguageTag);
-            Log.Verbose($"Language initialized with \"{Thread.CurrentThread.CurrentUICulture.IetfLanguageTag}\"");
+            if (string.IsNullOrEmpty(RuntimeStorage.Config.Configuration.UserLanguage))
+            {
+                this.CMB_Languages.SelectedItem = this.availableLanguages.FirstOrDefault(x => x.Key == Thread.CurrentThread.CurrentUICulture.IetfLanguageTag);
+                Log.Verbose($"Language initialized with \"{Thread.CurrentThread.CurrentUICulture.IetfLanguageTag}\"");
+            }
+            else
+            {
+                this.CMB_Languages.SelectedItem = this.availableLanguages.FirstOrDefault(x => x.Key == RuntimeStorage.Config.Configuration.UserLanguage);
+                Log.Verbose($"Language initialized with \"{RuntimeStorage.Config.Configuration.UserLanguage}\"");
+            }
 
             this.ApplyLocalization();
             this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
@@ -471,6 +479,9 @@ namespace SysDVRClientGUI.Forms
             }
 
             string langIdentifier = this.availableLanguages.FirstOrDefault(x => x.Key == ((KeyValuePair<string, string>)this.CMB_Languages.SelectedItem).Key).Key;
+
+            RuntimeStorage.Config.Configuration.UserLanguage = langIdentifier;
+            RuntimeStorage.Config.Save();
 
             Log.Information($"Language switched to \"{langIdentifier}\"");
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(langIdentifier);

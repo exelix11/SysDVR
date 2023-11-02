@@ -6,6 +6,9 @@ namespace SysDVRClientGUI.Models
 {
     internal sealed class Configuration
     {
+        [JsonProperty("userLanguage")]
+        public string UserLanguage { get; set; }
+
         [JsonProperty("showAdvancedOptions")]
         public bool ShowAdvancedOptions { get; set; }
 
