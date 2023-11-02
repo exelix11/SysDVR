@@ -270,6 +270,18 @@ Wenn Sie nicht sicher sind, was Sie hier tun müssen, lesen Sie die Anleitung au
   <data name="MAIN_STREAMING_USB_INFO" xml:space="preserve">
     <value>USB (installiert den Treiber automatisch, falls erforderlich)</value>
   </data>
+  <data name="MAIN_STREAMOPTIONS_FILE" xml:space="preserve">
+    <value>In Datei speichern</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY" xml:space="preserve">
+    <value>Integrierter Videoplayer (empfohlen)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY_MVP" xml:space="preserve">
+    <value>Wiedergabe im MPV-Format mit geringer Latenz (nur ein Kanal)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY_RTSP" xml:space="preserve">
+    <value>Weiterleitung an andere Videoplayer über RTSP -- Dies ist nicht die RTSP-Option in den SysDVR-Einstellungen, lese die Anleitung</value>
+  </data>
   <data name="VIDEO" xml:space="preserve">
     <value>Video</value>
   </data>

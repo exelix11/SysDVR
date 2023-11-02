@@ -280,4 +280,16 @@ Pressing no will try to start streaming regardless but it will probably fail.</v
   <data name="MAIN_OPTIONS_PRINT_LIBUSB_WARNINGS" xml:space="preserve">
     <value>Print LibUsb warnings</value>
   </data>
+  <data name="MAIN_STREAMOPTIONS_FILE" xml:space="preserve">
+    <value>Save to file</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY" xml:space="preserve">
+    <value>Play with the built-in video player (Recommended)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY_MVP" xml:space="preserve">
+    <value>Play in mpv with low latency (single channel only)</value>
+  </data>
+  <data name="MAIN_STREAMOPTIONS_PLAY_RTSP" xml:space="preserve">
+    <value>Relay to a different video player via RTSP -- This is not the RTSP option in SysDVR-settings, read the guide if unsure</value>
+  </data>
 </root>

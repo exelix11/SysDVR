@@ -496,6 +496,42 @@ namespace SysDVRClientGUI.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Save to file.
+        /// </summary>
+        internal static string MAIN_STREAMOPTIONS_FILE {
+            get {
+                return ResourceManager.GetString("MAIN_STREAMOPTIONS_FILE", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Play with the built-in video player (Recommended).
+        /// </summary>
+        internal static string MAIN_STREAMOPTIONS_PLAY {
+            get {
+                return ResourceManager.GetString("MAIN_STREAMOPTIONS_PLAY", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Play in mpv with low latency (single channel only).
+        /// </summary>
+        internal static string MAIN_STREAMOPTIONS_PLAY_MVP {
+            get {
+                return ResourceManager.GetString("MAIN_STREAMOPTIONS_PLAY_MVP", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Relay to a different video player via RTSP -- This is not the RTSP option in SysDVR-settings, read the guide if unsure.
+        /// </summary>
+        internal static string MAIN_STREAMOPTIONS_PLAY_RTSP {
+            get {
+                return ResourceManager.GetString("MAIN_STREAMOPTIONS_PLAY_RTSP", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Video.
         /// </summary>
         internal static string VIDEO {

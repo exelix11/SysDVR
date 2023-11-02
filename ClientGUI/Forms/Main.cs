@@ -123,6 +123,10 @@ namespace SysDVRClientGUI.Forms
             this.cbStats.Text = MAIN_OPTIONS_LOG_STATUS;
             this.cbIgnoreSync.Text = MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC;
             this.cbLogStatus.Text = MAIN_OPTIONS_LOG_TRANSFER;
+            this.rbPlay.Text = MAIN_STREAMOPTIONS_PLAY;
+            this.rbPlayMpv.Text = MAIN_STREAMOPTIONS_PLAY_MVP;
+            this.rbSaveToFile.Text = MAIN_STREAMOPTIONS_FILE;
+            this.rbStreamRtsp.Text = MAIN_STREAMOPTIONS_PLAY_RTSP;
         }
 
         private void LoadUserSettings()
