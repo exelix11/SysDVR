@@ -29,15 +29,15 @@
         private void InitializeComponent()
         {
             this.BTN_Browse = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
+            this.LBL_Path = new System.Windows.Forms.Label();
             this.TXT_MpvPath = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
-            this.label3 = new System.Windows.Forms.Label();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.LBL_InfoLaunch = new System.Windows.Forms.Label();
+            this.LLBL_Download = new System.Windows.Forms.LinkLabel();
+            this.LBL_Info = new System.Windows.Forms.Label();
+            this.GRP_Options = new System.Windows.Forms.GroupBox();
             this.cbMpvUntimed = new System.Windows.Forms.CheckBox();
             this.cbMpvLowLat = new System.Windows.Forms.CheckBox();
-            this.groupBox1.SuspendLayout();
+            this.GRP_Options.SuspendLayout();
             this.SuspendLayout();
             // 
             // BTN_Browse
@@ -52,15 +52,15 @@
             this.BTN_Browse.UseVisualStyleBackColor = true;
             this.BTN_Browse.Click += this.BTN_Browse_Click;
             // 
-            // label1
+            // LBL_Path
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(4, 73);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(61, 15);
-            this.label1.TabIndex = 2;
-            this.label1.Text = "Mpv path:";
+            this.LBL_Path.AutoSize = true;
+            this.LBL_Path.Location = new System.Drawing.Point(4, 73);
+            this.LBL_Path.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Path.Name = "LBL_Path";
+            this.LBL_Path.Size = new System.Drawing.Size(61, 15);
+            this.LBL_Path.TabIndex = 2;
+            this.LBL_Path.Text = "Mpv path:";
             // 
             // TXT_MpvPath
             // 
@@ -72,52 +72,52 @@
             this.TXT_MpvPath.TabIndex = 3;
             this.TXT_MpvPath.TextChanged += this.TXT_MpvPath_TextChanged;
             // 
-            // label2
+            // LBL_InfoLaunch
             // 
-            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label2.Location = new System.Drawing.Point(4, 44);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(559, 27);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "Launch the stream automatically ? Select Mpv's main executable (Optional)";
+            this.LBL_InfoLaunch.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_InfoLaunch.Location = new System.Drawing.Point(4, 44);
+            this.LBL_InfoLaunch.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_InfoLaunch.Name = "LBL_InfoLaunch";
+            this.LBL_InfoLaunch.Size = new System.Drawing.Size(559, 27);
+            this.LBL_InfoLaunch.TabIndex = 1;
+            this.LBL_InfoLaunch.Text = "Launch the stream automatically ? Select Mpv's main executable (Optional)";
             // 
-            // linkLabel1
+            // LLBL_Download
             // 
-            this.linkLabel1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.linkLabel1.Location = new System.Drawing.Point(4, 96);
-            this.linkLabel1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(559, 20);
-            this.linkLabel1.TabIndex = 5;
-            this.linkLabel1.TabStop = true;
-            this.linkLabel1.Text = "Download mpv from the official site";
-            this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.linkLabel1.LinkClicked += this.LLBL_LinkClicked;
+            this.LLBL_Download.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LLBL_Download.Location = new System.Drawing.Point(4, 96);
+            this.LLBL_Download.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LLBL_Download.Name = "LLBL_Download";
+            this.LLBL_Download.Size = new System.Drawing.Size(559, 20);
+            this.LLBL_Download.TabIndex = 5;
+            this.LLBL_Download.TabStop = true;
+            this.LLBL_Download.Text = "Download mpv from the official site";
+            this.LLBL_Download.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.LLBL_Download.LinkClicked += this.LLBL_LinkClicked;
             // 
-            // label3
+            // LBL_Info
             // 
-            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label3.Location = new System.Drawing.Point(4, 0);
-            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(559, 37);
-            this.label3.TabIndex = 0;
-            this.label3.Text = "To connect to the RTSP stream open a video player (mpv is recommended) and connect to rtsp://127.0.0.1:6666/ (this is the fixed address of your pc, you don't need to change it)";
+            this.LBL_Info.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_Info.Location = new System.Drawing.Point(4, 0);
+            this.LBL_Info.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Info.Name = "LBL_Info";
+            this.LBL_Info.Size = new System.Drawing.Size(559, 37);
+            this.LBL_Info.TabIndex = 0;
+            this.LBL_Info.Text = "To connect to the RTSP stream open a video player (mpv is recommended) and connect to rtsp://127.0.0.1:6666/ (this is the fixed address of your pc, you don't need to change it)";
             // 
-            // groupBox1
+            // GRP_Options
             // 
-            this.groupBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.groupBox1.Controls.Add(this.cbMpvUntimed);
-            this.groupBox1.Controls.Add(this.cbMpvLowLat);
-            this.groupBox1.Location = new System.Drawing.Point(6, 123);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(555, 55);
-            this.groupBox1.TabIndex = 6;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Mpv options";
+            this.GRP_Options.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.GRP_Options.Controls.Add(this.cbMpvUntimed);
+            this.GRP_Options.Controls.Add(this.cbMpvLowLat);
+            this.GRP_Options.Location = new System.Drawing.Point(6, 123);
+            this.GRP_Options.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_Options.Name = "GRP_Options";
+            this.GRP_Options.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.GRP_Options.Size = new System.Drawing.Size(555, 55);
+            this.GRP_Options.TabIndex = 6;
+            this.GRP_Options.TabStop = false;
+            this.GRP_Options.Text = "Mpv options";
             // 
             // cbMpvUntimed
             // 
@@ -148,18 +148,18 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.GRP_Options);
+            this.Controls.Add(this.LBL_Info);
+            this.Controls.Add(this.LLBL_Download);
             this.Controls.Add(this.TXT_MpvPath);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.LBL_Path);
             this.Controls.Add(this.BTN_Browse);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.LBL_InfoLaunch);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "RTSPStreamOptControl";
             this.Size = new System.Drawing.Size(566, 182);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
+            this.GRP_Options.ResumeLayout(false);
+            this.GRP_Options.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -167,12 +167,12 @@
         #endregion
 
         private System.Windows.Forms.Button BTN_Browse;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label LBL_Path;
         private System.Windows.Forms.TextBox TXT_MpvPath;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.LinkLabel linkLabel1;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Label LBL_InfoLaunch;
+        private System.Windows.Forms.LinkLabel LLBL_Download;
+        private System.Windows.Forms.Label LBL_Info;
+        private System.Windows.Forms.GroupBox GRP_Options;
         private System.Windows.Forms.CheckBox cbMpvUntimed;
         private System.Windows.Forms.CheckBox cbMpvLowLat;
     }

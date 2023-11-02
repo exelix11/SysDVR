@@ -49,11 +49,12 @@
             this.rbStreamRtsp = new System.Windows.Forms.RadioButton();
             this.rbPlayMpv = new System.Windows.Forms.RadioButton();
             this.GRP_AdvOptions = new System.Windows.Forms.GroupBox();
-            this.cbLogStatus = new System.Windows.Forms.CheckBox();
-            this.cbIgnoreSync = new System.Windows.Forms.CheckBox();
-            this.cbStats = new System.Windows.Forms.CheckBox();
-            this.cbUsbLog = new System.Windows.Forms.CheckBox();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.cbUsbWarn = new System.Windows.Forms.CheckBox();
+            this.cbStats = new System.Windows.Forms.CheckBox();
+            this.cbIgnoreSync = new System.Windows.Forms.CheckBox();
+            this.cbUsbLog = new System.Windows.Forms.CheckBox();
+            this.cbLogStatus = new System.Windows.Forms.CheckBox();
             this.StreamConfigPanel = new System.Windows.Forms.Panel();
             this.cbAdvOpt = new System.Windows.Forms.CheckBox();
             this.BTN_DriverInstall = new System.Windows.Forms.Button();
@@ -62,15 +63,14 @@
             this.CMB_Languages = new System.Windows.Forms.ComboBox();
             this.PBX_Logo = new System.Windows.Forms.PictureBox();
             this.PNL_Header = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.GRP_StreamingChannels.SuspendLayout();
             this.GRP_StreamingSource.SuspendLayout();
             this.pAdvOptions.SuspendLayout();
             this.GRP_StreamMode.SuspendLayout();
             this.GRP_AdvOptions.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)this.PBX_Logo).BeginInit();
             this.PNL_Header.SuspendLayout();
-            this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // BTN_Launch
@@ -334,27 +334,35 @@
             this.GRP_AdvOptions.TabStop = false;
             this.GRP_AdvOptions.Text = "Advanced/Debug options";
             // 
-            // cbLogStatus
+            // tableLayoutPanel1
             // 
-            this.cbLogStatus.AutoSize = true;
-            this.cbLogStatus.Location = new System.Drawing.Point(466, 3);
-            this.cbLogStatus.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.cbLogStatus.Name = "cbLogStatus";
-            this.cbLogStatus.Size = new System.Drawing.Size(134, 19);
-            this.cbLogStatus.TabIndex = 6;
-            this.cbLogStatus.Text = "Log status messages";
-            this.cbLogStatus.UseVisualStyleBackColor = true;
+            this.tableLayoutPanel1.ColumnCount = 3;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333321F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333359F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333359F));
+            this.tableLayoutPanel1.Controls.Add(this.cbUsbWarn, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.cbStats, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.cbIgnoreSync, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.cbUsbLog, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.cbLogStatus, 2, 0);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(7, 18);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(695, 54);
+            this.tableLayoutPanel1.TabIndex = 0;
             // 
-            // cbIgnoreSync
+            // cbUsbWarn
             // 
-            this.cbIgnoreSync.AutoSize = true;
-            this.cbIgnoreSync.Location = new System.Drawing.Point(235, 3);
-            this.cbIgnoreSync.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.cbIgnoreSync.Name = "cbIgnoreSync";
-            this.cbIgnoreSync.Size = new System.Drawing.Size(157, 19);
-            this.cbIgnoreSync.TabIndex = 5;
-            this.cbIgnoreSync.Text = "Ignore Audio/Video sync";
-            this.cbIgnoreSync.UseVisualStyleBackColor = true;
+            this.cbUsbWarn.AutoSize = true;
+            this.cbUsbWarn.Location = new System.Drawing.Point(4, 30);
+            this.cbUsbWarn.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.cbUsbWarn.Name = "cbUsbWarn";
+            this.cbUsbWarn.Size = new System.Drawing.Size(141, 19);
+            this.cbUsbWarn.TabIndex = 3;
+            this.cbUsbWarn.Text = "Print LibUsb warnings";
+            this.cbUsbWarn.UseVisualStyleBackColor = true;
             // 
             // cbStats
             // 
@@ -367,6 +375,17 @@
             this.cbStats.Text = "Log transfer info";
             this.cbStats.UseVisualStyleBackColor = true;
             // 
+            // cbIgnoreSync
+            // 
+            this.cbIgnoreSync.AutoSize = true;
+            this.cbIgnoreSync.Location = new System.Drawing.Point(235, 3);
+            this.cbIgnoreSync.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.cbIgnoreSync.Name = "cbIgnoreSync";
+            this.cbIgnoreSync.Size = new System.Drawing.Size(157, 19);
+            this.cbIgnoreSync.TabIndex = 5;
+            this.cbIgnoreSync.Text = "Ignore Audio/Video sync";
+            this.cbIgnoreSync.UseVisualStyleBackColor = true;
+            // 
             // cbUsbLog
             // 
             this.cbUsbLog.AutoSize = true;
@@ -378,16 +397,16 @@
             this.cbUsbLog.Text = "Print LibUsb debug info";
             this.cbUsbLog.UseVisualStyleBackColor = true;
             // 
-            // cbUsbWarn
+            // cbLogStatus
             // 
-            this.cbUsbWarn.AutoSize = true;
-            this.cbUsbWarn.Location = new System.Drawing.Point(4, 30);
-            this.cbUsbWarn.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.cbUsbWarn.Name = "cbUsbWarn";
-            this.cbUsbWarn.Size = new System.Drawing.Size(141, 19);
-            this.cbUsbWarn.TabIndex = 3;
-            this.cbUsbWarn.Text = "Print LibUsb warnings";
-            this.cbUsbWarn.UseVisualStyleBackColor = true;
+            this.cbLogStatus.AutoSize = true;
+            this.cbLogStatus.Location = new System.Drawing.Point(466, 3);
+            this.cbLogStatus.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.cbLogStatus.Name = "cbLogStatus";
+            this.cbLogStatus.Size = new System.Drawing.Size(134, 19);
+            this.cbLogStatus.TabIndex = 6;
+            this.cbLogStatus.Text = "Log status messages";
+            this.cbLogStatus.UseVisualStyleBackColor = true;
             // 
             // StreamConfigPanel
             // 
@@ -459,6 +478,7 @@
             this.PBX_Logo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.PBX_Logo.TabIndex = 12;
             this.PBX_Logo.TabStop = false;
+            this.PBX_Logo.Click += this.PBX_Logo_Click;
             // 
             // PNL_Header
             // 
@@ -469,25 +489,6 @@
             this.PNL_Header.Name = "PNL_Header";
             this.PNL_Header.Size = new System.Drawing.Size(560, 94);
             this.PNL_Header.TabIndex = 13;
-            // 
-            // tableLayoutPanel1
-            // 
-            this.tableLayoutPanel1.ColumnCount = 3;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333321F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333359F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333359F));
-            this.tableLayoutPanel1.Controls.Add(this.cbUsbWarn, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.cbStats, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.cbIgnoreSync, 1, 0);
-            this.tableLayoutPanel1.Controls.Add(this.cbUsbLog, 1, 1);
-            this.tableLayoutPanel1.Controls.Add(this.cbLogStatus, 2, 0);
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(7, 18);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(695, 54);
-            this.tableLayoutPanel1.TabIndex = 0;
             // 
             // Main
             // 
@@ -522,10 +523,10 @@
             this.GRP_StreamMode.ResumeLayout(false);
             this.GRP_StreamMode.PerformLayout();
             this.GRP_AdvOptions.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)this.PBX_Logo).EndInit();
-            this.PNL_Header.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)this.PBX_Logo).EndInit();
+            this.PNL_Header.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

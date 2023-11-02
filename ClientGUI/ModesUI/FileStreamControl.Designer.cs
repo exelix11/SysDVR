@@ -29,21 +29,21 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FileStreamControl));
-            this.label2 = new System.Windows.Forms.Label();
+            this.LBL_Info = new System.Windows.Forms.Label();
             this.tbVideoFile = new System.Windows.Forms.TextBox();
             this.btnVideo = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
+            this.LBL_Path = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // label2
+            // LBL_Info
             // 
-            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label2.Location = new System.Drawing.Point(4, 5);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(597, 54);
-            this.label2.TabIndex = 4;
-            this.label2.Text = resources.GetString("label2.Text");
+            this.LBL_Info.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_Info.Location = new System.Drawing.Point(4, 5);
+            this.LBL_Info.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Info.Name = "LBL_Info";
+            this.LBL_Info.Size = new System.Drawing.Size(597, 54);
+            this.LBL_Info.TabIndex = 4;
+            this.LBL_Info.Text = resources.GetString("LBL_Info.Text");
             // 
             // tbVideoFile
             // 
@@ -67,24 +67,24 @@
             this.btnVideo.UseVisualStyleBackColor = true;
             this.btnVideo.Click += this.BTN_Video_Click;
             // 
-            // label1
+            // LBL_Path
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(4, 69);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(34, 15);
-            this.label1.TabIndex = 9;
-            this.label1.Text = "Path:";
+            this.LBL_Path.AutoSize = true;
+            this.LBL_Path.Location = new System.Drawing.Point(4, 69);
+            this.LBL_Path.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Path.Name = "LBL_Path";
+            this.LBL_Path.Size = new System.Drawing.Size(34, 15);
+            this.LBL_Path.TabIndex = 9;
+            this.LBL_Path.Text = "Path:";
             // 
             // FileStreamControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.LBL_Path);
             this.Controls.Add(this.btnVideo);
             this.Controls.Add(this.tbVideoFile);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.LBL_Info);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "FileStreamControl";
             this.Size = new System.Drawing.Size(604, 111);
@@ -94,9 +94,9 @@
 
         #endregion
 
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label LBL_Info;
         private System.Windows.Forms.TextBox tbVideoFile;
         private System.Windows.Forms.Button btnVideo;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label LBL_Path;
     }
 }

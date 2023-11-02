@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.BTN_Browse = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
+            this.LBL_Path = new System.Windows.Forms.Label();
             this.TXT_MpvPath = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
+            this.LBL_Info = new System.Windows.Forms.Label();
+            this.LLBL_Download = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
             // BTN_Browse
@@ -47,15 +47,15 @@
             this.BTN_Browse.UseVisualStyleBackColor = true;
             this.BTN_Browse.Click += this.BTN_Browse_Click;
             // 
-            // label1
+            // LBL_Path
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(4, 40);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(61, 15);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Mpv path:";
+            this.LBL_Path.AutoSize = true;
+            this.LBL_Path.Location = new System.Drawing.Point(4, 40);
+            this.LBL_Path.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Path.Name = "LBL_Path";
+            this.LBL_Path.Size = new System.Drawing.Size(61, 15);
+            this.LBL_Path.TabIndex = 1;
+            this.LBL_Path.Text = "Mpv path:";
             // 
             // TXT_MpvPath
             // 
@@ -67,37 +67,37 @@
             this.TXT_MpvPath.TabIndex = 0;
             this.TXT_MpvPath.TextChanged += this.TXT_MpvPath_TextChanged;
             // 
-            // label2
+            // LBL_Info
             // 
-            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.label2.Location = new System.Drawing.Point(4, 5);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(559, 27);
-            this.label2.TabIndex = 3;
-            this.label2.Text = "To stream via mpv you must provide the path of its main executable (called mpv.com for windows)";
+            this.LBL_Info.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LBL_Info.Location = new System.Drawing.Point(4, 5);
+            this.LBL_Info.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LBL_Info.Name = "LBL_Info";
+            this.LBL_Info.Size = new System.Drawing.Size(559, 27);
+            this.LBL_Info.TabIndex = 3;
+            this.LBL_Info.Text = "To stream via mpv you must provide the path of its main executable (called mpv.com for windows)";
             // 
-            // linkLabel1
+            // LLBL_Download
             // 
-            this.linkLabel1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            this.linkLabel1.Location = new System.Drawing.Point(4, 63);
-            this.linkLabel1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(559, 20);
-            this.linkLabel1.TabIndex = 2;
-            this.linkLabel1.TabStop = true;
-            this.linkLabel1.Text = "Download mpv from the official site";
-            this.linkLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.linkLabel1.LinkClicked += this.LinkLabel1_LinkClicked;
+            this.LLBL_Download.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.LLBL_Download.Location = new System.Drawing.Point(4, 63);
+            this.LLBL_Download.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.LLBL_Download.Name = "LLBL_Download";
+            this.LLBL_Download.Size = new System.Drawing.Size(559, 20);
+            this.LLBL_Download.TabIndex = 2;
+            this.LLBL_Download.TabStop = true;
+            this.LLBL_Download.Text = "Download mpv from the official site";
+            this.LLBL_Download.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.LLBL_Download.LinkClicked += this.LinkLabel1_LinkClicked;
             // 
             // MpvStreamControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.linkLabel1);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.LLBL_Download);
+            this.Controls.Add(this.LBL_Info);
             this.Controls.Add(this.TXT_MpvPath);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.LBL_Path);
             this.Controls.Add(this.BTN_Browse);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "MpvStreamControl";
@@ -109,9 +109,9 @@
         #endregion
 
         private System.Windows.Forms.Button BTN_Browse;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label LBL_Path;
         private System.Windows.Forms.TextBox TXT_MpvPath;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.LinkLabel linkLabel1;
+        private System.Windows.Forms.Label LBL_Info;
+        private System.Windows.Forms.LinkLabel LLBL_Download;
     }
 }

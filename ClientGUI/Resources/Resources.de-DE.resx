@@ -166,6 +166,9 @@ Dieser Vorgang erfordert eine Internetverbindung</value>
   <data name="EXIT" xml:space="preserve">
     <value>Beenden</value>
   </data>
+  <data name="FILESTREAM_CONTROL_INFO" xml:space="preserve">
+    <value>Dadurch wird der Stream in einer mp4-Datei gespeichert. Der Stream wird nur minimal bearbeitet: Die Ausgabedatei kann groß sein oder in einem Format vorliegen, das von einigen Playern nicht unterstützt wird. Es wird empfohlen, die Datei mit ffmpeg oder einem anderen Konverter neu zu kodieren, sobald die Aufnahme abgeschlossen ist.</value>
+  </data>
   <data name="INSTALL" xml:space="preserve">
     <value>Installation</value>
   </data>
@@ -281,6 +284,36 @@ Wenn Sie nicht sicher sind, was Sie hier tun müssen, lesen Sie die Anleitung au
   </data>
   <data name="MAIN_STREAMOPTIONS_PLAY_RTSP" xml:space="preserve">
     <value>Weiterleitung an andere Videoplayer über RTSP -- Dies ist nicht die RTSP-Option in den SysDVR-Einstellungen, lese die Anleitung</value>
+  </data>
+  <data name="MPVSTREAM_DOWNLOAD" xml:space="preserve">
+    <value>mpv von der offiziellen Website herunterladen</value>
+  </data>
+  <data name="MPVSTREAM_INFO" xml:space="preserve">
+    <value>Um über mpv zu streamen, müssen Sie den Pfad der ausführbaren Datei angeben (mpv.com für Windows)</value>
+  </data>
+  <data name="OPTIONS" xml:space="preserve">
+    <value>Optionen</value>
+  </data>
+  <data name="PATH" xml:space="preserve">
+    <value>Pfad</value>
+  </data>
+  <data name="PLAYSTREAM_SCALING" xml:space="preserve">
+    <value>Anisotrope Filterung für Skalierung verwenden (nur direct3d-Renderer)</value>
+  </data>
+  <data name="PLAYSTREAM_USEACC" xml:space="preserve">
+    <value>Hardware-Beschleunigung für die Dekodierung verwenden (nicht empfohlen, da die automatische Erkennung fehlschlagen kann; besser ist es, die Option --decoder von cmd zu verwenden)</value>
+  </data>
+  <data name="RTSPSTREAM_INFO" xml:space="preserve">
+    <value>Um eine Verbindung zum RTSP-Stream herzustellen, öffnen Sie einen Videoplayer (mpv wird empfohlen) und stellen Sie eine Verbindung zu rtsp://127.0.0.1:6666/ her (dies ist die feste Adresse Ihres PCs, Sie müssen sie nicht ändern)</value>
+  </data>
+  <data name="RTSPSTREAM_LAUNCHINFO" xml:space="preserve">
+    <value>Den Stream automatisch starten ? Wählen Sie die ausführbare Datei von Mpv (optional)</value>
+  </data>
+  <data name="RTSPSTREAM_LOWLAT" xml:space="preserve">
+    <value>RTSP-Modus mit niedriger Latenzzeit</value>
+  </data>
+  <data name="RTSPSTREAM_UNTIMED" xml:space="preserve">
+    <value>Nicht auf die Synchronisierung warten (--untimed)</value>
   </data>
   <data name="VIDEO" xml:space="preserve">
     <value>Video</value>

@@ -200,6 +200,15 @@ namespace SysDVRClientGUI.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This will save the stream to an mp4 file. Minimal processing is done to the stream: the output file may be big or in a format that is not supported by some players, it&apos;s recommended to re-encode it with ffmpeg or another converter once the recording is done..
+        /// </summary>
+        internal static string FILESTREAM_CONTROL_INFO {
+            get {
+                return ResourceManager.GetString("FILESTREAM_CONTROL_INFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Install.
         /// </summary>
         internal static string INSTALL {
@@ -528,6 +537,96 @@ namespace SysDVRClientGUI.Resources {
         internal static string MAIN_STREAMOPTIONS_PLAY_RTSP {
             get {
                 return ResourceManager.GetString("MAIN_STREAMOPTIONS_PLAY_RTSP", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Download mpv from the official site.
+        /// </summary>
+        internal static string MPVSTREAM_DOWNLOAD {
+            get {
+                return ResourceManager.GetString("MPVSTREAM_DOWNLOAD", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to To stream via mpv you must provide the path of its main executable (called mpv.com for windows).
+        /// </summary>
+        internal static string MPVSTREAM_INFO {
+            get {
+                return ResourceManager.GetString("MPVSTREAM_INFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to options.
+        /// </summary>
+        internal static string OPTIONS {
+            get {
+                return ResourceManager.GetString("OPTIONS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Path.
+        /// </summary>
+        internal static string PATH {
+            get {
+                return ResourceManager.GetString("PATH", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use anisotropic filtering for scaling (direct3d renderer only).
+        /// </summary>
+        internal static string PLAYSTREAM_SCALING {
+            get {
+                return ResourceManager.GetString("PLAYSTREAM_SCALING", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use hardware acceleration for decoding (not recommended as auto detection may fail, it&apos;s better to use the --decoder option from cmd).
+        /// </summary>
+        internal static string PLAYSTREAM_USEACC {
+            get {
+                return ResourceManager.GetString("PLAYSTREAM_USEACC", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to To connect to the RTSP stream open a video player (mpv is recommended) and connect to rtsp://127.0.0.1:6666/ (this is the fixed address of your pc, you don&apos;t need to change it).
+        /// </summary>
+        internal static string RTSPSTREAM_INFO {
+            get {
+                return ResourceManager.GetString("RTSPSTREAM_INFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Launch the stream automatically ? Select Mpv&apos;s main executable (Optional).
+        /// </summary>
+        internal static string RTSPSTREAM_LAUNCHINFO {
+            get {
+                return ResourceManager.GetString("RTSPSTREAM_LAUNCHINFO", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to RTSP low-latency mode.
+        /// </summary>
+        internal static string RTSPSTREAM_LOWLAT {
+            get {
+                return ResourceManager.GetString("RTSPSTREAM_LOWLAT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Do not wait for synchronization (--untimed).
+        /// </summary>
+        internal static string RTSPSTREAM_UNTIMED {
+            get {
+                return ResourceManager.GetString("RTSPSTREAM_UNTIMED", resourceCulture);
             }
         }
         

@@ -2,6 +2,7 @@
 using SysDVRClientGUI.Models;
 using System;
 using System.Windows.Forms;
+using static SysDVRClientGUI.Resources.Resources;
 
 namespace SysDVRClientGUI.ModesUI
 {
@@ -10,7 +11,14 @@ namespace SysDVRClientGUI.ModesUI
         public FileStreamControl()
         {
             this.InitializeComponent();
+            this.ApplyLocalization();
             this.tbVideoFile.Text = RuntimeStorage.Config.Configuration.FileStreamControlOptions.LastUsedPath;
+        }
+
+        public void ApplyLocalization()
+        {
+            this.LBL_Info.Text = FILESTREAM_CONTROL_INFO;
+            this.LBL_Path.Text = $"{PATH}:";
         }
 
         public LaunchCommand GetExtraCmd() => null;

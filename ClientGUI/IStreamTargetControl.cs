@@ -7,5 +7,6 @@ namespace SysDVRClientGUI
     {
         string GetClientCommandLine();
         LaunchCommand GetExtraCmd();
+        public void ApplyLocalization();
     }
 }

@@ -40,9 +40,7 @@ namespace SysDVRClientGUI.Forms
         };
 
         private readonly PictureboxSlideAnimation slideAnimation;
-#pragma warning disable S4487,IDE0052
         private readonly PictureboxBounceAnimation bounceAnimation;
-#pragma warning restore S4487,IDE0052
 
         public Main()
         {
@@ -495,6 +493,15 @@ namespace SysDVRClientGUI.Forms
             Log.Information($"Language switched to \"{langIdentifier}\"");
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(langIdentifier);
             this.ApplyLocalization();
+            if (this.StreamConfigPanel.Controls.Count >= 1 && this.StreamConfigPanel.Controls[0] is IStreamTargetControl streamControl)
+            {
+                streamControl.ApplyLocalization();
+            }
+        }
+
+        private void PBX_Logo_Click(object sender, EventArgs e)
+        {
+            this.bounceAnimation.Start();
         }
     }
 }

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 using static SysDVRClientGUI.Logic.Constants;
+using static SysDVRClientGUI.Resources.Resources;
 
 namespace SysDVRClientGUI.ModesUI
 {
@@ -12,10 +13,18 @@ namespace SysDVRClientGUI.ModesUI
         public MpvStreamControl()
         {
             this.InitializeComponent();
+            this.ApplyLocalization();
             this.TXT_MpvPath.Text = RuntimeStorage.Config.Configuration.PlayMpvStreamControlOptions.MpvPath;
         }
 
         public StreamKind TargetKind { get; set; }
+
+        public void ApplyLocalization()
+        {
+            this.LBL_Info.Text = MPVSTREAM_INFO;
+            this.LBL_Path.Text = $"Mpv {PATH}:";
+            this.LLBL_Download.Text = MPVSTREAM_DOWNLOAD;
+        }
 
         public string GetClientCommandLine()
         {

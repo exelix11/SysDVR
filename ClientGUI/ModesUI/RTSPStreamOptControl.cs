@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 using static SysDVRClientGUI.Logic.Constants;
+using static SysDVRClientGUI.Resources.Resources;
 
 namespace SysDVRClientGUI.ModesUI
 {
@@ -14,10 +15,22 @@ namespace SysDVRClientGUI.ModesUI
         public RTSPStreamOptControl()
         {
             this.InitializeComponent();
+            this.ApplyLocalization();
 
             this.TXT_MpvPath.Text = RuntimeStorage.Config.Configuration.RtspStreamControlOptions.MpvPath;
             this.cbMpvLowLat.Checked = RuntimeStorage.Config.Configuration.RtspStreamControlOptions.LowLatency;
             this.cbMpvUntimed.Checked = RuntimeStorage.Config.Configuration.RtspStreamControlOptions.Untimed;
+        }
+
+        public void ApplyLocalization()
+        {
+            this.LBL_Info.Text = RTSPSTREAM_INFO;
+            this.LBL_InfoLaunch.Text = RTSPSTREAM_LAUNCHINFO;
+            this.LBL_Path.Text = $"Mpv {PATH}:";
+            this.LLBL_Download.Text = MPVSTREAM_DOWNLOAD;
+            this.GRP_Options.Text = $"Mpv {OPTIONS}:";
+            this.cbMpvLowLat.Text = RTSPSTREAM_LOWLAT;
+            this.cbMpvUntimed.Text = RTSPSTREAM_UNTIMED;
         }
 
         public string GetClientCommandLine() => "--rtsp";

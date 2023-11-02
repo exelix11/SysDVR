@@ -2,6 +2,7 @@
 using SysDVRClientGUI.Models;
 using System.Text;
 using System.Windows.Forms;
+using static SysDVRClientGUI.Resources.Resources;
 
 namespace SysDVRClientGUI.ModesUI
 {
@@ -10,8 +11,15 @@ namespace SysDVRClientGUI.ModesUI
         public PlayStreamControl()
         {
             this.InitializeComponent();
+            this.ApplyLocalization();
             this.CHK_BestScaling.Checked = RuntimeStorage.Config.Configuration.PlayStreamControlOptions.BestScaling;
             this.CHK_HwAcc.Checked = RuntimeStorage.Config.Configuration.PlayStreamControlOptions.HardwareAcceleration;
+        }
+
+        public void ApplyLocalization()
+        {
+            this.CHK_HwAcc.Text = PLAYSTREAM_USEACC;
+            this.CHK_BestScaling.Text = PLAYSTREAM_SCALING;
         }
 
         public string GetClientCommandLine()

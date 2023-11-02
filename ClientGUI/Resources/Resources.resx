@@ -265,6 +265,9 @@ Pressing no will try to start streaming regardless but it will probably fail.</v
   <data name="logo" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>logo.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="FILESTREAM_CONTROL_INFO" xml:space="preserve">
+    <value>This will save the stream to an mp4 file. Minimal processing is done to the stream: the output file may be big or in a format that is not supported by some players, it's recommended to re-encode it with ffmpeg or another converter once the recording is done.</value>
+  </data>
   <data name="MAIN_OPTIONS_IGNORE_AUDIOVIDEO_SYNC" xml:space="preserve">
     <value>Ignore Audio/Video sync</value>
   </data>
@@ -291,5 +294,35 @@ Pressing no will try to start streaming regardless but it will probably fail.</v
   </data>
   <data name="MAIN_STREAMOPTIONS_PLAY_RTSP" xml:space="preserve">
     <value>Relay to a different video player via RTSP -- This is not the RTSP option in SysDVR-settings, read the guide if unsure</value>
+  </data>
+  <data name="MPVSTREAM_DOWNLOAD" xml:space="preserve">
+    <value>Download mpv from the official site</value>
+  </data>
+  <data name="MPVSTREAM_INFO" xml:space="preserve">
+    <value>To stream via mpv you must provide the path of its main executable (called mpv.com for windows)</value>
+  </data>
+  <data name="OPTIONS" xml:space="preserve">
+    <value>options</value>
+  </data>
+  <data name="PATH" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="PLAYSTREAM_SCALING" xml:space="preserve">
+    <value>Use anisotropic filtering for scaling (direct3d renderer only)</value>
+  </data>
+  <data name="PLAYSTREAM_USEACC" xml:space="preserve">
+    <value>Use hardware acceleration for decoding (not recommended as auto detection may fail, it's better to use the --decoder option from cmd)</value>
+  </data>
+  <data name="RTSPSTREAM_INFO" xml:space="preserve">
+    <value>To connect to the RTSP stream open a video player (mpv is recommended) and connect to rtsp://127.0.0.1:6666/ (this is the fixed address of your pc, you don't need to change it)</value>
+  </data>
+  <data name="RTSPSTREAM_LAUNCHINFO" xml:space="preserve">
+    <value>Launch the stream automatically ? Select Mpv's main executable (Optional)</value>
+  </data>
+  <data name="RTSPSTREAM_LOWLAT" xml:space="preserve">
+    <value>RTSP low-latency mode</value>
+  </data>
+  <data name="RTSPSTREAM_UNTIMED" xml:space="preserve">
+    <value>Do not wait for synchronization (--untimed)</value>
   </data>
 </root>
