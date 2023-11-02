@@ -219,7 +219,7 @@
             this.LBL_Infotext.Location = new System.Drawing.Point(1, 2);
             this.LBL_Infotext.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LBL_Infotext.Name = "LBL_Infotext";
-            this.LBL_Infotext.Size = new System.Drawing.Size(556, 45);
+            this.LBL_Infotext.Size = new System.Drawing.Size(556, 68);
             this.LBL_Infotext.TabIndex = 0;
             this.LBL_Infotext.Text = "This utility will configure the SysDVR-Client command line automatically.\r\nIf you're not sure what to do here check out the guide on GitHub";
             this.LBL_Infotext.TextAlign = System.Drawing.ContentAlignment.TopCenter;
@@ -228,7 +228,7 @@
             // 
             this.LLBL_ProjectWiki.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.LLBL_ProjectWiki.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.LLBL_ProjectWiki.Location = new System.Drawing.Point(1, 45);
+            this.LLBL_ProjectWiki.Location = new System.Drawing.Point(1, 70);
             this.LLBL_ProjectWiki.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.LLBL_ProjectWiki.Name = "LLBL_ProjectWiki";
             this.LLBL_ProjectWiki.Size = new System.Drawing.Size(556, 20);
@@ -446,7 +446,7 @@
             // 
             this.CMB_Languages.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_Languages.FormattingEnabled = true;
-            this.CMB_Languages.Location = new System.Drawing.Point(448, 50);
+            this.CMB_Languages.Location = new System.Drawing.Point(448, 66);
             this.CMB_Languages.Name = "CMB_Languages";
             this.CMB_Languages.Size = new System.Drawing.Size(109, 23);
             this.CMB_Languages.TabIndex = 11;
@@ -467,9 +467,9 @@
             this.PNL_Header.Controls.Add(this.CMB_Languages);
             this.PNL_Header.Controls.Add(this.LBL_Infotext);
             this.PNL_Header.Controls.Add(this.LLBL_ProjectWiki);
-            this.PNL_Header.Location = new System.Drawing.Point(170, 12);
+            this.PNL_Header.Location = new System.Drawing.Point(170, 4);
             this.PNL_Header.Name = "PNL_Header";
-            this.PNL_Header.Size = new System.Drawing.Size(560, 78);
+            this.PNL_Header.Size = new System.Drawing.Size(560, 94);
             this.PNL_Header.TabIndex = 13;
             // 
             // Main
