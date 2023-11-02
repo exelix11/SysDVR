@@ -34,7 +34,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
 	  <PackageReference Include="PInvoke.SetupApi" Version="0.7.124" />
