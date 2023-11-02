@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
@@ -59,7 +60,7 @@ namespace SysDVRClientGUI.ViewLogic
 
                 Random rnd = new();
                 this.nextAnimationStart = (short)(10 + rnd.Next(4, 24));
-                Debug.Print($"Next animation in {this.nextAnimationStart}");
+                Log.Debug($"Next animation in {this.nextAnimationStart}");
             }
         }
 
@@ -72,7 +73,7 @@ namespace SysDVRClientGUI.ViewLogic
             {
                 Thread.CurrentThread.Name = "Logo Bounce Animation";
                 Stopwatch s = new();
-                Debug.Print($"Logo Bounce Animation started...");
+                Log.Debug($"Logo Bounce Animation started...");
                 s.Start();
 
                 Point currentLocation = new(this.animatedPbx.Location.X, this.animatedPbx.Location.Y);
@@ -113,7 +114,7 @@ namespace SysDVRClientGUI.ViewLogic
                 }
 
                 s.Stop();
-                Debug.Print($"Logo Bounce Animation finished within \"{s.Elapsed:ss\\:ffffff}\"");
+                Log.Debug($"Logo Bounce Animation finished within \"{s.Elapsed:ss\\:ffffff}\"");
                 this.isAnimationRunning = false;
             }, this.animationCts.Token);
         }

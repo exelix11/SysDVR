@@ -6,11 +6,19 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using static SysDVRClientGUI.Logic.Constants;
+using Serilog;
+using Serilog.Events;
+using System.Reflection;
 
 namespace SysDVRClientGUI
 {
     static class Program
     {
+#if DEBUG
+        public readonly static LogEventLevel level = LogEventLevel.Verbose;
+#else
+        public readonly static LogEventLevel level = LogEventLevel.Information;
+#endif
         public static Icon ApplicationIcon { get; private set; }
         /// <summary>
         /// Punto di ingresso principale dell'applicazione.
@@ -30,6 +38,24 @@ namespace SysDVRClientGUI
                 // Doesn't really matter if this fails
             }
 
+            Assembly assembly = typeof(Program).Assembly;
+            string appPath = Path.GetDirectoryName(typeof(Program).Assembly.Location);
+            string logFileSuffix = null;
+#if DEBUG
+            logFileSuffix = "_debug";
+#endif
+
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("application", assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title)
+                .Enrich.WithProperty("version", assembly.GetName().Version.ToString())
+                .MinimumLevel.Verbose()
+                .WriteTo.Debug(restrictedToMinimumLevel: level)
+                .WriteTo.File($"{Path.Combine(appPath, "log", $"clientgui{logFileSuffix}.log")}", rollOnFileSizeLimit: true, fileSizeLimitBytes: 1024000, restrictedToMinimumLevel: level)
+                .CreateLogger();
+
+            Log.Verbose("Logger initialized");
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Form mainForm;
@@ -38,10 +64,12 @@ namespace SysDVRClientGUI
             if (args.Length > 0 && args[0] == "--install-driver")
             {
                 mainForm = new DriverInstallForm(true);
+                Log.Information("Appliction start in \"--install-driver\" mode.");
             }
             else
             {
-                RuntimeStorage.Config = new(Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), USERCONFIG_FILE));
+                Log.Information("Normal application start");
+                RuntimeStorage.Config = new(Path.Combine(appPath, USERCONFIG_FILE));
                 RuntimeStorage.Config.Load();
                 mainForm = new Main();
             }

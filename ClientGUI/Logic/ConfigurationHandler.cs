@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -45,7 +46,7 @@ namespace SysDVRClientGUI.Logic
             }
             catch (Exception ex)
             {
-                Debug.Print($"Something went wrong: {ex.Message}");
+                Log.Debug($"Something went wrong: {ex.Message}");
                 File.Delete(this.ConfigFilePath);
                 this.Load();
             }

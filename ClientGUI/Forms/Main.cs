@@ -1,26 +1,24 @@
-﻿using SysDVRClientGUI.DriverInstall;
+﻿using Serilog;
+using SysDVRClientGUI.DriverInstall;
 using SysDVRClientGUI.Forms.DriverInstall;
 using SysDVRClientGUI.Logic;
+using SysDVRClientGUI.Models;
 using SysDVRClientGUI.ModesUI;
+using SysDVRClientGUI.ViewLogic;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using System.Globalization;
 using static SysDVRClientGUI.Logic.Constants;
 using static SysDVRClientGUI.Logic.HelperFunctions;
 using static SysDVRClientGUI.Resources.Resources;
-using SysDVRClientGUI.Models;
-using System.Threading.Tasks;
-using System.Drawing;
-using SysDVRClientGUI.ViewLogic;
 
 namespace SysDVRClientGUI.Forms
 {
@@ -49,9 +47,8 @@ namespace SysDVRClientGUI.Forms
         public Main()
         {
             this.InitializeComponent();
-#if DEBUG
-            this.IPA_AddressBox.IpAddressChanged += (o, e) => Debug.Print($"Selected ipv4 address is now: \"{e.IPAddressValue}\"");
-#endif
+            this.IPA_AddressBox.IpAddressChanged += (o, e) => Log.Debug($"Selected ipv4 address is now: \"{e.IPAddressValue}\"");
+
             this.Size = cbAdvOpt.Checked ? this.MaximumSize : this.MinimumSize;
             this.Text = $"{typeof(Main).Assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title} {GetVersionString()}";
             this.LoadUserSettings();
@@ -59,6 +56,7 @@ namespace SysDVRClientGUI.Forms
             this.CMB_Languages.DataSource = this.availableLanguages.DistinctBy(x => x.Value).ToArray();
             this.CMB_Languages.DisplayMember = "Value";
             this.CMB_Languages.SelectedItem = this.availableLanguages.FirstOrDefault(x => x.Key == Thread.CurrentThread.CurrentUICulture.IetfLanguageTag);
+            Log.Verbose($"Language initialized with \"{Thread.CurrentThread.CurrentUICulture.IetfLanguageTag}\"");
 
             this.ApplyLocalization();
             this.StreamTargetSelected(this.rbPlay, EventArgs.Empty);
@@ -434,6 +432,8 @@ namespace SysDVRClientGUI.Forms
             RuntimeStorage.Config.Configuration.AdvancedOptions.PrintLibUsbDebug = cbUsbLog.Checked;
 
             RuntimeStorage.Config.Save();
+
+            Log.Verbose($"User-Configuration saved");
         }
 
         private void rbSrcTcp_CheckedChanged(object sender, EventArgs e)
@@ -444,6 +444,8 @@ namespace SysDVRClientGUI.Forms
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.WriteUserSettings();
+            Log.Information($"Closing application");
+            Log.CloseAndFlush();
         }
 
         private bool firstRun = true;
@@ -457,6 +459,7 @@ namespace SysDVRClientGUI.Forms
 
             string langIdentifier = this.availableLanguages.FirstOrDefault(x => x.Key == ((KeyValuePair<string, string>)this.CMB_Languages.SelectedItem).Key).Key;
 
+            Log.Information($"Language switched to \"{langIdentifier}\"");
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(langIdentifier);
             this.ApplyLocalization();
         }

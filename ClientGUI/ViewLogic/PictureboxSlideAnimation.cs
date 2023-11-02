@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
@@ -57,7 +58,7 @@ namespace SysDVRClientGUI.ViewLogic
             {
                 Thread.CurrentThread.Name = "Logo Slide Animation";
                 Stopwatch s = new();
-                Debug.Print($"Logo Slide Animation {this.CurrentDirection} started...");
+                Log.Debug($"Logo Slide Animation {this.CurrentDirection} started...");
                 s.Start();
 
                 Point currentLocation = default;
@@ -89,7 +90,7 @@ namespace SysDVRClientGUI.ViewLogic
                 }
 
                 s.Stop();
-                Debug.Print($"Logo Slide Animation {this.CurrentDirection} finished within \"{s.Elapsed:ss\\:ffffff}\"");
+                Log.Debug($"Logo Slide Animation {this.CurrentDirection} finished within \"{s.Elapsed:ss\\:ffffff}\"");
                 this.isAnimationRunning = false;
             }, this.animationCts.Token);
         }
