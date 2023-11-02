@@ -40,7 +40,7 @@ namespace SysDVRClientGUI.ModesUI
             var mpv = TXT_MpvPath.Text;
 
             if (!string.IsNullOrEmpty(mpv) && !File.Exists(mpv))
-                throw new Exception($"{mpv} does not exist");
+                throw new FileNotFoundException($"{mpv} does not exist");
 
             var args = "rtsp://127.0.0.1:6666/";
 

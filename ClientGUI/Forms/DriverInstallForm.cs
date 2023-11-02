@@ -1,9 +1,8 @@
 ﻿using SysDVRClientGUI.DriverInstall;
-using static SysDVRClientGUI.Resources.Resources;
 using System;
-using System.Windows.Forms;
 using System.Reflection;
-using System.Threading;
+using System.Windows.Forms;
+using static SysDVRClientGUI.Resources.Resources;
 
 namespace SysDVRClientGUI.Forms.DriverInstall
 {

@@ -29,7 +29,7 @@ namespace SysDVRClientGUI.ModesUI
         public string GetClientCommandLine()
         {
             if (!File.Exists(TXT_MpvPath.Text))
-                throw new Exception($"{TXT_MpvPath.Text} does not exist");
+                throw new FileNotFoundException($"{TXT_MpvPath.Text} does not exist");
 
             return $"--mpv \"{TXT_MpvPath.Text}\"";
         }

@@ -104,7 +104,7 @@ namespace SysDVRClientGUI.ViewLogic
                         await WaitAndSetAsync();
                     }
 
-                    animationDelay = new(0,0,0,0,0, animationDelay.Microseconds + 380);
+                    animationDelay = new(0, 0, 0, 0, 0, animationDelay.Microseconds + 380);
                 }
 
                 while (bounceToY >= 1)

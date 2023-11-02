@@ -32,6 +32,7 @@ namespace SysDVRClientGUI.Forms
         readonly int DotnetMajorVersion;
         readonly bool DotnetIs32Bit;
 
+        private bool firstRun = true;
         private readonly Dictionary<string, string> availableLanguages = new()
         {
             { "en-EN","English" },
@@ -322,7 +323,7 @@ namespace SysDVRClientGUI.Forms
                 args.Append("--no-audio ");
 
             args.Append(CurrentControl.GetClientCommandLine());
-            if (args[args.Length - 1] != ' ')
+            if (args[^1] != ' ')
                 args.Append(' ');
 
             args.Append(this.GetExtraArgs());
@@ -476,7 +477,6 @@ namespace SysDVRClientGUI.Forms
             Log.CloseAndFlush();
         }
 
-        private bool firstRun = true;
         private void CMB_Languages_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (firstRun)

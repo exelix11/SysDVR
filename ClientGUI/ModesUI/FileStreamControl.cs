@@ -26,7 +26,7 @@ namespace SysDVRClientGUI.ModesUI
         public string GetClientCommandLine()
         {
             if (string.IsNullOrWhiteSpace(tbVideoFile.Text))
-                throw new Exception("Select a valid path to save the video data first");
+                throw new ArgumentException("Select a valid path to save the video data first");
 
             return $"--file \"{tbVideoFile.Text}\"";
         }

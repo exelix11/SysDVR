@@ -1,14 +1,14 @@
-﻿using SysDVRClientGUI.Forms;
+﻿using Serilog;
+using Serilog.Events;
+using SysDVRClientGUI.Forms;
 using SysDVRClientGUI.Forms.DriverInstall;
 using SysDVRClientGUI.Logic;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 using static SysDVRClientGUI.Logic.Constants;
-using Serilog;
-using Serilog.Events;
-using System.Reflection;
 
 namespace SysDVRClientGUI
 {

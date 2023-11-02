@@ -22,6 +22,7 @@
     <Title>SysDVR-Client GUI</Title>
     <AssemblyTitle>SysDVR-Client GUI</AssemblyTitle>
     <DefaultLanguage>en-EN</DefaultLanguage>
+    <NeutralLanguage>en</NeutralLanguage>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Serilog;
 using System;
-using System.Diagnostics;
 using System.IO;
 
 namespace SysDVRClientGUI.Logic
