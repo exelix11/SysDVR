@@ -15,7 +15,7 @@ namespace SysDVR.Client.GUI
         bool HasDiskPermission;
         bool CanRequesDiskPermission;
 
-        StreamingOptions options = new StreamingOptions();
+        StreamKind StreamMode = StreamKind.Both;
 
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
@@ -39,6 +39,8 @@ namespace SysDVR.Client.GUI
 
             if (DynamicLibraryLoader.CriticalWarning != null)
                 Popups.Open(initErrorPopup);
+
+            StreamMode = Program.Options.Streaming.Kind;
         }
 
         void UpdateDiskPermissionStatus()
@@ -101,9 +103,9 @@ namespace SysDVR.Client.GUI
             }
 
             if (usb)
-                Program.Instance.PushView(new UsbDevicesView(options));
+                Program.Instance.PushView(new UsbDevicesView(BuildOptions()));
             else if (wifi)
-                Program.Instance.PushView(new NetworkScanView(options));
+                Program.Instance.PushView(new NetworkScanView(BuildOptions()));
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
@@ -188,11 +190,18 @@ namespace SysDVR.Client.GUI
 
         void ChannelRadio(string name, StreamKind target)
         {
-            if (ImGui.RadioButton(name, options.Kind == target))
-                options.Kind = target;
+            if (ImGui.RadioButton(name, StreamMode == target))
+                StreamMode = target;
         }
 
-        bool ModeButton(Image image, string title, int width, int height)
+        StreamingOptions BuildOptions() 
+        {
+            var opt = Program.Options.Streaming.Clone();
+            opt.Kind = StreamMode;
+            return opt;
+        }
+
+		bool ModeButton(Image image, string title, int width, int height)
         {
             float InnerPadding = 15 * uiScale;
 

@@ -11,7 +11,7 @@ namespace SysDVR.Client.GUI
 	internal class OptionsView : View
 	{
 		// Support classes
-		record struct Opt<T>(string Name, T value);
+		record struct Opt<T>(string Name, T Value);
 
 		class ComboEnum<T>
 		{
@@ -28,7 +28,7 @@ namespace SysDVR.Client.GUI
 				Label = Encoding.UTF8.GetBytes(label);
 
 				this.values = values;
-				CurrentItem = Array.FindIndex(values, x => x.value.Equals(current));
+				CurrentItem = Array.FindIndex(values, x => x.Value.Equals(current));
 
 				// Precompute labels as utf8 for ImGui
 				var lengths = values.Select(x => Encoding.UTF8.GetByteCount(x.Name) + 1).ToArray();
@@ -51,7 +51,14 @@ namespace SysDVR.Client.GUI
 					ref CurrentItem, 
 					in MemoryMarshal.GetReference(ValuesUtf8Encoded.Span), 
 					-1);
-				return ret != 0;
+
+				if (ret != 0)
+				{
+					outval = values[CurrentItem].Value;
+					return true;
+				}
+
+				return false;
 			}
 		}
 
@@ -111,7 +118,6 @@ namespace SysDVR.Client.GUI
 		}
 
 		// Instance state 
-		readonly Options opt = Program.Options;
 
 		readonly ComboEnum<ScaleMode> ScaleModes = new("Scale mode", new Opt<ScaleMode>[]
 			{
@@ -162,11 +168,13 @@ namespace SysDVR.Client.GUI
 			ImGui.TextWrapped("These settings are automatically applied for the current session, you can however save them to disk so they become persistent");
 
 			SaveCenter.StartHere();
-			ImGui.Button("Go back");
+			if (ImGui.Button("Go back"))
+				Program.Instance.PopView();
 			ImGui.SameLine();
 			ImGui.Button("Save to disk");
 			ImGui.SameLine();
-			ImGui.Button("Reset defaults");
+			if (ImGui.Button("Reset defaults"))
+				Program.Options = new Options();
 			SaveCenter.EndHere();
 
 			Gui.CenterText("Some changes may require to restart SysDVR");
@@ -176,7 +184,7 @@ namespace SysDVR.Client.GUI
 			{
 				ImGui.Indent();
 
-				ImGui.Checkbox("Hide console serials from GUI", ref opt.HideSerials);
+				ImGui.Checkbox("Hide console serials from GUI", ref Program.Options.HideSerials);
 				ScaleModes.Draw(ref Program.Options.RendererScale);
 				AudioModes.Draw(ref Program.Options.AudioPlayerMode);
 
