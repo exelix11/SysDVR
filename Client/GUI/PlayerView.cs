@@ -110,7 +110,9 @@ namespace SysDVR.Client.GUI
         public PlayerView(PlayerManager manager)
         {
             // Adaptive rendering causes a lot of stuttering, for now avoid it in the video player
-            RenderMode = FramerateCapOptions.Target(36);
+            RenderMode = 
+                Program.Options.UncapStreaming ? FramerateCapOptions.Uncapped() :
+                FramerateCapOptions.Target(36);
 
             Popups.Add(quitConfirm);
             Popups.Add(fatalError);

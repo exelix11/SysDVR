@@ -5,7 +5,6 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using SysDVR.Client.Core;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Linq;
 using SDL2;
 using System.Diagnostics;
