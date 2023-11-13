@@ -30,7 +30,7 @@ namespace SysDVR.Client.GUI.Components
     internal class FramerateCap
     {
         // Override for debug
-        public bool NeverCap = false;
+        public bool NeverCap = Program.Options.UncapGUI;
         public FramerateCapOptions.CapMode CapMode => NeverCap ? FramerateCapOptions.CapMode.Uncapped : opt.Mode;
 
         FramerateCapOptions opt;
