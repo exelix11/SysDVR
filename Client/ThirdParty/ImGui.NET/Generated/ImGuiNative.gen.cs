@@ -102,7 +102,9 @@ namespace ImGuiNET
         public static extern byte igCombo_Str_arr(byte* label, int* current_item, byte** items, int items_count, int popup_max_height_in_items);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte igCombo_Str(byte* label, int* current_item, byte* items_separated_by_zeros, int popup_max_height_in_items);
-        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+		[DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+		public static extern byte igCombo_Str(in byte label, ref int current_item, in byte items_separated_by_zeros, int popup_max_height_in_items);
+		[DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr igCreateContext(ImFontAtlas* shared_font_atlas);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte igDebugCheckVersionAndDataLayout(byte* version_str, uint sz_io, uint sz_style, uint sz_vec2, uint sz_vec4, uint sz_drawvert, uint sz_drawidx);
@@ -720,6 +722,8 @@ namespace ImGuiNET
         public static extern void igTableSetupScrollFreeze(int cols, int rows);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern void igText(byte* fmt);
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void igText(in byte fmt);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern void igTextColored(Vector4 col, byte* fmt);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]

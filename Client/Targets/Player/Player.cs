@@ -54,8 +54,9 @@ namespace SysDVR.Client.Targets.Player
 
             var useCompat = Program.Options.AudioPlayerMode switch
             {
-                SDLAudioMode.Enable => true,
-                SDLAudioMode.Disable => false,
+                SDLAudioMode.Compatible => true,
+                SDLAudioMode.Default => false,
+                // Currently only mac os seems to need the compatible mode by default
                 _ => RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
             };
 

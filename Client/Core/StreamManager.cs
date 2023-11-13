@@ -13,14 +13,14 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.Core
 {
-    enum StreamKind
+    public enum StreamKind
     {
         Both,
         Video,
         Audio
     };
 
-    class StreamingOptions 
+    public class StreamingOptions 
     {
         public StreamKind Kind = StreamKind.Both;
         public int AudioBatching = 2;
@@ -30,10 +30,12 @@ namespace SysDVR.Client.Core
         public bool HasVideo => Kind is StreamKind.Video or StreamKind.Both;
         public bool HasAudio => Kind is StreamKind.Audio or StreamKind.Both;
 
-        public void Validate() 
+        public bool Validate() 
         {
             if (AudioBatching < 0 || AudioBatching > 2)
-                throw new Exception("Invalid audio batching value");
+                return false;
+
+            return true;
         }
     }
 
@@ -81,6 +83,14 @@ namespace SysDVR.Client.Core
             _buffer = buf;
             refcount = 1;
         }
+
+#if DEBUG
+        ~PoolBuffer()
+        {
+			if (refcount != 0)
+				throw new Exception("Buffer was not freed");
+		}
+#endif
 
         public Span<byte> Span =>
             new Span<byte>(RawBuffer, 0, Length);

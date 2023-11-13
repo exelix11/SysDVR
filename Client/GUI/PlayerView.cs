@@ -10,6 +10,7 @@ using SysDVR.Client.Targets;
 
 using static SDL2.SDL;
 using SysDVR.Client.Targets.FileOutput;
+using SysDVR.Client.GUI.Components;
 
 namespace SysDVR.Client.GUI
 {
@@ -414,8 +415,8 @@ namespace SysDVR.Client.GUI
             // Bypass imgui for this
             SDL_RenderCopy(Program.Instance.SdlRenderer, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
 
-            // Signal we're presenting something to SDL to kick the decding thread
-            // We don't care if we didn't actually decoded anything we just do it here
+            // Signal we're presenting something to SDL to kick the decoding thread
+            // We don't care if we didn't actually decode anything we just do it here
             // to do this on every vsync to avoid arbitrary sleeps on the other side
             Video.Decoder.OnFrameEvent.Set();
         }
@@ -426,13 +427,6 @@ namespace SysDVR.Client.GUI
 
             var w = (int)Program.Instance.WindowSize.X;
             var h = (int)Program.Instance.WindowSize.Y;
-
-            // TODO: Verify what's the state of this in 6.0
-            // Scaling workaround for OSX, SDL_WINDOW_ALLOW_HIGHDPI doesn't seem to work
-            //SDL_GetRendererOutputSize(Program.SdlRenderer, out int pixelWidth, out int pixelHeight);
-            //float scaleX = pixelWidth / (float)w;
-            //float scaleY = pixelHeight / (float)h;
-            //SDL_RenderSetScale(SDL.Renderer, scaleX, scaleY);
 
             if (w >= h * Ratio)
             {
