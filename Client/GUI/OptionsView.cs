@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using SysDVR.Client.Core;
+using SysDVR.Client.Platform;
 using System;
 using System.IO;
 using System.Linq;
@@ -159,7 +160,12 @@ namespace SysDVR.Client.GUI
 		{
 			PathInput.Configure(message, currentValue, setvalue);
 			Popups.Open(PathInput.Popup);
-		}		
+		}
+
+		void SaveOptions() 
+		{
+			SystemUtil.StoreSettingsString(Program.Options.SerializeToJson());
+		}
 
 		public override void Draw()
 		{
@@ -170,11 +176,18 @@ namespace SysDVR.Client.GUI
 			SaveCenter.StartHere();
 			if (ImGui.Button("Go back"))
 				Program.Instance.PopView();
+			
 			ImGui.SameLine();
-			ImGui.Button("Save to disk");
+			if (ImGui.Button("Save to disk"))
+				SaveOptions();
+
 			ImGui.SameLine();
 			if (ImGui.Button("Reset defaults"))
-				Program.Options = new Options();
+			{
+				Program.Options = new();
+				SaveOptions();
+			}
+
 			SaveCenter.EndHere();
 
 			Gui.CenterText("Some changes may require to restart SysDVR");

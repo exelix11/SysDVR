@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace SysDVR.Client.Core
 {
@@ -66,7 +64,7 @@ namespace SysDVR.Client.Core
         public string GetFilePathForVideo()
         {
             var format = $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.mp4";
-            return Path.Combine("F:\\", format);
+            return Path.Combine(RecordingsPath, format);
         }
 
         public string GetFilePathForScreenshot()
@@ -121,5 +119,35 @@ namespace SysDVR.Client.Core
                 return LinuxFallbackPath("Pictures");
 #endif
         }
+
+        public string SerializeToJson() 
+        {
+            return JsonSerializer.Serialize(this, OptionsJsonSerializer.Default.SysDVROptions);
+		}
+
+        public static Options FromJson(string json)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<Options>(json, OptionsJsonSerializer.Default.SysDVROptions)!;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to deserialize options from json: " + ex);
+                return new Options();
+            }
+        }
+    }
+
+    // When using AOT we must use source generation for json serialization since reflection is not available
+    [JsonSourceGenerationOptions(
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+        IncludeFields = true, 
+        IgnoreReadOnlyProperties = true)]
+    [JsonSerializable(typeof(Options), TypeInfoPropertyName = "SysDVROptions")]
+    internal partial class OptionsJsonSerializer : JsonSerializerContext 
+    {
     }
 }
