@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -43,6 +45,23 @@ namespace SysDVR.Client.Platform
             }
             return true;
 #endif
+        }
+
+        const string SettingsFileName = "options.json";
+
+        public static string? LoadSettingsString() 
+        {
+            var file = Path.Combine(Resources.SettingsStorePath, SettingsFileName);
+            if (File.Exists(file))
+                return File.ReadAllText(file);
+            
+            return null;
+        }
+
+        public static void StoreSettingsString(string json) 
+        {
+			var file = Path.Combine(Resources.SettingsStorePath, SettingsFileName);
+			File.WriteAllText(file, json);
         }
     }
 }

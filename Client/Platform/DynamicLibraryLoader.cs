@@ -172,8 +172,6 @@ namespace SysDVR.Client.Platform
             if (!AndroidCheckDependencies(native, managed))
                throw new Exception("Native android dependencies are missing, possibly they are missing from the APK path. Note that on android SysDVR supports only arm64 builds.");
 #else
-            // TODO: All of this has to be re-tested since now we bundle our own dependencies
-            
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), BundledLibraryLoader);
 
             if (OperatingSystem.IsMacOS())

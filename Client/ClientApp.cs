@@ -259,18 +259,37 @@ public class ClientApp
         ImGui.GetIO().NativePtr->IniFilename = null;
     }
 
+    private void LoadSettings() 
+    {
+        try
+        {
+            var set = SystemUtil.LoadSettingsString();
+            if (set is null)
+                return;
+
+            Program.Options = Options.FromJson(set);
+            Console.WriteLine("Settings loaded");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load settings: {ex}");
+        }
+	}
+
     internal void Initialize() 
     {
-        Console.WriteLine("Initializing app");
+		Console.WriteLine("Initializing app");
 
-        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
+        LoadSettings();
+
+		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
 
         var flags = SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_PNG;
         SDL_image.IMG_Init(flags).AssertEqual((int)flags, SDL_image.IMG_GetError);
 
         SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
-        //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, Program.Options.ScaleHintForSDL);
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, Program.Options.ScaleHintForSDL);
         
         ImGui.CreateContext();
 

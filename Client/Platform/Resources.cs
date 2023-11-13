@@ -29,13 +29,13 @@ namespace SysDVR.Client.Platform
             var buf = new byte[len];
 
             var read = SDL.SDL_RWread(file, buf, 1, len);
+            SDL.SDL_RWclose(file);
+
             if (read != len)
                 throw new Exception($"Loading resource {path} failed: {SDL.SDL_GetError()}");
-
-            SDL.SDL_RWclose(file);
+            
             return buf;
         }
-
 
         static string BasePath = "";        
         static string ResourcePath(string x) => x;
@@ -83,17 +83,17 @@ namespace SysDVR.Client.Platform
             Program.Native.SysRequestFileAccess();
         }
 #else
-        static string BasePath = Path.Combine(AppContext.BaseDirectory, "runtimes");
-        
-        static string ResourcePath(string x) => Path.Combine(BasePath, "resources", x);
-        
-        public static byte[] ReadResouce(string path) => File.ReadAllBytes(path);
+		static string BasePath = Path.Combine(AppContext.BaseDirectory, "runtimes");
+		static string ResourcePath(string x) => Path.Combine(BasePath, "resources", x);
+
+		public static string SettingsStorePath => AppContext.BaseDirectory;
+
+		public static byte[] ReadResouce(string path) => File.ReadAllBytes(path);
 
         public static bool HasDiskAccessPermission() => true;
         public static bool CanRequestDiskAccessPermission() => true;
-        public static void RequestDiskAccessPermission() => throw new NotImplementedException();
+        public static void RequestDiskAccessPermission() { }
 #endif
-
         public static string RuntimesFolder => BasePath;
         public static string MainFont => ResourcePath("OpenSans.ttf");
         public static string LoadingImage => ResourcePath("loading.yuv");
