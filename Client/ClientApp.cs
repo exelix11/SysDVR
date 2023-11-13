@@ -4,6 +4,7 @@ using ImGuiNET;
 using SDL2;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI;
+using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Targets.Player;
 using System;

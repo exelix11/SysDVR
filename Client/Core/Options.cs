@@ -24,8 +24,8 @@ namespace SysDVR.Client.Core
 
     public enum SDLAudioMode 
     {
-        Enable,
-        Disable,
+        Compatible,
+        Default,
         Auto
     }
 
@@ -49,7 +49,10 @@ namespace SysDVR.Client.Core
         public ScaleMode RendererScale = ScaleMode.Linear;
         public SDLAudioMode AudioPlayerMode = SDLAudioMode.Auto;
 
-        public string ScaleHintForSDL => RendererScale switch
+        // Sysmodule options
+        public StreamingOptions Streaming = new();
+
+		public string ScaleHintForSDL => RendererScale switch
         {
             ScaleMode.Linear => "linear",
             ScaleMode.Nearest => "nearest",
@@ -60,7 +63,7 @@ namespace SysDVR.Client.Core
         public string GetFilePathForVideo()
         {
             var format = $"SysDVR_{DateTime.Now:yyyy_MM_dd_HH_mm_ss}.mp4";
-            return Path.Combine(RecordingsPath, format);
+            return Path.Combine("F:\\", format);
         }
 
         public string GetFilePathForScreenshot()

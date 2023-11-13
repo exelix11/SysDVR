@@ -9,19 +9,19 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SysDVR.Client.GUI
+namespace SysDVR.Client.GUI.Components
 {
     public class Image : IDisposable
     {
-        public readonly IntPtr Texture;
+        public readonly nint Texture;
         public readonly int Width;
         public readonly int Height;
 
         internal bool Disposed = false;
 
-        private Image(IntPtr texture)
+        private Image(nint texture)
         {
-            this.Texture = texture;
+            Texture = texture;
             SDL.SDL_QueryTexture(Texture, out _, out _, out Width, out Height);
             Program.Instance.OnExit += Dispose;
         }
@@ -29,7 +29,7 @@ namespace SysDVR.Client.GUI
         public static Image FromFile(string filename)
         {
             var tex = SDL_image.IMG_LoadTexture(Program.Instance.SdlRenderer, filename);
-            if (tex == IntPtr.Zero)
+            if (tex == nint.Zero)
                 throw new Exception($"Loading image {filename} failed: {SDL_image.IMG_GetError()}");
 
             return new Image(tex);
@@ -58,12 +58,12 @@ namespace SysDVR.Client.GUI
 
         public LazyImage(string filename)
         {
-            this.Filename = filename;
+            Filename = filename;
         }
 
-        public IntPtr Texture => Get().Texture;
+        public nint Texture => Get().Texture;
         public int Width { get; private set; }
-        public int Height {get; private set; }
+        public int Height { get; private set; }
 
         public Image Get()
         {
@@ -79,7 +79,7 @@ namespace SysDVR.Client.GUI
 
         static public implicit operator Image(LazyImage i) => i.Get();
 
-        public void Free() 
+        public void Free()
         {
             image?.Dispose();
             image = null;

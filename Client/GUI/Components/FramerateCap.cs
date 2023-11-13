@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SysDVR.Client.GUI
+namespace SysDVR.Client.GUI.Components
 {
-    public struct FramerateCapOptions 
+    public struct FramerateCapOptions
     {
         public static FramerateCapOptions Uncapped() => new() { Mode = CapMode.Uncapped };
         public static FramerateCapOptions Adaptive() => new() { Mode = CapMode.Adaptive };
@@ -37,23 +37,23 @@ namespace SysDVR.Client.GUI
         int eventCounter;
         uint lastTick;
 
-        public void SetMode(FramerateCapOptions mode) 
+        public void SetMode(FramerateCapOptions mode)
         {
             opt = mode;
-            
+
             if (opt.Mode == FramerateCapOptions.CapMode.Adaptive)
-                OnEvent(true); 
+                OnEvent(true);
         }
 
         // Mark an event as received, needed for adaptive mode.
         // Thread safety: may be called by any thread
-        public void OnEvent(bool important) 
+        public void OnEvent(bool important)
         {
             eventCounter = important ? 10 : 1;
         }
 
         // Called in the render loop, returns true if the frame should be skipped
-        public bool Cap() 
+        public bool Cap()
         {
             if (opt.Mode == FramerateCapOptions.CapMode.Uncapped || NeverCap)
                 return false;
@@ -65,7 +65,7 @@ namespace SysDVR.Client.GUI
                     eventCounter--;
                     return false;
                 }
-                
+
                 SDL.SDL_Delay(20);
                 return true;
             }

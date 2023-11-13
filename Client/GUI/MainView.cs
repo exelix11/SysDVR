@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using SysDVR.Client.Core;
+using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using System;
 using System.Numerics;
@@ -145,7 +146,9 @@ namespace SysDVR.Client.GUI
 
             ImGui.SameLine();
             if (ImGui.Button("Settings"))
-                Popups.Open(infoPoprup);
+            {
+                Program.Instance.PushView(new OptionsView());
+            }
             centerOptions.EndHere();
 
             DrawUnimplmentedPopup();
