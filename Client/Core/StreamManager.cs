@@ -37,7 +37,18 @@ namespace SysDVR.Client.Core
 
             return true;
         }
-    }
+
+        public StreamingOptions Clone() 
+        {
+            return new StreamingOptions
+            {
+				Kind = Kind,
+				AudioBatching = AudioBatching,
+				UseNALReplay = UseNALReplay,
+				UseNALReplayOnlyOnKeyframes = UseNALReplayOnlyOnKeyframes
+			};
+        }
+	}
 
     class PoolBuffer
     {
