@@ -133,7 +133,7 @@ namespace SysDVR.Client.Targets.Player
 
             DeviceID.AssertNotZero(SDL_GetError);
 
-            if (DebugOptions.Current.Log)
+            if (Program.Options.Debug.Log)
                 Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
 
             if (IsCompatiblePlayer)
@@ -189,7 +189,7 @@ namespace SysDVR.Client.Targets.Player
                 (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
                 StreamInfo.VideoWidth, StreamInfo.VideoHeight).AssertNotNull(SDL_GetError);
 
-            if (DebugOptions.Current.Log)
+            if (Program.Options.Debug.Log)
             {
                 var pixfmt = SDL_QueryTexture(tex, out var format, out var a, out var w, out var h);
                 Console.WriteLine($"SDL texture info: f = {SDL_GetPixelFormatName(format)} a = {a} w = {w} h = {h}");
@@ -358,7 +358,7 @@ namespace SysDVR.Client.Targets.Player
                 // On the first frame we get check if we need to use a converter
                 if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    if (DebugOptions.Current.Log)
+                    if (Program.Options.Debug.Log)
                         Console.WriteLine($"Decoder.CodecCtx uses pixel format {Decoder.CodecCtx->pix_fmt}");
 
                     converterFirstFrameCheck = true;

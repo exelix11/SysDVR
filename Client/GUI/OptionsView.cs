@@ -228,6 +228,15 @@ namespace SysDVR.Client.GUI
 
 				ImGui.Checkbox("Force SDL software rendering", ref Program.Options.ForceSoftwareRenderer);
 				ImGui.Checkbox("Use hardware-accelerated FFMPEG decoder", ref Program.Options.HardwareAccel);
+				ImGui.NewLine();
+				
+				ImGui.Checkbox("Print real-time streaming information", ref Program.Options.Debug.Stats);
+				ImGui.Checkbox("Enable verbose logging", ref Program.Options.Debug.Log);
+				ImGui.Checkbox("Disable Audio/Video synchronization", ref Program.Options.Debug.NoSync);
+				ImGui.NewLine();
+
+				ImGui.Checkbox("Analyze keyframe NALs during the stream", ref Program.Options.Debug.Keyframe);
+				ImGui.Checkbox("Analyze every NAL during the stream", ref Program.Options.Debug.Nal);
 
 				// TODO:
 				// ffmpeg decoder name

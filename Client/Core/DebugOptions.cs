@@ -10,59 +10,30 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
 {
-    public record DebugOptions(bool Stats, bool Log, bool Keyframe, bool Nal, bool Fps, bool NoSync, bool NoProt, bool DynLib)
+    public class DebugOptions
     {
-        public static DebugOptions Current = new DebugOptions(false, true, false, false, false, false, false, false);
+        // Trace the content of each packet to the console
+        public bool Stats;
 
-        public bool RequiresH264Analysis => Keyframe || Nal;
+        // Verbose logging
+        public bool Log;
 
-        public static void PrintDebugOptionsHelp() => Console.WriteLine(
-@" Available debug options in this version:
-    - `stats`: Print data transfer information for each received packet
-    - `log`: Enable printing loggin messages such as reconnections that are usually not shown
-    - `keyframe`: Parse the h264 video stream and print delay between keyframes
-    - `nal`: Parse the h264 video stream and print all NAL types received
-    - `nosync`: Disable audio/video synchronization
-    - `noprot`: Disable injection protection, this is used to prevent discord from crashing SysDVR but may cause issues with third party software
-");
+        // Decode the content of keyframes and measure delay
+        public bool Keyframe;
+       
+        // Decode the content of each nal and print the type
+        public bool Nal;
+        
+        // Disable audio/video synchronization
+        public bool NoSync;
 
-        public static DebugOptions Parse(string? options)
-        {
-            if (string.IsNullOrEmpty(options))
-                return Current;
+        // Disable anti-dll injection on windows
+        public bool NoProt;
 
-            bool stats = false, log = false, keyframe = false, nal = false, fps = false, nosync = false, noprot = false;
-            foreach (var opt in options.Split(','))
-            {
-                switch (opt)
-                {
-                    case "stats":
-                        stats = true;
-                        break;
-                    case "log":
-                        log = true;
-                        break;
-                    case "keyframe":
-                        keyframe = true;
-                        break;
-                    case "nal":
-                        nal = true;
-                        break;
-                    case "fps":
-                        fps = true;
-                        break;
-                    case "nosync":
-                        nosync = true;
-                        break;
-                    case "noprot":
-                        noprot = true;
-                        break;
-                    default:
-                        throw new Exception($"Unknown debug option: {opt}");
-                }
-            }
-            return new DebugOptions(stats, log, keyframe, nal, fps, nosync, noprot, false);
-        }
+        // Debug dynamic library loading
+        public bool DynLib;
+
+		public bool RequiresH264Analysis => Keyframe || Nal;
     }
 
     class FramerateCounter
@@ -97,9 +68,18 @@ namespace SysDVR.Client.Core
 
     class H264LoggingTarget : OutStream
     {
+        readonly bool checkNal;
+        readonly bool checkKeyframes;
+        readonly StringBuilder sb = new();
+
+        public H264LoggingTarget() 
+        {
+            checkNal = Program.Options.Debug.Nal;
+            checkKeyframes = Program.Options.Debug.Keyframe;
+        }
+
         DateTime lastKeyframe = DateTime.Now;
         DateTime lastNal = DateTime.Now;
-        StringBuilder sb = new();
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
@@ -110,7 +90,7 @@ namespace SysDVR.Client.Core
             foreach (var (start, length) in H264Util.EnumerateNals(block.ArraySegment))
             {
                 var nal = block.Span.Slice(start, length);
-                if (DebugOptions.Current.Nal)
+                if (checkNal)
                 {
                     if (firstInSeq)
                     {
@@ -124,7 +104,7 @@ namespace SysDVR.Client.Core
                     sb.AppendFormat("{0:x} ", nal[0] & 0x1F);
                 }
 
-                if (DebugOptions.Current.Keyframe)
+                if (checkKeyframes)
                 {
                     // IDR frame
                     if ((nal[0] & 0x1F) == 5)

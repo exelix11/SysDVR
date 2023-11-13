@@ -51,7 +51,7 @@ namespace SysDVR.Client.Sources
 		{
 			while (!Cancellation.IsCancellationRequested)
 			{
-				if (DebugOptions.Current.Log)
+				if (Program.Options.Debug.Log)
 					ReportMessage($"Sending USB connection request");
 				
 				try
