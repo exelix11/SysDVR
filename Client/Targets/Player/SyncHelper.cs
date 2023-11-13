@@ -17,7 +17,7 @@ namespace SysDVR.Client.Targets.Player
             if (!enable)
                 Enabled = false;
             else
-                Enabled = !DebugOptions.Current.NoSync;
+                Enabled = !Program.Options.Debug.NoSync;
         }
 
         ulong LastVideoTs;

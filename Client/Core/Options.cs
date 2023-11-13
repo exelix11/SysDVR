@@ -52,6 +52,9 @@ namespace SysDVR.Client.Core
         // Sysmodule options
         public StreamingOptions Streaming = new();
 
+        // Debug settings
+        public DebugOptions Debug = new();
+
 		public string ScaleHintForSDL => RendererScale switch
         {
             ScaleMode.Linear => "linear",

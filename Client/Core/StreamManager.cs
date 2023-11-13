@@ -253,7 +253,7 @@ namespace SysDVR.Client.Core
             if (Options.HasVideo && VideoTarget is null)
                 throw new Exception("The video target is missing");
 
-            if (DebugOptions.Current.RequiresH264Analysis && VideoTarget is not null)
+            if (Program.Options.Debug.RequiresH264Analysis && VideoTarget is not null)
                 VideoTarget.ChainStream(new H264LoggingTarget());
 
             StreamingTask = StreamTask();

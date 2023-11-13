@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Windows
 {
@@ -44,7 +39,7 @@ namespace SysDVR.Client.Windows
         {
             if (DllBlocklist.Contains(Path.GetFileNameWithoutExtension(filename)))
             {
-                if (DebugOptions.Current.Log)
+                if (Program.Options.Debug.Log)
                     Console.WriteLine($"Anti-Injection blocked {filename} from loading.");
                 return IntPtr.Zero;
             }
@@ -127,7 +122,7 @@ namespace SysDVR.Client.Windows
         {
             if (!OperatingSystem.IsWindows() || !Environment.Is64BitProcess)
             {
-                if (DebugOptions.Current.Log)
+                if (Program.Options.Debug.Log)
                     Console.WriteLine("[AntiInj] not enabled due to unsupported OS/CPU");
 
                 return;
@@ -144,7 +139,7 @@ namespace SysDVR.Client.Windows
             }
             catch 
             {
-                if (DebugOptions.Current.Log)
+                if (Program.Options.Debug.Log)
                     Console.WriteLine("[AntiInj] not enabled due to missing kernelbase exports (old windows ?)");
 
                 return;
@@ -159,7 +154,7 @@ namespace SysDVR.Client.Windows
             }
             catch 
             {
-                if (DebugOptions.Current.Log)
+                if (Program.Options.Debug.Log)
                     Console.WriteLine("[AntiInj] not enabled due to missing kernel32 exports, this should never happen....");
 
                 return;
@@ -167,7 +162,7 @@ namespace SysDVR.Client.Windows
 
             if (!EnsureMinWin(a) || !EnsureMinWin(w))
             {
-                if (DebugOptions.Current.Log)
+                if (Program.Options.Debug.Log)
                     Console.WriteLine("[AntiInj] not enabled due to unexpected kernel32 layout");
 
                 return;
@@ -177,7 +172,7 @@ namespace SysDVR.Client.Windows
             ApplyRedirection((ulong)a, Impl_LoadA, out A_Handle);
             ApplyRedirection((ulong)w, Impl_LoadW, out W_Handle);
 
-            if (DebugOptions.Current.Log)
+            if (Program.Options.Debug.Log)
                 Console.WriteLine("[AntiInj] Ready !");
         }
     }

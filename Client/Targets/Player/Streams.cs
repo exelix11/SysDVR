@@ -41,7 +41,7 @@ namespace SysDVR.Client.Targets.Player
     {
         // Only as debug info
         public int Pending;
-        readonly bool log = DebugOptions.Current.Log;        
+        readonly bool log = Program.Options.Debug.Log;        
 
         public StreamSynchronizationHelper SyncHelper;
 
@@ -234,7 +234,7 @@ namespace SysDVR.Client.Targets.Player
         unsafe public H264StreamTarget()
         {
             packet = av_packet_alloc();
-            log = DebugOptions.Current.Log;
+            log = Program.Options.Debug.Log;
         }
 
         unsafe ~H264StreamTarget()

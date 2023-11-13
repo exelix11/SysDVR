@@ -122,7 +122,7 @@ namespace SysDVR.Client.Platform
             var paths = FindNativeLibrary(libraryName)
                 .Concat(FindNativeLibrary("lib" + libraryName));
 
-            var debug = DebugOptions.Current.DynLib;
+            var debug = Program.Options.Debug.DynLib;
 
             foreach (var candidate in paths)
             {
