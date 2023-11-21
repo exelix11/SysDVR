@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace SysDVR.Client.Core
@@ -45,6 +44,9 @@ namespace SysDVR.Client.Core
         public delegate bool GetFileAccessPermissionInfo(out bool hasWriteAccess, out bool canRequestAccess);
 
         public delegate void RequestFileAccessPermission();
+
+		[return: MarshalAs(UnmanagedType.LPWStr)]
+		public delegate string GetSettingsStoragePath();
     }
 
     public enum NativeError : int 
@@ -62,7 +64,7 @@ namespace SysDVR.Client.Core
         // General info, must be populated
         public NativeContracts.PrintFunction Print;
 
-        // Threat management, keep private and only use it for EnsureThreadAttached()
+        // Thread management, keep private and only use it for EnsureThreadAttached()
         // TODO: Currently we have no way of detaching .NET async worker threads
         NativeContracts.NativeAttachThread NativeAttachThread;
         NativeContracts.NativeDetachThread NativeDetachThread;
@@ -80,16 +82,17 @@ namespace SysDVR.Client.Core
         public NativeContracts.SysGetDynamicLibInfo SysGetDynamicLibInfo;
 
         // System utilities, can be null
-        public NativeContracts.GetFileAccessPermissionInfo SysGetFileAccessInfo;
-        public NativeContracts.RequestFileAccessPermission SysRequestFileAccess;
+        public NativeContracts.GetFileAccessPermissionInfo GetFileAccessInfo;
+        public NativeContracts.RequestFileAccessPermission RequestFileAccess;
+        public NativeContracts.GetSettingsStoragePath GetSettingsStoragePath;
 
-        public bool PlatformSupportsUsb => 
+		public bool PlatformSupportsUsb => 
             UsbAcquireSnapshot != null && UsbReleaseSnapshot != null &&
             UsbGetSnapshotDeviceSerial != null && UsbOpenHandle != null &&
             UsbCloseHandle != null && UsbGetLastError != null;
 
         public bool PlatformSupportsDiskAccess =>
-            SysGetFileAccessInfo != null;
+            GetFileAccessInfo != null;
 
         [ThreadStatic]
         public static bool NativeThreadAttached;
@@ -142,6 +145,7 @@ namespace SysDVR.Client.Core
             public IntPtr SysGetDynamicLibInfo;
             public IntPtr SysGetFileAccessInfo;
             public IntPtr SysRequestFileAccess;
+            public IntPtr SysGetSettingsStoragePath;
         }
 
         public unsafe static NativeError Read(IntPtr ptr, out NativeInitBlock native)
@@ -183,9 +187,10 @@ namespace SysDVR.Client.Core
                 SysOpenURL = repr.SysOpenURL == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.SysOpenURL>(repr.SysOpenURL),
                 SysGetDynamicLibInfo = repr.SysGetDynamicLibInfo == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.SysGetDynamicLibInfo>(repr.SysGetDynamicLibInfo),
                 
-                SysGetFileAccessInfo = repr.SysGetFileAccessInfo == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.GetFileAccessPermissionInfo>(repr.SysGetFileAccessInfo),
-                SysRequestFileAccess = repr.SysRequestFileAccess == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.RequestFileAccessPermission>(repr.SysRequestFileAccess),
-            };
+                GetFileAccessInfo = repr.SysGetFileAccessInfo == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.GetFileAccessPermissionInfo>(repr.SysGetFileAccessInfo),
+                RequestFileAccess = repr.SysRequestFileAccess == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.RequestFileAccessPermission>(repr.SysRequestFileAccess),
+				GetSettingsStoragePath = repr.SysGetSettingsStoragePath == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.GetSettingsStoragePath>(repr.SysGetSettingsStoragePath),
+			};
 
             return NativeError.Success;
         }

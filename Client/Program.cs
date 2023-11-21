@@ -27,13 +27,14 @@ namespace SysDVR.Client
                 return result;
 
             NativeLogger.Setup();
+            Resources.SettingsStorePath = Native.GetSettingsStoragePath?.Invoke() ?? ""; 
             
             RunApp(new string[0]);
 
             return NativeError.Success;
         }
 #else
-        public static void Main(string[] args)
+		public static void Main(string[] args)
         {
             RunApp(args);
         }

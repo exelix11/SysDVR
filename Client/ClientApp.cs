@@ -297,13 +297,41 @@ public class ClientApp
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
         ImGui.GetIO().NavVisible = true;
 
-        // Fonts are loaded at double the resolution to reduce blurriness when scaling on high DPI
-        FontText = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(Resources.ReadResouce(Resources.MainFont), 30 * 2);
-        FontH1 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(Resources.ReadResouce(Resources.MainFont), 45 * 2);
-        FontH2 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(Resources.ReadResouce(Resources.MainFont), 40 * 2);
+        InitializeFonts();
 
         BackupDeafaultStyle();
     }
+
+    internal void InitializeFonts() 
+    {
+        // Fonts are loaded at double the resolution to reduce blurriness when scaling on high DPI
+        const int FontMultiplier = 2;
+        const int FontTextSize = 30 * FontMultiplier;
+        const int FontH1Size = 45 * FontMultiplier;
+        const int FontH2Size = 40 * FontMultiplier;
+
+        var fontData = Resources.ReadResouce(Resources.MainFont);
+		
+        unsafe
+		{
+			// TODO: Multilanguage support, we need to add unicode ranges of the languages we want to support
+			// However this also needs using a font file that includes them, we could try Google Noto but those come as multiple files
+			// and we would need to manually sort out which languages we want to support by unicode ranges
+			// There is also probably a limit in texture size cause using range 0x0020 to 0xFFFF seems to fail...
+            // For now let imgui figure it out on its own
+			ushort* fontRange = null; //stackalloc ushort[] { 0x0020, 0x1FFF, 0 };
+
+			fixed (byte* fontPtr = fontData)
+            {
+                FontText = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontTextSize, null, fontRange);
+                FontH1 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontH1Size, null, fontRange);
+                FontH2 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontH2Size, null, fontRange);
+
+                // fontPtr and FontRange must be kept pinned until the atlases have actually been built or else bad things will happen
+                ImGui.GetIO().Fonts.Build();
+            }
+		}
+	}
 
     internal void EntryPoint(string[] args)
     {
