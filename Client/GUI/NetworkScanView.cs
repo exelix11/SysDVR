@@ -20,7 +20,7 @@ namespace SysDVR.Client.GUI
         readonly List<DeviceInfo> devices = new List<DeviceInfo>();
         readonly byte[] IpAddressTextBuf = new byte[256];
         
-        string autoConnect;
+        string? autoConnect;
 
         Gui.Popup ipEnterPopup = new("Enter console IP address");
         Gui.Popup incompatiblePopup = new("Error");
@@ -69,7 +69,7 @@ namespace SysDVR.Client.GUI
         {
             scanner.StartScanning();
             
-            //if (Debugger.IsAttached)
+            if (Program.Options.Debug.Log)
                 devices.Add(DeviceInfo.Stub());
             
             base.EnterForeground();
@@ -83,14 +83,6 @@ namespace SysDVR.Client.GUI
                 devices.Clear();
 
             base.LeaveForeground();
-        }
-
-        public override void BackPressed()
-        {
-            if (ipEnterPopup.HandleBackButton())
-                return;
-
-            base.BackPressed();
         }
 
         void ButtonEnterIp()

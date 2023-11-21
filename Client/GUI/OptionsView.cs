@@ -120,11 +120,11 @@ namespace SysDVR.Client.GUI
 
 		// Instance state 
 
-		readonly ComboEnum<ScaleMode> ScaleModes = new("Scale mode", new Opt<ScaleMode>[]
+		readonly ComboEnum<SDLScaleMode> ScaleModes = new("Scale mode", new Opt<SDLScaleMode>[]
 			{
-				new("Linear (default)", ScaleMode.Linear),
-				new("Nearest (low overhead)", ScaleMode.Nearest),
-				new("Best (high quality, up to the system)", ScaleMode.Best)
+				new("Linear (default)", SDLScaleMode.Linear),
+				new("Nearest (low overhead)", SDLScaleMode.Nearest),
+				new("Best (high quality, up to the system)", SDLScaleMode.Best)
 			},
 			Program.Options.RendererScale
 		);
