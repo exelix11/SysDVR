@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ImGuiNET
@@ -402,6 +403,7 @@ namespace ImGuiNET
             ImFont* ret = ImGuiNative.ImFontAtlas_AddFontFromMemoryTTF((ImFontAtlas*)(NativePtr), native_font_data, font_size, size_pixels, font_cfg, glyph_ranges);
             return new ImFontPtr(ret);
         }
+        
         public ImFontPtr AddFontFromMemoryTTF(IntPtr font_data, int font_size, float size_pixels, ImFontConfigPtr font_cfg)
         {
             void* native_font_data = (void*)font_data.ToPointer();
@@ -410,15 +412,15 @@ namespace ImGuiNET
             ImFont* ret = ImGuiNative.ImFontAtlas_AddFontFromMemoryTTF((ImFontAtlas*)(NativePtr), native_font_data, font_size, size_pixels, native_font_cfg, glyph_ranges);
             return new ImFontPtr(ret);
         }
-        public ImFontPtr AddFontFromMemoryTTF(IntPtr font_data, int font_size, float size_pixels, ImFontConfigPtr font_cfg, IntPtr glyph_ranges)
-        {
-            void* native_font_data = (void*)font_data.ToPointer();
-            ImFontConfig* native_font_cfg = font_cfg.NativePtr;
-            ushort* native_glyph_ranges = (ushort*)glyph_ranges.ToPointer();
-            ImFont* ret = ImGuiNative.ImFontAtlas_AddFontFromMemoryTTF((ImFontAtlas*)(NativePtr), native_font_data, font_size, size_pixels, native_font_cfg, native_glyph_ranges);
-            return new ImFontPtr(ret);
-        }
-        public bool Build()
+
+		public ImFontPtr AddFontFromMemoryTTF(byte* font_data, int font_size, float size_pixels, ImFontConfigPtr font_cfg, ushort* glyph_ranges)
+		{
+			ImFontConfig* native_font_cfg = font_cfg.NativePtr;
+			ImFont* ret = ImGuiNative.ImFontAtlas_AddFontFromMemoryTTF((ImFontAtlas*)(NativePtr), font_data, font_size, size_pixels, native_font_cfg, glyph_ranges);
+			return new ImFontPtr(ret);
+		}
+
+		public bool Build()
         {
             byte ret = ImGuiNative.ImFontAtlas_Build((ImFontAtlas*)(NativePtr));
             return ret != 0;

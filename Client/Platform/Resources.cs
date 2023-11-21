@@ -45,10 +45,10 @@ namespace SysDVR.Client.Platform
             if (!Program.Native.PlatformSupportsDiskAccess)
                 return false;
 
-            if (Program.Native.SysGetFileAccessInfo(out var canWrite, out _))
+            if (Program.Native.GetFileAccessInfo(out var canWrite, out _))
                 return canWrite;
             else 
-                Console.WriteLine("SysGetFileAccessInfo failed");
+                Console.WriteLine("GetFileAccessInfo failed");
 
             return false;
         }
@@ -58,10 +58,10 @@ namespace SysDVR.Client.Platform
             if (!Program.Native.PlatformSupportsDiskAccess)
                 return false;
 
-            if (Program.Native.SysGetFileAccessInfo(out _, out var canRequest))
+            if (Program.Native.GetFileAccessInfo(out _, out var canRequest))
                 return canRequest;
             else
-                Console.WriteLine("SysGetFileAccessInfo failed");
+                Console.WriteLine("GetFileAccessInfo failed");
 
             return false;
         }
@@ -71,7 +71,7 @@ namespace SysDVR.Client.Platform
             if (!Program.Native.PlatformSupportsDiskAccess)
                 throw new NotImplementedException();
 
-            if (!Program.Native.SysGetFileAccessInfo(out var hasPermission, out var canRequest))
+            if (!Program.Native.GetFileAccessInfo(out var hasPermission, out var canRequest))
                 throw new NotImplementedException();
 
             if (hasPermission)
@@ -80,8 +80,10 @@ namespace SysDVR.Client.Platform
             if (!canRequest)
                 return;
 
-            Program.Native.SysRequestFileAccess();
+            Program.Native.RequestFileAccess();
         }
+        
+        public static string SettingsStorePath { get; internal set; }
 #else
 		static string BasePath = Path.Combine(AppContext.BaseDirectory, "runtimes");
 		static string ResourcePath(string x) => Path.Combine(BasePath, "resources", x);
