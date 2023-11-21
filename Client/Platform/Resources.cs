@@ -109,7 +109,7 @@ namespace SysDVR.Client.Platform
             try
             {
                 var s = ReadResouce(ResourcePath("buildid.txt"));
-                return Encoding.UTF8.GetString(s);
+                return Encoding.UTF8.GetString(s).Trim();
             }
             catch (Exception ex)
             {

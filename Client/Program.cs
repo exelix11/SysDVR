@@ -12,7 +12,8 @@ namespace SysDVR.Client
     public static class Program
     {
         public static ClientApp Instance;
-        public static string Version = "dev";
+        public static string Version = "6.0";
+        public static string BuildID = "unknown";
 
         public static Options Options = new();
 
@@ -66,20 +67,46 @@ namespace SysDVR.Client
             try
 #endif
             {
+#if DEBUG
                 Console.WriteLine("SysDVR Client entrypoint");
+#endif
 
                 if (Instance is null)
                 {
                     DynamicLibraryLoader.Initialize();
-                    
-                    Version = Resources.GetBuildId() ?? "<unknown commit>";
-                    Console.WriteLine("Detected build id: " + Version);
 
-                    Instance = new ClientApp();
+					BuildID = Resources.GetBuildId() ?? "<unknown commit>";
+                    
+                    Console.WriteLine($"SysDVR-Client {Version} - by exelix");
+					Console.WriteLine("https://github.com/exelix11/SysDVR");
+                    Console.WriteLine($"Build ID: {BuildID}\n");
+
+					var cli = CommandLineOptions.Parse(args);
+
+                    if (cli.Version)
+						return;
+					else if (cli.Help)
+					{
+						Console.WriteLine(CommandLineOptions.HelpMessage);
+						return;
+					}
+					else if (cli.DebugList)
+					{
+						Console.WriteLine(CommandLineOptions.GetDebugFlagsList());
+						return;
+					}
+					else if (cli.ShowDecoders)
+					{
+                        Targets.Player.LibavUtils.PrintAllCodecs();
+						return;
+					}
+
+
+					Instance = new ClientApp(cli);
                     Instance.Initialize();
                 }
 
-                Instance.EntryPoint(args);
+                Instance.EntryPoint();
             }
 #if !DEBUG
             catch (Exception ex)

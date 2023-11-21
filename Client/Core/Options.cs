@@ -13,7 +13,7 @@ namespace SysDVR.Client.Core
         None
     }
 
-    public enum ScaleMode 
+    public enum SDLScaleMode 
     {
         Linear,
         Nearest,
@@ -35,29 +35,33 @@ namespace SysDVR.Client.Core
         public string ScreenshotsPath = DefaultPlatformPicturePath();
         public bool HideSerials;
 
-        // Usb logging options
-        public UsbLogLevel UsbLogging = UsbLogLevel.Error;
+		// Usb logging options
+		[JsonIgnore]
+		public UsbLogLevel UsbLogging = UsbLogLevel.Error;
 
         // Ffmpeg options
         public bool HardwareAccel;
+        
+        // Mark as json ignore the ones that can only be set via command line
+        [JsonIgnore]
         public string? DecoderName;
 
         // SDL options
         public bool ForceSoftwareRenderer;
-        public ScaleMode RendererScale = ScaleMode.Linear;
+        public SDLScaleMode RendererScale = SDLScaleMode.Linear;
         public SDLAudioMode AudioPlayerMode = SDLAudioMode.Auto;
 
         // Sysmodule options
         public StreamingOptions Streaming = new();
 
-        // Debug settings
-        public DebugOptions Debug = new();
+		// Debug settings
+		public DebugOptions Debug = new();
 
 		public string ScaleHintForSDL => RendererScale switch
         {
-            ScaleMode.Linear => "linear",
-            ScaleMode.Nearest => "nearest",
-            ScaleMode.Best => "best",
+            SDLScaleMode.Linear => "linear",
+            SDLScaleMode.Nearest => "nearest",
+            SDLScaleMode.Best => "best",
             _ => throw new NotImplementedException(),
         };
 

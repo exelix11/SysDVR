@@ -11,6 +11,7 @@ namespace SysDVR.Client.GUI
     {
         readonly bool IsWindows;
         readonly string Heading;
+        readonly string SecondLine;
 
         bool HasDiskPermission;
         bool CanRequesDiskPermission;
@@ -33,7 +34,8 @@ namespace SysDVR.Client.GUI
             Popups.Add(initErrorPopup);
 
             Heading = "SysDVR-Client " + Program.Version;
-            IsWindows = OperatingSystem.IsWindows();
+            SecondLine = $"This is an experimental version ({Program.BuildID}), do not open issues on GitHub.";
+			IsWindows = OperatingSystem.IsWindows();
 
             UpdateDiskPermissionStatus();
 
@@ -69,7 +71,7 @@ namespace SysDVR.Client.GUI
             Gui.H1();
             Gui.CenterText(Heading);
             ImGui.PopFont();
-            Gui.CenterText("This is an experimental version, do not open github issues.");
+            Gui.CenterText(SecondLine);
 
             bool wifi = false, usb = false;
 
