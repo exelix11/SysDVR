@@ -59,7 +59,7 @@ echo Building client...
 git rev-parse --short HEAD > Resources\resources\buildid.txt
 
 cd ..
-dotnet publish -c Release -r win-x64 || goto error
+dotnet publish -c Release -r win-x64 /p:SysDvrTarget=windows || goto error
 
 del bin\Release\net7.0\win-x64\publish\*.pdb
 
