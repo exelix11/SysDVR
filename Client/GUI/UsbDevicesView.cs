@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using LibUsbDotNet;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
@@ -20,7 +21,7 @@ namespace SysDVR.Client.GUI
         readonly DvrUsbContext? context;
         readonly Gui.Popup incompatiblePopup = new("Error");
 
-        IReadOnlyList<DvrUsbDevice> devices;
+        DisposableCollection<DvrUsbDevice> devices;
 
         string? autoConnect;
         string? lastError;
@@ -50,8 +51,7 @@ namespace SysDVR.Client.GUI
 
         public override void Destroy()
         {
-            devices.ToList().ForEach(x => x.Dispose());
-            devices = new List<DvrUsbDevice>();
+            devices?.Dispose();
             base.Destroy();
         }
 
@@ -64,7 +64,7 @@ namespace SysDVR.Client.GUI
 
             try
             {
-                using var devices = context.FindSysdvrDevices();
+                devices = context.FindSysdvrDevices();
 
                 if (autoConnect != null)
                 {
@@ -72,7 +72,6 @@ namespace SysDVR.Client.GUI
                     {
                         if (autoConnect == "" || dev.Info.Serial.EndsWith(autoConnect, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            devices.ExcludeFromDispose(dev);
                             ConnectToDevice(dev);
                             break;
                         }
@@ -95,10 +94,14 @@ namespace SysDVR.Client.GUI
 
             autoConnect = null;
 
-            devices.Where(x => x != info).ToList().ForEach(x => x.Dispose());
-            devices = new List<DvrUsbDevice>();
+            if (devices is not null)
+            {
+                devices.ExcludeFromDispose(info);
+                devices.Dispose();
+                devices = null;
+            }
 
-            Program.Instance.PushView(new ConnectingView(info.Info, options));
+			Program.Instance.PushView(new ConnectingView(info.Info, options));
         }
 
         public override void Draw()

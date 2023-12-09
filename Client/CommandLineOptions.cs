@@ -227,6 +227,7 @@ Player options:
 	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-decoders
 	`--fullscreen` : Start in full screen mode. Press F11 to toggle manually
 	`--title <some text>` : Adds the argument string to the title of the player window
+	`--legacy` : Use the old player without the GUI, not all the other options are available when this is used
 	`--debug <debug options>` : Enables debug options. Multiple options are comma separated for example: --debug log,stats
 		When a debugger is attached `log` is enabled by default.
 
