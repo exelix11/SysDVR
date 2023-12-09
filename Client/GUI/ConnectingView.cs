@@ -107,7 +107,9 @@ namespace SysDVR.Client.GUI
 
         public override void Draw()
         {
-            Gui.BeginWindow("Connecting");
+            if (!Gui.BeginWindow("Connecting"))
+                return;
+
             ImGui.NewLine();
 
             Gui.H2();

@@ -66,7 +66,9 @@ namespace SysDVR.Client.GUI
 
         public override void Draw()
         {
-            Gui.BeginWindow("Main");
+            if (!Gui.BeginWindow("Main"))
+                return;
+
             Gui.CenterImage(Resources.Logo, 120);
             Gui.H1();
             Gui.CenterText(Heading);
@@ -141,14 +143,13 @@ namespace SysDVR.Client.GUI
             if (ImGui.Button("Open the github page"))
                 SystemUtil.OpenURL("https://github.com/exelix11/SysDVR");
 
-            if (IsWindows)
-            {
-                ImGui.SameLine();
-                if (ImGui.Button("Install USB driver"))
-                    Popups.Open(infoPoprup);
-            }
-
+#if WINDOWS
             ImGui.SameLine();
+            if (ImGui.Button("Install USB driver"))
+				Program.Instance.PushView(new Platform.Specific.Win.DirverInstallView());
+#endif
+
+			ImGui.SameLine();
             if (ImGui.Button("Settings"))
             {
                 Program.Instance.PushView(new OptionsView());

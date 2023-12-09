@@ -230,16 +230,18 @@ namespace SysDVR.Client.GUI
             ImGui.End();
         }
 
-        public static void BeginWindow(string name, ImGuiWindowFlags extraFlags = ImGuiWindowFlags.None)
+        public static bool BeginWindow(string name, ImGuiWindowFlags extraFlags = ImGuiWindowFlags.None)
         {
             ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
             ImGui.SetNextWindowPos(Vector2.Zero);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
-            ImGui.Begin(name, 
+            var v = ImGui.Begin(name, 
                 ((ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | 
                 ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBringToFrontOnFocus) &
                 ~ImGuiWindowFlags.NoScrollbar) | extraFlags);
             ImGui.PopStyleVar();
+
+            return v;
         }
 
         public static void CenterImage(Image image, int height)

@@ -9,7 +9,6 @@ using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using SysDVR.Client.Windows;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI;
 using ImGuiNET;
