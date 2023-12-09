@@ -17,8 +17,10 @@ namespace SysDVR.Client.Sources
 
         readonly DeviceInfo Info;
         readonly CancellationTokenSource Token;
-        readonly bool IsForPlayer;
         readonly StreamingOptions Options;
+
+        // TODO: Legacy non-player managers
+        //readonly bool IsForPlayer;
 
         void MessageReceived(string msg) 
         {
@@ -31,19 +33,9 @@ namespace SysDVR.Client.Sources
             Info = info;
             Token = token;
             Options = opt;
-
-            // TODO
-            IsForPlayer = true;
         }
 
-        BaseStreamManager GetManager(StreamingSource source)
-        {
-            if (IsForPlayer)
-                return new PlayerManager(source, Token);
-            else throw new Exception();
-        }
-
-        public async Task<BaseStreamManager> Connect()
+        public async Task<PlayerManager> ConnectForPlayer()
         {
             try
             {
@@ -68,7 +60,7 @@ namespace SysDVR.Client.Sources
                     source.OnMessage -= MessageReceived;
                 }
 
-                return GetManager(source);
+                return new PlayerManager(source, Token);
             }
             catch
             {

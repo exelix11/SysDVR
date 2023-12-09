@@ -52,7 +52,7 @@ namespace SysDVR.Client.GUI
             BaseStreamManager manager;
             try
             {
-                manager = await conn.Connect();
+                manager = await conn.ConnectForPlayer();
             }
             catch (Exception e)
             {

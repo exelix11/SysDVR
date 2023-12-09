@@ -11,6 +11,8 @@ using SysDVR.Client.Targets;
 using static SDL2.SDL;
 using SysDVR.Client.Targets.FileOutput;
 using SysDVR.Client.GUI.Components;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace SysDVR.Client.GUI
 {
@@ -18,7 +20,7 @@ namespace SysDVR.Client.GUI
     {
         public string Text;
         public bool ShouldRemove;
-        
+
         Timer disposeTimer;
 
         public PendingUiNotif(string text)
@@ -34,28 +36,207 @@ namespace SysDVR.Client.GUI
         }
     }
 
+    internal class PlayerCore
+    {
+        internal readonly AudioPlayer? Audio;
+        internal readonly VideoPlayer? Video;
+        internal readonly PlayerManager Manager;
+
+        readonly FramerateCounter fps = new();
+
+        SDL_Rect DisplayRect = new SDL_Rect();
+
+        public PlayerCore(PlayerManager manager)
+        {
+            Manager = manager;
+
+            // SyncHelper is disabled if there is only a single stream
+            // Note that it can also be disabled via a --debug flag and this is handled by the constructor
+            var sync = new StreamSynchronizationHelper(manager.HasAudio && manager.HasVideo);
+
+            if (manager.HasVideo)
+            {
+                Video = new(Program.Options.DecoderName, Program.Options.HardwareAccel);
+                Video.Decoder.SyncHelper = sync;
+                manager.VideoTarget.UseContext(Video.Decoder);
+
+                InitializeLoadingTexture();
+
+                fps.Start();
+            }
+
+            if (manager.HasAudio)
+                Audio = new(manager.AudioTarget);
+
+            manager.UseSyncManager(sync);
+        }
+
+        public void Start()
+        {
+            Manager.Begin();
+            Audio?.Resume();
+        }
+
+        public void Destroy()
+        {
+            Manager.Stop().GetAwaiter().GetResult();
+
+            // Dispose of unmanaged resources
+            Audio?.Dispose();
+            Video?.Dispose();
+
+            Manager.Dispose();
+        }
+
+        public void ResolutionChanged()
+        {
+            const double Ratio = (double)StreamInfo.VideoWidth / StreamInfo.VideoHeight;
+
+            var w = (int)Program.SdlCtx.WindowSize.X;
+            var h = (int)Program.SdlCtx.WindowSize.Y;
+
+            if (w >= h * Ratio)
+            {
+                DisplayRect.w = (int)(h * Ratio);
+                DisplayRect.h = h;
+            }
+            else
+            {
+                DisplayRect.h = (int)(w / Ratio);
+                DisplayRect.w = w;
+            }
+
+            DisplayRect.x = w / 2 - DisplayRect.w / 2;
+            DisplayRect.y = h / 2 - DisplayRect.h / 2;
+        }
+
+        int debugFps = 0;
+        public string GetDebugString()
+        {
+            var sb = new StringBuilder();
+
+            if (fps.GetFps(out var f))
+                debugFps = f;
+
+            sb.AppendLine($"Video fps: {debugFps} DispRect {DisplayRect.x} {DisplayRect.y} {DisplayRect.w} {DisplayRect.h}");
+            sb.AppendLine($"Video pending packets: {Manager.VideoTarget?.Pending}");
+            sb.AppendLine($"IsCompatibleAudioStream: {Manager.IsCompatibleAudioStream}");
+            return sb.ToString();
+        }
+
+        public string? GetChosenDecoder()
+        {
+            if (Program.Options.DecoderName is not null)
+            {
+                if (Video.DecoderName != Program.Options.DecoderName)
+                {
+                    return $"Decoder {Program.Options.DecoderName} not found, using {Video.DecoderName} instead.";
+                }
+                else
+                {
+                    return $"Using custom decoder {Program.Options.DecoderName}, in case of issues try disabling this option to use the default one.";
+                }
+            }
+
+            if (Video.AcceleratedDecotr)
+            {
+                return $"Using the {Video.DecoderName} hardware accelerated video decoder, in case of issues try to use the default one by disabling this option.";
+            }
+
+            return null;
+        }
+
+        // For imgui usage, this function draws the current frame
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DrawAsync()
+        {
+            if (Video is null)
+                return false;
+
+            var success = false;
+            if (Video.DecodeFrame())
+            {
+                fps.OnFrame();
+                success = true;
+            }
+
+            // Bypass imgui for this
+            SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
+
+            // Signal we're presenting something to SDL to kick the decoding thread
+            // We don't care if we didn't actually decode anything we just do it here
+            // to do this on every vsync to avoid arbitrary sleeps on the other side
+            Video.Decoder.OnFrameEvent.Set();
+
+            return true;
+        }
+
+        // For legacy player usage, this locks the thread until the next frame is ready
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DrawLocked()
+        {
+            if (Video is null)
+                return false;
+
+            if (!Video.DecodeFrame())
+                return false;
+
+			SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
+			Video.Decoder.OnFrameEvent.Set();
+
+            return true;
+		}
+
+        private unsafe void InitializeLoadingTexture()
+        {
+            Program.SdlCtx.BugCheckThreadId();
+
+            // This hardcodes YUV dats
+            if (Video.TargetTextureFormat != SDL_PIXELFORMAT_IYUV)
+                return;
+
+            byte[] data = null;
+
+            try
+            {
+                data = Resources.ReadResouce(Resources.LoadingImage);
+            }
+            catch
+            {
+                // Don't care
+            }
+
+            if (data == null)
+            {
+                // Hardcoded buffer size for a 1280x720 YUV texture
+                data = new byte[0x1517F0];
+                // Fill with YUV white
+                data.AsSpan(0, 0xE1000).Fill(0xFF);
+                data.AsSpan(0xE1000, 0x119400 - 0xE1000).Fill(0x7F);
+                data.AsSpan(0x119400).Fill(0x80);
+            }
+
+            fixed (byte* ptr = data)
+                SDL_UpdateYUVTexture(Video.TargetTexture, ref Video.TargetTextureSize,
+                    (nint)ptr, 1280, (nint)(ptr + 0xE1000), 640, (nint)(ptr + 0x119400), 640);
+        }
+    }
+
     internal class PlayerView : View
     {
         readonly bool HasAudio;
         readonly bool HasVideo;
 
-        readonly AudioPlayer? Audio;
-        readonly VideoPlayer? Video;
-
-        readonly FramerateCounter fps = new();
-
-        readonly PlayerManager Manager;
+        readonly PlayerCore player;
 
         bool OverlayAlwaysShowing = false;
 
-        SDL_Rect DisplayRect = new SDL_Rect();
-
         List<PendingUiNotif> notifications = new();
-        
+
         Gui.CenterGroup uiOptCenter;
         Gui.Popup quitConfirm = new("Confirm quit");
         Gui.Popup fatalError = new("Fatal error");
-        
+
         bool drawUi;
         string fatalMessage;
 
@@ -71,53 +252,32 @@ namespace SysDVR.Client.GUI
 
         public override void Created()
         {
-            Manager.Begin();
-            Audio?.Resume();
+            player.Start();
             base.Created();
         }
 
-        int fpsval;
         public override void DrawDebug()
         {
-            if (fps.GetFps(out var f))
-                    fpsval = f;
-            
-            ImGui.Text($"Video fps: {fpsval} DispRect {DisplayRect.x} {DisplayRect.y} {DisplayRect.w} {DisplayRect.h}");
-            ImGui.Text($"Video pending packets: {Manager.VideoTarget?.Pending}");
-            ImGui.Text($"IsCompatibleAudioStream: {Manager.IsCompatibleAudioStream}");
+            ImGui.Text(player.GetDebugString());
         }
 
-        void ShowPlayerOptionMessage() 
+        void ShowPlayerOptionMessage()
         {
-            if (Program.Options.DecoderName is not null)
-            {
-                if (Video.DecoderName != Program.Options.DecoderName)
-                {
-                    MessageUi($"Decoder {Program.Options.DecoderName} not found, using {Video.DecoderName} instead.");
-                }
-                else
-                {
-                    MessageUi($"Using custom decoder {Program.Options.DecoderName}, in case of issues try disabling this option to use the default one.");
-                }
-            }
-
-            if (Video.AcceleratedDecotr)
-            {
-                MessageUi($"Using the {Video.DecoderName} hardware accelerated video decoder, in case of issues try to use the default one by disabling this option.");
-            }
+            var dec = player.GetChosenDecoder();
+            if (dec is not null)
+                MessageUi(dec);
         }
 
         public PlayerView(PlayerManager manager)
         {
             // Adaptive rendering causes a lot of stuttering, for now avoid it in the video player
-            RenderMode = 
+            RenderMode =
                 Program.Options.UncapStreaming ? FramerateCapOptions.Uncapped() :
                 FramerateCapOptions.Target(36);
 
             Popups.Add(quitConfirm);
             Popups.Add(fatalError);
 
-            Manager = manager;
             HasVideo = manager.HasVideo;
             HasAudio = manager.HasAudio;
 
@@ -127,27 +287,10 @@ namespace SysDVR.Client.GUI
             manager.OnFatalError += Manager_OnFatalError;
             manager.OnErrorMessage += Manager_OnErrorMessage;
 
-            // SyncHelper is disabled if there is only a single stream
-            // Note that it can also be disabled via a --debug flag and this is handled by the constructor
-            var sync = new StreamSynchronizationHelper(HasAudio && HasVideo);
+            player = new PlayerCore(manager);
 
             if (HasVideo)
-            {
-                Video = new(Program.Options.DecoderName, Program.Options.HardwareAccel);
-                Video.Decoder.SyncHelper = sync;
-                manager.VideoTarget.UseContext(Video.Decoder);
-
                 ShowPlayerOptionMessage();
-
-                InitializeLoadingTexture();
-
-                fps.Start();
-            }
-
-            if (HasAudio)
-                Audio = new(manager.AudioTarget);
-
-            manager.UseSyncManager(sync);
 
             if (!HasVideo)
                 OverlayAlwaysShowing = true;
@@ -155,7 +298,7 @@ namespace SysDVR.Client.GUI
             drawUi = OverlayAlwaysShowing;
         }
 
-        private void Manager_OnErrorMessage(string obj) => 
+        private void Manager_OnErrorMessage(string obj) =>
             MessageUi(obj);
 
         private void Manager_OnFatalError(Exception obj)
@@ -178,7 +321,7 @@ namespace SysDVR.Client.GUI
             for (int i = 0; i < notifications.Count; i++)
             {
                 var notif = notifications[i];
-                ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1, 0, 0, 1));
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1, 0, 0, 1));
                 ImGui.TextWrapped(notif.Text);
                 ImGui.PopStyleColor();
                 if (notif.ShouldRemove)
@@ -222,11 +365,11 @@ namespace SysDVR.Client.GUI
                 base.BackPressed();
                 return;
             }
-            
+
             Popups.Open(quitConfirm);
         }
 
-        void DrawOverlayToggleArea() 
+        void DrawOverlayToggleArea()
         {
             if (OverlayAlwaysShowing)
                 return;
@@ -245,7 +388,7 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        void DrawOverlayMenu() 
+        void DrawOverlayMenu()
         {
             float OverlayY = ImGui.GetWindowSize().Y;
 
@@ -253,7 +396,7 @@ namespace SysDVR.Client.GUI
             {
                 OverlayY = OverlayY * 6 / 10;
                 ImGui.SetCursorPosY(OverlayY + ImGui.GetStyle().WindowPadding.Y);
-                
+
                 var width = ImGui.GetWindowSize().X;
 
                 var btnwidth = width * 3 / 6;
@@ -308,11 +451,11 @@ namespace SysDVR.Client.GUI
                 ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - ImGui.CalcTextSize("A").Y - ImGui.GetStyle().WindowPadding.Y);
                 Gui.CenterText("Tap anywhere to hide the overlay");
             }
-            
+
             ImGui.GetBackgroundDrawList().AddRectFilled(new(0, OverlayY), ImGui.GetWindowSize(), 0xe0000000);
         }
 
-        void DrawQuitModal() 
+        void DrawQuitModal()
         {
             if (quitConfirm.Begin())
             {
@@ -334,12 +477,12 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        void ButtonScreenshot() 
+        void ButtonScreenshot()
         {
-            try 
+            try
             {
                 var path = Program.Options.GetFilePathForScreenshot();
-                SDLCapture.ExportTexture(Video.TargetTexture, path);
+                SDLCapture.ExportTexture(player.Video.TargetTexture, path);
                 MessageUi("Screenshot saved to " + path);
             }
             catch (Exception ex)
@@ -356,17 +499,17 @@ namespace SysDVR.Client.GUI
         {
             if (videoRecorder is null)
             {
-                try 
+                try
                 {
                     var videoFile = Program.Options.GetFilePathForVideo();
 
                     Mp4VideoTarget? v = HasVideo ? new() : null;
-                    Mp4AudioTarget? a = HasAudio ? new() : null; 
+                    Mp4AudioTarget? a = HasAudio ? new() : null;
 
                     videoRecorder = new Mp4Output(videoFile, v, a);
                     videoRecorder.Start();
 
-                    Manager.ChainTargets(v, a);
+                    player.Manager.ChainTargets(v, a);
 
                     recordingButtonText = "Stop recording";
                     MessageUi("Recording to " + videoFile);
@@ -376,9 +519,9 @@ namespace SysDVR.Client.GUI
                     MessageUi("Failed to start recording: " + ex.ToString());
                 }
             }
-            else 
+            else
             {
-                Manager.UnchainTargets(videoRecorder.VideoTarget, videoRecorder.AudioTarget);
+                player.Manager.UnchainTargets(videoRecorder.VideoTarget, videoRecorder.AudioTarget);
                 videoRecorder.Stop();
                 videoRecorder.Dispose();
                 videoRecorder = null;
@@ -386,63 +529,31 @@ namespace SysDVR.Client.GUI
                 MessageUi("Finished recording");
             }
         }
-        
+
         void ButtonStats()
         {
             Program.Instance.ShowDebugInfo = !Program.Instance.ShowDebugInfo;
         }
-        
-        void ButtonQuit() 
+
+        void ButtonQuit()
         {
-            BackPressed(); 
+            BackPressed();
         }
 
-        void ButtonFullscreen() 
+        void ButtonFullscreen()
         {
             Program.SdlCtx.SetFullScreen(!Program.SdlCtx.IsFullscreen);
-		}
+        }
 
         unsafe public override void RawDraw()
         {
             base.RawDraw();
-
-            if (!HasVideo)
-                return;
-
-            if (Video.DecodeFrame())
-            {
-                fps.OnFrame();
-            }
-
-            // Bypass imgui for this
-            SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
-
-            // Signal we're presenting something to SDL to kick the decoding thread
-            // We don't care if we didn't actually decode anything we just do it here
-            // to do this on every vsync to avoid arbitrary sleeps on the other side
-            Video.Decoder.OnFrameEvent.Set();
+            player.DrawAsync();
         }
 
         public override void ResolutionChanged()
         {
-            const double Ratio = (double)StreamInfo.VideoWidth / StreamInfo.VideoHeight;
-
-            var w = (int)Program.SdlCtx.WindowSize.X;
-            var h = (int)Program.SdlCtx.WindowSize.Y;
-
-            if (w >= h * Ratio)
-            {
-                DisplayRect.w = (int)(h * Ratio);
-                DisplayRect.h = h;
-            }
-            else
-            {
-                DisplayRect.h = (int)(w / Ratio);
-                DisplayRect.w = w;
-            }
-
-            DisplayRect.x = w / 2 - DisplayRect.w / 2;
-            DisplayRect.y = h / 2 - DisplayRect.h / 2;
+            player.ResolutionChanged();
         }
 
         public override void Destroy()
@@ -452,46 +563,8 @@ namespace SysDVR.Client.GUI
             if (IsRecording)
                 ButtonToggleRecording();
 
-            Manager.Stop().GetAwaiter().GetResult();
-
-            // Dispose of unmanaged resources
-            Audio?.Dispose();
-            Video?.Dispose();
-
-            Manager.Dispose();
+            player.Destroy();
             base.Destroy();
-        }      
-
-        private unsafe void InitializeLoadingTexture()
-        {
-            Program.SdlCtx.BugCheckThreadId();
-
-            // This hardcodes YUV dats
-            if (Video.TargetTextureFormat != SDL_PIXELFORMAT_IYUV)
-                return;
-
-            byte[] data = null;
-
-            try {
-                data = Resources.ReadResouce(Resources.LoadingImage);
-            }
-            catch {
-                // Don't care
-            }
-            
-            if (data == null)
-            {
-                // Hardcoded buffer size for a 1280x720 YUV texture
-                data = new byte[0x1517F0];
-                // Fill with YUV white
-                data.AsSpan(0, 0xE1000).Fill(0xFF);
-                data.AsSpan(0xE1000, 0x119400 - 0xE1000).Fill(0x7F);
-                data.AsSpan(0x119400).Fill(0x80);
-            }
-
-            fixed (byte* ptr = data)
-                SDL_UpdateYUVTexture(Video.TargetTexture, ref Video.TargetTextureSize,
-                    (IntPtr)ptr, 1280, (IntPtr)(ptr + 0xE1000), 640, (IntPtr)(ptr + 0x119400), 640);
-        }        
+        }
     }
 }

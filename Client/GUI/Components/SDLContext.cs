@@ -71,8 +71,11 @@ namespace SysDVR.Client.GUI.Components
 			SDLThreadId = Thread.CurrentThread.ManagedThreadId;
 		}
 
-		public void CreateWindow(string windowTitle)
+		public void CreateWindow(string? windowTitle)
 		{
+			windowTitle = windowTitle is null ?
+				"SysDVR-Client" : $"{windowTitle} - SysDVR-Client";
+
 			BugCheckThreadId();
 			DestroyWindow();
 

@@ -16,7 +16,7 @@ namespace SysDVR.Client.Sources
 
         public override async Task Connect()
         {
-            await Task.Delay(500, Cancellation).ConfigureAwait(false);
+            await Task.Delay(2000, Cancellation).ConfigureAwait(false);
             connected = true;
         }
 

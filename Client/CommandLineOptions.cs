@@ -57,6 +57,10 @@ namespace SysDVR.Client
 			// Deprecated file option
 			new OptionNoArg("--file", x => x.FileDeprecationWarning = true),
 
+#if !ANDROID_LIB
+			// This only makes sense on desktop systems
+			new OptionNoArg("--legacy", x => x.LegacyPlayer= true),
+#endif
 		};
 
 		record DebugOptionArg(string Name, string Description, Action<DebugOptions> Handle);
@@ -155,6 +159,8 @@ namespace SysDVR.Client
 		public string? WindowTitle;
 		public UsbLogLevel? UsbLogging;
 
+		public bool LegacyPlayer;
+
 		public void ApplyOptionOverrides() 
 		{
 			DynamicLibraryLoader.LibLoaderOverride = LibDir;
@@ -177,6 +183,16 @@ namespace SysDVR.Client
 			}
 
 			Program.Options.DecoderName = RequestedDecoderName;
+		}
+
+		public void PrintDeprecationWarnings() 
+		{
+			if (FileDeprecationWarning)
+				Console.WriteLine("The --file option has been removed starting from SysDVR 6.0, you can use the gameplay recording feature whitin the new player instead.");
+			if (LowLatencyDeprecationWarning)
+				Console.WriteLine("The --mpv and --stdout options have been removed starting from SysDVR 6.0, you should use the default player.");
+			if (RTSPDeprecationWarning)
+				Console.WriteLine("The --rtsp options have been removed starting from SysDVR 6.0, to stram over RTSP use simple network mode from your console.");
 		}
 
 		public static string GetDebugFlagsList() 
