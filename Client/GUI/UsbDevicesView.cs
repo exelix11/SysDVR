@@ -105,7 +105,9 @@ namespace SysDVR.Client.GUI
         {
             var portrait = Program.Instance.IsPortrait;
 
-            Gui.BeginWindow("USB Devices list");
+            if (!Gui.BeginWindow("USB Devices list"))
+                return;
+
             var win = ImGui.GetWindowSize();
 
             Gui.CenterText("Connect over USB");

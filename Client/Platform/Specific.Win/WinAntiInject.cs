@@ -1,9 +1,10 @@
-﻿using System;
+﻿#if WINDOWS
+using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace SysDVR.Client.Windows
+namespace SysDVR.Client.Platform.Specific.Win
 {
     // https://github.com/exelix11/SysDVR/issues/235
     // Discord causes sysdvr to crash when it injects its dll
@@ -177,3 +178,4 @@ namespace SysDVR.Client.Windows
         }
     }
 }
+#endif

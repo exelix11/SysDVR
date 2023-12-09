@@ -106,7 +106,9 @@ namespace SysDVR.Client.GUI
         {
             var portrait = Program.Instance.IsPortrait;
 
-            Gui.BeginWindow("Network scanner");
+            if (!Gui.BeginWindow("Network scanner"))
+                return;
+
             var win = ImGui.GetWindowSize();
 
             Gui.CenterText("Searching for network devices...");

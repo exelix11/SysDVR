@@ -309,7 +309,8 @@ namespace SysDVR.Client.GUI
 
         public override void Draw()
         {
-            Gui.BeginWindow("Player", ImGuiWindowFlags.NoBackground);
+            if (!Gui.BeginWindow("Player", ImGuiWindowFlags.NoBackground))
+                return;
 
             if (!HasVideo)
             {

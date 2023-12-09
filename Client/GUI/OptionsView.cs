@@ -169,7 +169,8 @@ namespace SysDVR.Client.GUI
 
 		public override void Draw()
 		{
-			Gui.BeginWindow("Settings");
+			if (!Gui.BeginWindow("Settings"))
+				return;
 
 			ImGui.TextWrapped("These settings are automatically applied for the current session, you can however save them to disk so they become persistent");
 

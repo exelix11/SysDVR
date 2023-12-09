@@ -112,6 +112,10 @@ namespace SysDVR.Client
                     cli.PrintDeprecationWarnings();
                     cli.ApplyOptionOverrides();
 
+#if WINDOWS
+                    Platform.Specific.Win.AntiInject.Initialize();
+#endif
+
 					if (cli.LegacyPlayer)
                         LegacyInstance = new LegacyPlayer(cli);
                     else
@@ -121,7 +125,7 @@ namespace SysDVR.Client
                     }
                 }
 
-				if (LegacyInstance is not null)
+                if (LegacyInstance is not null)
                     LegacyInstance.EntryPoint();
                 else
 					Instance.EntryPoint();

@@ -41,11 +41,19 @@
 			</PropertyGroup>
 		</When>
 
-		<!--Windows and linux platforms-->
+		<When Condition="$(SysDvrTarget)=='linux'">
+			<PropertyGroup>
+				<OutputType>Exe</OutputType>
+				<TargetFramework>net7.0</TargetFramework>
+			</PropertyGroup>
+		</When>
+
+		<!--Windows -->
 		<Otherwise>
 			<PropertyGroup>
 				<OutputType>Exe</OutputType>
 				<TargetFramework>net7.0</TargetFramework>
+				<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
 			</PropertyGroup>
 		</Otherwise>
 	</Choose>
