@@ -12,22 +12,18 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using static SDL2.SDL;
 
 public class ClientApp
 {
     public static string Version;
 
-    public IntPtr SdlWindow { get; private set; }
-    public IntPtr SdlRenderer { get; private set; }
-
-    public bool IsFullscreen { get; private set; } = false;
-    public Vector2 WindowSize { get; private set; }
     public float UiScale { get; private set; }
 
     readonly CommandLineOptions CommandLine;
 
-    public ClientApp(CommandLineOptions args)
+    readonly SDLContext sdlCtx;
+
+	public ClientApp(CommandLineOptions args)
     {
         CommandLine = args;
 
@@ -42,21 +38,18 @@ public class ClientApp
 		LoadSettings();
         CommandLine.ApplyOptionOverrides();
         ShowDebugInfo = Program.Options.Debug.Log;
-	}
 
-#if ANDROID_LIB
-    // On android we must manually check for when imgui needs the keyboard and open it
-    // TODO: Will this also open the keyboard when there's a physical one connected?
-    bool usingTextinput;
-#endif
+        sdlCtx = new();
+        Program.SdlCtx = sdlCtx;
+	}
 
     public ImFontPtr FontH1 { get; private set; }
     public ImFontPtr FontH2 { get; private set; }
     public ImFontPtr FontText { get; private set; }
 
-    public bool IsPortrait { get; private set; }
+	public bool IsPortrait { get; private set; }
 
-    public event Action OnExit;
+	public event Action OnExit;
 
     // View state management
     Stack<View> Views = new();
@@ -68,24 +61,9 @@ public class ClientApp
     // Async actions that must take place on the main thread outside of the rendering loop
     List<Action> PendingActions = new();
 
-    // Detect bugs such as multiple view pushes in a row
-    int SDLThreadId;
-
     // Debug window state
     public bool ShowDebugInfo = false;
-    Vector2 PixelSize;
-    Vector2 WantedDPIScale;
-    bool IsWantedScale;
     bool ShowImguiDemo;
-
-    // SDL functions must only be called from its main thread
-    // but it may not always trigger an exception
-    // force it to crash so we know there's a bug
-    public void BugCheckThreadId() 
-    {
-        if (SDLThreadId != Thread.CurrentThread.ManagedThreadId)
-            throw new InvalidOperationException();
-    }
 
     unsafe void BackupDeafaultStyle()
     {
@@ -197,27 +175,13 @@ public class ClientApp
         Cap.OnEvent(important);
     }
 
-    public void ClearScrren()
-    {
-        SDL_SetRenderDrawColor(SdlRenderer, 0x0, 0x0, 0x0, 0xFF);
-        SDL_RenderClear(SdlRenderer);
-    }
-
-    public void SetFullScreen(bool enableFullScreen)
-    {
-        IsFullscreen = enableFullScreen;
-        SDL_SetWindowFullscreen(SdlWindow, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-        SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
-    }
-
     void DebugWindow()
     {
         ImGui.Begin("Info");
         ImGui.Text($"FPS: {ImGui.GetIO().Framerate} Cap {Cap.CapMode}");
-        ImGui.Text($"Window Size: {WindowSize} {(IsPortrait ? "Portrait" : "Landscape")}");
-        ImGui.Text($"Pixel Size: {PixelSize} DPI Scale: {WantedDPIScale} UiScale: {UiScale}");
-        ImGui.Text($"ThreadId: {SDLThreadId} View stack: {Views.Count}");
-        ImGui.Checkbox("Show imgui demo", ref ShowImguiDemo);
+		ImGui.Text(sdlCtx.GetDebugInfo());
+		ImGui.Text($"scale: {UiScale} mode: {(IsPortrait ? "Portrait" : "Landscape")} stack: {Views.Count}");
+		ImGui.Checkbox("Show imgui demo", ref ShowImguiDemo);
         CurrentView?.DrawDebug();
         ImGui.End();
 
@@ -227,13 +191,9 @@ public class ClientApp
 
     private void UpdateSize()
     {
-        var cur = WindowSize;
-        SDL_GetWindowSize(SdlWindow, out int w, out int h);
+        var w = sdlCtx.WindowSize.X;
+        var h = sdlCtx.WindowSize.Y;
 
-        if (cur == new Vector2(w, h))
-            return;
-
-        WindowSize = new(w, h);
         IsPortrait = w / (float)h < 1.3;
 
         // Apply scale so the biggest dimension matches 1280
@@ -247,24 +207,7 @@ public class ClientApp
             ImGui.GetIO().FontGlobalScale = UiScale / 2;
         }
 
-        // Scaling workaround for OSX, SDL_WINDOW_ALLOW_HIGHDPI doesn't seem to work
-        //if (OperatingSystem.IsMacOS())
-        {
-            SDL_GetRendererOutputSize(SdlRenderer, out int pixelWidth, out int pixelHeight);
-            PixelSize = new(pixelWidth, pixelHeight);
-
-            float dpiScaleX = pixelWidth / (float)w;
-            float spiScaleY = pixelHeight / (float)h;
-            WantedDPIScale = new(dpiScaleX, spiScaleY);
-
-            IsWantedScale = SDL_RenderSetScale(SdlRenderer, dpiScaleX, spiScaleY) == 0;
-        }
-
-        if (cur != WindowSize)
-        {
-            CurrentView?.ResolutionChanged();
-            SDL_RenderClear(SdlRenderer);
-        }
+        CurrentView?.ResolutionChanged();
     }
 
     unsafe void UnsafeImguiInitialization()
@@ -272,7 +215,7 @@ public class ClientApp
         ImGui.GetIO().NativePtr->IniFilename = null;
     }
 
-    private void LoadSettings() 
+	private void LoadSettings() 
     {
         try
         {
@@ -294,16 +237,7 @@ public class ClientApp
         if (Program.Options.Debug.Log)
 		    Console.WriteLine("Initializing app");
 
-		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
-
-        var flags = SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_PNG;
-        SDL_image.IMG_Init(flags).AssertEqual((int)flags, SDL_image.IMG_GetError);
-
-        SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
-
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, Program.Options.ScaleHintForSDL);
-        
-        ImGui.CreateContext();
+		ImGui.CreateContext();
 
         UnsafeImguiInitialization();
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
@@ -366,29 +300,16 @@ public class ClientApp
 
     internal void EntryPoint()
     {
-        SDLThreadId = Thread.CurrentThread.ManagedThreadId;
-
         var title = CommandLine.WindowTitle is null ? 
             "SysDVR-Client" : $"{CommandLine.WindowTitle} - SysDVR-Client";
 
-		SdlWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                StreamInfo.VideoWidth, StreamInfo.VideoHeight,
-                SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI | SDL_WindowFlags.SDL_WINDOW_RESIZABLE)
-                .AssertNotNull(SDL_GetError);
+        sdlCtx.CreateWindow(title);
 
-        var flags = Program.Options.ForceSoftwareRenderer ? SDL_RendererFlags.SDL_RENDERER_SOFTWARE :
-            (SDL_RendererFlags.SDL_RENDERER_ACCELERATED | SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
-        
-        SdlRenderer = SDL_CreateRenderer(SdlWindow, -1, flags).AssertNotNull(SDL_GetError);
-
-        SDL_GetRendererInfo(SdlRenderer, out var info);
-        Console.WriteLine($"Initialized SDL with {Marshal.PtrToStringAnsi(info.name)} renderer");
-
-        ImGuiSDL2Impl.InitForSDLRenderer(SdlWindow, SdlRenderer);
-        ImGuiSDL2Impl.Init(SdlRenderer);
+        ImGuiSDL2Impl.InitForSDLRenderer(sdlCtx.WindowHandle, sdlCtx.RendererHandle);
+        ImGuiSDL2Impl.Init(sdlCtx.RendererHandle);
 
         if (CommandLine.LaunchFullscreen)
-			SetFullScreen(true);
+			sdlCtx.SetFullScreen(true);
 
         UpdateSize();
 
@@ -401,53 +322,32 @@ public class ClientApp
             if (CurrentView is null)
                 break;
 
-            while (SDL_PollEvent(out var evt) != 0)
+			GuiMessage msg = GuiMessage.None;
+			while ((msg = sdlCtx.PumpEvents(out var evt)) != GuiMessage.None)
             {
                 Cap.OnEvent(true);
 
-                if (evt.type == SDL_EventType.SDL_QUIT ||
-                    (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
-                {
+                if (msg == GuiMessage.Resize)
+				    UpdateSize();
+                else if (msg == GuiMessage.BackButton)
+				    CurrentView.BackPressed();
+                else if (msg == GuiMessage.KeyUp)
+    				CurrentView.OnKeyPressed(evt.key.keysym);
+                else if (msg == GuiMessage.Quit)
                     goto break_main_loop;
-                }
-                else if (evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
-                {
-                    UpdateSize();
-                }
-                else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym == SDL_Keycode.SDLK_F11)
-                {
-                    SetFullScreen(!IsFullscreen);
-                }
-                else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym is SDL_Keycode.SDLK_ESCAPE or SDL_Keycode.SDLK_AC_BACK)
-                {
-                    CurrentView.BackPressed();
-                }
-                else if (evt.type == SDL_EventType.SDL_KEYUP)
-                {
-                    // At least on Windows keeping a key pressed spams of keydown and textinput events due to the text input behavior
-                    // This also affects imgui IO keydown events.
-                    // The only event that is guaranteed to fire is the keyup event so we use it to determine when a key has been pressed and then released
-                    CurrentView.OnKeyPressed(evt.key.keysym);
-                }
 
-                ImGuiSDL2Impl.ProcessEvent(in evt);
+				ImGuiSDL2Impl.ProcessEvent(in evt);
 
 #if ANDROID_LIB
-                if (ImGui.GetIO().WantTextInput && !usingTextinput) {
-                        SDL.SDL_StartTextInput();
-                        usingTextinput = true;
-                }
-                else if (!ImGui.GetIO().WantTextInput && usingTextinput) {
-                        SDL.SDL_StopTextInput();
-                        usingTextinput = false;
-                }
+                if (ImGui.GetIO().WantTextInput)
+					sdlCtx.StartMobileTextInput();
+				else if (!ImGui.GetIO().WantTextInput)
+                    sdlCtx.StopMobileTextInput();
 #endif
             }
 
             if (Cap.Cap())
                 continue;
-
-            var view = CurrentView;
 
             ImGuiSDL2Impl.Renderer_NewFrame();
             ImGuiSDL2Impl.SDL2_NewFrame();
@@ -464,7 +364,7 @@ public class ClientApp
 
             ImGuiSDL2Impl.RenderDrawData(ImGui.GetDrawData());
 
-            SDL_RenderPresent(SdlRenderer);
+            sdlCtx.Render();
         }
     break_main_loop:
 
@@ -480,7 +380,6 @@ public class ClientApp
         // Seems to crash:
         //  ImGui.DestroyContext(ctx);
 
-        SDL_DestroyRenderer(SdlRenderer);
-        SDL_DestroyWindow(SdlWindow);
+        sdlCtx.DestroyWindow();
     }
 }

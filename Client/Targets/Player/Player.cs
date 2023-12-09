@@ -106,7 +106,7 @@ namespace SysDVR.Client.Targets.Player
 
         public AudioPlayer(OutStream target) 
         {
-            Program.Instance.BugCheckThreadId();
+            Program.SdlCtx.BugCheckThreadId();
 
             IsCompatiblePlayer = target is QueuedStreamAudioTarget;
 
@@ -183,9 +183,9 @@ namespace SysDVR.Client.Targets.Player
 
         void InitSDLRenderTexture()
         {
-            Program.Instance.BugCheckThreadId();
+            Program.SdlCtx.BugCheckThreadId();
 
-            var tex = SDL_CreateTexture(Program.Instance.SdlRenderer, TargetTextureFormat,
+            var tex = SDL_CreateTexture(Program.SdlCtx.RendererHandle, TargetTextureFormat,
                 (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING,
                 StreamInfo.VideoWidth, StreamInfo.VideoHeight).AssertNotNull(SDL_GetError);
 
@@ -195,7 +195,7 @@ namespace SysDVR.Client.Targets.Player
                 Console.WriteLine($"SDL texture info: f = {SDL_GetPixelFormatName(format)} a = {a} w = {w} h = {h}");
 
                 SDL_RendererInfo info;
-                SDL_GetRendererInfo(Program.Instance.SdlRenderer, out info);
+                SDL_GetRendererInfo(Program.SdlCtx.RendererHandle, out info);
                 for (int i = 0; i < info.num_texture_formats; i++) unsafe
                     {
                         Console.WriteLine($"Renderer supports pixel format {SDL_GetPixelFormatName(info.texture_formats[i])}");
