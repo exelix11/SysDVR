@@ -27,7 +27,7 @@ namespace SysDVR.Client.Targets
 
         public static unsafe void ExportTexture(IntPtr texture, string savePath) 
         {
-            Program.Instance.BugCheckThreadId();
+            Program.SdlCtx.BugCheckThreadId();
 
             SDL_QueryTexture(texture, out var format, out _, out int width, out int height);
             var surface = (SDL_Surface*)SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0)
@@ -36,7 +36,7 @@ namespace SysDVR.Client.Targets
 
             try
             {
-                var renderer = Program.Instance.SdlRenderer;
+                var renderer = Program.SdlCtx.RendererHandle;
                 var tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, (int)SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, width, height)
                     .AssertNotNull(SDL_GetError);
 

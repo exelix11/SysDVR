@@ -27,7 +27,7 @@ namespace SysDVR.Client.GUI
 
         public virtual void RawDraw()
         {
-            Program.Instance.ClearScrren();
+			Program.SdlCtx.ClearScreen();
         }
 
         public virtual void BackPressed()

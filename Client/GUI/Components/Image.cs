@@ -28,7 +28,7 @@ namespace SysDVR.Client.GUI.Components
 
         public static Image FromFile(string filename)
         {
-            var tex = SDL_image.IMG_LoadTexture(Program.Instance.SdlRenderer, filename);
+            var tex = SDL_image.IMG_LoadTexture(Program.SdlCtx.RendererHandle, filename);
             if (tex == nint.Zero)
                 throw new Exception($"Loading image {filename} failed: {SDL_image.IMG_GetError()}");
 

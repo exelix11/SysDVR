@@ -399,8 +399,8 @@ namespace SysDVR.Client.GUI
 
         void ButtonFullscreen() 
         {
-            Program.Instance.SetFullScreen(!Program.Instance.IsFullscreen);
-        }
+            Program.SdlCtx.SetFullScreen(!Program.SdlCtx.IsFullscreen);
+		}
 
         unsafe public override void RawDraw()
         {
@@ -415,7 +415,7 @@ namespace SysDVR.Client.GUI
             }
 
             // Bypass imgui for this
-            SDL_RenderCopy(Program.Instance.SdlRenderer, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
+            SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
 
             // Signal we're presenting something to SDL to kick the decoding thread
             // We don't care if we didn't actually decode anything we just do it here
@@ -427,8 +427,8 @@ namespace SysDVR.Client.GUI
         {
             const double Ratio = (double)StreamInfo.VideoWidth / StreamInfo.VideoHeight;
 
-            var w = (int)Program.Instance.WindowSize.X;
-            var h = (int)Program.Instance.WindowSize.Y;
+            var w = (int)Program.SdlCtx.WindowSize.X;
+            var h = (int)Program.SdlCtx.WindowSize.Y;
 
             if (w >= h * Ratio)
             {
@@ -447,7 +447,7 @@ namespace SysDVR.Client.GUI
 
         public override void Destroy()
         {
-            Program.Instance.BugCheckThreadId();
+            Program.SdlCtx.BugCheckThreadId();
 
             if (IsRecording)
                 ButtonToggleRecording();
@@ -464,7 +464,7 @@ namespace SysDVR.Client.GUI
 
         private unsafe void InitializeLoadingTexture()
         {
-            Program.Instance.BugCheckThreadId();
+            Program.SdlCtx.BugCheckThreadId();
 
             // This hardcodes YUV dats
             if (Video.TargetTextureFormat != SDL_PIXELFORMAT_IYUV)

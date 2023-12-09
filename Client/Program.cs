@@ -1,5 +1,6 @@
 ﻿using SDL2;
 using SysDVR.Client.Core;
+using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using System;
 using System.Threading.Tasks;
@@ -17,6 +18,8 @@ namespace SysDVR.Client
 
         public static Options Options = new();
 
+        // This is initialized by the ClientApp constructor
+        public static SDLContext SdlCtx;
 #if ANDROID_LIB
         public static NativeInitBlock Native;
 
