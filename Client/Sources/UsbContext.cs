@@ -24,6 +24,9 @@ namespace SysDVR.Client.Sources
         {
             Context = context;
             Info = deviceInfo;
+
+            // Bind this device to the connection info object
+            Info.ConnectionHandle = this;
         }
 
         public virtual (UsbEndpointReader, UsbEndpointWriter) Open()
@@ -140,9 +143,9 @@ namespace SysDVR.Client.Sources
             }
         }
 
-        public IReadOnlyList<DvrUsbDevice> FindSysdvrDevices()
+        public DisposableCollection<DvrUsbDevice> FindSysdvrDevices()
         {
-            // THis is hacky but libusb can't seem to get the device serial without opening it first
+            // This is hacky but libusb can't seem to get the device serial without opening it first
             // If the device is already opened by another instance of sysdvr it will print an error, suppress it by temporarily changing the log level 
             var old = DebugLevel;
             DebugLevel = UsbLogLevel.None;
@@ -161,17 +164,17 @@ namespace SysDVR.Client.Sources
                     if (dev == null)
                         return null;
 
-                    return dev.ConnectionHandle = new DesktopUsbDevice(this, dev, x);
+                    return new DesktopUsbDevice(this, dev, x);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine("Warning: failed to query device serial " + ex);
                     return null;
                 }
-            }).Where(x => x != null).Cast<DesktopUsbDevice>().ToArray();
+            }).Where(x => x != null).Cast<DesktopUsbDevice>();
 
             DebugLevel = old;
-            return res;
+            return new (res);
         }
 #endif
     }
@@ -241,9 +244,13 @@ namespace SysDVR.Client.Sources
         public override bool TryReconnect()
         {
             Close();
-            var dev = Context.FindSysdvrDevices().Where(X => X.Info.Serial == Info.Serial).FirstOrDefault();
+            using var devs = Context.FindSysdvrDevices();
+			
+            var dev = devs.Where(X => X.Info.Serial == Info.Serial).FirstOrDefault();
             if (dev == null)
                 return false;
+
+            devs.ExcludeFromDispose(dev);
 
             DeviceHandle = dev.DeviceHandle;
             return true;

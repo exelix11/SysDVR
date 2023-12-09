@@ -26,17 +26,6 @@ public class ClientApp
 	public ClientApp(CommandLineOptions args)
     {
         CommandLine = args;
-
-		// Print commandline deprecation warnings
-		if (CommandLine.FileDeprecationWarning)
-			Console.WriteLine("The --file option has been removed starting from SysDVR 6.0, you can use the gameplay recording feature whitin the new player instead.");
-		if (CommandLine.LowLatencyDeprecationWarning)
-			Console.WriteLine("The --mpv and --stdout options have been removed starting from SysDVR 6.0, you should use the default player.");
-		if (CommandLine.RTSPDeprecationWarning)
-			Console.WriteLine("The --rtsp options have been removed starting from SysDVR 6.0, to stram over RTSP use simple network mode from your console.");
-
-		LoadSettings();
-        CommandLine.ApplyOptionOverrides();
         ShowDebugInfo = Program.Options.Debug.Log;
 
         sdlCtx = new();
@@ -215,23 +204,6 @@ public class ClientApp
         ImGui.GetIO().NativePtr->IniFilename = null;
     }
 
-	private void LoadSettings() 
-    {
-        try
-        {
-            var set = SystemUtil.LoadSettingsString();
-            if (set is null)
-                return;
-
-            Program.Options = Options.FromJson(set);
-            Console.WriteLine("Settings loaded");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load settings: {ex}");
-        }
-	}
-
     internal void Initialize() 
     {
         if (Program.Options.Debug.Log)
@@ -300,10 +272,7 @@ public class ClientApp
 
     internal void EntryPoint()
     {
-        var title = CommandLine.WindowTitle is null ? 
-            "SysDVR-Client" : $"{CommandLine.WindowTitle} - SysDVR-Client";
-
-        sdlCtx.CreateWindow(title);
+        sdlCtx.CreateWindow(CommandLine.WindowTitle);
 
         ImGuiSDL2Impl.InitForSDLRenderer(sdlCtx.WindowHandle, sdlCtx.RendererHandle);
         ImGuiSDL2Impl.Init(sdlCtx.RendererHandle);

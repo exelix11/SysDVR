@@ -64,7 +64,7 @@ namespace SysDVR.Client.GUI
 
             try
             {
-                devices = context.FindSysdvrDevices();
+                using var devices = context.FindSysdvrDevices();
 
                 if (autoConnect != null)
                 {
@@ -72,6 +72,7 @@ namespace SysDVR.Client.GUI
                     {
                         if (autoConnect == "" || dev.Info.Serial.EndsWith(autoConnect, StringComparison.InvariantCultureIgnoreCase))
                         {
+                            devices.ExcludeFromDispose(dev);
                             ConnectToDevice(dev);
                             break;
                         }

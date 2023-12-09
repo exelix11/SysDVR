@@ -12,7 +12,9 @@ namespace SysDVR.Client
 {
     public static class Program
     {
-        public static ClientApp Instance;
+        public static ClientApp Instance = null!;
+        public static LegacyPlayer? LegacyInstance;
+
         public static string Version = "6.0";
         public static string BuildID = "unknown";
 
@@ -46,6 +48,8 @@ namespace SysDVR.Client
 
         private static void RunApp(string[] args)
         {
+            // Excception handlers so we can log exceptions on platforms that are hard to debug (android)
+            // depending on how far the initialization went we should be able to get the stack trace over logcat
 #if !DEBUG
             try
             {
@@ -104,12 +108,23 @@ namespace SysDVR.Client
 						return;
 					}
 
+					LoadSettings();
+                    cli.PrintDeprecationWarnings();
+                    cli.ApplyOptionOverrides();
 
-					Instance = new ClientApp(cli);
-                    Instance.Initialize();
+					if (cli.LegacyPlayer)
+                        LegacyInstance = new LegacyPlayer(cli);
+                    else
+                    {
+                        Instance = new ClientApp(cli);
+                        Instance.Initialize();
+                    }
                 }
 
-                Instance.EntryPoint();
+				if (LegacyInstance is not null)
+                    LegacyInstance.EntryPoint();
+                else
+					Instance.EntryPoint();
             }
 #if !DEBUG
             catch (Exception ex)
@@ -120,7 +135,24 @@ namespace SysDVR.Client
 #endif
         }
 
-        private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+		private static void LoadSettings()
+		{
+			try
+			{
+				var set = SystemUtil.LoadSettingsString();
+				if (set is null)
+					return;
+
+				Program.Options = Options.FromJson(set);
+				Console.WriteLine("Settings loaded");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Failed to load settings: {ex}");
+			}
+		}
+
+		private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
             Console.WriteLine("TaskScheduler_UnobservedTaskException: " + e.Exception.ToString());
             SDL.SDL_Quit();
