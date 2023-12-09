@@ -125,7 +125,8 @@ namespace SysDVR.Client.GUI
 
                 ImGui.Spacing();
             }
-            else ImGui.NewLine();
+            
+            ImGui.NewLine();
 
             var sz = win;
             sz.Y *= portrait ? .5f : .4f;
