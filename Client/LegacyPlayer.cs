@@ -94,19 +94,19 @@ namespace SysDVR.Client
 
             if (target is not null)
             {
+                if (!target.IsProtocolSupported)
+                {
+                    Console.WriteLine("The console does not support the streaming protocol");
+                    Console.WriteLine("You are using different versions of SysDVR-Client and SysDVR on console. Make sure to use latest version on both and reboot your console");
+                    target.Dispose();
+                    return null;
+                }
+
                 var conn = new DeviceConnector(target, new(), Program.Options.Streaming);
 
 				conn.OnMessage += Conn_OnMessage;
                 
-                var manager = conn.ConnectForPlayer().GetAwaiter().GetResult();
-                
-                if (manager is null)
-                {
-					Console.WriteLine("Failed to connect to the console");
-					return null;
-				}
-
-                return manager;
+                return conn.ConnectForPlayer().GetAwaiter().GetResult();
             }
 
 			Console.WriteLine("Invalid command line. The legacy player only supports a subset of options, use --help for help");

@@ -67,6 +67,8 @@ namespace SysDVR.Client.Sources
                 if (Token.IsCancellationRequested)
                     return null;
 
+                Info?.Dispose();
+
                 throw;
             }
         }

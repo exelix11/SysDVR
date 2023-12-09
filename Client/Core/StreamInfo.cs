@@ -46,7 +46,7 @@ namespace SysDVR.Client.Core
         }
     }
 
-    public class DeviceInfo
+	public class DeviceInfo : IDisposable
     {
         private readonly string AdvertisementString;
         private readonly string ProtocolVersion;
@@ -156,5 +156,11 @@ namespace SysDVR.Client.Core
         {
             return new DeviceInfo("Fale device for testing", ConnectionType.Stub, "");
         }
-    }
+
+		public void Dispose()
+		{
+            if (ConnectionHandle is IDisposable disposable)
+                disposable.Dispose();
+		}
+	}
 }
