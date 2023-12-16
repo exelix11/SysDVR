@@ -38,6 +38,9 @@ public class ClientApp
 
 	public bool IsPortrait { get; private set; }
 
+	// Special input state
+	public bool ShiftDown { get; private set; }
+
 	public event Action OnExit;
 
     // View state management
@@ -297,11 +300,15 @@ public class ClientApp
                 Cap.OnEvent(true);
 
                 if (msg == GuiMessage.Resize)
-				    UpdateSize();
+                    UpdateSize();
                 else if (msg == GuiMessage.BackButton)
-				    CurrentView.BackPressed();
-                else if (msg == GuiMessage.KeyUp)
-    				CurrentView.OnKeyPressed(evt.key.keysym);
+                    CurrentView.BackPressed();
+                else if (msg == GuiMessage.KeyDown && evt.key.keysym.scancode is SDL.SDL_Scancode.SDL_SCANCODE_LSHIFT or SDL.SDL_Scancode.SDL_SCANCODE_RSHIFT)
+                    ShiftDown = true;
+				else if (msg == GuiMessage.KeyUp && evt.key.keysym.scancode is SDL.SDL_Scancode.SDL_SCANCODE_LSHIFT or SDL.SDL_Scancode.SDL_SCANCODE_RSHIFT)
+					ShiftDown = false;
+				else if (msg == GuiMessage.KeyUp)
+                    CurrentView.OnKeyPressed(evt.key.keysym);
                 else if (msg == GuiMessage.Quit)
                     goto break_main_loop;
 

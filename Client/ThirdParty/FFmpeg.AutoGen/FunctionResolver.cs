@@ -1,4 +1,5 @@
-﻿using SysDVR.Client.Platform;
+﻿using SysDVR.Client;
+using SysDVR.Client.Platform;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -84,21 +85,16 @@ public class FunctionResolver : IFunctionResolver
 
     protected string GetNativeLibraryName(string libraryName, int version)
     {
-        // Currently android needs a special ifdef due to dotnet8 not supporting this API yet (i think it's cause the target is linux-bionic rather than android ?)
-#if ANDROID_LIB
-        return $"lib{libraryName}.so";
-#else
-        if (OperatingSystem.IsWindows())
-            return $"{libraryName}-{version}.dll";
-        else if (OperatingSystem.IsAndroid())
+        if (Program.IsAndroid)
             return $"lib{libraryName}.so";
-        else if (OperatingSystem.IsMacOS())
+        else if (Program.IsWindows)
+            return $"{libraryName}-{version}.dll";
+        else if (Program.IsMacOs)
             return $"lib{libraryName}.{version}.dylib";
-        else if (OperatingSystem.IsLinux())
+        else if (Program.IsLinux)
             return $"lib{libraryName}.so.{version}";
 
         return libraryName;
-#endif
     }
 
     protected IntPtr LoadNativeLibrary(string libraryName) 

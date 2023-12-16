@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Platform.Specific.Win
 {
-	internal class DirverInstallView : View
+	internal class WinDirverInstallView : View
 	{
 		string DriverStatus;
 

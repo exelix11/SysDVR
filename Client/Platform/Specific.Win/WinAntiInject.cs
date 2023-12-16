@@ -40,8 +40,7 @@ namespace SysDVR.Client.Platform.Specific.Win
         {
             if (DllBlocklist.Contains(Path.GetFileNameWithoutExtension(filename)))
             {
-                if (Program.Options.Debug.Log)
-                    Console.WriteLine($"Anti-Injection blocked {filename} from loading.");
+				Program.DebugLog($"Anti-Injection blocked {filename} from loading.");
                 return IntPtr.Zero;
             }
             
@@ -121,11 +120,9 @@ namespace SysDVR.Client.Platform.Specific.Win
 
         public static void Initialize() 
         {
-            if (!OperatingSystem.IsWindows() || !Environment.Is64BitProcess)
+            if (!Program.IsWindows || !Environment.Is64BitProcess)
             {
-                if (Program.Options.Debug.Log)
-                    Console.WriteLine("[AntiInj] not enabled due to unsupported OS/CPU");
-
+				Program.DebugLog("[AntiInj] not enabled due to unsupported OS/CPU");
                 return;
             }
 
@@ -140,9 +137,7 @@ namespace SysDVR.Client.Platform.Specific.Win
             }
             catch 
             {
-                if (Program.Options.Debug.Log)
-                    Console.WriteLine("[AntiInj] not enabled due to missing kernelbase exports (old windows ?)");
-
+				Program.DebugLog("[AntiInj] not enabled due to missing kernelbase exports (old windows ?)");
                 return;
             }
 
@@ -155,17 +150,13 @@ namespace SysDVR.Client.Platform.Specific.Win
             }
             catch 
             {
-                if (Program.Options.Debug.Log)
-                    Console.WriteLine("[AntiInj] not enabled due to missing kernel32 exports, this should never happen....");
-
+				Program.DebugLog("[AntiInj] not enabled due to missing kernel32 exports, this should never happen....");
                 return;
             }
 
             if (!EnsureMinWin(a) || !EnsureMinWin(w))
             {
-                if (Program.Options.Debug.Log)
-                    Console.WriteLine("[AntiInj] not enabled due to unexpected kernel32 layout");
-
+				Program.DebugLog("[AntiInj] not enabled due to unexpected kernel32 layout");
                 return;
             }
             
@@ -173,8 +164,7 @@ namespace SysDVR.Client.Platform.Specific.Win
             ApplyRedirection((ulong)a, Impl_LoadA, out A_Handle);
             ApplyRedirection((ulong)w, Impl_LoadW, out W_Handle);
 
-            if (Program.Options.Debug.Log)
-                Console.WriteLine("[AntiInj] Ready !");
+			Program.DebugLog("[AntiInj] Ready !");
         }
     }
 }

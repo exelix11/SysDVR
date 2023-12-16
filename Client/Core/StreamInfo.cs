@@ -154,7 +154,7 @@ namespace SysDVR.Client.Core
 
         public static DeviceInfo Stub() 
         {
-            return new DeviceInfo("Fale device for testing", ConnectionType.Stub, "");
+            return new DeviceInfo("Fake device for testing", ConnectionType.Stub, "");
         }
 
 		public void Dispose()

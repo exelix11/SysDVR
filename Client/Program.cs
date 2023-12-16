@@ -12,7 +12,20 @@ namespace SysDVR.Client
 {
     public static class Program
     {
-        public static ClientApp Instance = null!;
+		// Currently android needs a special ifdef due to dotnet8 not supporting this API yet (i think it's cause the target is linux-bionic rather than android ?)
+#if ANDROID_LIB
+		public readonly static bool IsWindows = false;
+		public readonly static bool IsMacOs = false;
+		public readonly static bool IsLinux = false;
+		public readonly static bool IsAndroid = true;
+#else
+		public readonly static bool IsWindows = OperatingSystem.IsWindows();
+		public readonly static bool IsMacOs = OperatingSystem.IsMacOS();
+		public readonly static bool IsLinux = OperatingSystem.IsLinux();
+		public readonly static bool IsAndroid = false;
+#endif
+
+		public static ClientApp Instance = null!;
         public static LegacyPlayer? LegacyInstance;
 
         public static string Version = "6.0";
@@ -45,6 +58,12 @@ namespace SysDVR.Client
             RunApp(args);
         }
 #endif
+
+        public static void DebugLog(string message)
+        {
+            if (Options.Debug.Log)
+                Console.WriteLine(message);
+        }
 
         private static void RunApp(string[] args)
         {

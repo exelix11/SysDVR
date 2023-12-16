@@ -199,6 +199,7 @@ namespace SysDVR.Client.GUI
 				ImGui.Indent();
 
 				ImGui.Checkbox("Hide console serials from GUI", ref Program.Options.HideSerials);
+				ImGui.Checkbox("Enable hotkeys in the player view", ref Program.Options.PlayerHotkeys);
 				ScaleModes.Draw(ref Program.Options.RendererScale);
 				AudioModes.Draw(ref Program.Options.AudioPlayerMode);
 
@@ -218,6 +219,9 @@ namespace SysDVR.Client.GUI
 				if (ImGui.Button("Change##screen"))
 					OpenSelectPath("Select the screenshots output path", Program.Options.ScreenshotsPath, x => Program.Options.ScreenshotsPath = x);
 				ImGui.Unindent();
+
+				if (Program.IsWindows)
+					ImGui.Checkbox("Copy screenshots to the clipboard instead of saving as files (Press SHIFT to override during capture)", ref Program.Options.Windows_ScreenToClip);
 
 				StreamChannel.Draw(ref Program.Options.Streaming.Kind);
 

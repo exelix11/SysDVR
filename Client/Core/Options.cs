@@ -35,6 +35,11 @@ namespace SysDVR.Client.Core
         public string ScreenshotsPath = DefaultPlatformPicturePath();
         public bool HideSerials;
 
+        public bool PlayerHotkeys = true;
+
+        // (Windows only) Capture screenshots to clipboard by default
+        public bool Windows_ScreenToClip = false;
+
 		// Usb logging options
 		[JsonIgnore]
 		public UsbLogLevel UsbLogging = UsbLogLevel.Error;
@@ -103,7 +108,7 @@ namespace SysDVR.Client.Core
 #if ANDROID_LIB
             return "/sdcard/Movies";  
 #else
-            if (OperatingSystem.IsWindows())
+            if (Program.IsWindows)
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
             else
                 // like you realise ~/Videos is a thing on linux right
@@ -117,7 +122,7 @@ namespace SysDVR.Client.Core
 #if ANDROID_LIB
             return "/sdcard/Pictures";  
 #else
-            if (OperatingSystem.IsWindows())
+            if (Program.IsWindows)
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
             else
                 return LinuxFallbackPath("Pictures");
