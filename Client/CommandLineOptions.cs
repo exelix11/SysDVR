@@ -175,11 +175,16 @@ namespace SysDVR.Client
 
 			if (DebugFlags is not null)
 			{
-				DebugFlags.Split(',')
+				var dbg = DebugFlags.Split(',')
 					.Select(x => DebugOptions.FirstOrDefault(y => y.Name == x))
 					.Where(x => x is not null)
-					.ToList()
-					.ForEach(x => x.Handle(Program.Options.Debug));
+					.ToList();
+
+				dbg.ForEach(x => x.Handle(Program.Options.Debug));
+
+				// Force logging in case a debug option is specified
+				if (dbg.Any())
+					Program.Options.Debug.Log = true;
 			}
 
 			Program.Options.DecoderName = RequestedDecoderName;

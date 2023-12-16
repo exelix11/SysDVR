@@ -2,6 +2,7 @@
 using SDL2;
 using SysDVR.Client.Core;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.Contracts;
@@ -112,17 +113,26 @@ namespace SysDVR.Client.Platform
             yield return libraryName;
         }
 
-        public static IntPtr TryLoadLibrary(string name)
+        readonly static ConcurrentDictionary<string, IntPtr> LibraryCache = new();
+        static IntPtr CachedLibraryloader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            return BundledLibraryLoader(name, null, null);
-        }
+			if (LibraryCache.TryGetValue(libraryName, out var result))
+				return result;
 
-        static IntPtr BundledLibraryLoader(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+            var loaded = TryLoadLibrary(libraryName);
+
+            if (loaded != IntPtr.Zero)
+                LibraryCache.TryAdd(libraryName, loaded);
+
+            return loaded;
+		}
+
+		public static IntPtr TryLoadLibrary(string libraryName)
         {
+            var debug = Program.Options.Debug.DynLib;
+            
             var paths = FindNativeLibrary(libraryName)
                 .Concat(FindNativeLibrary("lib" + libraryName));
-
-            var debug = Program.Options.Debug.DynLib;
 
             foreach (var candidate in paths)
             {
@@ -140,13 +150,16 @@ namespace SysDVR.Client.Platform
                     return result;
 
                 if (debug)
-                    Console.WriteLine($"Failrd to load {candidate}");
+                    Console.WriteLine($"Failed to load {candidate}");
             }
 
             // Try to load the library from the OS.
             // This is not included in the above search because it's filtered by the File.Exists
             {
-                IntPtr result = IntPtr.Zero;
+				if (debug)
+					Console.WriteLine($"Attempt to load {libraryName} without a path...");
+
+				var result = IntPtr.Zero;
 
                 if (NativeLibrary.TryLoad(libraryName, out result))
                     return result;
@@ -158,10 +171,10 @@ namespace SysDVR.Client.Platform
             // Try again, but without the version number
             if (StripVersionNumber(libraryName) is string withoutNumber)
             {
-                return BundledLibraryLoader(withoutNumber, assembly, searchPath);
+                return TryLoadLibrary(withoutNumber);
             }
 
-            Console.WriteLine("Failed to load " +  libraryName);
+            Console.WriteLine($"Failed to load {libraryName}");
             return IntPtr.Zero;
         }
 
@@ -172,7 +185,7 @@ namespace SysDVR.Client.Platform
             if (!AndroidCheckDependencies(native, managed))
                throw new Exception("Native android dependencies are missing, possibly they are missing from the APK path. Note that on android SysDVR supports only arm64 builds.");
 #else
-            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), BundledLibraryLoader);
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), CachedLibraryloader);
 
             if (Program.IsMacOs)
             {
