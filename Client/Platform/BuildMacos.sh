@@ -59,6 +59,9 @@ fi
 # so we're doing it the windows way(tm) with no signatures at all
 codesign --remove-signature -v macos-deps/*.dylib
 
+# For arm macs we need to use at least ad-hoc signed libraries or else they won't load at all...
+codesign -s - -v macos-deps/*.dylib
+
 echo Building x64 client...
 dotnet publish -c Release -r osx-x64 /p:SysDvrTarget=macos
 
