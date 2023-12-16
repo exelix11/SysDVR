@@ -132,8 +132,7 @@ namespace SysDVR.Client.Targets.Player
 
             DeviceID.AssertNotZero(SDL_GetError);
 
-            if (Program.Options.Debug.Log)
-                Console.WriteLine($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
+			Program.DebugLog($"SDL_Audio: requested samples per callback={wantedSpec.samples} obtained={obtained.samples}");
 
             if (IsCompatiblePlayer)
             {
@@ -357,8 +356,7 @@ namespace SysDVR.Client.Targets.Player
                 // On the first frame we get check if we need to use a converter
                 if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    if (Program.Options.Debug.Log)
-                        Console.WriteLine($"Decoder.CodecCtx uses pixel format {Decoder.CodecCtx->pix_fmt}");
+					Program.DebugLog($"Decoder.CodecCtx uses pixel format {Decoder.CodecCtx->pix_fmt}");
 
                     converterFirstFrameCheck = true;
                     if (Decoder.CodecCtx->pix_fmt != TargetDecodingFormat)

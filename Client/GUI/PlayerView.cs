@@ -13,6 +13,8 @@ using SysDVR.Client.Targets.FileOutput;
 using SysDVR.Client.GUI.Components;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.IO;
 
 namespace SysDVR.Client.GUI
 {
@@ -153,11 +155,9 @@ namespace SysDVR.Client.GUI
             if (Video is null)
                 return false;
 
-            var success = false;
             if (Video.DecodeFrame())
             {
                 fps.OnFrame();
-                success = true;
             }
 
             // Bypass imgui for this
@@ -296,6 +296,13 @@ namespace SysDVR.Client.GUI
                 OverlayAlwaysShowing = true;
 
             drawUi = OverlayAlwaysShowing;
+
+            if (Program.Options.PlayerHotkeys && !Program.IsAndroid) // Android is less likely to have a keyboard so don't show the hint. The hotkeys still work.
+                MessageUi("Player shortcuts:\n" +
+                    " - S : capture screenshot\n" +
+                    " - R : start/stop recording\n" +
+                    " - F : toggle full screen\n" +
+                    " - Esc : quit");
         }
 
         private void Manager_OnErrorMessage(string obj) =>
@@ -354,10 +361,17 @@ namespace SysDVR.Client.GUI
 
         public override void OnKeyPressed(SDL_Keysym key)
         {
-            // Handle hotkeys
-            if (key.sym == SDL_Keycode.SDLK_c)
-                ButtonScreenshot();
-        }
+            if (!Program.Options.PlayerHotkeys)
+                return;
+
+			// Handle hotkeys
+			if (key.sym == SDL_Keycode.SDLK_s)
+				ButtonScreenshot();
+			if (key.sym == SDL_Keycode.SDLK_r)
+				ButtonToggleRecording();
+            if (key.sym == SDL_Keycode.SDLK_f)
+                Program.SdlCtx.SetFullScreen(!Program.SdlCtx.IsFullscreen);
+		}
 
         public override void BackPressed()
         {
@@ -478,14 +492,44 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        void ScreenshitToClipboard() 
+        {
+            if (!Program.IsWindows)
+                throw new Exception("Screenshots to clipboard are only supported on windows");
+
+			using (var cap = SDLCapture.CaptureTexture(player.Video.TargetTexture))
+				Platform.Specific.Win.WinClipboard.CopyCapture(cap);
+
+			MessageUi("Screenshot saved to clipboard");
+		}
+
+        void ScreenshotToFile() 
+        {
+			var path = Program.Options.GetFilePathForScreenshot();
+			SDLCapture.ExportTexture(player.Video.TargetTexture, path);
+			MessageUi("Screenshot saved to " + path);
+		}
+
         void ButtonScreenshot()
         {
             try
             {
-                var path = Program.Options.GetFilePathForScreenshot();
-                SDLCapture.ExportTexture(player.Video.TargetTexture, path);
-                MessageUi("Screenshot saved to " + path);
-            }
+                if (Program.IsWindows)
+                {
+                    var clip = Program.Options.Windows_ScreenToClip;
+                    // shift inverts the clipboard flag
+                    if (Program.Instance.ShiftDown)
+                        clip = !clip;
+
+                    if (clip)
+                    {
+                        ScreenshitToClipboard();
+                        return;
+                    }
+				}
+
+                ScreenshotToFile();
+			}
             catch (Exception ex)
             {
                 MessageUi("Error: " + ex.Message);

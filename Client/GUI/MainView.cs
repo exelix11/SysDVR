@@ -9,7 +9,6 @@ namespace SysDVR.Client.GUI
 {
     internal class MainView : View
     {
-        readonly bool IsWindows;
         readonly string Heading;
         readonly string SecondLine;
 
@@ -35,7 +34,6 @@ namespace SysDVR.Client.GUI
 
             Heading = "SysDVR-Client " + Program.Version;
             SecondLine = $"This is an experimental version ({Program.BuildID}), do not open issues on GitHub.";
-			IsWindows = OperatingSystem.IsWindows();
 
             UpdateDiskPermissionStatus();
 
@@ -143,11 +141,12 @@ namespace SysDVR.Client.GUI
             if (ImGui.Button("Open the github page"))
                 SystemUtil.OpenURL("https://github.com/exelix11/SysDVR");
 
-#if WINDOWS
-            ImGui.SameLine();
-            if (ImGui.Button("Install USB driver"))
-				Program.Instance.PushView(new Platform.Specific.Win.DirverInstallView());
-#endif
+            if (Program.IsWindows)
+            {
+                ImGui.SameLine();
+                if (ImGui.Button("Install USB driver"))
+                    Program.Instance.PushView(new Platform.Specific.Win.WinDirverInstallView());
+            }
 
 			ImGui.SameLine();
             if (ImGui.Button("Settings"))

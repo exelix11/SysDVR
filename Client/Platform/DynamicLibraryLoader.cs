@@ -36,9 +36,9 @@ namespace SysDVR.Client.Platform
         {
             get
             {
-                if (OperatingSystem.IsWindows())
+                if (Program.IsWindows)
                     return "win";
-                if (OperatingSystem.IsMacOS())
+                if (Program.IsMacOs)
                     return "osx";
                 else return "linux";
             }
@@ -91,8 +91,8 @@ namespace SysDVR.Client.Platform
         {
             var libext = ".so";
                 
-            if (OperatingSystem.IsWindows()) libext = ".dll";
-            else if (OperatingSystem.IsMacOS()) libext = ".dylib";
+            if (Program.IsWindows) libext = ".dll";
+            else if (Program.IsMacOs) libext = ".dylib";
 
             if (!libraryName.EndsWith(libext))
                 libraryName += libext;
@@ -105,7 +105,7 @@ namespace SysDVR.Client.Platform
             yield return Path.Combine(BundledOsNativeFolder, libraryName);
 
             // Flatpak uses this path
-            if (OperatingSystem.IsLinux())
+            if (Program.IsLinux)
                 yield return Path.Combine("/app/lib", libraryName);
 
             // Maybe it's in the working directory

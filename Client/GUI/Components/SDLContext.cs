@@ -18,6 +18,7 @@ namespace SysDVR.Client.GUI.Components
 		Quit,
 		Resize,
 		KeyUp,
+		KeyDown,
 		FullScreen,
 		BackButton
 	}
@@ -56,8 +57,7 @@ namespace SysDVR.Client.GUI.Components
 
 		public SDLContext() 
 		{
-			if (Program.Options.Debug.Log)
-				Console.WriteLine("Initializing SDL");
+			Program.DebugLog("Initializing SDL");
 
 			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
 
@@ -144,6 +144,10 @@ namespace SysDVR.Client.GUI.Components
 			else if (evt.type == SDL_EventType.SDL_KEYDOWN && evt.key.keysym.sym is SDL_Keycode.SDLK_ESCAPE or SDL_Keycode.SDLK_AC_BACK)
 			{
 				return GuiMessage.BackButton;
+			}
+			else if (evt.type == SDL_EventType.SDL_KEYDOWN)
+			{
+				return GuiMessage.KeyDown;
 			}
 			else if (evt.type == SDL_EventType.SDL_KEYUP)
 			{
