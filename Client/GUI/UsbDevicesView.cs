@@ -140,7 +140,11 @@ namespace SysDVR.Client.GUI
 
             if (devices is null || devices.Count == 0)
             {
-                Gui.CenterText("No USB devices found");
+                Gui.CenterText("No USB devices found.");
+                ImGui.TextWrapped("Make sure you have SysDVR installed on your console and that it's running in USB mode.");
+                
+                if (Program.IsWindows)
+                    ImGui.TextWrapped("The first time you run SysDVR on Windows you must install the USB driver, follow the guide.");
             }
             else
             {
