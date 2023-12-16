@@ -62,6 +62,10 @@ namespace SysDVR.Client.Core
 		// Debug settings
 		public DebugOptions Debug = new();
 
+        // Ignored for now
+        [JsonIgnore]
+        public float GuiFontScale = 1;
+
 		public string ScaleHintForSDL => RendererScale switch
         {
             SDLScaleMode.Linear => "linear",

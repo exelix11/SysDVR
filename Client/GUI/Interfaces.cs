@@ -241,7 +241,9 @@ namespace SysDVR.Client.GUI
                 ~ImGuiWindowFlags.NoScrollbar) | extraFlags);
             ImGui.PopStyleVar();
 
-            return v;
+			ImGui.SetWindowFontScale(Program.Options.GuiFontScale);
+
+			return v;
         }
 
         public static void CenterImage(Image image, int height)
