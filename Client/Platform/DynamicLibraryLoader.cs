@@ -174,15 +174,16 @@ namespace SysDVR.Client.Platform
 #else
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), BundledLibraryLoader);
 
-            if (OperatingSystem.IsMacOS())
+            if (Program.IsMacOs)
             {
                 if (RuntimeInformation.OSArchitecture == Architecture.Arm64 && RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     
                     CriticalWarning =
-                        "You're using the intel version of dotnet on an arm mac, this is not supported and will likely not work." + Environment.NewLine +
-                        "Delete intel dotnet and install the native arm64 one.";
+                        "SysDVR detected that your mac has an apple silicon CPU but you are running the intel version of SysDVR.\n" +
+                        "Running SysDVR in rosetta is not supported and will likely not work proparly.\n" +
+                        "If you're using a standalone build of SysDVR (ver 6.0+) download the right one for your system. If you're running SysDVR through dotnet make sure to use a native arm64 dotnet build.";
 
                     Console.WriteLine(CriticalWarning);
                     Console.ResetColor();

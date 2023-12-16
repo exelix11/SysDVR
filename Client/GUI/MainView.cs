@@ -169,7 +169,7 @@ namespace SysDVR.Client.GUI
         {
             if (initErrorPopup.Begin())
             {
-                ImGui.Text(DynamicLibraryLoader.CriticalWarning);
+                ImGui.TextWrapped(DynamicLibraryLoader.CriticalWarning);
 
                 ImGui.NewLine();
 
