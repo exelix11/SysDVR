@@ -1,5 +1,4 @@
-﻿#if WINDOWS
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -117,4 +116,3 @@ namespace SysDVR.Client.Platform.Specific.Win
 			ref SP_DRVINFO_DATA driverInfoData);
 	}
 }
-#endif
