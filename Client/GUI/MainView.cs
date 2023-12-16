@@ -138,13 +138,17 @@ namespace SysDVR.Client.GUI
             }
 
             centerOptions.StartHere();
-            if (ImGui.Button("Open the github page"))
-                SystemUtil.OpenURL("https://github.com/exelix11/SysDVR");
+			if (ImGui.Button("Github page"))
+				SystemUtil.OpenURL("https://github.com/exelix11/SysDVR/");
 
-            if (Program.IsWindows)
+			ImGui.SameLine();
+			if (ImGui.Button("Guide"))
+				SystemUtil.OpenURL("https://github.com/exelix11/SysDVR/wiki");
+
+			if (Program.IsWindows)
             {
                 ImGui.SameLine();
-                if (ImGui.Button("Install USB driver"))
+                if (ImGui.Button("USB driver"))
                     Program.Instance.PushView(new Platform.Specific.Win.WinDirverInstallView());
             }
 

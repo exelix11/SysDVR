@@ -200,6 +200,7 @@ namespace SysDVR.Client.GUI
         {
             if (ipEnterPopup.Begin())
             {
+                ImGui.TextWrapped("This is the local IP address of your console, it should look like 192.168.X.Y. You can find it in the console settings or in the SysDVR-Settings homebrew.\nIf you can't connect make sure you enabled TCP bridge mode on the console.");
                 popupTbCenter.StartHere();
                 ImGui.InputText("##ip", IpAddressTextBuf, (uint)IpAddressTextBuf.Length);
                 popupTbCenter.EndHere();
