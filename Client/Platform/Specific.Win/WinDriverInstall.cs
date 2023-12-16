@@ -1,5 +1,4 @@
-﻿#if WINDOWS
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -160,4 +159,3 @@ namespace SysDVR.Client.Platform.Specific.Win
 		}
 	}
 }
-#endif
