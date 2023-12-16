@@ -226,6 +226,7 @@ namespace SysDVR.Client.GUI
 				StreamChannel.Draw(ref Program.Options.Streaming.Kind);
 
 				ImGui.Unindent();
+				ImGui.NewLine();
 			}
 
 			if (ImGui.CollapsingHeader("Performance", ImGuiTreeNodeFlags.DefaultOpen))
@@ -242,6 +243,7 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Apply packet cache only to keyframes (H264 IDR frames)", ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);
 
 				ImGui.Unindent();
+				ImGui.NewLine();
 			}
 
 			if (ImGui.CollapsingHeader("Advanced", ImGuiTreeNodeFlags.DefaultOpen))
@@ -260,12 +262,15 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Analyze keyframe NALs during the stream", ref Program.Options.Debug.Keyframe);
 				ImGui.Checkbox("Analyze every NAL during the stream", ref Program.Options.Debug.Nal);
 
+				ImGui.SliderFloat("GUI scale", ref Program.Options.GuiFontScale, 0.1f, 4);			
+
 				// TODO:
 				// ffmpeg decoder name
 				// Usb log level
 				// other debug options
 
 				ImGui.Unindent();
+				ImGui.NewLine();
 			}
 
 			PathInput.Draw();
