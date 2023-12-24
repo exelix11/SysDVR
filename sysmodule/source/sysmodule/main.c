@@ -153,11 +153,17 @@ static bool FileExists(const char* fname)
 // from core.c
 void UsbOnlyEntrypoint();
 
+// from TCPMode.c
+extern int g_tcpEnableBroadcast;
+
 int main(int argc, char* argv[])
 {
 #ifdef USB_ONLY
 	UsbOnlyEntrypoint();
 #else
+	if (FileExists("/config/sysdvr/no_adv"))
+		g_tcpEnableBroadcast = false;
+
 	if (FileExists("/config/sysdvr/usb"))
 		SetModeID(TYPE_MODE_USB);
 	else if (FileExists("/config/sysdvr/rtsp"))
