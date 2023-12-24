@@ -4,6 +4,11 @@
 #include "../capture.h"
 #include "proto.h"
 
+int g_tcpEnableBroadcast = 1;
+
+// Prevent toggling this on and off during runtime or else we may leak the socket
+// this can only be set by TCP_Init on mode switch
+static int tcpSessionEnableBroadcast = 1;
 static int UdpAdvertiseSocket = SOCKET_INVALID;
 
 static struct sockaddr_in UdpBroadcastAddr = {
@@ -12,6 +17,9 @@ static struct sockaddr_in UdpBroadcastAddr = {
 
 static void DeinitBroadcast(GrcStream stream)
 {
+	if (!tcpSessionEnableBroadcast)
+		return;
+
 	if (stream != GrcStream_Video)
 		return;
 
@@ -24,6 +32,9 @@ static void DeinitBroadcast(GrcStream stream)
 
 static void InitBroadcast(GrcStream stream)
 {
+	if (!tcpSessionEnableBroadcast)
+		return;
+
 	// Only one thread need to do the advertisement
 	if (stream != GrcStream_Video)
 		return;
@@ -42,6 +53,9 @@ static void InitBroadcast(GrcStream stream)
 
 static inline void AdvertiseBroadcast(GrcStream stream)
 {
+	if (!tcpSessionEnableBroadcast)
+		return;
+
 	if (stream != GrcStream_Video)
 		return;
 
@@ -221,7 +235,8 @@ static void TCP_StreamThread(void* argConfig)
 
 static void TCP_Init()
 {
-	
+	LOG("TCP Init\n");
+	tcpSessionEnableBroadcast = g_tcpEnableBroadcast;
 }
 
 const StreamMode TCP_MODE = {
