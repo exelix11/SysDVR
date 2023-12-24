@@ -72,7 +72,11 @@ static inline bool TCP_DoHandshake(GrcStream stream, int socket)
 	if (!SocketRecevExact(socket, buffer, sizeof(buffer)))
 		return false;
 
-	ProtoParsedHandshake res = ProtoHandshake(buffer, sizeof(buffer));
+	// TCP threads are hardcoded to either video or audio
+	ProtoHandshakeAccept accept = stream == GrcStream_Video ? 
+		ProtoHandshakeAccept_Video : ProtoHandshakeAccept_Audio;
+
+	ProtoParsedHandshake res = ProtoHandshake(accept, buffer, sizeof(buffer));
 
 	if (!SocketSendAll(socket, &res.Result, sizeof(res.Result)))
 		return false;

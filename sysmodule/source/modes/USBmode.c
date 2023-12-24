@@ -50,7 +50,7 @@ bool USB_ConnectClient()
 		return false;
 
 	LOG("USB request received\n");	
-	ProtoParsedHandshake res = ProtoHandshake(buffer, sizeof(buffer));
+	ProtoParsedHandshake res = ProtoHandshake(ProtoHandshakeAccept_Any, buffer, sizeof(buffer));
 
 	if (!UsbStreamingSend(&res.Result, sizeof(res.Result)))
 		return false;

@@ -4,6 +4,16 @@
 #include "defines.h"
 #include "../core.h"
 
+static inline bool hasVideo(const struct ProtoHandshakeRequest* req)
+{
+	return req->MetaFlags & ProtoMeta_Video;
+}
+
+static inline bool hasAusio(const struct ProtoHandshakeRequest* req)
+{
+	return req->MetaFlags & ProtoMeta_Audio;
+}
+
 static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, struct ProtoHandshakeRequest* out_req)
 {
 	if (length != sizeof(struct ProtoHandshakeRequest))
@@ -17,8 +27,8 @@ static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, str
 	if (memcmp(&out_req->ProtoVer, SYSDVR_PROTOCOL_VERSION, 2))
 		return Handshake_WrongVersion;
 
-	bool video = out_req->MetaFlags & ProtoMeta_Video;
-	bool audio = out_req->MetaFlags & ProtoMeta_Audio;
+	bool video = hasVideo(out_req);
+	bool audio = hasAusio(out_req);
 
 	if (!video && !audio)
 		return Handshake_InvalidMeta;
@@ -26,17 +36,25 @@ static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, str
 	return Handshake_Ok;
 }
 
-ProtoParsedHandshake ProtoHandshake(uint8_t* data, int length)
+ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, int length)
 {
 	struct ProtoHandshakeRequest req;
-	ProtoHandshakeResult rc = ProtoHandshakeVersion(data, length, &req);
 	
-	ProtoParsedHandshake res = {
-		.Result = rc
-	};
+	ProtoParsedHandshake res = {};
+	res.Result = ProtoHandshakeVersion(data, length, &req);
 
-	if (rc != Handshake_Ok) {
-		LOG("Handshake failed with code %d\n", rc);
+	// The caller may only accept video or audio
+	if (res.Result == Handshake_Ok) 
+	{
+		if (config == ProtoHandshakeAccept_Video && hasAusio(&req))
+			res.Result = Hanshake_InvalidChannel;
+		else if (config == ProtoHandshakeAccept_Audio && hasVideo(&req))
+			res.Result = Hanshake_InvalidChannel;
+	}
+
+	if (res.Result != Handshake_Ok) 
+	{
+		LOG("Handshake failed with code %d\n", res.Result);
 		return res;
 	}
 
