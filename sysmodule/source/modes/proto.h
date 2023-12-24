@@ -19,6 +19,7 @@ typedef enum
 	Handshake_InvalidMeta = 4,
 	Handshake_WrongMagic = 5,
 	Handshake_Ok = 6,
+	Hanshake_InvalidChannel = 7,
 } ProtoHandshakeResult;
 
 typedef struct {
@@ -59,5 +60,11 @@ _Static_assert(sizeof(struct ProtoHandshakeRequest) == 16);
 
 #define PROTO_HANDSHAKE_SIZE sizeof(struct ProtoHandshakeRequest)
 
-ProtoParsedHandshake ProtoHandshake(uint8_t* data, int length);
+typedef enum {
+	ProtoHandshakeAccept_Any,
+	ProtoHandshakeAccept_Video,
+	ProtoHandshakeAccept_Audio,
+} ProtoHandshakeAccept;
+
+ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, int length);
 
