@@ -6,6 +6,11 @@ static jclass sys = NULL;
 char tmpName[256] = {};
 char tmpName2[256] = {};
 
+const char* SysGetSettingsStoragePath()
+{
+    return "/data/data/exelix11.sysdvr";
+}
+
 bool SysOpenUrl(const jchar* string)
 {
     DECLARE_JNI;

@@ -45,7 +45,7 @@ namespace SysDVR.Client.Core
 
         public delegate void RequestFileAccessPermission();
 
-		[return: MarshalAs(UnmanagedType.LPWStr)]
+		[return: MarshalAs(UnmanagedType.LPStr)]
 		public delegate string GetSettingsStoragePath();
     }
 

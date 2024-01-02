@@ -25,9 +25,8 @@ namespace SysDVR.Client.GUI.Components
 
 	public class SDLContext
 	{
-
 		// Detect bugs such as multiple view pushes in a row
-		readonly int SDLThreadId;
+		int SDLThreadId;
 
 		internal IntPtr WindowHandle { get; private set; }
 		internal IntPtr RendererHandle { get; private set; }
@@ -53,6 +52,11 @@ namespace SysDVR.Client.GUI.Components
 		{
 			if (SDLThreadId != Thread.CurrentThread.ManagedThreadId)
 				throw new InvalidOperationException($"SDL Bug check on thread {Thread.CurrentThread.ManagedThreadId} insteadl of {SDLThreadId}.");
+		}
+
+		public void SetNewThreadOwner() 
+		{
+			SDLThreadId = Thread.CurrentThread.ManagedThreadId;
 		}
 
 		public SDLContext() 
@@ -127,6 +131,8 @@ namespace SysDVR.Client.GUI.Components
 			if (SDL_PollEvent(out evt) == 0)
 				return GuiMessage.None;
 
+			Console.WriteLine($"Received SDL_Event {evt.type}");
+
 			if (evt.type == SDL_EventType.SDL_QUIT ||
 					(evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
 			{
@@ -155,6 +161,12 @@ namespace SysDVR.Client.GUI.Components
 				// This also affects imgui IO keydown events.
 				// The only event that is guaranteed to fire is the keyup event so we use it to determine when a key has been pressed and then released
 				return GuiMessage.KeyUp;
+			}
+			else if (evt.type == SDL_EventType.SDL_RENDER_DEVICE_RESET)
+			{
+				// This should not happen on modern android versions according to SDL docs
+				Console.WriteLine("SDL failed to resume, terminating.");
+				return GuiMessage.Quit;
 			}
 
 			return GuiMessage.Other;
@@ -197,10 +209,16 @@ namespace SysDVR.Client.GUI.Components
 		public void DestroyWindow() 
 		{
 			if (RendererHandle != IntPtr.Zero)
+			{
 				SDL_DestroyRenderer(RendererHandle);
+				RendererHandle = IntPtr.Zero;
+			}
 
 			if (WindowHandle != IntPtr.Zero)
+			{
 				SDL_DestroyWindow(WindowHandle);
+				WindowHandle = IntPtr.Zero;
+			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
