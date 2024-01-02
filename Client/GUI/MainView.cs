@@ -33,7 +33,7 @@ namespace SysDVR.Client.GUI
             Popups.Add(initErrorPopup);
 
             Heading = "SysDVR-Client " + Program.Version;
-            SecondLine = $"This is an experimental version ({Program.BuildID}), do not open issues on GitHub.";
+            SecondLine = $"build id {Program.BuildID}";
 
             UpdateDiskPermissionStatus();
 

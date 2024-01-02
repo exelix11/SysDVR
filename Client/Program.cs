@@ -29,7 +29,7 @@ namespace SysDVR.Client
         public static LegacyPlayer? LegacyInstance;
 
         public static string Version = "6.0";
-        public static string BuildID = "unknown";
+        public static string BuildID = "";
 
         public static Options Options = new();
 
@@ -101,7 +101,7 @@ namespace SysDVR.Client
                 {
                     DynamicLibraryLoader.Initialize();
 
-                    BuildID = Resources.GetBuildId() ?? "<unknown commit>";
+                    BuildID = Resources.GetBuildId() ?? "unknown";
 
                     Console.WriteLine($"SysDVR-Client {Version} - by exelix");
                     Console.WriteLine("https://github.com/exelix11/SysDVR");
