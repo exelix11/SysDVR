@@ -28,6 +28,7 @@ struct NativeInitBlock
 	void* SysGetClipboard;
 	void* SysGetFileAccessInfo;
 	void* SysRequestFileAccess;
+    void* SysGetSettingsStoragePath;
 };
 
 // Forward declare needed functions
@@ -52,6 +53,7 @@ bool SysOpenUrl(const jchar* string);
 void SysGetClipboard(char* buffer, int size);
 bool SysGetFileAccessInfo(bool* hasPermission, bool* canRequest);
 void SysRequestFileAccess();
+const char* SysGetSettingsStoragePath();
 
 #define L(...) __android_log_print(ANDROID_LOG_ERROR, "SysDVRLogger", __VA_ARGS__)
 
@@ -79,7 +81,8 @@ struct NativeInitBlock g_native =
     .SysOpenURL = SysOpenUrl,
     .SysGetClipboard = SysGetClipboard,
 	.SysGetFileAccessInfo = SysGetFileAccessInfo,
-	.SysRequestFileAccess = SysRequestFileAccess
+	.SysRequestFileAccess = SysRequestFileAccess,
+    .SysGetSettingsStoragePath = SysGetSettingsStoragePath
 };
 
 extern int sysdvr_entrypoint(struct NativeInitBlock* init);
@@ -87,6 +90,8 @@ extern int sysdvr_entrypoint(struct NativeInitBlock* init);
 int main(int argc, char *argv[])
 {
 	L("sdl main called()");
+
+    SDL_SetHint("SDL_ANDROID_ALLOW_RECREATE_ACTIVITY", "1");
 
     // Initialize JNI components
     InitThreading();

@@ -3,6 +3,8 @@ using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using System;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 #if ANDROID_LIB
 using System.Runtime.InteropServices;
@@ -46,8 +48,9 @@ namespace SysDVR.Client
                 return result;
 
             NativeLogger.Setup();
+
             Resources.SettingsStorePath = Native.GetSettingsStoragePath?.Invoke() ?? ""; 
-            
+
             RunApp(new string[0]);
 
             return NativeError.Success;
@@ -96,45 +99,46 @@ namespace SysDVR.Client
 #if DEBUG
                 Console.WriteLine("SysDVR Client entrypoint");
 #endif
-
                 if (Instance is null)
                 {
                     DynamicLibraryLoader.Initialize();
 
-					BuildID = Resources.GetBuildId() ?? "<unknown commit>";
-                    
+                    BuildID = Resources.GetBuildId() ?? "<unknown commit>";
+
                     Console.WriteLine($"SysDVR-Client {Version} - by exelix");
-					Console.WriteLine("https://github.com/exelix11/SysDVR");
+                    Console.WriteLine("https://github.com/exelix11/SysDVR");
                     Console.WriteLine($"Build ID: {BuildID}\n");
 
-					var cli = CommandLineOptions.Parse(args);
+                    var cli = CommandLineOptions.Parse(args);
 
                     if (cli.Version)
-						return;
-					else if (cli.Help)
-					{
-						Console.WriteLine(CommandLineOptions.HelpMessage);
-						return;
-					}
-					else if (cli.DebugList)
-					{
-						Console.WriteLine(CommandLineOptions.GetDebugFlagsList());
-						return;
-					}
-					else if (cli.ShowDecoders)
-					{
+                        return;
+                    else if (cli.Help)
+                    {
+                        Console.WriteLine(CommandLineOptions.HelpMessage);
+                        return;
+                    }
+                    else if (cli.DebugList)
+                    {
+                        Console.WriteLine(CommandLineOptions.GetDebugFlagsList());
+                        return;
+                    }
+                    else if (cli.ShowDecoders)
+                    {
                         Targets.Player.LibavUtils.PrintAllCodecs();
-						return;
-					}
+                        return;
+                    }
 
-					LoadSettings();
+                    LoadSettings();
                     cli.PrintDeprecationWarnings();
                     cli.ApplyOptionOverrides();
+
+                    SdlCtx = new();
 
                     if (IsWindows)
                         Platform.Specific.Win.AntiInject.Initialize();
 
-					if (cli.LegacyPlayer)
+                    if (cli.LegacyPlayer)
                         LegacyInstance = new LegacyPlayer(cli);
                     else
                     {
@@ -142,8 +146,16 @@ namespace SysDVR.Client
                         Instance.Initialize();
                     }
                 }
+                else
+                {
+                    // If we are here it means the app was suspended and resumed
+                    // SDL should have kept the context alive but we may be running on a different thread
+                    // This is fine as SDL is the only thing that is sensitive to the caller thread and being here means this thread is now fine.
+                    Console.WriteLine("Resuming the application");
+                    SdlCtx.SetNewThreadOwner();
+				}
 
-                if (LegacyInstance is not null)
+				if (LegacyInstance is not null)
                     LegacyInstance.EntryPoint();
                 else
 					Instance.EntryPoint();

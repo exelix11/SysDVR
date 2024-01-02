@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
 {
-	internal class DisposableCollection<T> : IDisposable, IReadOnlyList<T> where T : IDisposable
+	internal class DisposableCollection<T> : IDisposable, IReadOnlyList<T> where T : class, IDisposable
 	{
 		record struct Container(T Element, bool Dispose);
 
@@ -25,7 +25,11 @@ namespace SysDVR.Client.Core
 
 		public void ExcludeFromDispose(T element)
 		{
-			var index = Array.IndexOf(items, element);
+			var index = items
+				.Select((x, i) => (x, i))
+				.Where(x => object.ReferenceEquals(x.x.Element, element))
+				.First().i;
+
 			items[index].Dispose = false;
 		}
 
@@ -38,7 +42,7 @@ namespace SysDVR.Client.Core
 
 		public IEnumerator<T> GetEnumerator()
 		{
-			return (IEnumerator<T>)items.GetEnumerator();
+			return items.Select(x => x.Element).GetEnumerator();
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()

@@ -20,8 +20,8 @@ namespace SysDVR.Client
     // Additionally this may be used for adding back command-line only feature that were cut with V 6.0
     public class LegacyPlayer
     {
-        readonly SDLContext sdlCtx;
         readonly CommandLineOptions CommandLine;
+        SDLContext sdlCtx => Program.SdlCtx;
 
         PlayerCore? player;
 		DvrUsbContext? usb;
@@ -29,7 +29,6 @@ namespace SysDVR.Client
 		public LegacyPlayer(CommandLineOptions args)
         {
             CommandLine = args;
-            Program.SdlCtx = sdlCtx = new();
             Console.WriteLine("Starting in legacy mode...");
         }
 

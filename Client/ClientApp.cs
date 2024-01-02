@@ -21,15 +21,12 @@ public class ClientApp
 
     readonly CommandLineOptions CommandLine;
 
-    readonly SDLContext sdlCtx;
+    SDLContext sdlCtx => Program.SdlCtx;
 
 	public ClientApp(CommandLineOptions args)
     {
         CommandLine = args;
         ShowDebugInfo = Program.Options.Debug.Log;
-
-        sdlCtx = new();
-        Program.SdlCtx = sdlCtx;
 	}
 
     public ImFontPtr FontH1 { get; private set; }
