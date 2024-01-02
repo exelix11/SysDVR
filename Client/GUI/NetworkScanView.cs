@@ -24,10 +24,9 @@ namespace SysDVR.Client.GUI
 
         Gui.Popup ipEnterPopup = new("Enter console IP address");
         Gui.Popup incompatiblePopup = new("Error");
-        Gui.CenterGroup manualIpCenter = new();
         Gui.CenterGroup popupBtnCenter = new();
         Gui.CenterGroup popupTbCenter = new();
-        string? lastError;
+        string? lastError;            
 
         public NetworkScanView(StreamingOptions opt, string? autoConnect = null)
         {
@@ -150,25 +149,15 @@ namespace SysDVR.Client.GUI
                 ImGui.NewLine();
             }
 
-            if (portrait)
-            {
-                Gui.CenterText("Can't find your device ?");
-                if (Gui.CenterButton("Use IP address"))
-                    ButtonEnterIp();
-            }
-            else
-            {
-                manualIpCenter.StartHere();
-                ImGui.TextWrapped("Can't find your device ?   ");
-                ImGui.SameLine();
+            Gui.CenterText("Can't find your device ?");
+            
+            if (Gui.CenterButton("Use IP address"))
+                ButtonEnterIp();
 
-                if (ImGui.Button("Use IP address"))
-                    ButtonEnterIp();
+			if (!Program.IsAndroid)
+				ImGui.TextWrapped("Remember to allow SysDVR client in your firewall or else it won't be able to detect consoles");
 
-                manualIpCenter.EndHere();
-            }
-
-            if (lastError is not null)
+			if (lastError is not null)
             {
                 ImGui.TextWrapped(lastError);
             }
