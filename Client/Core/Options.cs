@@ -63,7 +63,6 @@ namespace SysDVR.Client.Core
 		public DebugOptions Debug = new();
 
         // Ignored for now
-        [JsonIgnore]
         public float GuiFontScale = 1;
 
 		public string ScaleHintForSDL => RendererScale switch

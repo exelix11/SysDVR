@@ -172,14 +172,14 @@ namespace SysDVR.Client.GUI
 			if (!Gui.BeginWindow("Settings"))
 				return;
 
-			ImGui.TextWrapped("These settings are automatically applied for the current session, you can however save them to disk so they become persistent");
+			ImGui.TextWrapped("These settings are automatically applied for the current session, you can however save them so they become persistent");
 
 			SaveCenter.StartHere();
 			if (ImGui.Button("Go back"))
 				Program.Instance.PopView();
 			
 			ImGui.SameLine();
-			if (ImGui.Button("Save to disk"))
+			if (ImGui.Button("Save changes"))
 				SaveOptions();
 
 			ImGui.SameLine();
