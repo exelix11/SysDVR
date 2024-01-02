@@ -31,7 +31,7 @@ if [ -d "dvr-build" ]; then
 fi
 
 mkdir -p dvr-build
-cp -r ../../bin/Release/net7.0/linux-x64/publish/* dvr-build/
+cp -r ../../bin/Release/net8.0/linux-x64/publish/* dvr-build/
 
 flatpak-builder --user --install tmp com.github.exelix11.sysdvr.json --force-clean
 flatpak build-bundle ~/.local/share/flatpak/repo SysDVR-Client.flatpak com.github.exelix11.sysdvr --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
