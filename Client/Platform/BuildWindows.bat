@@ -56,8 +56,6 @@ del libusb.7z
 
 echo Building client...
 
-git rev-parse --short HEAD > Resources\resources\buildid.txt
-
 cd ..
 dotnet publish -c Release -r win-x64 /p:SysDvrTarget=windows || goto error
 

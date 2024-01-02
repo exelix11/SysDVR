@@ -89,8 +89,6 @@ if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
 	rm ffmpeg-kit-full-5.1.LTS.aar
 fi
 
-git rev-parse --short HEAD > app/src/main/assets/buildid.txt
-
 echo Building client...
 
 # Move to client root
