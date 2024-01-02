@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "core.h"
 #include "grcd.h"
 #include "capture.h"
 #include "modes/defines.h"
@@ -7,11 +8,6 @@
 
 VideoPacket alignas(0x1000) VPkt;
 AudioPacket alignas(0x1000) APkt;
-
-const int DefaultSeqStaticDropThreshold = 4;
-
-static int AudioBatching = MaxABatching;
-static int SeqStaticDropThreshold = DefaultSeqStaticDropThreshold;
 
 static Service grcdVideo;
 static Service grcdAudio;
@@ -23,14 +19,43 @@ static bool forceSPSPPS = false;
 
 static atomic_bool capturing = false;
 
+// User configuration
+static int AudioBatching = MaxABatching;
+static bool InjectSpsPps = true;
+static bool HashNals = false;
+static bool HashOnlyKeyframes = true;
+
+static void PacketMakeReplay(VideoPacket* packet)
+{
+	packet->Header.MetaData = (packet->Header.MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Replay;
+	packet->Header.DataSize = 0;
+}
+
+static void PacketMakeData(PacketHeader* packet)
+{
+	packet->MetaData = (packet->MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Data;
+}
+
+void CaptureAudioConnected()
+{
+	APkt.Header.Magic = STREAM_PACKET_HEADER;
+	APkt.Header.MetaData = PacketMeta_Type_Audio | PacketMeta_Content_Data;
+	APkt.Header.ReplaySlot = 0xFF;
+}
+
 bool CaptureReadAudio()
 {
+	u32 dataSize; u64 timestamp;
+
 	Result rc = grcdServiceTransfer(
 		&grcdAudio, GrcStream_Audio,
 		APkt.Data, AbufSz,
 		NULL,
-		&APkt.Header.DataSize,
-		&APkt.Header.Timestamp);
+		&dataSize,
+		&timestamp);
+
+	APkt.Header.DataSize = dataSize;
+	APkt.Header.Timestamp = timestamp;
 
 	if (R_FAILED(rc))
 		return false;
@@ -63,84 +88,94 @@ DEFINE_UNALIGNED_ACCESSOR(u64);
 DEFINE_UNALIGNED_ACCESSOR(u32);
 DEFINE_UNALIGNED_ACCESSOR(u16);
 
-static u32 crc32_arm64_hw(u32 crc, const u8* p, unsigned int len)
+u32 crc32_arm64_hw(const u8* p, unsigned int len)
 {
+	u32 crc = 0xffffffff;
+
 	s64 length = len;
-	while ((length -= sizeof(u64)) >= 0) {
+	while (length >= sizeof(u64)) {
 		CRC32X(crc, get_unaligned_u64(p));
 		p += sizeof(u64);
+		length -= sizeof(u64);
 	}
-	/* The following is more efficient than the straight loop */
-	if (length & sizeof(u32)) {
+	
+	if (length >= sizeof(u32)) {
 		CRC32W(crc, get_unaligned_u32(p));
 		p += sizeof(u32);
+		length -= sizeof(u32);
 	}
-	if (length & sizeof(u16)) {
+
+	if (length >= sizeof(u16)) {
 		CRC32H(crc, get_unaligned_u16(p));
 		p += sizeof(u16);
+		length -= sizeof(u16);
 	}
-	if (length & sizeof(u8))
+
+	if (length)
 		CRC32B(crc, *p);
-	return crc;
+	
+	return ~crc;
 }
 
-bool CheckVideoPacket(const u8* data, size_t len)
+static u32 NalHashes[20];
+static u32 NalHashIdx = 0;
+
+bool HashVideoPacket(const u8* data, size_t len, u8* outSlot)
 {
-	if (SeqStaticDropThreshold == 0)
+	u32 hash = crc32_arm64_hw(data, len);
+
+	// This is unlikely but we use hash = 0 to indicate uninitialized entry
+	if (!hash)
 		return false;
 
-	static u32 droppedInAReow = 0;
-	static u32 LastPackets[20];
-	static u32 LastPacketsIdx = 0;
-
-	u32 hash = crc32_arm64_hw(0, data, len);
-	bool found = false;
-
-	for (int i = 0; i < sizeof(LastPackets) / sizeof(LastPackets[0]); i++)
+	for (int i = 0; i < sizeof(NalHashes) / sizeof(NalHashes[0]); i++)
 	{
-		if (LastPackets[i] == hash)
+		if (NalHashes[i] == hash)
 		{
-			found = true;
-			break;
+			*outSlot = (u8)i;
+			// note how the hash table is not updated if we already know the hash
+			return true;
 		}
 	}
 
-	LastPackets[LastPacketsIdx++] = hash;
-	LastPacketsIdx %= sizeof(LastPackets) / sizeof(LastPackets[0]);
+	*outSlot = (u8)NalHashIdx; 
+	NalHashes[NalHashIdx++] = hash;
+	NalHashIdx %= sizeof(NalHashes) / sizeof(NalHashes[0]);
 
-	// We need to send these keyframes once in a while otherwise we get something similar to https://github.com/exelix11/SysDVR/issues/91
-	if (found && ++droppedInAReow > SeqStaticDropThreshold)
-	{
-		droppedInAReow = 0;
-		LOG("Letting duplicate packet through.\n");
-		return false;
-	}
+	return false;
+}
 
-	return found;
+void CaptureVideoConnected()
+{
+	memset(NalHashes, 0, sizeof(NalHashes));
+	NalHashIdx = 0;
+	VPkt.Header.Magic = STREAM_PACKET_HEADER;
+	VPkt.Header.MetaData = PacketMeta_Type_Video;
+	VPkt.Header.ReplaySlot = 0xFF;
+	forceSPSPPS = true;
 }
 
 bool CaptureReadVideo()
 {
-again:
+	u32 dataSize; u64 timestamp;
+
 	Result res = grcdServiceTransfer(
 		&grcdVideo, GrcStream_Video,
 		VPkt.Data, VbufSz,
 		NULL,
-		&VPkt.Header.DataSize,
-		&VPkt.Header.Timestamp);
+		&dataSize,
+		&timestamp);
 
+	VPkt.Header.DataSize = dataSize;
+	VPkt.Header.Timestamp = timestamp;
+	
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
-#ifndef RELEASE
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
-	// These big NALs are not common and even if they're missed they only cause graphical glitches, it's better not to fatal in release builds
+	// These big NALs are not common and even if they're missed they only cause graphical glitches
 	// Error code should be 2212-0006
-	if (R_FAILED(res))
-		fatalThrow(res);
-#endif
-
 	if (!result) {
-		LOG("Video capture failed: %x\n", res);
+		LOG("Video capture failed: %x size: %x\n", res, VPkt.Header.DataSize);
 		return false;
 	}
 
@@ -150,38 +185,45 @@ again:
 	// Static images are particularly bad for sysdvr cause they cause the video encoder
 	// to emit really big keyframes, all to produce a static image. So here's a trick:
 	// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
-	// this is a static images so we kan just not send it with no consequences to free
+	// this is a static images so we can just not send it with no consequences to free
 	// up bandwidth for audio and reduce delay once the image changes
-	if (isIDRFrame && CheckVideoPacket(VPkt.Data, VPkt.Header.DataSize)) {
-		LOG("Dropping duplicate video packet\n");
-		goto again;
+	const bool UseHash = HashNals && (isIDRFrame || !HashOnlyKeyframes);
+	if (UseHash && HashVideoPacket(VPkt.Data, VPkt.Header.DataSize, &VPkt.Header.ReplaySlot)) {
+		LOG("Sending packet hash instead\n");
+		PacketMakeReplay(&VPkt);
+		return true;
 	}
+
+	PacketMakeData(&VPkt.Header);
 
 	/*
 		GRC only emits SPS and PPS once when a game is started,
 		this is not good as without those it's not possible to play the stream If there's space add SPS and PPS to IDR frames every once in a while
 	*/
-	static int IDRCount = 0;
+	if (InjectSpsPps) {
+		static int IDRCount = 0;
 
-	// if this is an IDR frame and we haven't added SPS/PPS in the last 5 or forceSPSPPS is set
-	bool EmitMeta = forceSPSPPS || (isIDRFrame && ++IDRCount >= 5);
+		// if this is an IDR frame and we haven't added SPS/PPS in the last 5 or forceSPSPPS is set
+		bool EmitMeta = forceSPSPPS || (isIDRFrame && ++IDRCount >= 5);
 
-	// Only if there's enough space
-	if (EmitMeta && (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
-	{
-		IDRCount = 0;
-		forceSPSPPS = false;
-		memmove(VPkt.Data + sizeof(PPS) + sizeof(SPS), VPkt.Data, VPkt.Header.DataSize);
-		memcpy(VPkt.Data, SPS, sizeof(SPS));
-		memcpy(VPkt.Data + sizeof(SPS), PPS, sizeof(PPS));
-		VPkt.Header.DataSize += sizeof(SPS) + sizeof(PPS);
+		// Only if there's enough space
+		if (EmitMeta && (VbufSz - VPkt.Header.DataSize) >= (sizeof(PPS) + sizeof(SPS)))
+		{
+			IDRCount = 0;
+			forceSPSPPS = false;
+			memmove(VPkt.Data + sizeof(PPS) + sizeof(SPS), VPkt.Data, VPkt.Header.DataSize);
+			memcpy(VPkt.Data, SPS, sizeof(SPS));
+			memcpy(VPkt.Data + sizeof(SPS), PPS, sizeof(PPS));
+			VPkt.Header.DataSize += sizeof(SPS) + sizeof(PPS);
+			VPkt.Header.MetaData |= PacketMeta_Content_MultiNal;
+		}
 	}
 
 	return result;
 }
 
 // Configurable options
-void CaptureSetAudioBatching(int batch)
+int CaptureSetAudioBatching(int batch)
 {
 	if (batch < 0)
 		batch = 0;
@@ -189,27 +231,29 @@ void CaptureSetAudioBatching(int batch)
 	if (batch > MaxABatching)
 		batch = MaxABatching;
 
+	LOG("CaptureSetAudioBatching(%d)\n", batch);
 	AudioBatching = batch;
-}
-
-int CaptureGetAudioBatching()
-{
 	return AudioBatching;
 }
 
-void CaptureResetStaticDropThreshold()
+void CaptureSetPPSSPSInject(bool value)
 {
-	SeqStaticDropThreshold = DefaultSeqStaticDropThreshold;
+	LOG("CaptureSetPPSSPSInject(%d)\n", value);
+	InjectSpsPps = value;
 }
 
-void CaptureSetStaticDropThreshold(int maxConsecutive) 
+void CaptureSetNalHashing(bool enabled, bool onlyKeyframes)
 {
-	SeqStaticDropThreshold = maxConsecutive;
+	LOG("CaptureSetNalHashing(%d, %d)\n", enabled, onlyKeyframes);
+	HashNals = enabled;
+	HashOnlyKeyframes = onlyKeyframes;
 }
 
-int CaptureGetStaticDropThreshold()
+void CaptureConfigResetDefault()
 {
-	return SeqStaticDropThreshold;
+	CaptureSetNalHashing(true, true);
+	CaptureSetPPSSPSInject(true);
+	CaptureSetAudioBatching(MaxABatching);
 }
 
 Result CaptureInitialize()

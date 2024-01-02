@@ -363,3 +363,5 @@ SysmoduleRelease/
 *.o
 *.lst
 *.map
+Client/Platform/Resources/resources/buildid.txt
+Client/Platform/Android/app/src/main/assets

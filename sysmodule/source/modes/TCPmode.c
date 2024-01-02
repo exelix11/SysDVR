@@ -2,30 +2,113 @@
 #include "modes.h"
 #include "../net/sockets.h"
 #include "../capture.h"
+#include "proto.h"
+
+int g_tcpEnableBroadcast = 1;
+
+// Prevent toggling this on and off during runtime or else we may leak the socket
+// this can only be set by TCP_Init on mode switch
+static int tcpSessionEnableBroadcast = 1;
+static int UdpAdvertiseSocket = SOCKET_INVALID;
+
+static struct sockaddr_in UdpBroadcastAddr = {
+	.sin_family = AF_INET,
+};
+
+static void DeinitBroadcast(GrcStream stream)
+{
+	if (!tcpSessionEnableBroadcast)
+		return;
+
+	if (stream != GrcStream_Video)
+		return;
+
+	if (UdpAdvertiseSocket == SOCKET_INVALID)
+		return;
+
+	LOG("Closing UDP broadcast socket\n");
+	SocketClose(&UdpAdvertiseSocket);
+}
+
+static void InitBroadcast(GrcStream stream)
+{
+	if (!tcpSessionEnableBroadcast)
+		return;
+
+	// Only one thread need to do the advertisement
+	if (stream != GrcStream_Video)
+		return;
+
+	if (UdpAdvertiseSocket != SOCKET_INVALID)
+		DeinitBroadcast(stream);
+
+	UdpBroadcastAddr.sin_port = htons(19999);
+	UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
+
+	LOG("Opening UDP broadcast socket\n");
+	UdpAdvertiseSocket = SocketUdp();
+	if (!SocketSetBroadcast(UdpAdvertiseSocket, true))
+		LOG("UDP set broadcast failed: %d\n", SocketNativeErrno());
+}
+
+static inline void AdvertiseBroadcast(GrcStream stream)
+{
+	if (!tcpSessionEnableBroadcast)
+		return;
+
+	if (stream != GrcStream_Video)
+		return;
+
+	if (UdpAdvertiseSocket == SOCKET_INVALID)
+	{
+		InitBroadcast(stream);
+	}
+	
+	LOG("Sending UDP advertisement broadcast\n");
+	if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
+	{
+		LOG("UDP advertisement failed: %d\n", SocketNativeErrno());
+		DeinitBroadcast(stream);
+	}
+}
 
 static inline int TCP_BeginListen(GrcStream stream)
 {
-	LOG("TCP %d Begin listen\n", (int)stream);
-	if (stream == GrcStream_Video)
-	{
-		return SocketTcpListen(9911);
-	}
-	else
-	{
-		return SocketTcpListen(9922);
-	}
+	int port = stream == GrcStream_Video ? 9911 : 9922;
+	LOG("TCP %d Begin listen on %d\n", (int)stream, port);
+	InitBroadcast(stream);
+	return SocketTcpListen(port);
+}
+
+static inline bool TCP_DoHandshake(GrcStream stream, int socket)
+{
+	u8 buffer[PROTO_HANDSHAKE_SIZE];
+	if (!SocketRecevExact(socket, buffer, sizeof(buffer)))
+		return false;
+
+	// TCP threads are hardcoded to either video or audio
+	ProtoHandshakeAccept accept = stream == GrcStream_Video ? 
+		ProtoHandshakeAccept_Video : ProtoHandshakeAccept_Audio;
+
+	ProtoParsedHandshake res = ProtoHandshake(accept, buffer, sizeof(buffer));
+
+	if (!SocketSendAll(socket, &res.Result, sizeof(res.Result)))
+		return false;
+
+	return res.Result == Handshake_Ok;
 }
 
 static inline int TCP_Accept(GrcStream stream)
 {
 restart:
+	bool advertise = false;
 	int listen = TCP_BeginListen(stream);
+	int ret = SOCKET_INVALID;
 
 	if (listen == SOCKET_INVALID)
 	{
 		LOG("TCP %d Listen failed\n", (int)stream);
-		svcSleepThread(1E+9);
-		return SOCKET_INVALID;
+		goto leave;
 	}
 
 	while (IsThreadRunning)
@@ -33,22 +116,43 @@ restart:
 		int client = SocketTcpAccept(listen, NULL, NULL);
 		if (client != SOCKET_INVALID)
 		{
-			LOG("TCP %d Accepted client %d\n", (int)stream, client);
-			SocketClose(&listen);
-			return client;
+			LOG("TCP %d Got connection %d\n", (int)stream, client);
+			
+			if (TCP_DoHandshake(stream, client))
+			{
+				LOG("TCP %d Accepted client %d\n", (int)stream, client);
+				ret = client;
+				goto leave;
+			}
+
+			LOG("TCP %d Client %d handshake failed\n", (int)stream, client);
+			SocketClose(&client);
+		}
+
+		// Advertise every 2 seconds
+		if (stream == GrcStream_Video)
+		{
+			if (advertise)
+				AdvertiseBroadcast(stream);
+			advertise = !advertise;
 		}
 
 		svcSleepThread(1E+9);
+
 		if (SocketIsListenNetDown())
 		{
 			LOG("TCP %d Network change detected\n", (int)stream);
 			SocketClose(&listen);
+			DeinitBroadcast(stream);
 			goto restart;
 		}
 	}
 
+leave:
 	SocketClose(&listen);
-	return SOCKET_INVALID;
+	DeinitBroadcast(stream);
+
+	return ret;
 }
 
 typedef struct
@@ -89,6 +193,11 @@ static void TCP_StreamThread(void* argConfig)
 			continue;
 		}
 
+		if (config.Type == GrcStream_Video)
+			CaptureVideoConnected();
+		else
+			CaptureAudioConnected();
+
 		// Give the client a few moments to be ready
 		svcSleepThread(5E+8);
 
@@ -114,26 +223,26 @@ static void TCP_StreamThread(void* argConfig)
 			(void)total;
 #endif
 		}
-		
+
 		LOG("TCP %d Closing client after %lu bytes\n", (int)config.Type, total);
 		SocketClose(&client);
 		svcSleepThread(2E+8);
 	}
 
+	DeinitBroadcast(config.Type);
 	LOG("TCP %d Thread terminating\n", (int)config.Type);
 }
 
 static void TCP_Init()
 {
-	VPkt.Header.Magic = STREAM_PACKET_MAGIC_VIDEO;
-	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
+	LOG("TCP Init\n");
+	tcpSessionEnableBroadcast = g_tcpEnableBroadcast;
 }
 
-const StreamMode TCP_MODE = { 
-	TCP_Init, NULL, 
-	TCP_StreamThread, TCP_StreamThread, 
-	(void*)&VideoConfig, (void*)&AudioConfig,
-	1
+const StreamMode TCP_MODE = {
+	TCP_Init, NULL,
+	TCP_StreamThread, TCP_StreamThread,
+	(void*)&VideoConfig, (void*)&AudioConfig
 };
 
 #endif

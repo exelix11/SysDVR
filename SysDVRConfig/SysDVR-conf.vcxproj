@@ -18,7 +18,6 @@
     <ClCompile Include="source\Scenes\SceneMain.cpp" />
     <ClCompile Include="source\Scenes\SceneNoConnection.cpp" />
     <ClCompile Include="source\Scenes\ScenePatches.cpp" />
-    <ClCompile Include="source\Scenes\SecneDev.cpp" />
     <ClCompile Include="source\UI\glad.c" />
     <ClCompile Include="source\UI\Image.cpp" />
     <ClCompile Include="source\UI\imgui\imgui.cpp" />
@@ -115,6 +114,7 @@
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)source\Libs;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>

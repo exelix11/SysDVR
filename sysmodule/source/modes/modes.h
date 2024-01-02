@@ -1,18 +1,17 @@
 #pragma once
 #include <switch.h>
-#include "defines.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdatomic.h>
+
+#include "defines.h"
+#include "../core.h"
 
 #if defined(USB_ONLY)
 static const bool IsThreadRunning = true;
 #else
 extern atomic_bool IsThreadRunning;
 #endif
-
-void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 stackSize, u32 prio);
-void JoinThread(Thread* t);
 
 typedef struct
 {
@@ -22,7 +21,6 @@ typedef struct
 	void (*AThread)(void*);
 	void* Vargs;
 	void* Aargs;
-	int AudioBatches;
 } StreamMode;
 
 extern const StreamMode USB_MODE;
@@ -47,7 +45,7 @@ typedef union {
 	struct {
 		char VideoSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
 		char AudioSendBuffer[MaxRTPPacket + RTSPBinHeaderSize];
-		u8 alignas(0x1000) ServerThreadStackArea[0x2000 + LOGGING_HEAP_BOOST];
+		u8 alignas(0x1000) ServerThreadStackArea[0x2000 + LOGGING_STACK_BOOST];
 	} RTSPMode;
 #endif
 } StaticBuffers;

@@ -1,48 +1,47 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
+using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Sources
 {
     // Stub source for testing SDL/Ffmpeg UI without a real console 
-    class StubSource : IStreamingSource
-	{
-		public DebugOptions Logging { get; set; }
+    class StubSource : StreamingSource
+    {
+        // Check for bugs
+        bool connected;
 
-		readonly StreamKind kind;
-		public StreamKind SourceKind => kind;
+        public StubSource(StreamingOptions options, CancellationToken cancellation) : 
+            base(options, cancellation) { }
 
-		public StubSource(bool hasVideo, bool hasAudio)
-		{
-			kind = (hasVideo, hasAudio) switch
-			{
-				(true, true) => StreamKind.Both,
-				(true, false) => StreamKind.Video,
-				(false, true) => StreamKind.Audio,
-				_ => throw new NotSupportedException()
-			};
-		}
+        public override async Task Connect()
+        {
+            await Task.Delay(2000, Cancellation).ConfigureAwait(false);
+            connected = true;
+        }
 
-        CancellationToken Cancellation;
+        public override async Task Flush()
+        {
+            await Task.Delay(500, Cancellation).ConfigureAwait(false);
+        }
 
-		public void Flush() { }
-        
-		public bool ReadHeader(byte[] buffer) =>
-			throw new NotImplementedException();
+        public override async Task<ReceivedPacket> ReadNextPacket()
+        {
+            if (!connected)
+                throw new Exception("Not connected");
 
-		public bool ReadPayload(byte[] buffer, int length) =>
-			throw new NotImplementedException();
+            await Task.Delay(-1, Cancellation).ConfigureAwait(false);
+            throw new Exception();
+        }
 
-		public void StopStreaming() { }
+        public override Task StopStreaming()
+        {
+            return Task.CompletedTask;
+        }
 
-		public void UseCancellationToken(CancellationToken tok)
-		{
-			Cancellation = tok;
-		}
-
-		public void WaitForConnection()
-		{
-			while (!Cancellation.IsCancellationRequested)
-				Thread.Sleep(1000);
-		}
-	}
+        protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+        {
+            return Task.FromResult(ProtoHandshakeRequest.HandshakeOKCode);
+        }
+    }
 }

@@ -1,4 +1,4 @@
-#include "../modes/defines.h"
+#include "../core.h"
 
 #if NEEDS_SOCKETS
 #include <string.h>
@@ -16,6 +16,7 @@
 // This means we use the bsd service API directly instead of the libnx wrapper
 
 static bool SocketReady;
+static bool HasNifm;
 
 #define PAGE_ALIGN(x) ((x + 0xFFF) &~ 0xFFF)
 
@@ -41,7 +42,7 @@ static bool SocketReady;
 static u8 alignas(0x1000) TmemBackingBuffer[TMEM_SIZE];
 
 #if UDP_LOGGING
-#define TARGET_DEBUG_IP "192.168.1.28"
+#define TARGET_DEBUG_IP "192.168.178.66"
 
 #include <stdarg.h>
 #include "../third_party/nanoprintf.h"
@@ -95,6 +96,17 @@ void SocketInit()
 #endif
 
 	LOG("Initialied BSD with tmem size %x\n", TMEM_SIZE);
+	SocketReady = true;
+
+#if FAKEDVR
+	Result rc = nifmInitialize(NifmServiceType_User);
+#else
+	Result rc = nifmInitialize(NifmServiceType_Admin);
+#endif
+	if (R_FAILED(rc))
+		LOG("Failed to initialize nifm: %x\n", rc);
+	else
+		HasNifm = true;
 }
 
 void SocketDeinit()
@@ -102,8 +114,17 @@ void SocketDeinit()
 	if (!SocketReady)
 		return;
 
+	if (HasNifm)
+	{
+		LOG("Exiting NIFM\n");
+		nifmExit();
+		HasNifm = false;
+	}
+
 	LOG("Exiting BSD\n");
 	bsdExit();
+
+	SocketReady = false;
 }
 
 void SocketClose(int* socket)
@@ -276,7 +297,7 @@ bool SocketSendAll(int sock, const void* buffer, u32 size)
 				if (pollRes == PollResult_CanWrite)
 					continue;
 				else if (pollRes == PollResult_Timeout)
-					goto poll_again;				
+					goto poll_again;
 
 				// We don't expect to receive data from the client, so any other
 				// result is probably an error and we close the socket on our end
@@ -307,8 +328,49 @@ s32 SocketRecv(int socket, void* buffer, u32 size)
 	return (s32)r;
 }
 
+bool SocketRecevExact(int socket, void* buffer, u32 size)
+{
+	u32 received = 0;
+	while (received < size && IsThreadRunning)
+	{
+		int res = SocketRecv(socket, (char*)buffer + received, size - received);
+		if (res < 0)
+			return false;
+
+		received += res;
+	}
+
+	return true;
+}
+
 bool SocketMakeNonBlocking(int socket)
 {
 	return bsdFcntl(socket, F_SETFL, NX_O_NONBLOCK) != -1;
 }
+
+int SocketNativeErrno()
+{
+	return g_bsdErrno;
+}
+
+bool SocketSetBroadcast(int socket, bool allow)
+{
+	int optVal = allow ? 1 : 0;
+	return bsdSetSockOpt(socket, SOL_SOCKET, SO_BROADCAST, &optVal, sizeof(optVal)) != -1;
+}
+
+s32 SocketGetBroadcastAddress(int socket)
+{
+	u32 addr, mask, gw, dns1, dns2;
+	Result rc = nifmGetCurrentIpConfigInfo(&addr, &mask, &gw, &dns1, &dns2);
+
+	if (R_SUCCEEDED(rc))
+	{
+		return (s32)(addr | ~mask);
+	}
+	else LOG("Nifm failed with %x, fallback to INADDR_BROADCAST\n", rc);
+
+	return INADDR_BROADCAST;
+}
+
 #endif

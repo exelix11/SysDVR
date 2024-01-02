@@ -1,0 +1,1 @@
+include $(call my-dir)/android/jni/libusb.mk

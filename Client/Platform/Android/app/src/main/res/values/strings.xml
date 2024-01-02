@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SysDVR Client</string>
+    <string name="hello_txt">../../../hello.txt</string>
+</resources>

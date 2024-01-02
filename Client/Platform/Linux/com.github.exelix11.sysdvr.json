@@ -1,0 +1,76 @@
+{
+	"app-id": "com.github.exelix11.sysdvr",
+	"runtime": "org.freedesktop.Platform",
+	"runtime-version": "22.08",
+	"sdk": "org.freedesktop.Sdk",
+	"command": "SysDVR-Client",
+	"finish-args": [
+		"--share=ipc",
+		"--socket=x11",
+		"--socket=wayland",
+		"--device=all",
+		"--share=network",
+		"--socket=pulseaudio",
+		"--filesystem=host"
+	],
+	"build-options": {
+		"env": {
+			"PKG_CONFIG_PATH": "/app/lib/pkgconfig:/app/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib/sdk/dotnet6/lib/pkgconfig"
+		}
+	},
+	"modules": [
+		"shared-modules/SDL2/SDL2-no-libdecor.json",
+		"shared-modules/libusb/libusb.json",
+		{
+			"name": "SDL2_image",
+			"config-opts": ["--disable-static"],
+			"rm-configure": true,
+			"cleanup": [
+				"/include",
+				"/lib/pkgconfig",
+				"*.la",
+				"*.a"
+			],
+			"sources": [
+				{
+					"type": "archive",
+					"url": "https://github.com/libsdl-org/SDL_image/releases/download/release-2.6.3/SDL2_image-2.6.3.tar.gz",
+					"sha256": "931c9be5bf1d7c8fae9b7dc157828b7eee874e23c7f24b44ba7eff6b4836312c"
+				}
+			]
+		},
+		{
+			"name": "ffmpeg",
+			"cleanup": [ "/include", "/lib/pkgconfig", "/share/ffmpeg/examples" ],
+			"config-opts": [
+			  "--enable-shared",
+			  "--disable-static",
+			  "--enable-gnutls",
+			  "--disable-doc",
+			  "--disable-programs",
+			  "--disable-encoders"
+			],
+			"sources": [{
+			  "type": "archive",
+			  "url": "https://ffmpeg.org/releases/ffmpeg-5.1.tar.xz",
+			  "sha256": "55eb6aab5ee235550fa54a33eaf8bf1b4ec66c01453182b12f6a993d75698b03"
+			}]
+		  },
+		{
+			"name": "sysdvr-client",
+			"buildsystem": "simple",
+			"build-commands":
+			[
+				"cp -r . /app/bin"
+			],
+			"sources":
+			[
+				{
+					"type": "dir",
+					"path": "dvr-build"
+				}
+			]
+		}
+	]
+  }
+  
