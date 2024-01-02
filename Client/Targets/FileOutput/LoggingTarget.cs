@@ -59,7 +59,7 @@ namespace SysDVR.Client.Targets.FileOutput
                 header.Flags |= PacketHeader.MetaIsData;
 
                 var headerBin = new byte[PacketHeader.StructLength];
-                MemoryMarshal.Write(headerBin, ref header);
+                MemoryMarshal.Write(headerBin, in header);
 
                 bin.Write(headerBin);
                 bin.Write(data.Span);

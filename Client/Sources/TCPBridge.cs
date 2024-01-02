@@ -155,7 +155,7 @@ namespace SysDVR.Client.Sources
         protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
         {
             byte[] buffer = new byte[ProtoHandshakeRequest.StructureSize];
-            MemoryMarshal.Write(buffer, ref req);
+            MemoryMarshal.Write(buffer, in req);
 
             var stream = req.IsVideoPacket ? videoStream : audioStream;
 
