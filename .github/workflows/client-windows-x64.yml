@@ -2,36 +2,16 @@ name: SysDVR-Client Windows x64
 
 on:
   workflow_dispatch:
-  #push:
-  #   branches: [ master ]
-  #   paths:
-  #     - Client/**
-  #     - ClientGUI/**
-  #     - Libs/**
-  #     - ReleaseClient.bat
-  #     # but not the multiplatform builds
-  #     - '!Client/Platform/Android/**'
-  #     - '!Client/Platform/Linux/**'
-  # pull_request:
-  #   branches: [ master ]
-  #   paths:
-  #     - Client/**
-  #     - ClientGUI/**
-  #     - Libs/**
-  #     - ReleaseClient.bat
-  #     - '!Client/Platform/Android/**'
-  #     - '!Client/Platform/Linux/**'
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
-    # SysDVR-Client uses .NET6
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 7.x
+        dotnet-version: 8.x
     - name: Run build script
       shell: cmd
       run: |
