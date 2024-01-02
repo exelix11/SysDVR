@@ -131,7 +131,7 @@ namespace SysDVR.Client.GUI.Components
 			if (SDL_PollEvent(out evt) == 0)
 				return GuiMessage.None;
 
-			Console.WriteLine($"Received SDL_Event {evt.type}");
+			//Console.WriteLine($"Received SDL_Event {evt.type}");
 
 			if (evt.type == SDL_EventType.SDL_QUIT ||
 					(evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))

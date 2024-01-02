@@ -11,8 +11,6 @@ fi
 
 cd .. # Go to Platforms folder
 
-git rev-parse --short HEAD > Resources/resources/buildid.txt
-
 echo Checking dependencies...
 
 mkdir -p Resources/linux-x64/native

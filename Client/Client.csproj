@@ -74,4 +74,35 @@
 	<ItemGroup>
 	  <PackageReference Include="System.Text.Json" Version="7.0.3" />
 	</ItemGroup>
+
+	<!-- The following tasks are used to stamp the git commit hash into the binary -->
+	<PropertyGroup>
+		<!-- Default value in case git is not installed -->
+		<GitCommitHash>Unknown version</GitCommitHash>
+	</PropertyGroup>
+	
+	<Target Name="CreateGitAttributeFile" BeforeTargets="CoreCompile">
+		<!-- Try to run git and get the commit hash -->
+		<Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="True" IgnoreExitCode="True">
+			<Output TaskParameter="ExitCode" PropertyName="GitTaskExitCode" />
+			<Output Condition="'$(GitTaskExitCode)'=='0'" PropertyName="GitCommitHash" TaskParameter="ConsoleOutput" />
+		</Exec>
+		<!-- names the obj/.../CustomAssemblyInfo.cs file -->
+		<PropertyGroup>
+			<CustomAssemblyInfoFile>$(IntermediateOutputPath)CustomAssemblyInfo.cs</CustomAssemblyInfoFile>
+		</PropertyGroup>
+		<!-- includes the CustomAssemblyInfo for compilation into your project -->
+		<ItemGroup>
+			<Compile Include="$(CustomAssemblyInfoFile)" />
+		</ItemGroup>
+		<!-- defines the AssemblyMetadata attribute that will be written -->
+		<ItemGroup>
+			<AssemblyAttributes Include="AssemblyMetadata">
+				<_Parameter1>BuildCommit</_Parameter1>
+				<_Parameter2>$(GitCommitHash)</_Parameter2>
+			</AssemblyAttributes>
+		</ItemGroup>
+		<!-- writes the attribute to the customAssemblyInfo file -->
+		<WriteCodeFragment Language="C#" OutputFile="$(CustomAssemblyInfoFile)" AssemblyAttributes="@(AssemblyAttributes)" />
+	</Target>
 </Project>

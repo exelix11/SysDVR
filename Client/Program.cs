@@ -3,8 +3,6 @@ using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using System;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 #if ANDROID_LIB
 using System.Runtime.InteropServices;

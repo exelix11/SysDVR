@@ -2,8 +2,6 @@
 
 set -e
 
-git rev-parse --short HEAD > Resources/resources/buildid.txt
-
 cd .. # Go to client root
 
 echo Checking dependencies...

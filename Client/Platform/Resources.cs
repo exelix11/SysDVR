@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -108,9 +109,11 @@ namespace SysDVR.Client.Platform
         {
             try
             {
-                var s = ReadResouce(ResourcePath("buildid.txt"));
-                return Encoding.UTF8.GetString(s).Trim();
-            }
+                // Reflection doesn't usually work with AOT but this is a special case
+                return typeof(Program).Assembly
+                    .GetCustomAttributes<AssemblyMetadataAttribute>()
+                    .FirstOrDefault(a => a.Key == "BuildCommit")?.Value;
+			}
             catch (Exception ex)
             {
                 Console.WriteLine("Couldn't load build id file" + ex.ToString());
