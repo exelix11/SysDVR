@@ -171,16 +171,11 @@ bool CaptureReadVideo()
 	
 	bool result = R_SUCCEEDED(res) && VPkt.Header.DataSize > 4;
 
-#ifndef RELEASE
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
-	// These big NALs are not common and even if they're missed they only cause graphical glitches, it's better not to fatal in release builds
+	// These big NALs are not common and even if they're missed they only cause graphical glitches
 	// Error code should be 2212-0006
-	if (R_FAILED(res))
-		LOG("Failed to read video: %x\n", res);
-#endif
-
 	if (!result) {
-		LOG("Video capture failed: %x\n", res);
+		LOG("Video capture failed: %x size: %x\n", res, VPkt.Header.DataSize);
 		return false;
 	}
 

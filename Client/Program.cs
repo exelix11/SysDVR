@@ -131,9 +131,8 @@ namespace SysDVR.Client
                     cli.PrintDeprecationWarnings();
                     cli.ApplyOptionOverrides();
 
-#if WINDOWS
-                    Platform.Specific.Win.AntiInject.Initialize();
-#endif
+                    if (IsWindows)
+                        Platform.Specific.Win.AntiInject.Initialize();
 
 					if (cli.LegacyPlayer)
                         LegacyInstance = new LegacyPlayer(cli);

@@ -33,27 +33,14 @@
 			</ItemGroup>
 		</When>
 
-		<When Condition="$(SysDvrTarget)=='macos'">
-			<PropertyGroup>
-				<!--Unlike android, macos has output type exe for standalone executables-->
-				<OutputType>Exe</OutputType>
-				<TargetFramework>net8.0</TargetFramework>
-			</PropertyGroup>
-		</When>
-
-		<When Condition="$(SysDvrTarget)=='linux'">
-			<PropertyGroup>
-				<OutputType>Exe</OutputType>
-				<TargetFramework>net7.0</TargetFramework>
-			</PropertyGroup>
-		</When>
-
-		<!--Windows -->
+		<!--As of now the only difference is android, instead of using specific conditions we can just use an Otherwise block-->
+		<!--<When Condition="$(SysDvrTarget)=='macos'">-->
+		<!--<When Condition="$(SysDvrTarget)=='linux'">-->
+		<!--<When Condition="$(SysDvrTarget)=='windows'">-->
 		<Otherwise>
 			<PropertyGroup>
 				<OutputType>Exe</OutputType>
-				<TargetFramework>net7.0</TargetFramework>
-				<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+				<TargetFramework>net8.0</TargetFramework>
 			</PropertyGroup>
 		</Otherwise>
 	</Choose>
