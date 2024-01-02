@@ -25,37 +25,6 @@ namespace {
 	const std::string UsbDescription = "Use this mode to stream to the SysDVR-Client application via USB.\n"
 		"To setup SysDVR-Client on your pc refer to the guide on Github";
 
-	int debugButtonPresses = 0;
-	bool DebugButton() 
-	{
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0));
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3);
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
-
-		auto win = ImGui::GetWindowWidth();
-		ImGui::SetCursorPosX(win / 2 - SysDVRLogo.Size().x * 0.6f / 2);
-
-		bool pressed = ImGui::Button("debug options", ImVec2(SysDVRLogo.Size().x * 0.6f, SysDVRLogo.Size().y * 0.6f));
-
-		ImGui::PopStyleVar(3);
-		ImGui::PopStyleColor(4);
-
-		if (pressed)
-			debugButtonPresses++;
-
-		if (debugButtonPresses >= 7)
-		{
-			debugButtonPresses = 0;
-			return true;
-		}
-
-		return false;
-	}
-
 	u32 GetBootMode()
 	{
 		if (fs::Exists(SDMC "/config/sysdvr/usb"))
@@ -183,7 +152,7 @@ void scenes::InitModeSelect()
 	InitialMode = CurrentMode;
 }
 
-void scenes::ModeSelect() 
+void scenes::ModeSelect()
 {
 
 	constexpr auto SetMode = [](u32 mode) -> bool
@@ -230,12 +199,7 @@ void scenes::ModeSelect()
 			return;
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
-	if (ImGui::Button("Advanced options", {200, 0}))
-		app::SetNextScene(Scene::DevScene);
-
-	ImGui::SameLine();
-	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2 + 215);
-	if (ImGui::Button("Stop streaming", { ModeButtonW - 215, 0 }))
+	if (ImGui::Button("Stop streaming", { ModeButtonW , 0 }))
 		if (!SetMode(TYPE_MODE_NULL))
 			return;
 

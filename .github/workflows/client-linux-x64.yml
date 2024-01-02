@@ -1,7 +1,5 @@
 name: SysDVR-Client flatpak linux x64
 
-# This workflow is not implemented in the main branch yet, it's here so github lets us run it in the 6.0 branch
-
 on:
   workflow_dispatch:
 
@@ -10,3 +8,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install flatpak
+      run: |
+        sudo apt update
+        sudo apt install flatpak flatpak-builder -y
+        flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: "8.x"
+    - name: Cache flatpak builds
+      uses: actions/cache@v3
+      with:
+        path: Client/Platform/Linux/.flatpak-builder
+        key: flatpak-${{ runner.os }}
+    - name: Run build script
+      run: |
+        cd Client/Platform/Linux
+        chmod +x build-flatpak.sh
+        ./build-flatpak.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Client.flatpak
+        path: Client/Platform/Linux/SysDVR-Client.flatpak

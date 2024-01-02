@@ -1,6 +1,7 @@
 #include "modes.h"
 #include "../USB/Serial.h"
 #include "../capture.h"
+#include "proto.h"
 
 static bool VideoConnected = false;
 static bool AudioConnected = false;
@@ -36,22 +37,50 @@ static bool SendData(void* data, size_t length)
 	return success;
 }
 
+bool USB_ConnectClient()
+{
+	u8 buffer[PROTO_HANDSHAKE_SIZE];
+	size_t read = 0;
+
+	do
+		read = usbSerialRead(buffer, sizeof(buffer), 1E+9);
+	while (read == 0 && IsThreadRunning);
+
+	if (read != sizeof(buffer) || !IsThreadRunning)
+		return false;
+
+	LOG("USB request received\n");	
+	ProtoParsedHandshake res = ProtoHandshake(ProtoHandshakeAccept_Any, buffer, sizeof(buffer));
+
+	if (!UsbStreamingSend(&res.Result, sizeof(res.Result)))
+		return false;
+
+	if (res.Result != Handshake_Ok)
+		return false;
+
+	VideoConnected = res.RequestedVideo;
+	AudioConnected = res.RequestedAudio;
+
+	if (VideoConnected)
+		CaptureVideoConnected();
+
+	if (AudioConnected)
+		CaptureAudioConnected();
+	
+	LastConnection = armGetSystemTick();
+	return true;
+}
+
 static void USB_VideoStreamThread(void*)
 {
 	while (IsThreadRunning)
 	{
 		// Video streaming thread acts as master and receives the initial streaming request
 		if (!ClientConnected()) {
-			UsbStreamRequest req = UsbStreamingWaitConnection();
-			if (req == UsbStreamRequestFailed) {
+			if (!USB_ConnectClient()) {
 				svcSleepThread(5E+8L);
 				continue;
 			}
-
-			VideoConnected = req == UsbStreamRequestVideo || req == UsbStreamRequestBoth;
-			AudioConnected = req == UsbStreamRequestAudio || req == UsbStreamRequestBoth;
-
-			LastConnection = armGetSystemTick();
 		}
 		else if (VideoConnected)
 		{
@@ -95,9 +124,6 @@ static void USB_AudioStreamThread(void*)
 
 static void USB_Init()
 {
-	VPkt.Header.Magic = STREAM_PACKET_MAGIC_VIDEO;
-	APkt.Header.Magic = STREAM_PACKET_MAGIC_AUDIO;
-	
 	VideoConnected = false;
 	AudioConnected = false;
 	mutexInit(&UsbMutex);
@@ -120,6 +146,4 @@ const StreamMode USB_MODE = {
 	USB_Init, USB_Exit, 
 	USB_VideoStreamThread, USB_AudioStreamThread,
 	NULL, NULL,
-	// USB uses an higher audio batching value to avoid stuttering
-	2
 };

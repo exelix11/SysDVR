@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AssemblyTitle>SDL2#</AssemblyTitle>
+        <AssemblyName>SDL2-CS</AssemblyName>
+        <Description>libSDL2 bindings for C#</Description>
+        <RootNamespace>SDL2</RootNamespace>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
+    <PropertyGroup Label="NuGet">
+        <Authors>ppy Pty Ltd &amp; flibitijibibo</Authors>
+        <Title>SDL2#</Title>
+        <PackageId>ppy.SDL2-CS</PackageId>
+        <PackageProjectUrl>https://github.com/ppy/SDL2-CS</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/ppy/SDL2-CS</RepositoryUrl>
+    </PropertyGroup>
+</Project>

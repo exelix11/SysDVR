@@ -1,12 +1,37 @@
 name: SysDVR-Client dotnet build
 
-# This workflow is not implemented in the main branch yet, it's here so github lets us run it in the 6.0 branch
+# This is the "cross platform" build of SysDVR-Client, it only produces clean .net binaries without dependencies
+# All the other builds are platform specific and produce a native AOT build with all the dependencies included
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - Client/**
+      # but not the multiplatform builds
+      - '!Client/Platform/Android/**'
+      - '!Client/Platform/Linux/**'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - Client/**
+      - '!Client/Platform/Android/**'
+      - '!Client/Platform/Linux/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 8.x
+    - name: Run dotnet build
+      run: |
+        cd Client
+        dotnet build -c Release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Client-dotnet.zip
+        path: Client/bin/Release/net7.0/

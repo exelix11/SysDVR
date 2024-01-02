@@ -31,20 +31,6 @@ Result SysDvrConnect()
 	return rc;
 }
 
-Result SysDvrSetUserOverrides(const UserOverrides* options)
-{
-	return serviceDispatchIn(&dvr, CMD_SET_USER_OVERRIDES, *options);
-}
-
-Result SysDvrGetUserOverrides(UserOverrides* out_options)
-{
-	UserOverrides opt;
-	Result rc = serviceDispatchOut(&dvr, CMD_GET_USER_OVERRIDES , opt);
-	if (R_SUCCEEDED(rc))
-		*out_options = opt;
-	return rc;
-}
-
 void SysDVRDebugCrash()
 {
 	serviceDispatch(&dvr, CMD_DEBUG_CRASH);
@@ -113,7 +99,7 @@ void SysDvrClose()
 
 Result SysDvrGetVersion(u32* out_ver)
 {
-	*out_ver = SYSDVR_VERSION;
+	*out_ver = SYSDVR_IPC_VERSION;
 	return 0;
 }
 
@@ -145,17 +131,6 @@ Result SysDvrSetTCP()
 
 Result SysDvrSetOFF()
 {
-	return 0;
-}
-
-Result SysDvrSetUserOverrides(const UserOverrides* options)
-{
-	return 0;
-}
-
-Result SysDvrGetUserOverrides(UserOverrides* out_options)
-{
-	*out_options = (UserOverrides){ true, 2, 3 };
 	return 0;
 }
 #endif

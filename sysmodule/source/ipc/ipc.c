@@ -1,13 +1,9 @@
 #if !defined(USB_ONLY)
-#include "ipc.h"
 #include <string.h>
-#include "../modes/defines.h"
 
-// From main
-extern void SetModeID(u32 mode);
-extern u32 GetCurrentMode();
-extern UserOverrides GetUserOverrides();
-extern void ApplyUserOverrides(UserOverrides overrides);
+#include "ipc.h"
+#include "../modes/defines.h"
+#include "../core.h"
 
 static Handle handles[2];
 static SmServiceName serverName;
@@ -81,14 +77,15 @@ static void WriteResponseToTLS(Result rc)
 	rawHeader->token = 0;
 }
 
-static bool ReadPayload(const Request* req, void* data, u32 len)
-{
-	if (req->dataSize < len || !req->data)
-		return false;
-
-	memcpy(data, req->data, len);
-	return true;
-}
+// Currently not used
+//static bool ReadPayload(const Request* req, void* data, u32 len)
+//{
+//	if (req->dataSize < len || !req->data)
+//		return false;
+//
+//	memcpy(data, req->data, len);
+//	return true;
+//}
 
 static void WritePayloadResponseToTLS(Result rc, const void* payload, u32 len)
 {
@@ -124,7 +121,7 @@ static bool HandleCommand(const Request* req)
 	{
 		case CMD_GET_VER:
 		{
-			u32 ver = SYSDVR_VERSION;
+			u32 ver = SYSDVR_IPC_VERSION;
 			WritePayloadResponseToTLS(0, &ver, sizeof(ver));
 			return false;
 		}
@@ -132,24 +129,6 @@ static bool HandleCommand(const Request* req)
 		{
 			u32 mode = GetCurrentMode();
 			WritePayloadResponseToTLS(0, &mode, sizeof(mode));
-			return false;
-		}
-		case CMD_GET_USER_OVERRIDES: 
-		{
-			UserOverrides overrides = GetUserOverrides();
-			WritePayloadResponseToTLS(0, &overrides, sizeof(overrides));
-			return false;
-		}
-		case CMD_SET_USER_OVERRIDES:
-		{
-			UserOverrides overrides;
-			if (!ReadPayload(req, &overrides, sizeof(overrides)))
-			{
-				WriteResponseToTLS(ERR_IPC_INVALID_REQUEST);
-				return true;
-			}
-			ApplyUserOverrides(overrides);
-			WriteResponseToTLS(0);
 			return false;
 		}
 		case CMD_DEBUG_CRASH:

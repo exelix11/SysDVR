@@ -162,16 +162,14 @@ int main(int argc, char* argv[])
 			goto mainloop;
 		}
 
-		if (version > SYSDVR_VERSION) {
+		if (version > SYSDVR_IPC_VERSION) {
 			app::FatalError("You're using a newer version of SysDVR", "Please download the latest settings app from github.");
 			goto mainloop;
 		}
-		else if (version < SYSDVR_VERSION) {
+		else if (version < SYSDVR_IPC_VERSION) {
 			app::FatalError("You're using an outdated version of SysDVR", "Please download the latest version from github, then reboot your console.");
 			goto mainloop;
 		}
-
-		scenes::InitDevScene();
 	}
 
 	scenes::InitModeSelect();
@@ -215,9 +213,6 @@ mainloop:
 			break;
 		case Scene::NoConnection:
 			scenes::NoConnection();
-			break;
-		case Scene::DevScene:
-			scenes::DevTestScene();
 			break;
 		default:
 			Glfw::SetShouldClose();

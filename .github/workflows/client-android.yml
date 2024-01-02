@@ -1,12 +1,65 @@
 name: SysDVR-Client android
 
-# This workflow is not implemented in the main branch yet, it's here so github lets us run it in the 6.0 branch
-
 on:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
+    steps
     - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.x
+    - name: Setup JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: 17
+        distribution: temurin  
+    - name: Setup Android SDK
+      uses: amyu/setup-android@v3
+      with:
+        ndk-version: "25.2.9519653"
+    - name: Configure native cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/cimgui
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/libusb
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/SDL
+          ${{ github.workspace }}/Client/Platform/Android/app/jni/SDL_Image
+          ${{ github.workspace }}/Client/Platform/Android/app/libs
+          ${{ github.workspace }}/Client/Platform/Android/bflat
+        key: deps-cache-${{ hashFiles('Client/Platform/Android/buildbinaries.sh') }}-${{ hashFiles('Client/Platform/Android/patches') }}
+        restore-keys: deps-cache-${{ hashFiles('Client/Platform/Android/buildbinaries.sh') }}-${{ hashFiles('Client/Platform/Android/patches') }}
+    - name: Build client native lib
+      run: |
+        export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH
+        cd ./Client/Platform/Android
+        ls -la
+        ln -s $(pwd)/../Resources/resources $(pwd)/app/src/main/assets
+        chmod +x buildbinaries.sh
+        ./buildbinaries.sh
+    - name: Extract keystore from secrets
+      run: |
+        echo ${{ secrets.ANDROID_CI_CERT }} | base64 -d > /tmp/CI.jks
+    - name: Configure gradle cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/Client/Platform/Android/.gradle
+          ${{ github.workspace }}/Client/Platform/Android/app/build
+        key: build-cache-${{ hashFiles('Client/Platform/Android/buildbinaries.sh') }}-${{ hashFiles('Client/Platform/Android/patches') }}
+        restore-keys: build-cache-
+    - name: Build app with gradle
+      run: |
+        cd ./Client/Platform/Android
+        chmod +x gradlew
+        ./gradlew assembleRelease
+      env: 
+        ANDROID_CI_KEY: ${{ secrets.ANDROID_CI_KEY }}
+    - uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Client
+        path: ./Client/Platform/Android/app/build/outputs/apk/release/app-release.apk

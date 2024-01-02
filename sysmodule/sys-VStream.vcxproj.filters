@@ -7,7 +7,6 @@
     <None Include="cpp.nx.hint" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\main.c" />
     <ClCompile Include="source\grcd.c" />
     <ClCompile Include="source\rtsp\RTSP.c">
       <Filter>rtsp</Filter>
@@ -36,6 +35,11 @@
     </ClCompile>
     <ClCompile Include="source\net\sockets.c">
       <Filter>net</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core.c" />
+    <ClCompile Include="source\sysmodule\main.c" />
+    <ClCompile Include="source\modes\proto.c">
+      <Filter>modes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -73,6 +77,10 @@
     </ClInclude>
     <ClInclude Include="source\net\sockets.h">
       <Filter>net</Filter>
+    </ClInclude>
+    <ClInclude Include="source\core.h" />
+    <ClInclude Include="source\modes\proto.h">
+      <Filter>modes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

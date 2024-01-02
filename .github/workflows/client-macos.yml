@@ -1,12 +1,33 @@
 name: SysDVR-Client macos (cross platform)
 
-# This workflow is not implemented in the main branch yet, it's here so github lets us run it in the 6.0 branch
-
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Install dependencies
+      shell: bash
+      run: brew install dmg2img
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: "8.x"
+    - name: Run build script
+      shell: bash
+      run: |
+        cd Client/Platform/
+        chmod +x BuildMacos.sh
+        ./BuildMacos.sh
+    - name: Upload artifact (intel)
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Cilent macos intel
+        path: Client/SysDVRClient-MacOs-x64.zip
+    - name: Upload artifact (arm)
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysDVR-Cilent macos arm
+        path: Client/SysDVRClient-MacOs-arm64.zip
