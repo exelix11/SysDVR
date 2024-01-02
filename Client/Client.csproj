@@ -20,7 +20,6 @@
 
 	<Choose>
 		<!--Android and macos builds use dotnet 8 preview-->
-		<!--TODO: change this once dotnet 8 is out of preview-->
 		<When Condition="$(SysDvrTarget)=='android'">
 			<PropertyGroup>
 				<TargetFramework>net8.0</TargetFramework>

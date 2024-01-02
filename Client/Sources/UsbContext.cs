@@ -99,7 +99,7 @@ namespace SysDVR.Client.Sources
         }
 
 #if ANDROID_LIB
-        public IReadOnlyList<DvrUsbDevice> FindSysdvrDevices()
+        public DisposableCollection<DvrUsbDevice> FindSysdvrDevices()
         {
             Program.Native.EnsureThreadAttached();
 
@@ -127,10 +127,10 @@ namespace SysDVR.Client.Sources
                 Program.Native.UsbReleaseSnapshot();
             }
 
-            return res;
+            return new(res);
         }
 #else
-        static bool MatchSysdvrDevice(IUsbDevice device)
+		static bool MatchSysdvrDevice(IUsbDevice device)
         {
             try
             {

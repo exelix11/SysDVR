@@ -34,7 +34,7 @@ The build script for each platform is located in the Client/Platform folder.
 
 ## Build tools
 
-SysDVR requires dotnet 8.0 to build, only the android version uses dotnet 9.0 (from the beta channel) due to [android specific issues] and the native android SDK.
+SysDVR requires dotnet 8.0 to build, the android version additionaly requires the native android SDK and android studio.
 
 ## Client build
 

@@ -51,7 +51,9 @@ namespace SysDVR.Client.Platform.Specific.Win
 
 		const int GMEM_MOVEABLE = 0x0002;
 
+#pragma warning disable CS0649
 		struct HGLOBAL { public IntPtr Value; }
+#pragma warning restore CS0649
 
 		[DllImport("kernel32.dll")]
 		static extern HGLOBAL GlobalAlloc(uint uFlags, nint dwBytes);

@@ -22,7 +22,7 @@ namespace SysDVR.Client.Platform
     internal static class DynamicLibraryLoader
     {
         // If something goes wrong and we want to show a critical warning to the user, we'll set this (assuming we get that far)
-        public static string? CriticalWarning;
+        public static string? CriticalWarning = null;
 
         static string ArchName => RuntimeInformation.ProcessArchitecture switch
         {
