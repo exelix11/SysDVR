@@ -31,4 +31,3 @@ jobs:
       with:
         name: SysDVR-Cilent macos arm
         path: Client/SysDVRClient-MacOs-arm64.zip
-      
