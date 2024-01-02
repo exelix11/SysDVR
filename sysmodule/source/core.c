@@ -9,12 +9,7 @@
 #include "net/sockets.h"
 #endif
 
-#ifdef RELEASE
-#pragma message "Building release"
-#else
-#pragma message "Building debug"
 //#define USB_ONLY
-#endif
 
 #if FILE_LOGGING
 #pragma message "File logging is enabled"
