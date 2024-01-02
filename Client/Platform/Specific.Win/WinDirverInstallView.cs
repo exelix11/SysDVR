@@ -74,10 +74,7 @@ namespace SysDVR.Client.Platform.Specific.Win
 			sz.Y = Gui.ButtonHeight();
 			sz.X *= portrait ? .92f : .82f;
 
-			ImGui.TextWrapped("SysDVR now uses standard Android ADB drivers, the driver download URL is the following:");
-			ImGui.TextWrapped(WinDriverInstall.DriverUrl);
-			ImGui.TextWrapped("The SHA256 hash of the zip file:");
-			ImGui.TextWrapped(WinDriverInstall.DriverHash);
+			ImGui.TextWrapped("SysDVR now uses standard Android ADB drivers");
 			ImGui.TextWrapped("The driver is signed by Google, so it is safe to install and doesn't require any complex install steps.");
 			ImGui.NewLine();
 
@@ -96,6 +93,12 @@ namespace SysDVR.Client.Platform.Specific.Win
 
 				if (Gui.CenterButton("Check status again", sz))
 					CheckStatus();
+
+				ImGui.NewLine();
+				ImGui.TextWrapped("If you choose to install the driver it will be downloaded from");
+				ImGui.TextWrapped(WinDriverInstall.DriverUrl);
+				ImGui.TextWrapped("The expected SHA256 hash of the zip file is " + WinDriverInstall.DriverHash);
+				ImGui.NewLine();
 
 				Gui.CursorFromBottom(sz.Y);
 				if (Gui.CenterButton("Back", sz))
