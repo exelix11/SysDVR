@@ -7,10 +7,10 @@
 		<Company />
 		<PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-		<Version>5.5.0.6</Version>
+		<Version>6.0</Version>
 		<RootNamespace>SysDVR.Client</RootNamespace>
-		<AssemblyVersion>5.5.0.6</AssemblyVersion>
-		<FileVersion>5.5.0.6</FileVersion>
+		<AssemblyVersion>6.0</AssemblyVersion>
+		<FileVersion>6.0</FileVersion>
 		<Configurations>Debug;Release</Configurations>
 		<ApplicationIcon>Client.ico</ApplicationIcon>
 		<RollForward>Major</RollForward>
@@ -47,14 +47,16 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Optimize>false</Optimize>
-		<DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
-		<!--<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>-->
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DebugType>none</DebugType>
 		<DebugSymbols>false</DebugSymbols>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!--<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>-->
 		<DefineConstants>$(DefineConstants);NETSTANDARD2_1_OR_GREATER;NETSTANDARD2;NETSTANDARD2_0;NETSTANDARD2_1</DefineConstants>
 	</PropertyGroup>
 
@@ -78,7 +80,7 @@
 	<!-- The following tasks are used to stamp the git commit hash into the binary -->
 	<PropertyGroup>
 		<!-- Default value in case git is not installed -->
-		<GitCommitHash>Unknown version</GitCommitHash>
+		<GitCommitHash>unknown</GitCommitHash>
 	</PropertyGroup>
 	
 	<Target Name="CreateGitAttributeFile" BeforeTargets="CoreCompile">
