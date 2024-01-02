@@ -116,8 +116,8 @@ namespace SysDVR.Client.GUI
             {
                 ImGui.Spacing();
 
-                if (autoConnect == "")
-                    Gui.CenterText("SysDVR will connect automatically to the first device that appears");
+				if (autoConnect == "" || Program.Options.HideSerials)
+					Gui.CenterText("SysDVR will connect automatically to the first valid device");
                 else
                     Gui.CenterText("SysDVR will connect automatically to the console with serial containing: " + autoConnect);
 

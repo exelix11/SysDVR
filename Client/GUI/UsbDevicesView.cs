@@ -119,8 +119,8 @@ namespace SysDVR.Client.GUI
             {
                 ImGui.Spacing();
 
-                if (autoConnect == "")
-                    Gui.CenterText("SysDVR will connect automatically to the first device that appears");
+                if (autoConnect == "" || Program.Options.HideSerials)
+                    Gui.CenterText("SysDVR will connect automatically to the first valid device");
                 else
                     Gui.CenterText("SysDVR will connect automatically to the console with serial containing: " + autoConnect);
 
@@ -141,6 +141,8 @@ namespace SysDVR.Client.GUI
             if (devices is null || devices.Count == 0)
             {
                 Gui.CenterText("No USB devices found.");
+                ImGui.NewLine();
+
                 ImGui.TextWrapped("Make sure you have SysDVR installed on your console and that it's running in USB mode.");
                 
                 if (Program.IsWindows)

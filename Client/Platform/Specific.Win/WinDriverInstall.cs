@@ -28,7 +28,7 @@ namespace SysDVR.Client.Platform.Specific.Win
 			else if (info == DriverStatus.NotInstalled)
 				status = "It seems the driver is not installed, you need to install it to use SysDVR.";
 			else
-				status = "It seems Windows has never detected the SysDVR device ID, enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
+				status = "It seems that Windows has never detected the SysDVR device ID. Enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
 
 			return info == DriverStatus.Installed;
 		}
