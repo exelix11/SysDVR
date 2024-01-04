@@ -1,15 +1,16 @@
 ﻿using SysDVR.Client.Sources;
+using SysDVR.Client.Targets;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.Core
 {
@@ -23,7 +24,7 @@ namespace SysDVR.Client.Core
 	public class StreamingOptions
 	{
 		public StreamKind Kind = StreamKind.Both;
-		public int AudioBatching = 2;
+		public int AudioBatching = 3;
 		public bool UseNALReplay = true;
 		public bool UseNALReplayOnlyOnKeyframes = false;
 
@@ -32,7 +33,7 @@ namespace SysDVR.Client.Core
 
 		public bool Validate()
 		{
-			if (AudioBatching < 0 || AudioBatching > 2)
+			if (AudioBatching < 0 || AudioBatching > StreamInfo.MaxAudioBatching)
 				return false;
 
 			return true;

@@ -82,9 +82,9 @@ namespace SysDVR.Client.Core
             sb.Append('[');
 
             bool firstInSeq = true;
-            foreach (var (start, length) in H264Util.EnumerateNals(block.ArraySegment))
+            foreach (var n in H264Util.EnumerateNals(block.ArraySegment))
             {
-                var nal = block.Span.Slice(start, length);
+                var nal = block.Span.Slice(n.Start, n.Length);
                 if (checkNal)
                 {
                     if (firstInSeq)

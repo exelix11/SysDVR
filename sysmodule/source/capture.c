@@ -20,7 +20,7 @@ static bool forceSPSPPS = false;
 static atomic_bool capturing = false;
 
 // User configuration
-static int AudioBatching = MaxABatching;
+static int AudioBatching = DefaultABatching;
 static bool InjectSpsPps = true;
 static bool HashNals = false;
 static bool HashOnlyKeyframes = true;
@@ -117,30 +117,23 @@ u32 crc32_arm64_hw(const u8* p, unsigned int len)
 	return ~crc;
 }
 
-static u32 NalHashes[20];
-static u32 NalHashIdx = 0;
+#define HASH_BITS 6
+static u32 NalHashes[1 << HASH_BITS];
 
 bool HashVideoPacket(const u8* data, size_t len, u8* outSlot)
 {
 	u32 hash = crc32_arm64_hw(data, len);
 
-	// This is unlikely but we use hash = 0 to indicate uninitialized entry
-	if (!hash)
-		return false;
+	// We use the lower HASH_BITS bits of the hash as the index
+	int index = hash & ((1 << HASH_BITS) - 1);
+	*outSlot = (u8)index;
 
-	for (int i = 0; i < sizeof(NalHashes) / sizeof(NalHashes[0]); i++)
-	{
-		if (NalHashes[i] == hash)
-		{
-			*outSlot = (u8)i;
-			// note how the hash table is not updated if we already know the hash
-			return true;
-		}
-	}
+	// If the hash is already in the table we do not need to send the packet again
+	if (NalHashes[index] == hash)
+		return true;
 
-	*outSlot = (u8)NalHashIdx; 
-	NalHashes[NalHashIdx++] = hash;
-	NalHashIdx %= sizeof(NalHashes) / sizeof(NalHashes[0]);
+	// Otherwise we update the hash table and send the packet
+	NalHashes[index] = hash;
 
 	return false;
 }
@@ -148,7 +141,6 @@ bool HashVideoPacket(const u8* data, size_t len, u8* outSlot)
 void CaptureVideoConnected()
 {
 	memset(NalHashes, 0, sizeof(NalHashes));
-	NalHashIdx = 0;
 	VPkt.Header.Magic = STREAM_PACKET_HEADER;
 	VPkt.Header.MetaData = PacketMeta_Type_Video;
 	VPkt.Header.ReplaySlot = 0xFF;
@@ -188,6 +180,8 @@ bool CaptureReadVideo()
 	// this is a static images so we can just not send it with no consequences to free
 	// up bandwidth for audio and reduce delay once the image changes
 	const bool UseHash = HashNals && (isIDRFrame || !HashOnlyKeyframes);
+	VPkt.Header.ReplaySlot = 0xFF;
+
 	if (UseHash && HashVideoPacket(VPkt.Data, VPkt.Header.DataSize, &VPkt.Header.ReplaySlot)) {
 		LOG("Sending packet hash instead\n");
 		PacketMakeReplay(&VPkt);
@@ -253,7 +247,7 @@ void CaptureConfigResetDefault()
 {
 	CaptureSetNalHashing(true, true);
 	CaptureSetPPSSPSInject(true);
-	CaptureSetAudioBatching(MaxABatching);
+	CaptureSetAudioBatching(DefaultABatching);
 }
 
 Result CaptureInitialize()
