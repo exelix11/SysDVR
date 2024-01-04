@@ -44,16 +44,24 @@ namespace SysDVR.Client.Sources
             var header = MemoryMarshal.Read<PacketHeader>(headerBin);
             var body = PoolBuffer.Rent(header.DataSize);
 
-            await Source.BaseStream.ReadAsync(body.Memory, Cancellation);
+			try
+			{
+				await Source.BaseStream.ReadAsync(body.Memory, Cancellation);
 
-            var tsDelay = Source.ReadUInt32();
+				var tsDelay = Source.ReadUInt32();
 
-            sw.Stop();
-            if (sw.ElapsedMilliseconds < tsDelay)
-                await Task.Delay((int)(tsDelay - sw.ElapsedMilliseconds));
+				sw.Stop();
+				if (sw.ElapsedMilliseconds < tsDelay)
+					await Task.Delay((int)(tsDelay - sw.ElapsedMilliseconds));
 
-            sw.Restart();
-            return new ReceivedPacket(header, body);
+				sw.Restart();
+				return new ReceivedPacket(header, body);
+			}
+			catch 
+			{
+				body.Free();
+				throw;
+			}
         }
 
         protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)

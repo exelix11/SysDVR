@@ -24,7 +24,7 @@ namespace SysDVR.Client.Sources
             for (int i = 0; i < TableSize; i++)
             {
                 Table[i]?.Free();
-                Table[1] = null;
+                Table[i] = null;
             }
         }
 
