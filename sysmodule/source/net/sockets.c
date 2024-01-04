@@ -383,6 +383,7 @@ s32 SocketGetBroadcastAddress(int socket)
 	}
 	else LOG("Nifm failed with %x, fallback to INADDR_BROADCAST\n", rc);
 
+	// This does not seem to work on switch
 	return INADDR_BROADCAST;
 }
 
