@@ -234,6 +234,7 @@ namespace SysDVR.Client.GUI
         List<PendingUiNotif> notifications = new();
 
         Gui.CenterGroup uiOptCenter;
+        Gui.CenterGroup quitOptCenter;
         Gui.Popup quitConfirm = new("Confirm quit");
         Gui.Popup fatalError = new("Fatal error");
 
@@ -477,7 +478,10 @@ namespace SysDVR.Client.GUI
                 ImGui.Text("Are you sure you want to quit?");
                 ImGui.Separator();
 
-                if (ImGui.Button("Yes"))
+                var w = ImGui.GetWindowSize().X / 4;
+                quitOptCenter.StartHere();
+
+				if (ImGui.Button("Yes", new(w, 0)))
                 {
                     quitConfirm.RequestClose();
                     Program.Instance.PopView();
@@ -485,10 +489,12 @@ namespace SysDVR.Client.GUI
 
                 ImGui.SameLine();
 
-                if (ImGui.Button("No"))
+                if (ImGui.Button("No", new(w, 0)))
                     quitConfirm.RequestClose();
 
-                ImGui.EndPopup();
+                quitOptCenter.EndHere();
+
+				ImGui.EndPopup();
             }
         }
 

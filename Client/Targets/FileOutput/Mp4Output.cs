@@ -126,11 +126,6 @@ namespace SysDVR.Client.Targets.FileOutput
             VideoTarget?.StartWithContext(OutCtx, sync);
             AudioTarget?.StartWithContext(OutCtx, sync, AStream->id);
 
-            var defColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("if you close SysDVR-Client via the X button the output video may become corrupted.");
-            Console.ForegroundColor = defColor;
-
             Running = true;
         }
 

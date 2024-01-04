@@ -84,7 +84,8 @@ namespace SysDVR.Client.GUI
 				if (!Popup.Begin())
 					return;
 
-				ImGui.TextWrapped(PathInputMessage);
+					ImGui.TextWrapped(PathInputMessage);
+				ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
 				ImGui.InputText("##pathpopinput", PathInputBuffer, (uint)PathInputBuffer.Length);
 
 				PathPopButtons.StartHere();
@@ -238,7 +239,10 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Uncap GUI framerate", ref Program.Options.UncapGUI);
 
 				ImGui.TextWrapped("These options affect the straming quality of SysDVR, the defaults are usually fine");
-				ImGui.SliderInt("Audio batching", ref Program.Options.Streaming.AudioBatching, 0, 2);
+				
+				ImGui.Text("Audio batching"); ImGui.SameLine();
+				ImGui.SliderInt("##SliderAudioB", ref Program.Options.Streaming.AudioBatching, 0, 2);
+				
 				ImGui.Checkbox("Cache video packets (NAL) locally and replay them when needed", ref Program.Options.Streaming.UseNALReplay);
 				ImGui.Checkbox("Apply packet cache only to keyframes (H264 IDR frames)", ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);
 
@@ -262,7 +266,8 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Analyze keyframe NALs during the stream", ref Program.Options.Debug.Keyframe);
 				ImGui.Checkbox("Analyze every NAL during the stream", ref Program.Options.Debug.Nal);
 
-				ImGui.SliderFloat("GUI scale", ref Program.Options.GuiFontScale, 0.1f, 4);			
+				ImGui.Text("GUI scale"); ImGui.SameLine();
+				ImGui.SliderFloat("##sliderGuiScale", ref Program.Options.GuiFontScale, 0.1f, 4);			
 
 				// TODO:
 				// ffmpeg decoder name

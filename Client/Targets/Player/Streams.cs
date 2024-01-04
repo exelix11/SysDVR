@@ -219,7 +219,7 @@ namespace SysDVR.Client.Targets.Player
                     {
                         success = true;
                         // Tell the UI thread to start rendering again
-                        Program.Instance.KickRendering(false);
+                        Program.Instance?.KickRendering(false);
                         break;
                     }
                 }
