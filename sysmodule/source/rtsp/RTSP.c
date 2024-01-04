@@ -92,14 +92,18 @@ reconnect:
 	while (RTSP_Running)
 	{
 		unsigned int clientAddRlen = sizeof(clientAddress);
-		client = SocketTcpAccept(listener, (struct sockaddr*)&clientAddress, &clientAddRlen);
-		if (client == SOCKET_INVALID)
+		
+		client = SOCKET_INVALID;
+		SocketAcceptResult result = SocketTcpAccept(listener, &client, (struct sockaddr*)&clientAddress, &clientAddRlen);
+		
+		if (result != SocketAcceptError_OK)
 		{
 			if (!RTSP_Running)
 				break;
 
 			svcSleepThread(1E+9);
-			if (SocketIsListenNetDown())
+
+			if (result == SocketAcceptError_NetDown)
 			{
 				SocketClose(&listener);
 				listener = SocketTcpListen(RTSP_PORT);

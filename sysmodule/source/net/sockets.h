@@ -13,11 +13,16 @@ int SocketUdp();
 
 int SocketTcpListen(short port);
 
-// Only valid after SocketTcpAccept() returns SOCKET_INVALID
-bool SocketIsListenNetDown();
+typedef enum {
+	// Accept succeeded, guaranteed to have a valid socket in outAccepted
+	SocketAcceptError_OK,
+	// Accept failed, the console was put into sleep mode and the listener needs to be reset
+	SocketAcceptError_NetDown,
+	// Accept failed, either no pending connections or an error occured, try again
+	SocketAcceptError_Fail,
+} SocketAcceptResult;
 
-// Returns SOCKET_INVALID on error, use SocketIsListenNetDown() to check if the listener needs to be reset
-int SocketTcpAccept(int listenerHandle, struct sockaddr* addr, socklen_t* addrlen);
+SocketAcceptResult SocketTcpAccept(int listenerHandle, int* outAccepted, struct sockaddr* addr, socklen_t* addrlen);
 
 // Coses a socket, also sets it to SOCKET_INVALID
 void SocketClose(int* socket);

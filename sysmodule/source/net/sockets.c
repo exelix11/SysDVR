@@ -180,12 +180,13 @@ int SocketTcpListen(short port)
 	}
 }
 
-// This is a weird hack, we need to figure out when the console is in sleep mode
+// This function must be called after SocketTcpAccept returns SOCKET_INVALID
+// We use a weird hack, we need to figure out when the console is in sleep mode
 // and reset the listening socket when it wakes up, the only way i found to get
 // a meaningful error code is from poll, which will return 0 when no connection is pending
 // and 1 otherwise but if Accept fails with EAGAIN, we know the console was in sleep mode.
 // We should use nifm but that comes with its share of weirdness.....
-bool SocketIsListenNetDown()
+static bool SocketIsListenNetDown()
 {
 	bool rc = g_bsdErrno == NX_EAGAIN;
 #if UDP_LOGGING
@@ -199,7 +200,7 @@ bool SocketIsListenNetDown()
 	return rc;
 }
 
-int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* out_addrlen)
+SocketAcceptResult SocketTcpAccept(int listenerHandle, int* outAccepted, struct sockaddr* out_addr, socklen_t* out_addrlen)
 {
 	struct pollfd pollinfo;
 	pollinfo.fd = listenerHandle;
@@ -218,13 +219,22 @@ int SocketTcpAccept(int listenerHandle, struct sockaddr* out_addr, socklen_t* ou
 				// Set TCP_NODELAY
 				int optVal = 1;
 				bsdSetSockOpt(accepted, IPPROTO_TCP, TCP_NODELAY, &optVal, sizeof(optVal));
+				*outAccepted = accepted;
+				return SocketAcceptError_OK;
 			}
-
-			return accepted;
+			else
+			{
+				*outAccepted = SOCKET_INVALID;
+				if (SocketIsListenNetDown())
+					return SocketAcceptError_NetDown;
+				else
+					return SocketAcceptError_Fail;
+			}
 		}
 	}
 
-	return SOCKET_INVALID;
+	*outAccepted = SOCKET_INVALID;
+	return SocketAcceptError_Fail;
 }
 
 bool SocketUDPSendTo(int socket, const void* data, u32 size, struct sockaddr* addr, socklen_t addrlen)
