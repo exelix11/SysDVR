@@ -26,7 +26,7 @@ namespace SysDVR.Client.Core
 		public StreamKind Kind = StreamKind.Both;
 		public int AudioBatching = 3;
 		public bool UseNALReplay = true;
-		public bool UseNALReplayOnlyOnKeyframes = false;
+		public bool UseNALReplayOnlyOnKeyframes = true;
 
 		public bool HasVideo => Kind is StreamKind.Video or StreamKind.Both;
 		public bool HasAudio => Kind is StreamKind.Audio or StreamKind.Both;
