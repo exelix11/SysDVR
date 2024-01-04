@@ -1,4 +1,4 @@
-﻿#define DEBUG_COLLISIONS
+﻿//#define DEBUG_COLLISIONS
 
 using SysDVR.Client.Core;
 using System;
