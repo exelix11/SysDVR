@@ -568,8 +568,11 @@ namespace SysDVR.Client.GUI
                 catch (Exception ex)
                 {
                     MessageUi("Failed to start recording: " + ex.ToString());
-                }
-            }
+                    
+                    videoRecorder?.Dispose();
+                    videoRecorder = null;
+				}
+			}
             else
             {
                 player.Manager.UnchainTargets(videoRecorder.VideoTarget, videoRecorder.AudioTarget);

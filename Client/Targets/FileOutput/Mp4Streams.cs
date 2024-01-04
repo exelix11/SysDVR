@@ -68,9 +68,12 @@ namespace SysDVR.Client.Targets.FileOutput
             timebase_den = outCtx->streams[id]->time_base.den;
 
             var encoder = avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP2);
+            if (encoder == null) 
+                throw new Exception("Couldn't find MP2 encoder");
 
             codecCtx = avcodec_alloc_context3(encoder);
-            if (codecCtx == null) throw new Exception("Couldn't allocate MP2 encoder");
+            if (codecCtx == null) 
+                throw new Exception("Couldn't allocate MP2 encoder");
 
             codecCtx->sample_rate = StreamInfo.AudioSampleRate;
             av_channel_layout_default(&codecCtx->ch_layout, StreamInfo.AudioChannels);
