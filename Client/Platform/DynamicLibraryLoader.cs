@@ -1,21 +1,12 @@
-﻿using FFmpeg.AutoGen;
-using SDL2;
-using SysDVR.Client.Core;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace SysDVR.Client.Platform
 {
@@ -121,8 +112,12 @@ namespace SysDVR.Client.Platform
 
             var loaded = TryLoadLibrary(libraryName);
 
-            if (loaded != IntPtr.Zero)
-                LibraryCache.TryAdd(libraryName, loaded);
+            if (loaded == IntPtr.Zero && Program.Options.Debug.DynLib)
+                Console.WriteLine($"CachedLibraryloader failed to resolve {libraryName}");
+            
+            // Cache the failure so we don't try again
+            // Dotnet will try to load the library again using its own resolver if we return IntPtr.Zero
+            LibraryCache.TryAdd(libraryName, loaded);
 
             return loaded;
 		}
@@ -174,7 +169,6 @@ namespace SysDVR.Client.Platform
                 return TryLoadLibrary(withoutNumber);
             }
 
-            Console.WriteLine($"Failed to load {libraryName}");
             return IntPtr.Zero;
         }
 
