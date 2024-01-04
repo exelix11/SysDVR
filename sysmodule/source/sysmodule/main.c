@@ -3,6 +3,10 @@
 #include <switch.h>
 #include <string.h>
 
+// This is the sysmodule entrypoint, the actual main code is in core.c
+// SysDVR can also be compiled as a regular homebrew for testing purposes, this is what the code refers to as FAKEDVR. When this is done the sysmodule folder must be excluded from compilation.
+// The nro build scaffolding is not part of the sysmodule source.
+
 #include "../core.h"
 #include "../modes/modes.h"
 #include "../capture.h"

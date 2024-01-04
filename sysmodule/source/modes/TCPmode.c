@@ -83,6 +83,10 @@ static inline int TCP_BeginListen(GrcStream stream)
 static inline bool TCP_DoHandshake(GrcStream stream, int socket)
 {
 	u8 buffer[PROTO_HANDSHAKE_SIZE];
+
+	if (!SocketSendAll(socket, PROTO_HANDSHAKE_HELLO, sizeof(PROTO_HANDSHAKE_HELLO)))
+		return false;
+
 	if (!SocketRecevExact(socket, buffer, sizeof(buffer)))
 		return false;
 

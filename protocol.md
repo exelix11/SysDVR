@@ -83,12 +83,18 @@ The string looks like the following: `SysDVR|6.0|00|SERIAL NUMBER`, fields are s
 The string is composed by the following fields:
 - `SysDVR`: fixed "magic value" of the string.
 - `6.0` : string version of the client, there is no character limit on this field. This is only for displaying and you should not rely on this value to detect compatibility.
-- `00` : Protocol version. This must be exactly two ascii characters. The meaning of the values is not defined, the client should only accept values that it knows as valid. Currently `00` is the only valid value.
+- `00` : Protocol version. This must be exactly two ascii characters. The meaning of the values is not defined, the client should only accept values that it knows as valid. The current protocol version is `02`.
 - `SERIAL NUMBER` : This is the serial number of the console, can be a string of any length, the sysmodule sets it to a string of sizeof(SetSysSerialNumber) due to libnx implementation. 
 
 ## Handshake
 
-After the client is connected with the console it must perform an initial handshake, it sends a data structure that configures the parameters of the stream.
+After the client is connected with the console it must perform an initial handshake.
+
+The console sends the hello packet which is a NULL-terminated ascii string in the form of "SysDVR|00" for a total of 10 bytes, the 00 value here is the same protocol version from the device descriptor.
+
+The hello packet allows the client to know what version expects the sysmodule so it can configure itself to support compatibility with multiple protocol versions. As of 6.0 the release sysmodule only supports version `02`.
+
+If the client supports the protocol version, it sends a data structure that configures the parameters of the stream. The configuration request also repeats the protocol version as seen by the client, this means the sysmodule will reject the connection if it doesn't match the version in the hello packet.
 
 handshake packet reference: https://github.com/exelix11/SysDVR/blob/6.0/sysmodule/source/modes/proto.h
 
@@ -111,7 +117,7 @@ The sysmodule replies with a single uint32 that represents the result code as de
 If the handshake was succesful, the sysmodule continuously sends data to the client with no acknowledgement needed.
 The packet format is defined in https://github.com/exelix11/SysDVR/blob/6.0/sysmodule/source/capture.h#L42
 
-The magic number in the header is composed of 4 repeating `CC` bytes, this can be used to resync the stream in case of a decoding error by simply skipping every byte until a sequence of `CCCCCCCC` is found.
+The magic number in the header is composed of 4 repeating `CC` bytes, this can be used to resync the stream in case of a decoding error by simply skipping every byte until a sequence of `CCCCCCCC` is found. While extremely unlikely, this sequence might appear in the content of a packet causing type confusion during the resynchronization process, to avoid this validate the other values of the header such as the packet size by making sure they are within the protocol specification.
 
 When multiplexing over the same connection the contents of the packet can be detected from the `MetaData` field, it will have only one of the `PacketMeta_Type_Video` or `PacketMeta_Type_Audio` bits set.
 

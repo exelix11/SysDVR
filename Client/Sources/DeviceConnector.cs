@@ -55,12 +55,15 @@ namespace SysDVR.Client.Sources
                 {
                     await source.Connect().ConfigureAwait(false);
                 }
-                finally
+                catch 
                 {
-                    source.OnMessage -= MessageReceived;
-                }
+					source.OnMessage -= MessageReceived;
+                    source.Dispose();
+                    throw;
+				}
 
-                return new PlayerManager(source, Token);
+				source.OnMessage -= MessageReceived;
+				return new PlayerManager(source, Token);
             }
             catch
             {

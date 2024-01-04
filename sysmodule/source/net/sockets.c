@@ -320,8 +320,11 @@ s32 SocketRecv(int socket, void* buffer, u32 size)
 	ssize_t r = bsdRecv(socket, buffer, size, MSG_DONTWAIT);
 	if (r == -1)
 	{
-		if (g_bsdErrno == NX_EAGAIN)
+		if (g_bsdErrno == NX_EAGAIN) 
+		{
+			svcSleepThread(2);
 			return 0;
+		}
 		else
 			return -1;
 	}

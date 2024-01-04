@@ -52,11 +52,12 @@ namespace SysDVR.Client.Sources
     unsafe struct ProtoHandshakeRequest
     {
         const char ProtoHigh = '0';
-        const char ProtoLow = '1';
+        const char ProtoLow = '2';
 
         public static readonly string CurrentProtocolString = $"{ProtoHigh}{ProtoLow}";
         public const ushort CurrentProtocolVersion = ProtoHigh | (ProtoLow << 8);
 
+        public const int HelloPacketSize = 10;
         public const int StructureSize = 16;
         public const uint RequestMagic = 0xAAAAAAAA;
         public const uint HandshakeOKCode = 6;
@@ -119,7 +120,7 @@ namespace SysDVR.Client.Sources
 
     record struct ReceivedPacket(PacketHeader Header, PoolBuffer? Buffer);
 
-    abstract class StreamingSource
+	abstract class StreamingSource : IDisposable
     {
         // Note that the source should respect the target output type,
         // this means that by the time it's added to a StreamManager
@@ -149,8 +150,10 @@ namespace SysDVR.Client.Sources
         public abstract Task<ReceivedPacket> ReadNextPacket();
 
         protected abstract Task<uint> SendHandshakePacket(ProtoHandshakeRequest req);
+        protected abstract Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes);
+        public abstract void Dispose();
 
-        protected void ThrowOnHandshakeCode(string tag, uint code)
+		protected void ThrowOnHandshakeCode(string tag, uint code)
         {
             if (code == ProtoHandshakeRequest.HandshakeOKCode)
                 return;
@@ -162,8 +165,37 @@ namespace SysDVR.Client.Sources
             throw new Exception($"{tag} handshake failed: error code {code}");
         }
 
+        async Task<ushort> GetCurrentVersionFromHelloPacket(StreamKind stream) 
+        {
+            var data = await ReadHandshakeHello(stream, ProtoHandshakeRequest.HelloPacketSize).ConfigureAwait(false);
+
+            var str = Encoding.ASCII.GetString(data);
+
+            // TODO: add future protocol compatibility adapters here
+
+            if (str[.. "SysDVR|".Length] != "SysDVR|")
+				throw new Exception("Invalid handshake hello packet (header)");
+
+            if (str.Last() != '\0')
+				throw new Exception("Invalid handshake hello packet (terminator)");
+
+            var high = str["SysDVR|".Length];
+            var low = str["SysDVR|".Length + 1];
+
+            if (!char.IsAscii(high) || !char.IsAscii(low))
+                throw new Exception("Invalid handshake hello packet (version)");
+
+            return (ushort)(high | (low << 8));
+        }
+
         protected async Task DoHandshake(StreamKind StreamProduced)
         {
+            var version = await GetCurrentVersionFromHelloPacket(StreamProduced).ConfigureAwait(false);
+
+            // TODO: Add backwards compatibility adapters here
+            if (version != ProtoHandshakeRequest.CurrentProtocolVersion)
+                throw new Exception($"{StreamProduced} handshake failed: Wrong protocol version. Update SysDVR.");
+
             ProtoHandshakeRequest req = new();
 
             req.Magic = ProtoHandshakeRequest.RequestMagic;
@@ -191,5 +223,5 @@ namespace SysDVR.Client.Sources
 
             return true;
         }
-    }
+	}
 }
