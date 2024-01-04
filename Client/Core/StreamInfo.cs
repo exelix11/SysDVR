@@ -18,7 +18,7 @@ namespace SysDVR.Client.Core
         public const int VideoHeight = 720;
 
         public const int AudioPayloadSize = 0x1000;
-        public const int MaxAudioBatching = 3;
+        public const int MaxAudioBatching = 5;
 
         public const int AudioChannels = 2;
         public const int AudioSampleRate = 48000;

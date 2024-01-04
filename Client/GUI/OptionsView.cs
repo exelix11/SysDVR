@@ -241,7 +241,7 @@ namespace SysDVR.Client.GUI
 				ImGui.TextWrapped("These options affect the straming quality of SysDVR, the defaults are usually fine");
 				
 				ImGui.Text("Audio batching"); ImGui.SameLine();
-				ImGui.SliderInt("##SliderAudioB", ref Program.Options.Streaming.AudioBatching, 0, 2);
+				ImGui.SliderInt("##SliderAudioB", ref Program.Options.Streaming.AudioBatching, 0, StreamInfo.MaxAudioBatching);
 				
 				ImGui.Checkbox("Cache video packets (NAL) locally and replay them when needed", ref Program.Options.Streaming.UseNALReplay);
 				ImGui.Checkbox("Apply packet cache only to keyframes (H264 IDR frames)", ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);

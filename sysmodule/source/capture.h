@@ -24,7 +24,9 @@
 	This is acceptable as grc:d already doesn't provide real time audio.
 	To disable support set the following to 0
 */
-#define MaxABatching 2
+#define MaxABatching 5
+
+#define DefaultABatching 3
 
 // five bits
 enum PacketMeta 
