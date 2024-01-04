@@ -264,7 +264,9 @@ public class ClientApp
 			HandlePushView(new ConnectingView(DeviceInfo.ForIp(CommandLine.NetStreamHostname), Program.Options.Streaming));
 		else if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.Usb)
             HandlePushView(new UsbDevicesView(Program.Options.Streaming, CommandLine.ConsoleSerial ?? ""));
-        else 
+		else if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.Stub)
+			HandlePushView(new ConnectingView(DeviceInfo.Stub(), Program.Options.Streaming));
+		else 
         {
             Debugger.Break();
         }

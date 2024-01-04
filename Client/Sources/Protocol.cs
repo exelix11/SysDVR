@@ -118,7 +118,17 @@ namespace SysDVR.Client.Sources
         }
     }
 
-    record struct ReceivedPacket(PacketHeader Header, PoolBuffer? Buffer);
+    struct ReceivedPacket
+    {
+        public PacketHeader Header;
+        public PoolBuffer? Buffer;
+
+        public ReceivedPacket(PacketHeader header, PoolBuffer? buffer)
+        {
+			Header = header;
+			Buffer = buffer;
+		}
+    }
 
 	abstract class StreamingSource : IDisposable
     {

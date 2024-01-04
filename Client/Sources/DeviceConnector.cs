@@ -1,4 +1,5 @@
 ﻿using SysDVR.Client.Core;
+using SysDVR.Client.Targets;
 using SysDVR.Client.Targets.Player;
 using System;
 using System.Collections.Generic;
@@ -35,34 +36,45 @@ namespace SysDVR.Client.Sources
             Options = opt;
         }
 
-        public async Task<PlayerManager> ConnectForPlayer()
+        async Task<StreamingSource> ConnectInternal() 
+        {
+			StreamingSource source = null;
+
+			if (Info.Source == ConnectionType.Net)
+				source = new TCPBridgeSource(Info, Token.Token, Options);
+			else if (Info.Source == ConnectionType.Usb)
+				source = new UsbStreamingSource(
+					Info.ConnectionHandle as DvrUsbDevice ?? throw new Exception("Invalid device handle"),
+					Options, Token.Token);
+			else if (Info.Source == ConnectionType.Stub)
+				source = new StubSource(Options, Token.Token, 10000);
+
+			source.OnMessage += MessageReceived;
+			try
+			{
+				await source.Connect().ConfigureAwait(false);
+			}
+			catch
+			{
+				source.OnMessage -= MessageReceived;
+				source.Dispose();
+				throw;
+			}
+
+			source.OnMessage -= MessageReceived;
+            return source;
+		}
+
+        public async Task<StubStreamManager> ConnectStub()
+        {
+            return new StubStreamManager(await ConnectInternal(), Token);
+        }
+
+		public async Task<PlayerManager> ConnectForPlayer()
         {
             try
             {
-                StreamingSource source = null;
-
-                if (Info.Source == ConnectionType.Net)
-                    source = new TCPBridgeSource(Info, Token.Token, Options);
-                else if (Info.Source == ConnectionType.Usb)
-                    source = new UsbStreamingSource(
-                        Info.ConnectionHandle as DvrUsbDevice ?? throw new Exception("Invalid device handle"), 
-                        Options, Token.Token);
-                else if (Info.Source == ConnectionType.Stub)
-                    source = new StubSource(Options, Token.Token);
-
-                source.OnMessage += MessageReceived;
-                try
-                {
-                    await source.Connect().ConfigureAwait(false);
-                }
-                catch 
-                {
-					source.OnMessage -= MessageReceived;
-                    source.Dispose();
-                    throw;
-				}
-
-				source.OnMessage -= MessageReceived;
+                var source = await ConnectInternal().ConfigureAwait(false);
 				return new PlayerManager(source, Token);
             }
             catch

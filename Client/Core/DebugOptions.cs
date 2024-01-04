@@ -48,7 +48,7 @@ namespace SysDVR.Client.Core
 
         public bool GetFps(out int fps)
         {
-            if (sw.ElapsedMilliseconds > 1000)
+            if (sw.ElapsedMilliseconds >= 990)
             {
                 fps = (int)(frames * 1000.0f / sw.ElapsedMilliseconds);
                 frames = 0;

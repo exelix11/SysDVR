@@ -11,9 +11,14 @@ namespace SysDVR.Client.Sources
     {
         // Check for bugs
         bool connected;
+        int SendPackets;
+        byte replaySlot;
 
-        public StubSource(StreamingOptions options, CancellationToken cancellation) : 
-            base(options, cancellation) { }
+        public StubSource(StreamingOptions options, CancellationToken cancellation, int sendPackets) : 
+            base(options, cancellation) 
+        {
+            SendPackets = sendPackets;
+        }
 
         public override async Task Connect()
         {
@@ -31,8 +36,31 @@ namespace SysDVR.Client.Sources
             if (!connected)
                 throw new Exception("Not connected");
 
-            await Task.Delay(-1, Cancellation).ConfigureAwait(false);
-            throw new Exception();
+            if (SendPackets == 0)
+            {
+                await Task.Delay(-1, Cancellation).ConfigureAwait(false);
+                throw new Exception();
+            }
+            else
+            {
+                await Task.Delay(19, Cancellation).ConfigureAwait(false);
+
+                --SendPackets;
+                
+                if (replaySlot > 10) 
+                    replaySlot = 0;
+
+				return new ReceivedPacket(
+                    new PacketHeader() {
+                        Magic = PacketHeader.MagicResponse,
+                        DataSize = 1024,
+                        Flags = (SendPackets % 2 == 0) ? PacketHeader.MetaIsVideo : PacketHeader.MetaIsAudio,
+                        ReplaySlot = ++replaySlot,
+                        Timestamp = 9999999
+                    },
+                    PoolBuffer.Rent(1024)
+                );
+            }
         }
 
         public override Task StopStreaming()
