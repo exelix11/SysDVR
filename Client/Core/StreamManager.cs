@@ -78,7 +78,8 @@ namespace SysDVR.Client.Core
             {
                 pool.Return(RawBuffer);
                 _buffer = null;
-            }
+				GC.SuppressFinalize(this);
+			}
         }
 
         public static PoolBuffer Rent(int len)
@@ -95,13 +96,18 @@ namespace SysDVR.Client.Core
             refcount = 1;
         }
 
-#if DEBUG
         ~PoolBuffer()
         {
-			if (refcount != 0)
-				throw new Exception("Buffer was not freed");
-		}
+            if (refcount != 0)
+            {
+#if DEBUG
+				Console.WriteLine($"Buffer was not freed {refcount}");
+                Debugger.Break();
 #endif
+                refcount = 1;
+				Free();
+			}
+		}
 
         public Span<byte> Span =>
             new Span<byte>(RawBuffer, 0, Length);
@@ -171,9 +177,9 @@ namespace SysDVR.Client.Core
             //      The final block in the chain calls Free() to remove the initial refcount, any pending refs are cleared by async processes
             //      When ref == 0 the block is freed
             block.Reference();
-            SendDataImpl(block, ts);
+			SendDataImpl(block, ts);
 
-            if (Next is not null)
+			if (Next is not null)
                 Next.SendData(block, ts);
             else
                 block.Free();
@@ -272,6 +278,7 @@ namespace SysDVR.Client.Core
 
         async Task StreamTask() 
         {
+			ReceivedPacket packet = default;
             try
             {
                 var useHash = Options.UseNALReplay;
@@ -282,8 +289,6 @@ namespace SysDVR.Client.Core
 
                 while (!token.IsCancellationRequested)
                 {
-                    ReceivedPacket packet;
-
                     try
                     {
                         packet = await Source.ReadNextPacket().ConfigureAwait(false);
@@ -299,32 +304,37 @@ namespace SysDVR.Client.Core
                         AudioTarget.SendData(packet.Buffer, packet.Header.Timestamp);
                     else
                     {
-                        var data = packet.Buffer;
                         if (useHash)
                         {
                             if (packet.Header.IsReplay)
                             {
-                                if (!Replay.LookupSlot(packet.Header.ReplaySlot, out data))
+                                packet.Buffer?.Free();
+								if (!Replay.LookupSlot(packet.Header.ReplaySlot, out packet.Buffer))
                                 {
                                     Console.WriteLine("Unknown hash value, skipping packet");
                                     continue;
                                 }
-                                Console.WriteLine("Hash HIT ! ");
                             }
                             else if (packet.Header.ReplaySlot != 0xFF)
                             {
-                                Replay.AssignSlot(data, packet.Header.ReplaySlot);
+                                Replay.AssignSlot(packet.Buffer, packet.Header.ReplaySlot);
                             }
                         }
 
-                        VideoTarget.SendData(data, packet.Header.Timestamp);
-                    }
-                }
+                        VideoTarget.SendData(packet.Buffer, packet.Header.Timestamp);
+					}
+
+					packet.Buffer = null;
+				}
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 ReportFatalError(ex);
+            }
+            finally 
+            {
+                packet.Buffer?.Free();
             }
         }
 
@@ -371,6 +381,8 @@ namespace SysDVR.Client.Core
                         iv.Dispose();
                     if (AudioTarget is IDisposable ia)
                         ia.Dispose();
+
+                    Replay?.Dispose();
                 }
 
                 disposedValue = true;

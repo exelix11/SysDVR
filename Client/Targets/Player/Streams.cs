@@ -48,7 +48,7 @@ namespace SysDVR.Client.Targets.Player
         readonly BlockingCollection<(PoolBuffer, ulong)> samples = new BlockingCollection<(PoolBuffer, ulong)>(20);
 
         // The block we are now submitting (already removed from the queue)
-        PoolBuffer currentBlock;
+        PoolBuffer? currentBlock;
 
         // The offset in currentBlock. -1 means we need to get a new block
         int currentOffset = -1;
@@ -88,7 +88,8 @@ namespace SysDVR.Client.Targets.Player
                 {
                     currentOffset = -1;
                     currentBlock.Free();
-                }
+                    currentBlock = null;
+				}
 
                 // If there is no current block and we still need to push more data
                 if (currentOffset == -1 && buffer.Length != 0)
@@ -104,6 +105,8 @@ namespace SysDVR.Client.Targets.Player
                         {
                             if (log)
                                 Console.WriteLine($"Dropping audio packet with ts {ts}");
+
+                            block.Free();
                             goto again;
                         }
 
@@ -120,21 +123,24 @@ namespace SysDVR.Client.Targets.Player
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            samples.Add((block, ts), Cancel);
-            Pending = samples.Count;
-            // Free is called by the consumer thread...
+            try
+            {
+                samples.Add((block, ts), Cancel);
+				Pending = samples.Count;
+				// Free is called by the consumer thread...
+			}
+			catch 
+            {
+                block.Free();
+            }
         }
 
         protected override void DisposeImpl()
         {
-            // Free any remaining elements
-            if (currentOffset != -1)
-            {
-                currentOffset = -1;
-                currentBlock.Free();
-            }
-
-            samples.ToList().ForEach(x => x.Item1.Free());
+			// Free any remaining elements
+			currentOffset = -1;
+			currentBlock?.Free();
+			samples.ToList().ForEach(x => x.Item1.Free());
             
             base.Dispose();
         }
@@ -303,9 +309,16 @@ namespace SysDVR.Client.Targets.Player
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            _ = videoBuffer.Writer.WriteAsync((block, ts), Cancel);
-            Interlocked.Increment(ref Pending);
-            // Free is called by the consumer thread...
+            try
+            {
+				// Free is called by the consumer thread...
+				_ = videoBuffer.Writer.WriteAsync((block, ts), Cancel);
+                Interlocked.Increment(ref Pending);
+            }
+            catch 
+            {
+                block.Free();
+			}
         }
     }
 }
