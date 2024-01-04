@@ -44,6 +44,7 @@ namespace SysDVR.Client
 
 			// Advanced options
 			new OptionArg("--decoder", (x, v) => x.RequestedDecoderName = v),
+			new OptionNoArg("--software-render", (x) => x.SoftwareRendering = true),
 
 			// Deprecated RTSP options
 			new OptionNoArg("--rtsp", x => x.RTSPDeprecationWarning = true),
@@ -161,6 +162,8 @@ namespace SysDVR.Client
 
 		public bool LegacyPlayer;
 
+		public bool SoftwareRendering;
+
 		public void ApplyOptionOverrides() 
 		{
 			DynamicLibraryLoader.LibLoaderOverride = LibDir;
@@ -188,6 +191,9 @@ namespace SysDVR.Client
 			}
 
 			Program.Options.DecoderName = RequestedDecoderName;
+
+			if (SoftwareRendering)
+				Program.Options.ForceSoftwareRenderer = true;
 		}
 
 		public void PrintDeprecationWarnings() 
@@ -243,6 +249,7 @@ Extra options:
 	`--libdir` : Overrides the dynami library loading path, use only if dotnet can't locate your ffmpeg/avcoded/SDL2 libraries automatically
                  this option effect depend on your platform, some libraries may still be handled by dotnet, it's better to use your loader path environment variable.
 	`--debug-list` : Prints all available debug options.
+	`--software-render` : Launches SDL with software rendering, this runs very poorly and it is only meant as a debug option
 
 Command examples:
 	SysDVR-Client.exe usb
