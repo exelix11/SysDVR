@@ -60,9 +60,11 @@ static inline void AdvertiseBroadcast(GrcStream stream)
 		return;
 
 	if (UdpAdvertiseSocket == SOCKET_INVALID)
-	{
 		InitBroadcast(stream);
-	}
+
+	// Need to do this every time in case the network changes 
+	// Also needed in case we called InitBroadcast() too early when the console was resuming from sleep
+	UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
 	
 	LOG("Sending UDP advertisement broadcast\n");
 	if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
@@ -144,9 +146,10 @@ restart:
 		else if (status == SocketAcceptError_NetDown)
 		{
 			LOG("TCP %d Network change detected\n", (int)stream);
-			svcSleepThread(1E+9);
 			SocketClose(&listen);
 			DeinitBroadcast(stream);
+
+			svcSleepThread(1E+9);
 			goto restart;
 		}
 
