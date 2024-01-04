@@ -193,6 +193,10 @@ namespace SysDVR.Client.GUI
 
 				if (Program.IsWindows)
 					ImGui.TextWrapped("The first time you run SysDVR on Windows you must install the USB driver, follow the guide.");
+				else if (Program.IsLinux)
+					ImGui.TextWrapped("To properly use USB mode on Linux you need to install the needed udev rule according to the guide");
+				else if (Program.IsAndroid)
+					ImGui.TextWrapped("In case of issues make sure your device supports USB OTG, note that certain USB C to C cables are known to cause issues, try with a OTG adapter on your phone USB port");
 			}
 			else
 			{
