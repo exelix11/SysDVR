@@ -1,4 +1,5 @@
-﻿using LibUsbDotNet.LibUsb;
+﻿using LibUsbDotNet;
+using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using SysDVR.Client.Core;
 using System;
@@ -14,6 +15,7 @@ namespace SysDVR.Client.Sources
 {
     class UsbStreamingSource : StreamingSource
 	{
+		bool closed = false;
 		readonly DvrUsbDevice device;
 		protected UsbEndpointReader reader;
 		protected UsbEndpointWriter writer;
@@ -26,8 +28,7 @@ namespace SysDVR.Client.Sources
 
 		public override Task StopStreaming()
 		{
-			device.Close();
-			device.Dispose();
+			Dispose();
 			return Task.CompletedTask;
 		}
 
@@ -109,7 +110,18 @@ namespace SysDVR.Client.Sources
             return new ReceivedPacket(header, data);
         }
 
-        protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+		protected override async Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
+		{
+			var buffer = new byte[maxBytes];
+			
+			var (err, read) = await reader.ReadAsync(buffer, 800).ConfigureAwait(false);
+			if (err != LibUsbDotNet.Error.Success || read != maxBytes)
+				throw new Exception($"libusb receive handshake failed, result: {err} len: {read}");
+
+			return buffer;
+		}
+
+		protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
         {
 			var buffer = new byte[ProtoHandshakeRequest.StructureSize];
 			MemoryMarshal.Write(buffer, in req);
@@ -125,5 +137,15 @@ namespace SysDVR.Client.Sources
 
 			return BitConverter.ToUInt32(buffer, 0);
         }
-    }
+
+		public override void Dispose()
+		{
+			if (closed)
+				return;
+
+			closed = true;
+			device.Close();
+			device.Dispose();
+		}
+	}
 }

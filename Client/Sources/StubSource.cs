@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SysDVR.Client.Core;
@@ -20,7 +21,7 @@ namespace SysDVR.Client.Sources
             connected = true;
         }
 
-        public override async Task Flush()
+		public override async Task Flush()
         {
             await Task.Delay(500, Cancellation).ConfigureAwait(false);
         }
@@ -39,9 +40,16 @@ namespace SysDVR.Client.Sources
             return Task.CompletedTask;
         }
 
-        protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+		protected override Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
+		{
+			return Task.FromResult(Encoding.ASCII.GetBytes($"SysDVR|{ProtoHandshakeRequest.CurrentProtocolString}\0"));
+		}
+
+		protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
         {
             return Task.FromResult(ProtoHandshakeRequest.HandshakeOKCode);
         }
-    }
+
+		public override void Dispose() { }
+	}
 }

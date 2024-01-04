@@ -37,9 +37,11 @@
       <Filter>net</Filter>
     </ClCompile>
     <ClCompile Include="source\core.c" />
-    <ClCompile Include="source\sysmodule\main.c" />
     <ClCompile Include="source\modes\proto.c">
       <Filter>modes</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sysmodule\main.c">
+      <Filter>sysmodule</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +103,9 @@
     </Filter>
     <Filter Include="net">
       <UniqueIdentifier>{8a2d9a3c-40c8-41c2-b308-ce3638475481}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sysmodule">
+      <UniqueIdentifier>{5c914dd6-99aa-4c4d-b192-8293bc5e0b8b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

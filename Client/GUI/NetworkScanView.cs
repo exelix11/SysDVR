@@ -155,7 +155,7 @@ namespace SysDVR.Client.GUI
                 ButtonEnterIp();
 
 			if (!Program.IsAndroid)
-				ImGui.TextWrapped("Remember to allow SysDVR client in your firewall or else it won't be able to detect consoles");
+				ImGui.TextWrapped("Remember to allow SysDVR client in your firewall or else it won't be able to detect consoles. Some networks may block device discovery, in that case you will have to connect by IP.");
 
 			if (lastError is not null)
             {

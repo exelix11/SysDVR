@@ -159,13 +159,33 @@ namespace SysDVR.Client.Sources
 
             var stream = req.IsVideoPacket ? videoStream : audioStream;
 
-            // This is only invoked from the Connect8) method so stream is always guranteed to not be null
+            // This is only invoked from the Connect() method so stream is always guranteed to not be null
             var h = await stream!.DoHandshake(buffer).ConfigureAwait(false);
             return h;
         }
 
-        // In TCP bridge each stream is carried by its own socket
-        class TcpBridgeSubStream
+		protected override async Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
+		{
+            byte[] buffer = new byte[maxBytes];
+			
+            var s = stream switch { 
+                StreamKind.Video => videoStream,
+                StreamKind.Audio => audioStream,
+                _ => throw new Exception("Invalid stream kind")
+            };
+
+            await s.ReadExact(buffer, 0, maxBytes).ConfigureAwait(false);
+            return buffer;
+		}
+
+		public override void Dispose()
+		{
+            videoStream?.Dispose();
+            audioStream?.Dispose();
+		}
+
+		// In TCP bridge each stream is carried by its own socket
+		class TcpBridgeSubStream : IDisposable
         {
             public bool IsConnected => socket?.Connected ?? false;
             public readonly string StreamName;
@@ -235,7 +255,7 @@ namespace SysDVR.Client.Sources
                 inSync = false;
             }
 
-            async Task ReadExact(byte[] data, int offset, int length)
+            internal async Task ReadExact(byte[] data, int offset, int length)
             {
                 while (length > 0)
                 {
@@ -331,6 +351,11 @@ namespace SysDVR.Client.Sources
                     socket.Dispose();
                 }
             }
-        }
+
+			public void Dispose()
+			{
+                socket?.Dispose();
+			}
+		}
     }
 }

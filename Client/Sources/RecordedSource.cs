@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
@@ -59,6 +60,16 @@ namespace SysDVR.Client.Sources
         {
             return Task.FromResult(ProtoHandshakeRequest.HandshakeOKCode);
         }
-    }
+
+		protected override Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
+		{
+			return Task.FromResult(Encoding.ASCII.GetBytes($"SysDVR|{ProtoHandshakeRequest.CurrentProtocolString}\0"));
+		}
+
+		public override void Dispose()
+		{
+			Source?.Dispose();
+		}
+	}
 }
 #endif

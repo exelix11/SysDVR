@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
+#include "defines.h"
 
 // This header defines the sysdvr protocol used for the initial handshake over USB and TCPBridge
 // The handshake happens seprately for both streams
@@ -9,6 +10,12 @@
 // If the result code is Handshake_OK, the client can start streaming. Otherwise the connection is closed.
 
 #define PROTO_REQUEST_MAGIC 0xAAAAAAAA
+
+#define PROTO_HANDSHAKE_HELLO "SysDVR|" SYSDVR_PROTOCOL_VERSION
+
+// This is sent by the console as soon as a client connects to communicate the protocol version.
+// The string is null terminated.
+_Static_assert(sizeof(PROTO_HANDSHAKE_HELLO) == 10, "Wrong size for the protocol hello message");
 
 typedef enum
 {

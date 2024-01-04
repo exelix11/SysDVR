@@ -39,14 +39,18 @@ static bool SendData(void* data, size_t length)
 
 bool USB_ConnectClient()
 {
-	u8 buffer[PROTO_HANDSHAKE_SIZE];
-	size_t read = 0;
+	size_t num = 0;
 
+	// Try this in a loop until a client connects
 	do
-		read = usbSerialRead(buffer, sizeof(buffer), 1E+9);
-	while (read == 0 && IsThreadRunning);
+		num = usbSerialWrite(PROTO_HANDSHAKE_HELLO, sizeof(PROTO_HANDSHAKE_HELLO), 1E+9);
+	while (num == 0 && IsThreadRunning);
 
-	if (read != sizeof(buffer) || !IsThreadRunning)
+	if (num != sizeof(PROTO_HANDSHAKE_HELLO) || !IsThreadRunning)
+		return false;
+
+	u8 buffer[PROTO_HANDSHAKE_SIZE];
+	if (usbSerialRead(buffer, sizeof(buffer), 1E+9) != sizeof(buffer))
 		return false;
 
 	LOG("USB request received\n");	
