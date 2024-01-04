@@ -2,6 +2,7 @@
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
+using SysDVR.Client.Test;
 using System;
 using System.Threading.Tasks;
 #if ANDROID_LIB
@@ -25,8 +26,8 @@ namespace SysDVR.Client
 		public readonly static bool IsAndroid = false;
 #endif
 
-		public static ClientApp Instance = null!;
-        public static LegacyPlayer? LegacyInstance;
+		internal static ClientApp Instance = null!;
+        internal static LegacyPlayer? LegacyInstance;
 
         public static string Version = "6.0";
         public static string BuildID = "";
@@ -136,7 +137,7 @@ namespace SysDVR.Client
                     if (IsWindows)
                         Platform.Specific.Win.AntiInject.Initialize();
 
-                    if (cli.LegacyPlayer)
+					if (cli.LegacyPlayer)
                         LegacyInstance = new LegacyPlayer(cli);
                     else
                     {
