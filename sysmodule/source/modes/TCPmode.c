@@ -117,8 +117,17 @@ restart:
 
 	while (IsThreadRunning)
 	{
-		int client = SocketTcpAccept(listen, NULL, NULL);
-		if (client != SOCKET_INVALID)
+		// Advertise every 2 seconds
+		if (stream == GrcStream_Video)
+		{
+			if (advertise)
+				AdvertiseBroadcast(stream);
+			advertise = !advertise;
+		}
+
+		int client = SOCKET_INVALID;
+		SocketAcceptResult status = SocketTcpAccept(listen, &client, NULL, NULL);
+		if (status == SocketAcceptError_OK)
 		{
 			LOG("TCP %d Got connection %d\n", (int)stream, client);
 			
@@ -132,24 +141,17 @@ restart:
 			LOG("TCP %d Client %d handshake failed\n", (int)stream, client);
 			SocketClose(&client);
 		}
-
-		// Advertise every 2 seconds
-		if (stream == GrcStream_Video)
-		{
-			if (advertise)
-				AdvertiseBroadcast(stream);
-			advertise = !advertise;
-		}
-
-		svcSleepThread(1E+9);
-
-		if (SocketIsListenNetDown())
+		else if (status == SocketAcceptError_NetDown)
 		{
 			LOG("TCP %d Network change detected\n", (int)stream);
+			svcSleepThread(1E+9);
 			SocketClose(&listen);
 			DeinitBroadcast(stream);
 			goto restart;
 		}
+
+		// reached when status == fail or status == ok but handshake failed
+		svcSleepThread(1E+9);
 	}
 
 leave:
