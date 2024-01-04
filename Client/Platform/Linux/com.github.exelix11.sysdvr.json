@@ -47,8 +47,7 @@
 			  "--disable-static",
 			  "--enable-gnutls",
 			  "--disable-doc",
-			  "--disable-programs",
-			  "--disable-encoders"
+			  "--disable-programs"
 			],
 			"sources": [{
 			  "type": "archive",
