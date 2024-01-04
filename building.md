@@ -57,7 +57,7 @@ These are:
 
 For supported platforms these are automatically downloaded by the build scripts, for other platforms you will need to obtain them yourself (make sure to download the correct version).
 
-The only exception is for CimguiSDL2Cross which must be self built since it is completely custom, you should be able to build it with cmake following the [instructions](https://github.com/exelix11/CimguiSDL2Cross/tree/master/cimgui#compilation) on the repo itself.
+The only exception is for CimguiSDL2Cross which must be self built since it is completely custom, you should be able to build it with cmake following the [instructions](https://github.com/exelix11/CimguiSDL2Cross/tree/master/cimgui#compilation) on the repo itself. You can use SysDVR without CimguiSDL2Cross if you run with the `--legacy` option but you will lose the GUI.
 
 Once all the libraries are ready copy them to the `runtimes/your_platform/native` folder, for example `runtimes/linux-arm64/native` for linux x64 and the client should be able to run.
 

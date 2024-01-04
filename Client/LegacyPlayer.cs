@@ -40,8 +40,6 @@ namespace SysDVR.Client
                 return conn.ConnectForPlayer().GetAwaiter().GetResult();
             }
 
-			Console.WriteLine("Invalid command line. The legacy player only supports a subset of options, use --help for help");
-			
             return null;
 		}
 
@@ -68,7 +66,8 @@ namespace SysDVR.Client
             if (conn.HasVideo && player.GetChosenDecoder() is var decoder)
                 Console.WriteLine(decoder);
 
-            player.Start();
+			player.ResolutionChanged();
+			player.Start();
 
             if (hasVideo)
             {
