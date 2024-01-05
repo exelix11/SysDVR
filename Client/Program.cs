@@ -4,6 +4,7 @@ using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Test;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 #if ANDROID_LIB
 using System.Runtime.InteropServices;
@@ -18,13 +19,31 @@ namespace SysDVR.Client
 		public readonly static bool IsWindows = false;
 		public readonly static bool IsMacOs = false;
 		public readonly static bool IsLinux = false;
+        public readonly static bool IsContainerApp = false;
 		public readonly static bool IsAndroid = true;
 #else
 		public readonly static bool IsWindows = OperatingSystem.IsWindows();
 		public readonly static bool IsMacOs = OperatingSystem.IsMacOS();
 		public readonly static bool IsLinux = OperatingSystem.IsLinux();
+		public readonly static bool IsContainerApp = false;
 		public readonly static bool IsAndroid = false;
 #endif
+
+		static Program()
+		{
+            // Detect platform specific stuff, for example if we are inside of flatpak.
+            // This is needed to know where to store settings
+ 
+			if (IsLinux)
+			{
+			    // https://stackoverflow.com/questions/75274925/is-there-a-way-to-find-out-if-i-am-running-inside-a-flatpak-appimage-or-another
+				IsContainerApp = new[] {
+					Environment.GetEnvironmentVariable("container"),
+					Environment.GetEnvironmentVariable("APPIMAGE"),
+					Environment.GetEnvironmentVariable("SNAP"),
+				}.Any(x => !string.IsNullOrWhiteSpace(x));
+			}
+		}
 
 		internal static ClientApp Instance = null!;
         internal static LegacyPlayer? LegacyInstance;

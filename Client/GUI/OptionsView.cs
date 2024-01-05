@@ -2,6 +2,7 @@
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -43,14 +44,14 @@ namespace SysDVR.Client.GUI
 				}
 			}
 
-			public bool Draw(ref T outval) 
+			public bool Draw(ref T outval)
 			{
 				ImGuiNative.igText(in MemoryMarshal.GetReference(Label.Span));
 				ImGui.SameLine();
 				byte ret = ImGuiNative.igCombo_Str(
-					in MemoryMarshal.GetReference(IdLabel.Span), 
-					ref CurrentItem, 
-					in MemoryMarshal.GetReference(ValuesUtf8Encoded.Span), 
+					in MemoryMarshal.GetReference(IdLabel.Span),
+					ref CurrentItem,
+					in MemoryMarshal.GetReference(ValuesUtf8Encoded.Span),
 					-1);
 
 				if (ret != 0)
@@ -84,7 +85,7 @@ namespace SysDVR.Client.GUI
 				if (!Popup.Begin())
 					return;
 
-					ImGui.TextWrapped(PathInputMessage);
+				ImGui.TextWrapped(PathInputMessage);
 				ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
 				ImGui.InputText("##pathpopinput", PathInputBuffer, (uint)PathInputBuffer.Length);
 
@@ -139,8 +140,6 @@ namespace SysDVR.Client.GUI
 			Program.Options.AudioPlayerMode
 		);
 
-		readonly PathInputPopup PathInput = new();
-
 		readonly ComboEnum<StreamKind> StreamChannel = new("Default streaming channel", new Opt<StreamKind>[]
 			{
 				new("Both (default)", StreamKind.Both),
@@ -150,11 +149,15 @@ namespace SysDVR.Client.GUI
 			Program.Options.Streaming.Kind
 		);
 
+		readonly PathInputPopup PathInput = new();
+		readonly Gui.Popup ErrorPopup = new("Settings error");
+		string SettingsErrorMessage = "";
 		Gui.CenterGroup SaveCenter = new();
 
 		public OptionsView()
 		{
 			Popups.Add(PathInput.Popup);
+			Popups.Add(ErrorPopup);
 		}
 
 		public void OpenSelectPath(string message, string currentValue, Action<string> setvalue)
@@ -163,9 +166,17 @@ namespace SysDVR.Client.GUI
 			Popups.Open(PathInput.Popup);
 		}
 
-		void SaveOptions() 
+		void SaveOptions()
 		{
-			SystemUtil.StoreSettingsString(Program.Options.SerializeToJson());
+			try
+			{
+				SystemUtil.StoreSettingsString(Program.Options.SerializeToJson());
+			}
+			catch (Exception e)
+			{
+				SettingsErrorMessage = "Failed to save settings:\r\n" + e.ToString();
+				Popups.Open(ErrorPopup);
+			}
 		}
 
 		public override void Draw()
@@ -178,7 +189,7 @@ namespace SysDVR.Client.GUI
 			SaveCenter.StartHere();
 			if (ImGui.Button("Go back"))
 				Program.Instance.PopView();
-			
+
 			ImGui.SameLine();
 			if (ImGui.Button("Save changes"))
 				SaveOptions();
@@ -239,10 +250,10 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Uncap GUI framerate", ref Program.Options.UncapGUI);
 
 				ImGui.TextWrapped("These options affect the straming quality of SysDVR, the defaults are usually fine");
-				
+
 				ImGui.Text("Audio batching"); ImGui.SameLine();
 				ImGui.SliderInt("##SliderAudioB", ref Program.Options.Streaming.AudioBatching, 0, StreamInfo.MaxAudioBatching);
-				
+
 				ImGui.Checkbox("Cache video packets (NAL) locally and replay them when needed", ref Program.Options.Streaming.UseNALReplay);
 				ImGui.Checkbox("Apply packet cache only to keyframes (H264 IDR frames)", ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);
 
@@ -257,7 +268,7 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Force SDL software rendering", ref Program.Options.ForceSoftwareRenderer);
 				ImGui.Checkbox("Use hardware-accelerated FFMPEG decoder", ref Program.Options.HardwareAccel);
 				ImGui.NewLine();
-				
+
 				ImGui.Checkbox("Print real-time streaming information", ref Program.Options.Debug.Stats);
 				ImGui.Checkbox("Enable verbose logging", ref Program.Options.Debug.Log);
 				ImGui.Checkbox("Disable Audio/Video synchronization", ref Program.Options.Debug.NoSync);
@@ -267,7 +278,7 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Analyze every NAL during the stream", ref Program.Options.Debug.Nal);
 
 				ImGui.Text("GUI scale"); ImGui.SameLine();
-				ImGui.SliderFloat("##sliderGuiScale", ref Program.Options.GuiFontScale, 0.1f, 4);			
+				ImGui.SliderFloat("##sliderGuiScale", ref Program.Options.GuiFontScale, 0.1f, 4);
 
 				// TODO:
 				// ffmpeg decoder name
@@ -279,8 +290,26 @@ namespace SysDVR.Client.GUI
 			}
 
 			PathInput.Draw();
+			DrawErrorPopup();
 
 			Gui.EndWindow();
+		}
+
+		void DrawErrorPopup()
+		{
+			if (ErrorPopup.Begin())
+			{
+				ImGui.TextWrapped(SettingsErrorMessage);
+				ImGui.NewLine();
+
+				if (Gui.CenterButton("Close"))
+				{
+					SettingsErrorMessage = "";
+					ErrorPopup.RequestClose();
+				}
+
+				ImGui.EndPopup();
+			}
 		}
 	}
 }
