@@ -38,28 +38,34 @@ SysDVR requires dotnet 8.0 to build, the android version additionaly requires th
 
 ## Client build
 
-The client uses a .NET csproj to build, using the dotnet CLI should be enough to build a managed (requires dotnet runtime) version of the client.
+The client uses a .NET csproj to build, using the dotnet CLI should be enough to build a managed (requires dotnet runtime) version of the client. This is ideal for development as, once you have the native libraries installed, you can just run and debug the client from Visual Studio or VSCode.
 
-Android builds require the additional `/p:SysDvrTarget=android` parameter for some platform specific code to be included, this is an option for other platforms as well but as of now it is not used, you should use the current build scripts as reference.
+The following are the build scripts for each platform, they are also tasked to download the native libraries:
+- [Windows](https://github.com/exelix11/SysDVR/blob/master/Client/Platform/BuildWindows.bat)
+- [MacOs](https://github.com/exelix11/SysDVR/blob/master/Client/Platform/BuildMacos.sh)
+- [Linux](https://github.com/exelix11/SysDVR/blob/master/Client/Platform/Linux/build-flatpak.sh) (flatpak, will compile the dependencies from source)
+- [Android](https://github.com/exelix11/SysDVR/blob/master/Client/Platform/Android/buildbinaries.sh)
 
-Furthermore, the android build process requires to use gradle or android studio to build the final APK, the `buildbinaries.sh` will only prepare dependencies and the SysDVR client AOT library.
+Android builds are special as they require the additional `/p:SysDvrTarget=android` parameter for some platform specific code to be included. This is an option for other platforms as well but as of now it is not used, you should use the current build scripts as reference.
+Furthermore, the android build process requires to use gradle or android studio to build the final APK, the `buildbinaries.sh` script will only prepare dependencies and the SysDVR client AOT library.
 
 ## Dependencies 
 
 Before being able to run the compiled client, regardless of managed or aot builds, you will need to obtain the executable files for all the native dependencies the client uses.
 
 These are:
-- ffmpeg (libavcodec, libavformat, libavutil, libswscale)
+- ffmpeg (libavcodec, libavformat, libavutil, libswscale, etc)
 - SDL2
 - SDL_image
-- LibUSB
-- [CimguiSDL2Cross](https://github.com/exelix11/CimguiSDL2Cross) (A custom library containing ImGui and CImGui with some SDL-specific twaeks)
+- LibUSB (only if you plan to use usb streaming)
+- [CimguiSDL2Cross](https://github.com/exelix11/CimguiSDL2Cross)
+	- This is a fork of the open source cimgui project with some SDL-specific tweaks. It is built by the CI on that repo and i release the binary packages so they can be downloaded by the build scripts.
 
-For supported platforms these are automatically downloaded by the build scripts, for other platforms you will need to obtain them yourself (make sure to download the correct version).
+Since asking non-windows users to properly install these libraries is essentially impossible, we bundle all the native libraries in the client releases. These are downloaded in the `Platform/runtimes/your_platform/native` folder (for example `runtimes/linux-arm64/native` for 64-bit arm linux) and the msbuild compilation process will automatically include them in the final executable folder. 
+
+If you are planning to run the client on your own pc you can simply download the needed libraries from your package manager and run sysdvr without copying the binaries, the native folder is only the _preferred_ load location and if the client fails to find the libraries there it will fallback to the system path.
 
 The only exception is for CimguiSDL2Cross which must be self built since it is completely custom, you should be able to build it with cmake following the [instructions](https://github.com/exelix11/CimguiSDL2Cross/tree/master/cimgui#compilation) on the repo itself. You can use SysDVR without CimguiSDL2Cross if you run with the `--legacy` option but you will lose the GUI.
-
-Once all the libraries are ready copy them to the `runtimes/your_platform/native` folder, for example `runtimes/linux-arm64/native` for linux x64 and the client should be able to run.
 
 You can debug library loading issues by launching the client with the `--debug dynlib` argument.
 
