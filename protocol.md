@@ -33,7 +33,7 @@ Libusb does not seem to support this and you will instead need to prepare a big 
 
 For maximum compatibility SysDVR client uses the fixed size approach.
 
-Reference implementation: https://github.com/exelix11/SysDVR/blob/6.0/Client/Sources/UsbStreaming.cs#L90
+Reference implementation: https://github.com/exelix11/SysDVR/blob/master/Client/Sources/UsbStreaming.cs#L88
 
 ## Windows USB driver shenanigans
 
@@ -41,7 +41,7 @@ SysDVR client on Windows uses Microsoft's own WinUSB driver, however to make the
 
 This is why we reuse a well-known device ID so that we can install google's signed Android USB drivers on Windows making the configuration painless.
 
-Source for the driver management code: https://github.com/exelix11/SysDVR/blob/6.0/Client/Platform/Specific.Win/WinDriverInstall.cs
+Source for the driver management code: https://github.com/exelix11/SysDVR/blob/master/Client/Platform/Specific.Win/WinDriverInstall.cs
 
 The direct link to the current driver is https://dl.google.com/android/repository/usb_driver_r13-windows.zip
 
@@ -57,7 +57,7 @@ In case the handshake fails for one of the two connections the other one can con
 
 Every 2 seconds the sysmodule broadcasts a UDP packet on port 19999, this contains a _string descriptor_ (explained later). A client can detect the sysmodule by listening for this packet.
 
-Reference implementation: https://github.com/exelix11/SysDVR/blob/6.0/Client/Sources/NetworkScan.cs
+Reference implementation: https://github.com/exelix11/SysDVR/blob/master/Client/Sources/NetworkScan.cs
 
 # Protocol
 
@@ -75,8 +75,8 @@ This is a plaintext string with no binary data so it fits into the USB serial fi
 
 Implementing the device descriptor is not needed as this is used as a pre-connection validation of the protocol version, the protocol is negotiated again during the actual connection phase.
 
-Reference decoder source: https://github.com/exelix11/SysDVR/blob/6.0/Client/Core/StreamInfo.cs#L49
-Reference encoder source: https://github.com/exelix11/SysDVR/blob/6.0/sysmodule/source/core.c#L30
+Reference decoder source: https://github.com/exelix11/SysDVR/blob/master/Client/Core/StreamInfo.cs#L49
+Reference encoder source: https://github.com/exelix11/SysDVR/blob/master/sysmodule/source/core.c#L25
 
 The string looks like the following: `SysDVR|6.0|00|SERIAL NUMBER`, fields are separated by the `|` character. The length of the string is not fixed and the termination depends on the source. You should terminate the string at the first ASCII nul byte however this might not be present in all transport mediums (for example, USB will provide an exact length, UDP packets may be padded with NULL bytes).
 
@@ -96,7 +96,7 @@ The hello packet allows the client to know what version expects the sysmodule so
 
 If the client supports the protocol version, it sends a data structure that configures the parameters of the stream. The configuration request also repeats the protocol version as seen by the client, this means the sysmodule will reject the connection if it doesn't match the version in the hello packet.
 
-handshake packet reference: https://github.com/exelix11/SysDVR/blob/6.0/sysmodule/source/modes/proto.h
+handshake packet reference: https://github.com/exelix11/SysDVR/blob/master/sysmodule/source/modes/proto.h
 
 The client should set the bitfield `MetaFlags` of the request packet to the stream it wants to subscribe to, that is `ProtoMeta_Video` or `ProtoMeta_Audio` or both. Note that for TCP bridge you should only set the bit of the stream of the socket you are connected to or the handshake will fail.
 
@@ -108,14 +108,14 @@ The meaning of the configurable parameters is explained below:
 
 Video properties are only applied if `MetaFlags` contains `Video`, likewise audio properties are only applied if it contains `Audio`. When using TCP bridge it is safe to use the same handshake packet with the only difference being the `MetaFlags` field.
 
-client implementation reference: https://github.com/exelix11/SysDVR/blob/6.0/Client/Sources/Protocol.cs#L165
+client implementation reference: https://github.com/exelix11/SysDVR/blob/master/Client/Sources/Protocol.cs#L201
 
 The sysmodule replies with a single uint32 that represents the result code as defined in `ProtoHandshakeResult`. If the result is not `Handshake_Ok` the sysmodule will also close the connection.
 
 ## Data transfer 
 
 If the handshake was succesful, the sysmodule continuously sends data to the client with no acknowledgement needed.
-The packet format is defined in https://github.com/exelix11/SysDVR/blob/6.0/sysmodule/source/capture.h#L42
+The packet format is defined in https://github.com/exelix11/SysDVR/blob/master/sysmodule/source/capture.h#L44
 
 The magic number in the header is composed of 4 repeating `CC` bytes, this can be used to resync the stream in case of a decoding error by simply skipping every byte until a sequence of `CCCCCCCC` is found. While extremely unlikely, this sequence might appear in the content of a packet causing type confusion during the resynchronization process, to avoid this validate the other values of the header such as the packet size by making sure they are within the protocol specification.
 
