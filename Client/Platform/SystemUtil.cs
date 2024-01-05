@@ -10,58 +10,70 @@ using System.Threading.Tasks;
 
 namespace SysDVR.Client.Platform
 {
-    internal static class SystemUtil
-    {
-        public static bool OpenURL(string url)
-        {
+	internal static class SystemUtil
+	{
+		public static bool OpenURL(string url)
+		{
 #if ANDROID_LIB
             return Program.Native.SysOpenURL(url);
 #else
-            try
-            {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
-            catch
-            {
-                try
-                {
-                    // hack because of this: https://github.com/dotnet/corefx/issues/10361
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        url = url.Replace("&", "^&");
-                        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-                    }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    {
-                        Process.Start("xdg-open", url);
-                    }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        Process.Start("open", url);
-                    }
-                }
-                catch { }
-                return false;
-            }
-            return true;
+			try
+			{
+				Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+			}
+			catch
+			{
+				try
+				{
+					// hack because of this: https://github.com/dotnet/corefx/issues/10361
+					if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+					{
+						url = url.Replace("&", "^&");
+						Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+					}
+					else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+					{
+						Process.Start("xdg-open", url);
+					}
+					else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+					{
+						Process.Start("open", url);
+					}
+				}
+				catch { }
+				return false;
+			}
+			return true;
 #endif
-        }
+		}
 
-        const string SettingsFileName = "options.json";
+		const string SettingsFileName = "options.json";
 
-        public static string? LoadSettingsString() 
-        {
-            var file = Path.Combine(Resources.SettingsStorePath, SettingsFileName);
-            if (File.Exists(file))
-                return File.ReadAllText(file);
-            
-            return null;
-        }
+		public static string? LoadSettingsString()
+		{
+			var path = Resources.SettingsStorePath();
 
-        public static void StoreSettingsString(string json) 
-        {
-			var file = Path.Combine(Resources.SettingsStorePath, SettingsFileName);
+			if (string.IsNullOrWhiteSpace(path))
+				throw new Exception("Couldn't find a valid path to store settings");
+
+			var file = Path.Combine(path, SettingsFileName);
+			if (File.Exists(file))
+				return File.ReadAllText(file);
+
+			return null;
+		}
+
+		public static void StoreSettingsString(string json)
+		{
+			var path = Resources.SettingsStorePath();
+			if (string.IsNullOrWhiteSpace(path))
+				throw new Exception("Couldn't find a valid path to store settings");
+
+			if (!Directory.Exists(path))
+				Directory.CreateDirectory(path);
+
+			var file = Path.Combine(path, SettingsFileName);
 			File.WriteAllText(file, json);
-        }
-    }
+		}
+	}
 }
