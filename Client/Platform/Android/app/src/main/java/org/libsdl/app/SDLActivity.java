@@ -23,6 +23,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.system.Os;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
@@ -53,6 +54,7 @@ import android.widget.Toast;
 import java.util.Hashtable;
 import java.util.Locale;
 
+import exelix11.sysdvr.sysdvrActivity;
 
 /**
     SDL Activity
@@ -323,6 +325,18 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Log.v(TAG, "Model: " + Build.MODEL);
         Log.v(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
+
+        try {
+            // Fix for an issue reported by an user on their nvidia shield TV.
+            // After some debugging we found it to be a variant of https://github.com/dotnet/runtime/issues/85650
+            // So we set the environment variable before loading the native library to workaround the issue
+            // After some empirical tests on the user devices we found 16GB to be the biggest reliable value that doesn't make a console app crash.
+            // 16GB = 16 * 1024 * 1024 * 1024 = 0x4 0000 0000
+            Os.setenv("DOTNET_GCHeapHardLimit", "400000000", true);
+        } catch (Exception e)
+        {
+            sysdvrActivity.Log("Failed to set DOTNET_GCHeapHardLimit: " + e.toString());
+        }
 
         try {
             Thread.currentThread().setName("SDLActivity");
