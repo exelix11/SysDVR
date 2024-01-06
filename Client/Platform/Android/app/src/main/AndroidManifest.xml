@@ -54,8 +54,8 @@
 
     <!-- Allow access to Bluetooth devices -->
     <!-- Currently this is just for Steam Controller support and requires setting SDL_HINT_JOYSTICK_HIDAPI_STEAM -->
-    <!-- <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" /> -->
-    <!-- <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <!-- Allow access to the vibrator -->
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -85,9 +85,7 @@
 
         <!-- Without requestLegacyExternalStorage the folders will remain in-accessible in Android-10, even if WRITE_EXTERNAL_STORAGE as above is present. -->
 
-        <!-- Example of setting SDL hints from AndroidManifest.xml:
         <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0"/>
-         -->
      
         <activity android:name="sysdvrActivity"
             android:label="@string/app_name"
