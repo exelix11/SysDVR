@@ -2,6 +2,7 @@
 using SDL2;
 using SysDVR.Client.Core;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -63,7 +64,7 @@ namespace SysDVR.Client.GUI.Components
 		{
 			Program.DebugLog("Initializing SDL");
 
-			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO).AssertZero(SDL_GetError);
+			SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK).AssertZero(SDL_GetError);
 
 			var flags = SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_PNG;
 			SDL_image.IMG_Init(flags).AssertEqual((int)flags, SDL_image.IMG_GetError);
@@ -168,7 +169,11 @@ namespace SysDVR.Client.GUI.Components
 				Console.WriteLine("SDL failed to resume, terminating.");
 				return GuiMessage.Quit;
 			}
-
+			else if (evt.type == SDL_EventType.SDL_JOYBUTTONDOWN && evt.jbutton.button == 1) // SDL_CONTROLLER_BUTTON_B
+			{
+				return GuiMessage.BackButton;
+			}
+			
 			return GuiMessage.Other;
 		}
 

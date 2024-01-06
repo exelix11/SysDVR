@@ -212,7 +212,7 @@ public class ClientApp
 		ImGui.CreateContext();
 
         UnsafeImguiInitialization();
-        ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.NavEnableGamepad;
         ImGui.GetIO().NavVisible = true;
 
         InitializeFonts();
@@ -301,12 +301,16 @@ public class ClientApp
                 if (msg == GuiMessage.Resize)
                     UpdateSize();
                 else if (msg == GuiMessage.BackButton)
+                {
                     CurrentView.BackPressed();
+                    // Don't pass this event to the imgui backend so it will not lose focus when we return to the previous page
+                    continue;
+                }
                 else if (msg == GuiMessage.KeyDown && evt.key.keysym.scancode is SDL.SDL_Scancode.SDL_SCANCODE_LSHIFT or SDL.SDL_Scancode.SDL_SCANCODE_RSHIFT)
                     ShiftDown = true;
-				else if (msg == GuiMessage.KeyUp && evt.key.keysym.scancode is SDL.SDL_Scancode.SDL_SCANCODE_LSHIFT or SDL.SDL_Scancode.SDL_SCANCODE_RSHIFT)
-					ShiftDown = false;
-				else if (msg == GuiMessage.KeyUp)
+                else if (msg == GuiMessage.KeyUp && evt.key.keysym.scancode is SDL.SDL_Scancode.SDL_SCANCODE_LSHIFT or SDL.SDL_Scancode.SDL_SCANCODE_RSHIFT)
+                    ShiftDown = false;
+                else if (msg == GuiMessage.KeyUp)
                     CurrentView.OnKeyPressed(evt.key.keysym);
                 else if (msg == GuiMessage.Quit)
                     goto break_main_loop;
