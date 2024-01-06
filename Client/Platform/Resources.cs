@@ -84,7 +84,15 @@ namespace SysDVR.Client.Platform
             Program.Native.RequestFileAccess();
         }
         
-        public static string SettingsStorePath { get; internal set; }
+        private static string? _settingsStorePath = null;
+        public static string SettingsStorePath()
+        {
+            if (_settingsStorePath is null)
+                _settingsStorePath = Program.Native.GetSettingsStoragePath();
+
+            return _settingsStorePath;
+        }
+
 #else
 		static string BasePath = Path.Combine(AppContext.BaseDirectory, "runtimes");
 		static string ResourcePath(string x) => Path.Combine(BasePath, "resources", x);

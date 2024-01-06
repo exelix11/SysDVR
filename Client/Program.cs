@@ -67,8 +67,6 @@ namespace SysDVR.Client
 
             NativeLogger.Setup();
 
-            Resources.SettingsStorePath = Native.GetSettingsStoragePath?.Invoke() ?? ""; 
-
             RunApp(new string[0]);
 
             return NativeError.Success;
