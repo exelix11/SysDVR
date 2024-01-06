@@ -12,12 +12,14 @@ echo Checking dependencies...
 mkdir macos-deps
 mkdir tmp
 
-if [ ! -e "macos-deps/cimgui.dylib" ]; then
+# cimgui_rX is the git tag for for the release we are usign of cimgui
+if [ ! -e "macos-deps/cimgui_r2" ]; then
 	echo Downloading Cimgui...
-	curl -L https://github.com/exelix11/CimguiSDL2Cross/releases/download/r1/macos-fat-binaries.zip -o macos-fat-binaries.zip
+	curl -L https://github.com/exelix11/CimguiSDL2Cross/releases/download/r2/macos-fat-binaries.zip -o macos-fat-binaries.zip
 	7z x macos-fat-binaries.zip -Omacos-deps
 	rm macos-fat-binaries.zip
 	rm -rf macos-deps/Resources
+	echo ok > "macos-deps/cimgui_r2"
 fi
 
 if [ ! -e "macos-deps/SDL2_image.dylib" ]; then

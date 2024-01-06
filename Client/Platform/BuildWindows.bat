@@ -19,15 +19,18 @@ del ffmpeg.zip
 
 :skip_ffmpeg
 
-if exist Resources\win-x64\native\cimgui.dll (
+:: cimgui_rX is the git tag for for the release we are usign of cimgui
+if exist Resources\win-x64\native\cimgui_r2 (
 	goto skip_cimgui_sdl
 )
 
 echo download cimgui-sdl2....
-curl -L https://github.com/exelix11/CimguiSDL2Cross/releases/download/r1/windows-x64.zip --output cimgui-win-x64.zip
+curl -L https://github.com/exelix11/CimguiSDL2Cross/releases/download/r2/windows-x64.zip --output cimgui-win-x64.zip
 7z x cimgui-win-x64.zip -olib_cimgui || goto error
 copy lib_cimgui\*.dll Resources\win-x64\native\
+rmdir /s /q lib_cimgui
 del cimgui-win-x64.zip
+echo ok > Resources\win-x64\native\cimgui_r2
 
 :skip_cimgui_sdl
 
