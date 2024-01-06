@@ -88,7 +88,7 @@ namespace SysDVR.Client.Platform
         public static string SettingsStorePath()
         {
             if (_settingsStorePath is null)
-                _settingsStorePath = Program.Native.GetSettingsStoragePath();
+                _settingsStorePath = Program.Native.GetSettingsStoragePath?.Invoke() ?? "";
 
             return _settingsStorePath;
         }
