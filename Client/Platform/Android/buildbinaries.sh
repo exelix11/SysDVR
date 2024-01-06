@@ -49,12 +49,21 @@ if [ ! -d "app/jni/SDL_Image" ]; then
 fi
 
 # Ensure cimgui sources are present
-if [ ! -d "app/jni/cimgui/cimgui" ]; then
+if [ ! -e "app/jni/cimgui/cimgui/cimgui_r2" ]; then
 	echo Downloading cimgui sources...
-	git clone --recursive --depth 1 --shallow-submodules https://github.com/exelix11/CimguiSDL2Cross.git
+	if [ -d "app/jni/cimgui/cimgui/" ]; then
+		echo Cleaning old cimgui...
+		rm -rf "app/jni/cimgui/cimgui/"
+	fi
+	git clone --depth=1 -b r2 --recursive --shallow-submodules https://github.com/exelix11/CimguiSDL2Cross.git
+	cd CimguiSDL2Cross
+	chmod +x apply_patches.sh
+	./apply_patches.sh
+	cd ..
 	mv $(pwd)/CimguiSDL2Cross/cimgui ./app/jni/cimgui/
 	mv $(pwd)/CimguiSDL2Cross/Android.mk ./app/jni/cimgui/
 	rm -rf $(pwd)/CimguiSDL2Cross/
+	echo ok > "app/jni/cimgui/cimgui/cimgui_r2"
 fi
 
 # Ensure libusb sources are present

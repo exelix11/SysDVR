@@ -15,11 +15,13 @@ echo Checking dependencies...
 
 mkdir -p Resources/linux-x64/native
 
-if [ ! -e "Resources/linux-x64/native/cimgui.so" ]; then
+# cimgui_rX is the git tag for for the release we are usign of cimgui
+if [ ! -e "Resources/linux-x64/native/cimgui_r2" ]; then
 	echo Downloading Cimgui...
-	curl -L https://github.com/exelix11/CimguiSDL2Cross/releases/download/r1/linux-x64.zip -o linux-x64.zip
+	curl -L https://github.com/exelix11/CimguiSDL2Cross/releases/download/r2/linux-x64.zip -o linux-x64.zip
 	unzip linux-x64.zip
 	mv cimgui.so Resources/linux-x64/native/cimgui.so
+	echo ok > "Resources/linux-x64/native/cimgui_r2"
 fi
 
 cd .. # Go to client root
