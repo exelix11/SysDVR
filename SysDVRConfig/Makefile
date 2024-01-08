@@ -37,14 +37,14 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
-TARGET		:=	SysDVR-conf
 BUILD		:=	build.nx
 SOURCES		:=	source source/Platform source/UI source/UI/imgui source/Scenes source/Libs/zip
 DATA		:=	data
 INCLUDES	:=	include source/Libs/
 ROMFS		:=	romfs
 
-APP_TITLE	:=	SysDVR Settings
+APP_TITLE	:=	SysDVR
+TARGET		:=	${APP_TITLE}
 APP_AUTHOR	:=	Exelix
 APP_VERSION	:=	6.0
 
