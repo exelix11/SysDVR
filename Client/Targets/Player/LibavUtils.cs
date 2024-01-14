@@ -10,7 +10,7 @@ namespace SysDVR.Client.Targets.Player
 {
     public static class LibavUtils
     {
-        public record Codec(string Name, string Description, AVPixelFormat[] Formats);
+        public record Codec(string Name, string Description, AVPixelFormat[] Formats, AVCodecID CodecID);
 
         public static unsafe Codec[] GetAllDecoders()
         {
@@ -34,7 +34,7 @@ namespace SysDVR.Client.Targets.Player
                         fmt++;
                     }
 
-                    codecs.Add(new Codec(name, desc, formats.ToArray()));
+                    codecs.Add(new Codec(name, desc, formats.ToArray(), c->id));
                 }
             }
 
@@ -42,7 +42,7 @@ namespace SysDVR.Client.Targets.Player
         }
 
         public static IEnumerable<Codec> GetH264Decoders() =>
-            GetAllDecoders().Where(x => x.Name.Contains("264") || x.Description.Contains("264"));
+            GetAllDecoders().Where(x => x.CodecID == AVCodecID.AV_CODEC_ID_H264);
 
         public static void PrintAllCodecs()
         {
