@@ -44,12 +44,13 @@ namespace SysDVR.Client.Core
 		[JsonIgnore]
 		public UsbLogLevel UsbLogging = UsbLogLevel.Error;
 
-        // Ffmpeg options
-        public bool HardwareAccel;
-        
-        // Mark as json ignore the ones that can only be set via command line
-        [JsonIgnore]
+		// Ffmpeg options
         public string? DecoderName;
+        
+        // This option is plain bad, it means "pick the first decoder from ffmpeg" which is most likely not what the user wants
+        // Right now it is only available from the command line, it's always best to manually pick a decoder from its name
+		[JsonIgnore]
+		public bool HardwareAccel;
 
         // SDL options
         public bool ForceSoftwareRenderer;

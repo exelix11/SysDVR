@@ -1,10 +1,14 @@
 ﻿using ImGuiNET;
+using LibUsbDotNet;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
+using SysDVR.Client.Targets.Player;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -154,10 +158,24 @@ namespace SysDVR.Client.GUI
 		string SettingsErrorMessage = "";
 		Gui.CenterGroup SaveCenter = new();
 
+		readonly Gui.Popup PickDecoderPopup = new("Select video decoder");
+		string DecoderButtonText;
+		List<LibavUtils.Codec> PickDecoderList = new();
+
+		void UpdateDecoderButtonText()
+		{
+			if (Program.Options.DecoderName is not null)
+				DecoderButtonText = $"Disable hardware decoder ({Program.Options.DecoderName})";
+			else
+				DecoderButtonText = "Configure hardware-accelerated decoder";
+		}
+
 		public OptionsView()
 		{
 			Popups.Add(PathInput.Popup);
 			Popups.Add(ErrorPopup);
+			Popups.Add(PickDecoderPopup);
+			UpdateDecoderButtonText();
 		}
 
 		public void OpenSelectPath(string message, string currentValue, Action<string> setvalue)
@@ -249,6 +267,7 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox("Uncap streaming framerate", ref Program.Options.UncapStreaming);
 				ImGui.Checkbox("Uncap GUI framerate", ref Program.Options.UncapGUI);
 
+				ImGui.NewLine();
 				ImGui.TextWrapped("These options affect the straming quality of SysDVR, the defaults are usually fine");
 
 				ImGui.Text("Audio batching"); ImGui.SameLine();
@@ -266,9 +285,6 @@ namespace SysDVR.Client.GUI
 				ImGui.Indent();
 
 				ImGui.Checkbox("Force SDL software rendering", ref Program.Options.ForceSoftwareRenderer);
-				ImGui.Checkbox("Use hardware-accelerated FFMPEG decoder", ref Program.Options.HardwareAccel);
-				ImGui.NewLine();
-
 				ImGui.Checkbox("Print real-time streaming information", ref Program.Options.Debug.Stats);
 				ImGui.Checkbox("Enable verbose logging", ref Program.Options.Debug.Log);
 				ImGui.Checkbox("Disable Audio/Video synchronization", ref Program.Options.Debug.NoSync);
@@ -280,8 +296,21 @@ namespace SysDVR.Client.GUI
 				ImGui.Text("GUI scale"); ImGui.SameLine();
 				ImGui.SliderFloat("##sliderGuiScale", ref Program.Options.GuiFontScale, 0.1f, 4);
 
+				ImGui.NewLine();
+				if (ImGui.Button(DecoderButtonText))
+				{
+					if (Program.Options.DecoderName is not null)
+					{
+						Program.Options.DecoderName = null;
+						UpdateDecoderButtonText();
+					}
+					else
+					{
+						ShowDecoderPickPopup();
+					}
+				}
+
 				// TODO:
-				// ffmpeg decoder name
 				// Usb log level
 				// other debug options
 
@@ -291,8 +320,52 @@ namespace SysDVR.Client.GUI
 
 			PathInput.Draw();
 			DrawErrorPopup();
+			DrawDecoderPickerPopup();
 
 			Gui.EndWindow();
+		}
+
+		void ShowDecoderPickPopup() 
+		{
+			Popups.Open(PickDecoderPopup);
+			PickDecoderList.Clear();
+			PickDecoderList.AddRange(LibavUtils.GetH264Decoders());
+		}
+
+		void DrawDecoderPickerPopup()
+		{
+			if (PickDecoderPopup.Begin(ImGui.GetWindowSize()))
+			{
+				Gui.CenterText("Select a decoder to use");
+				ImGui.TextWrapped("Note that not all decoders may be compatible with your system, revert this option in case of issues.\n" +
+					"You can get more decoders by obtaining a custom build of ffmpeg libraries (libavcodec) and replacing the one included in SysDVR-Client.\n\n" +
+					"This feature is intended for mini-PCs like Raspberry pi where software decoding might not be enough. On desktop PCs and smartphones this option should not be used.");
+
+				ImGui.NewLine();
+
+				var sz = ImGui.GetContentRegionMax() - new Vector2(10, ImGui.GetCursorPosY() + 100);
+
+				if (sz.Y < 100)
+					sz.Y = 100;
+
+				ImGui.BeginChildFrame(ImGui.GetID("##CodecList"), sz, ImGuiWindowFlags.NavFlattened);
+				foreach (var c in PickDecoderList)
+				{
+					if (ImGui.Button($"{c.Name}: {c.Description}", new Vector2(sz.X - 10, 0)))
+					{
+						Program.Options.DecoderName = c.Name;
+						UpdateDecoderButtonText();
+						PickDecoderPopup.RequestClose();
+					}
+				}
+				Gui.MakeWindowScrollable();
+				ImGui.EndChildFrame();
+
+				ImGui.NewLine();
+
+				if (Gui.CenterButton("Cancel"))
+					PickDecoderPopup.RequestClose();
+			}
 		}
 
 		void DrawErrorPopup()
