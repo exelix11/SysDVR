@@ -12,9 +12,6 @@ namespace SysDVR.Client.Platform
 {
     internal static class DynamicLibraryLoader
     {
-        // If something goes wrong and we want to show a critical warning to the user, we'll set this (assuming we get that far)
-        public static string? CriticalWarning = null;
-
         static string ArchName => RuntimeInformation.ProcessArchitecture switch
         {
             Architecture.X64 => "-x64",
@@ -185,15 +182,10 @@ namespace SysDVR.Client.Platform
             {
                 if (RuntimeInformation.OSArchitecture == Architecture.Arm64 && RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    
-                    CriticalWarning =
+					Program.AddInitializationError(
                         "SysDVR detected that your mac has an apple silicon CPU but you are running the intel version of SysDVR.\n" +
                         "Running SysDVR in rosetta is not supported and will likely not work proparly.\n" +
-                        "If you're using a standalone build of SysDVR (ver 6.0+) download the right one for your system. If you're running SysDVR through dotnet make sure to use a native arm64 dotnet build.";
-
-                    Console.WriteLine(CriticalWarning);
-                    Console.ResetColor();
+                        "If you're using a standalone build of SysDVR (ver 6.0+) download the right one for your system. If you're running SysDVR through dotnet make sure to use a native arm64 dotnet build.");
                 }
             }
 #endif

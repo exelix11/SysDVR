@@ -324,7 +324,7 @@ namespace SysDVR.Client.GUI
             {
                 Gui.H2();
                 Gui.CenterText("Streaming is set to audio-only mode.");
-                ImGui.PopFont();
+				Gui.PopFont();
             }
 
             for (int i = 0; i < notifications.Count; i++)

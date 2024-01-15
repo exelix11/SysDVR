@@ -28,7 +28,7 @@ namespace SysDVR.Client
 		public LegacyPlayer(CommandLineOptions args)
         {
             CommandLine = args;
-            Console.WriteLine("Starting in legacy mode...");
+            Console.WriteLine(Program.Strings.LegacyPlayer_Starting);
         }
 
 		PlayerManager? ConnectToConsole()
@@ -71,8 +71,7 @@ namespace SysDVR.Client
 
             if (hasVideo)
             {
-                Console.WriteLine("Starting to stream, press F11 for full screen.");
-                Console.WriteLine("Press return to print stats.");
+                Console.WriteLine(Program.Strings.LegacyPlayer_Started);
 
                 while (true)
                 {
@@ -101,7 +100,7 @@ namespace SysDVR.Client
             }
             else 
             {
-                Console.WriteLine("No video output needed, press return to quit");
+                Console.WriteLine(Program.Strings.LegacyPlayer_AudioOnly);
                 Console.ReadLine();
             }
 

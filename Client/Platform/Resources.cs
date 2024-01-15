@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Platform
@@ -36,6 +37,20 @@ namespace SysDVR.Client.Platform
                 throw new Exception($"Loading resource {path} failed: {SDL.SDL_GetError()}");
             
             return buf;
+        }
+        
+        public static bool ResourceExists(string path) 
+        {
+            try 
+            {
+                LoadResource(path);
+            }
+            catch 
+            {
+                return false;
+            }
+
+            return true;
         }
 
         static string BasePath = "";        
@@ -117,13 +132,22 @@ namespace SysDVR.Client.Platform
 		}
 
 		public static byte[] ReadResouce(string path) => File.ReadAllBytes(path);
+		public static bool ResourceExists(string path) => File.Exists(path);
 
 		public static bool HasDiskAccessPermission() => true;
 		public static bool CanRequestDiskAccessPermission() => true;
 		public static void RequestDiskAccessPermission() { }
+
+        static string[] GetTranslationFiles()
+        {
+            if (!Directory.Exists(ResourcePath("strings")))
+                return [];
+
+            return Directory.GetFiles(ResourcePath("strings"), "*.json");
+		}
 #endif
 		public static string RuntimesFolder => BasePath;
-		public static string MainFont => ResourcePath("OpenSans.ttf");
+		public static string MainFont { get; private set; } = ResourcePath("fonts/OpenSans.ttf");
 		public static string LoadingImage => ResourcePath("loading.yuv");
 
 		public readonly static LazyImage Logo = new LazyImage(ResourcePath("logo.png"));
@@ -146,5 +170,48 @@ namespace SysDVR.Client.Platform
 
 			return null;
 		}
+
+        public static StringTableMetadata[] GetAvailableTranslations()
+        {
+            var files = GetTranslationFiles();
+			var result = new List<StringTableMetadata>();
+
+			foreach (var file in files)
+            {
+                try
+                {
+                    var table = JsonSerializer.Deserialize<StringTableMetadata>(ReadResouce(file), StringTableSerializer.Default.SysDVRStringTableMetadata);
+                    if (table is null)
+                        continue;
+
+					table.FileName = file;
+					result.Add(table);
+				}
+                catch (Exception ex)
+                {
+                    Program.DebugLog($"Failed to load translation {file} : {ex}");    
+                }
+			}
+
+			return result.ToArray();
+        }
+
+        public static StringTable? LoadtranslationFromAssetName(string fullAssetName)
+        {
+            return JsonSerializer.Deserialize<StringTable>(ReadResouce(fullAssetName), StringTableSerializer.Default.SysDVRStringTable) 
+                ?? throw new Exception($"Failed to deserialize {fullAssetName}");
+        }
+
+        public static bool OverrideMainFont(string fontName)
+        {
+            var font = ResourcePath(fontName);
+            if (!ResourceExists(font))
+            {
+				return false;
+			}
+
+			MainFont = font;
+			return true;
+        }
 	}
 }

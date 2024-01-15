@@ -4,7 +4,11 @@ using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Test;
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 #if ANDROID_LIB
 using System.Runtime.InteropServices;
@@ -43,12 +47,17 @@ namespace SysDVR.Client
 					Environment.GetEnvironmentVariable("SNAP"),
 				}.Any(x => !string.IsNullOrWhiteSpace(x));
 			}
+
+            //File.WriteAllText("english.json", new StringTable().Serialize());
 		}
 
 		internal static ClientApp Instance = null!;
         internal static LegacyPlayer? LegacyInstance;
+        internal static StringTable Strings = new();
 
-        public static string Version = "6.0";
+		static readonly StringBuilder InitializationError = new();
+
+		public static string Version = "translation branch";
         public static string BuildID = "";
 
         public static Options Options = new();
@@ -146,7 +155,8 @@ namespace SysDVR.Client
                     }
 
                     LoadSettings();
-                    cli.PrintDeprecationWarnings();
+                    LoadTranslations();
+					cli.PrintDeprecationWarnings();
                     cli.ApplyOptionOverrides();
 
                     SdlCtx = new();
@@ -185,21 +195,66 @@ namespace SysDVR.Client
 #endif
         }
 
+        private static void LoadTranslations() 
+        {
+            try { 
+                var lang = (Options.PreferredLanguage ?? SystemUtil.GetLanguageCode()).ToLower();
+                Program.DebugLog($"Requested language {lang}");
+
+				var useLanguage = Resources.GetAvailableTranslations()
+                    .FirstOrDefault(x => x.SystemLocale.Contains(lang));
+
+                if (useLanguage is null)
+                    return;
+
+                if (useLanguage.FontName is not null)
+                {
+                    if (!Resources.OverrideMainFont(Path.Combine("fonts", useLanguage.FontName)))
+                    {
+						AddInitializationError($"Failed to load the custom font for language {lang}, the language will be set to English.");
+                        return;
+                    }
+                }
+
+				Program.DebugLog($"Loading translation {useLanguage.FileName}");
+                Strings = Resources.LoadtranslationFromAssetName(useLanguage.FileName);
+            }
+            catch (Exception ex)
+            {
+				AddInitializationError($"Failed to load translation, the language will be set to English.\n{ex}");
+            }
+        }
+
+        internal static string GetInitializationError() =>
+            InitializationError.ToString();
+
+        internal static void AddInitializationError(string error)
+        {
+			InitializationError.AppendLine(error);
+			
+            Console.ForegroundColor = ConsoleColor.Red;
+			Console.WriteLine(error);
+			Console.ResetColor();
+		}
+
 		private static void LoadSettings()
 		{
 			try
 			{
 				var set = SystemUtil.LoadSettingsString();
-				if (set is null)
-					return;
-
-				Program.Options = Options.FromJson(set);
-				Console.WriteLine("Settings loaded");
+                if (set is not null)
+                {
+                    Program.Options = Options.FromJson(set);
+                    Console.WriteLine("Settings loaded");
+                }
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine($"Failed to load settings: {ex}");
 			}
+
+            if (Debugger.IsAttached)
+                Options.Debug.Log = true;
 		}
 
 		private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)

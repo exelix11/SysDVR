@@ -111,7 +111,7 @@ namespace SysDVR.Client.GUI
 
             Gui.H2();
             Gui.CenterText(isError ? "Fatal error" : "Connecting, please wait");
-            ImGui.PopFont();
+			Gui.PopFont();
 
             Gui.CenterText(info.ToString());
             

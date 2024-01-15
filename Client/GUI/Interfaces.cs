@@ -294,14 +294,26 @@ namespace SysDVR.Client.GUI
                 ImGui.SetCursorPosY(y);
         }
 
-        public static void H1() 
+        // Imgui does not yet have an API to push the font scale as a style var
+        // Also we can't make multiple size atlas or we risk running out of font space in SDL
+        // so this is the best we can do for multiple font sizes
+		// https://github.com/ocornut/imgui/issues/1018
+		public unsafe static void H1() 
         {
-            ImGui.PushFont(Program.Instance.FontH1);
+            Program.Instance.FontText.NativePtr->Scale *= ClientApp.FontH1Scale;
+			ImGui.PushFont(Program.Instance.FontText);
         }
 
-        public static void H2()
+        public unsafe static void H2()
         {
-            ImGui.PushFont(Program.Instance.FontH2);
+			Program.Instance.FontText.NativePtr->Scale *= ClientApp.FontH2Scale;
+			ImGui.PushFont(Program.Instance.FontText);
+		}
+
+        public unsafe static void PopFont() 
+        {
+			Program.Instance.FontText.NativePtr->Scale = 1;
+			ImGui.PopFont();
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -74,6 +75,11 @@ namespace SysDVR.Client.Platform
 
 			var file = Path.Combine(path, SettingsFileName);
 			File.WriteAllText(file, json);
+		}
+
+		public static string GetLanguageCode() 
+		{
+			return CultureInfo.CurrentUICulture.Name;
 		}
 	}
 }
