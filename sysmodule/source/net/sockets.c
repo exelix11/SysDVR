@@ -62,21 +62,6 @@ void LogFunctionImpl(const char* fmt, ...)
 }
 #endif
 
-bool isServiceRunning(const char *serviceName) {
-    u8 tmp = 0;
-    SmServiceName service_name = smEncodeName(serviceName);
-    Result rc;
-    if(hosversionAtLeast(12, 0, 0)){
-        rc = tipcDispatchInOut(smGetServiceSessionTipc(), 65100, service_name, tmp);
-    } else {
-        rc = serviceDispatchInOut(smGetServiceSession(), 65100, service_name, tmp);
-    }
-    if (R_SUCCEEDED(rc) && tmp & 1)
-        return true;
-    else
-        return false;
-}
-
 void SocketInit()
 {
 	if (SocketReady)
@@ -113,26 +98,15 @@ void SocketInit()
 	LOG("Initialied BSD with tmem size %x\n", TMEM_SIZE);
 	SocketReady = true;
 
-	Result rc = 0;
 #if FAKEDVR
-    if (!isServiceRunning("nifm:u")) {
-        HasNifm = false;
-        if (R_SUCCEEDED(rc = nifmInitialize(NifmServiceType_User)))
-               HasNifm = true;
-    } else {
-        HasNifm = true;
-    }
+    Result rc = nifmInitialize(NifmServiceType_User);
 #else
-    if (!isServiceRunning("nifm:a")) {
-        HasNifm = false;
-        if (R_SUCCEEDED(rc = nifmInitialize(NifmServiceType_Admin)))
-               HasNifm = true;
-    } else {
-        HasNifm = true;
-    }
+    Result rc = nifmInitialize(NifmServiceType_Admin);
 #endif
 	if (R_FAILED(rc))
 		LOG("Failed to initialize nifm: %x\n", rc);
+	else
+		HasNifm = true;
 }
 
 void SocketDeinit()
