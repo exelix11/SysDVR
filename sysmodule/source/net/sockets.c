@@ -374,14 +374,16 @@ bool SocketSetBroadcast(int socket, bool allow)
 
 s32 SocketGetBroadcastAddress(int socket)
 {
-	u32 addr, mask, gw, dns1, dns2;
-	Result rc = nifmGetCurrentIpConfigInfo(&addr, &mask, &gw, &dns1, &dns2);
-
-	if (R_SUCCEEDED(rc))
+	if (HasNifm)
 	{
-		return (s32)(addr | ~mask);
+		u32 addr, mask, gw, dns1, dns2;
+		Result rc = nifmGetCurrentIpConfigInfo(&addr, &mask, &gw, &dns1, &dns2);
+
+		if (R_SUCCEEDED(rc))
+			return (s32)(addr | ~mask);
+		else 
+			LOG("Nifm failed with %x, fallback to INADDR_BROADCAST\n", rc);
 	}
-	else LOG("Nifm failed with %x, fallback to INADDR_BROADCAST\n", rc);
 
 	// This does not seem to work on switch
 	return INADDR_BROADCAST;

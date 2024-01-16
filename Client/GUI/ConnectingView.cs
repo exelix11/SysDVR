@@ -17,7 +17,7 @@ namespace SysDVR.Client.GUI
         readonly DeviceInfo info;
         readonly DeviceConnector conn;
 
-        CancellationTokenSource src = new();
+        CancellationTokenSource? src = new();
         
         bool connected;
         bool isError;
@@ -56,10 +56,10 @@ namespace SysDVR.Client.GUI
             }
             catch (Exception e)
             {
-                if (src.IsCancellationRequested)
+                if (src!.IsCancellationRequested)
                     return;
 
-                Console.WriteLine("Player connection failed");
+                Console.WriteLine($"Player connection failed: {e}");
                 Conn_OnMessage(e.ToString());
                 isError = true;
                 return;
@@ -70,11 +70,8 @@ namespace SysDVR.Client.GUI
                 // if the connection failed it's not needed anymore
                 // otherwise it's now owned by the player
                 src = null;
-
                 conn.OnMessage -= Conn_OnMessage;
             }
-
-            Console.WriteLine("Connected");
 
             // This must execute on the main thread
             Program.Instance.PostAction(() =>

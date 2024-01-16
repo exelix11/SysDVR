@@ -14,7 +14,7 @@ namespace SysDVR.Client.Sources
 {
     internal class DeviceConnector
     {
-        public event Action<string> OnMessage;
+        public event Action<string>? OnMessage;
 
         readonly DeviceInfo Info;
         readonly CancellationTokenSource Token;
@@ -38,16 +38,18 @@ namespace SysDVR.Client.Sources
 
         async Task<StreamingSource> ConnectInternal() 
         {
-			StreamingSource source = null;
+			StreamingSource source;
 
-			if (Info.Source == ConnectionType.Net)
-				source = new TCPBridgeSource(Info, Token.Token, Options);
-			else if (Info.Source == ConnectionType.Usb)
-				source = new UsbStreamingSource(
-					Info.ConnectionHandle as DvrUsbDevice ?? throw new Exception("Invalid device handle"),
-					Options, Token.Token);
-			else if (Info.Source == ConnectionType.Stub)
-				source = new StubSource(Options, Token.Token, 10000);
+            if (Info.Source == ConnectionType.Net)
+                source = new TCPBridgeSource(Info, Token.Token, Options);
+            else if (Info.Source == ConnectionType.Usb)
+                source = new UsbStreamingSource(
+                    Info.ConnectionHandle as DvrUsbDevice ?? throw new Exception("Invalid device handle"),
+                    Options, Token.Token);
+            else if (Info.Source == ConnectionType.Stub)
+                source = new StubSource(Options, Token.Token, 10000);
+            else
+                throw new Exception($"Connection source not implemented: {Info.Source}");
 
 			source.OnMessage += MessageReceived;
 			try
@@ -79,11 +81,7 @@ namespace SysDVR.Client.Sources
             }
             catch
             {
-                if (Token.IsCancellationRequested)
-                    return null;
-
                 Info?.Dispose();
-
                 throw;
             }
         }

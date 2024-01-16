@@ -39,11 +39,15 @@ namespace SysDVR.Client.GUI
 
             if (DynamicLibraryLoader.CriticalWarning != null)
                 Popups.Open(initErrorPopup);
-
-            StreamMode = Program.Options.Streaming.Kind;
         }
 
-        void UpdateDiskPermissionStatus()
+		public override void EnterForeground()
+		{
+			base.EnterForeground();
+			StreamMode = Program.Options.Streaming.Kind;
+		}
+
+		void UpdateDiskPermissionStatus()
         {
             HasDiskPermission = Resources.HasDiskAccessPermission();
             if (!HasDiskPermission)
