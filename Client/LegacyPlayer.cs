@@ -28,7 +28,7 @@ namespace SysDVR.Client
 		public LegacyPlayer(CommandLineOptions args)
         {
             CommandLine = args;
-            Console.WriteLine(Program.Strings.LegacyPlayer_Starting);
+            Console.WriteLine(Strings.Starting);
         }
 
 		PlayerManager? ConnectToConsole()
@@ -71,7 +71,7 @@ namespace SysDVR.Client
 
             if (hasVideo)
             {
-                Console.WriteLine(Program.Strings.LegacyPlayer_Started);
+                Console.WriteLine(Strings.Started);
 
                 while (true)
                 {
@@ -100,7 +100,7 @@ namespace SysDVR.Client
             }
             else 
             {
-                Console.WriteLine(Program.Strings.LegacyPlayer_AudioOnly);
+                Console.WriteLine(Strings.AudioOnly);
                 Console.ReadLine();
             }
 

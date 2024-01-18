@@ -134,7 +134,7 @@ namespace SysDVR.Client.Targets.FileOutput
             AudioTarget?.Stop();
             VideoTarget?.Stop();
 
-            Console.WriteLine("Finalizing file...");
+            Program.DebugLog("Finalizing recording file...");
 
             av_write_trailer(OutCtx);
             avio_close(OutCtx->pb);

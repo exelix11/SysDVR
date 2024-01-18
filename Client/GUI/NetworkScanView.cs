@@ -15,15 +15,18 @@ namespace SysDVR.Client.GUI
 {
     internal class NetworkScanView : View
     {
-        readonly StreamingOptions options;
+		readonly StringTable.NetworkScanTable Strings = Program.Strings.NetworkScan;
+
+		readonly StreamingOptions options;
         readonly NetworkScan scanner = new();
         readonly List<DeviceInfo> devices = new List<DeviceInfo>();
         readonly byte[] IpAddressTextBuf = new byte[256];
         
         string? autoConnect;
+        string autoConnectGuiText;
 
         Gui.Popup ipEnterPopup = new("Enter console IP address");
-        Gui.Popup incompatiblePopup = new("Error");
+        Gui.Popup incompatiblePopup = new(Program.Strings.General.PopupErrorTitle);
         Gui.CenterGroup popupBtnCenter = new();
         Gui.CenterGroup popupTbCenter = new();
         string? lastError;            
@@ -38,6 +41,15 @@ namespace SysDVR.Client.GUI
 
             scanner.OnDeviceFound += OnDeviceFound;
             scanner.OnFailure += OnFailure;
+
+            if (autoConnect is not null)
+            {
+                if (autoConnect == "" || Program.Options.HideSerials)
+                    autoConnectGuiText = Program.Strings.Connection.AutoConnect;
+                // Fromat this text once so it's not done every frame
+                else
+					autoConnectGuiText = string.Format(Program.Strings.Connection.AutoConnectWithSerial, autoConnect);
+			}
         }
 
         private void OnDeviceFound(DeviceInfo info)
@@ -110,18 +122,15 @@ namespace SysDVR.Client.GUI
 
             var win = ImGui.GetWindowSize();
 
-            Gui.CenterText("Searching for network devices...");
+            Gui.CenterText(Strings.Title);
             
             if (autoConnect is not null)
             {
                 ImGui.Spacing();
+                
+                Gui.CenterText(autoConnectGuiText);
 
-				if (autoConnect == "" || Program.Options.HideSerials)
-					Gui.CenterText("SysDVR will connect automatically to the first valid device");
-                else
-                    Gui.CenterText("SysDVR will connect automatically to the console with serial containing: " + autoConnect);
-
-                if (Gui.CenterButton("Cancel auto conect", new(win.X * 5 / 6, 0)))
+                if (Gui.CenterButton(Program.Strings.Connection.AutoConnectCancelButton, new(win.X * 5 / 6, 0)))
                 {
                     autoConnect = null;
                 }
@@ -149,13 +158,13 @@ namespace SysDVR.Client.GUI
                 ImGui.NewLine();
             }
 
-            Gui.CenterText("Can't find your device ?");
+            Gui.CenterText(Strings.ManualConnectLabel);
             
-            if (Gui.CenterButton("Use IP address"))
+            if (Gui.CenterButton(Strings.ManualConnectButton))
                 ButtonEnterIp();
 
 			if (!Program.IsAndroid)
-				ImGui.TextWrapped("Remember to allow SysDVR client in your firewall or else it won't be able to detect consoles. Some networks may block device discovery, in that case you will have to connect by IP.");
+				ImGui.TextWrapped(Strings.FirewallLabel);
 
 			if (lastError is not null)
             {
@@ -164,7 +173,7 @@ namespace SysDVR.Client.GUI
 
             sz.Y = Gui.ButtonHeight();
             Gui.CursorFromBottom(sz.Y);
-            if (Gui.CenterButton("Go back", sz))
+            if (Gui.CenterButton(GeneralStrings.BackButton, sz))
             {
                 Program.Instance.PopView();
             }
@@ -173,10 +182,9 @@ namespace SysDVR.Client.GUI
 
             if (incompatiblePopup.Begin())
             {
-                ImGui.TextWrapped("The selected device is not compatible with this version of the client.");
-                ImGui.TextWrapped("Make sure you're using the same version of SysDVR on both the console and this device.");
+                ImGui.TextWrapped(Program.Strings.Connection.DeviceNotCompatible);
 
-                if (Gui.CenterButton("Go back"))
+                if (Gui.CenterButton(GeneralStrings.BackButton))
                     incompatiblePopup.RequestClose();
 
                 ImGui.EndPopup();
@@ -189,13 +197,13 @@ namespace SysDVR.Client.GUI
         {
             if (ipEnterPopup.Begin())
             {
-                ImGui.TextWrapped("This is the local IP address of your console, it should look like 192.168.X.Y. You can find it in the console settings or in the SysDVR-Settings homebrew.\nIf you can't connect make sure you enabled TCP bridge mode on the console.");
+                ImGui.TextWrapped(Strings.ConnectByIPLabel);
                 popupTbCenter.StartHere();
                 ImGui.InputText("##ip", IpAddressTextBuf, (uint)IpAddressTextBuf.Length);
                 popupTbCenter.EndHere();
                 ImGui.Spacing();
                 popupBtnCenter.StartHere();
-                if (ImGui.Button("   Connect   "))
+                if (ImGui.Button(Strings.ConnectByIPButton))
                 {
                     ipEnterPopup.RequestClose();
                     var ip = Encoding.UTF8.GetString(IpAddressTextBuf, 0, Array.IndexOf<byte>(IpAddressTextBuf, 0));
@@ -203,7 +211,7 @@ namespace SysDVR.Client.GUI
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("    Cancel    "))
+                if (ImGui.Button(GeneralStrings.CancelButton))
                     ipEnterPopup.RequestClose();
 
                 popupBtnCenter.EndHere();

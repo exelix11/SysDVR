@@ -55,7 +55,7 @@ namespace SysDVR.Client.Platform
 			var path = Resources.SettingsStorePath();
 
 			if (string.IsNullOrWhiteSpace(path))
-				throw new Exception("Couldn't find a valid path to store settings");
+				throw new Exception(Program.Strings.Errors.SettingsPathMissing);
 
 			var file = Path.Combine(path, SettingsFileName);
 			if (File.Exists(file))
@@ -68,7 +68,7 @@ namespace SysDVR.Client.Platform
 		{
 			var path = Resources.SettingsStorePath();
 			if (string.IsNullOrWhiteSpace(path))
-				throw new Exception("Couldn't find a valid path to store settings");
+				throw new Exception(Program.Strings.Errors.SettingsPathMissing);
 
 			if (!Directory.Exists(path))
 				Directory.CreateDirectory(path);

@@ -10,6 +10,8 @@ namespace SysDVR.Client.GUI
 {
     internal class MainView : View
     {
+        readonly StringTable.HomePageTable Strings = Program.Strings.HomePage;
+
         readonly string Heading;
         readonly string SecondLine;
 
@@ -21,7 +23,7 @@ namespace SysDVR.Client.GUI
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
 
-        Gui.Popup initErrorPopup = new Gui.Popup(Program.Strings.MainGUI_InitializationErrorTitle);
+        Gui.Popup initErrorPopup = new Gui.Popup(Program.Strings.HomePage.InitializationErrorTitle);
         string? initError;
 
         float uiScale;
@@ -88,12 +90,12 @@ namespace SysDVR.Client.GUI
                 var center = w / 2 - ModeButtonWidth / 2;
 
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton(Resources.WifiIcon, Program.Strings.MainGUI_NetworkButton, ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(Resources.WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += 20 * uiScale + ModeButtonHeight;
 
                 ImGui.SetCursorPos(new(center, y));
-                usb = ModeButton(Resources.UsbIcon, Program.Strings.MainGUI_USBButton, ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(Resources.UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
@@ -101,10 +103,10 @@ namespace SysDVR.Client.GUI
             {
                 var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton(Resources.WifiIcon, Program.Strings.MainGUI_NetworkButton, ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(Resources.WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
-                usb = ModeButton(Resources.UsbIcon, Program.Strings.MainGUI_USBButton, ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(Resources.UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
@@ -116,24 +118,24 @@ namespace SysDVR.Client.GUI
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
-            Gui.CenterText(Program.Strings.MainGUI_ChannelLabel);
+            Gui.CenterText(Strings.ChannelLabel);
 
             centerRadios.StartHere();
-            ChannelRadio(Program.Strings.MainGUI_ChannelVideo, StreamKind.Video);
+            ChannelRadio(Strings.ChannelVideo, StreamKind.Video);
             ImGui.SameLine();
-            ChannelRadio(Program.Strings.MainGUI_ChannelAudio, StreamKind.Audio);
+            ChannelRadio(Strings.ChannelAudio, StreamKind.Audio);
             ImGui.SameLine();
-            ChannelRadio(Program.Strings.MainGUI_ChannelBoth, StreamKind.Both);
+            ChannelRadio(Strings.ChannelBoth, StreamKind.Both);
             centerRadios.EndHere();
 
             ImGui.NewLine();
 
             if (!HasDiskPermission)
             {
-                ImGui.TextWrapped(Program.Strings.MainGUI_FileAccess);
+                ImGui.TextWrapped(Strings.FileAccess);
                 if (CanRequesDiskPermission)
                 {
-                    if (Gui.CenterButton(Program.Strings.MainGUI_FileAccessRequestButton))
+                    if (Gui.CenterButton(Strings.FileAccessRequestButton))
                     {
                         Resources.RequestDiskAccessPermission();
                         UpdateDiskPermissionStatus();
@@ -143,22 +145,22 @@ namespace SysDVR.Client.GUI
             }
 
             centerOptions.StartHere();
-			if (ImGui.Button(Program.Strings.MainGUI_GithubButton))
+			if (ImGui.Button(Strings.GithubButton))
 				SystemUtil.OpenURL("https://github.com/exelix11/SysDVR/");
 
 			ImGui.SameLine();
-			if (ImGui.Button(Program.Strings.MainGUI_GuideButton))
+			if (ImGui.Button(Strings.GuideButton))
 				SystemUtil.OpenURL("https://github.com/exelix11/SysDVR/wiki");
 
 			if (Program.IsWindows)
             {
                 ImGui.SameLine();
-                if (ImGui.Button(Program.Strings.MainGUI_DriverInstallButton))
+                if (ImGui.Button(Strings.DriverInstallButton))
                     Program.Instance.PushView(new Platform.Specific.Win.WinDirverInstallView());
             }
 
 			ImGui.SameLine();
-            if (ImGui.Button(Program.Strings.MainGUI_SettingsButton))
+            if (ImGui.Button(Strings.SettingsButton))
             {
                 Program.Instance.PushView(new OptionsView());
             }
@@ -177,7 +179,7 @@ namespace SysDVR.Client.GUI
 
                 ImGui.NewLine();
 
-                if (ImGui.Button(Program.Strings.MainGUI_PopupCloseButton))
+                if (ImGui.Button(GeneralStrings.PopupCloseButton))
                     initErrorPopup.RequestClose();
 
                 ImGui.EndPopup();

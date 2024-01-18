@@ -18,14 +18,17 @@ namespace SysDVR.Client.GUI
 {
 	internal class UsbDevicesView : View
 	{
+		readonly StringTable.UsbPageTable Strings = Program.Strings.Usb;
+
 		readonly StreamingOptions options;
 		readonly DvrUsbContext? context;
-		readonly Gui.Popup incompatiblePopup = new("Error");
+		readonly Gui.Popup incompatiblePopup = new(Program.Strings.General.PopupErrorTitle);
 
 		DisposableCollection<DvrUsbDevice> devices;
 
 		CancellationTokenSource? autoConnectCancel;
 		string? autoConnect;
+		string? autoConnectGuiText;
 		string? lastError;
 
 		public UsbDevicesView(StreamingOptions options, string? autoConnect = null)
@@ -48,6 +51,11 @@ namespace SysDVR.Client.GUI
 			{
 				autoConnectCancel = new CancellationTokenSource();
 				_ = AutoConnectTask();
+
+				if (autoConnect == "" || Program.Options.HideSerials)
+					autoConnectGuiText = Program.Strings.Connection.AutoConnect;
+				else
+					autoConnectGuiText = string.Format(Program.Strings.Connection.AutoConnectWithSerial, autoConnect);
 			}
 		}
 
@@ -161,18 +169,15 @@ namespace SysDVR.Client.GUI
 
 			var win = ImGui.GetWindowSize();
 
-			Gui.CenterText("Connect over USB");
+			Gui.CenterText(Strings.Title);
 
 			if (autoConnect is not null)
 			{
 				ImGui.Spacing();
 
-				if (autoConnect == "" || Program.Options.HideSerials)
-					Gui.CenterText("SysDVR will connect automatically to the first valid device");
-				else
-					Gui.CenterText("SysDVR will connect automatically to the console with serial containing: " + autoConnect);
+				Gui.CenterText(autoConnectGuiText);
 
-				if (Gui.CenterButton("Cancel auto conect", new(win.X * 5 / 6, 0)))
+				if (Gui.CenterButton(Program.Strings.Connection.AutoConnectCancelButton, new(win.X * 5 / 6, 0)))
 					StopAutoConnect();
 
 				ImGui.Spacing();
@@ -186,17 +191,17 @@ namespace SysDVR.Client.GUI
 
 			if (devices is null || devices.Count == 0)
 			{
-				Gui.CenterText("No USB devices found.");
+				Gui.CenterText(Strings.NoDevicesLabel);
 				ImGui.NewLine();
 
-				ImGui.TextWrapped("Make sure you have SysDVR installed on your console and that it's running in USB mode.");
+				ImGui.TextWrapped(Strings.NoDevicesHelp);
 
 				if (Program.IsWindows)
-					ImGui.TextWrapped("The first time you run SysDVR on Windows you must install the USB driver, follow the guide.");
+					ImGui.TextWrapped(Strings.NoDevicesHelpWindows);
 				else if (Program.IsLinux)
-					ImGui.TextWrapped("To properly use USB mode on Linux you need to install the needed udev rule according to the guide");
+					ImGui.TextWrapped(Strings.NoDevicesHelpLinux);
 				else if (Program.IsAndroid)
-					ImGui.TextWrapped("In case of issues make sure your device supports USB OTG, note that certain USB C to C cables are known to cause issues, try with a OTG adapter on your phone USB port");
+					ImGui.TextWrapped(Strings.NoDevicesHelpAndroid);
 			}
 			else
 			{
@@ -213,29 +218,28 @@ namespace SysDVR.Client.GUI
 			ImGui.NewLine();
 
 			sz.Y = Gui.ButtonHeight();
-			if (Gui.CenterButton("Refresh device list", sz))
+			if (Gui.CenterButton(Strings.RefreshButton, sz))
 			{
 				SearchDevices();
 			}
 
 			if (lastError is not null)
 			{
-				Gui.CenterText("There was an error");
+				Gui.CenterText(GeneralStrings.ErrorMessage);
 				ImGui.TextWrapped(lastError);
 			}
 
 			Gui.CursorFromBottom(sz.Y);
-			if (Gui.CenterButton("Go back", sz))
+			if (Gui.CenterButton(GeneralStrings.BackButton, sz))
 			{
 				Program.Instance.PopView();
 			}
 
 			if (incompatiblePopup.Begin())
 			{
-				ImGui.TextWrapped("The selected device is not compatible with this version of the client.");
-				ImGui.TextWrapped("Make sure you're using the same version of SysDVR on both the console and this device.");
+				ImGui.TextWrapped(Program.Strings.Connection.DeviceNotCompatible);
 
-				if (Gui.CenterButton("Go back"))
+				if (Gui.CenterButton(GeneralStrings.BackButton))
 					incompatiblePopup.RequestClose();
 
 				ImGui.EndPopup();

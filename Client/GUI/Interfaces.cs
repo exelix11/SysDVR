@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using SDL2;
+using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using System;
 using System.Collections;
@@ -18,6 +19,7 @@ namespace SysDVR.Client.GUI
     {
         public FramerateCapOptions RenderMode = FramerateCapOptions.Adaptive();
         protected readonly Gui.PopupManager Popups = new();
+        internal readonly StringTable.GeneralTable GeneralStrings = Program.Strings.General;
 
         public abstract void Draw();
 
