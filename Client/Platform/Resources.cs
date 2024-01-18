@@ -184,6 +184,12 @@ namespace SysDVR.Client.Platform
                     if (table is null)
                         continue;
 
+                    if (table.SystemLocale.Length == 0)
+                    {
+                        Console.WriteLine($"Translation {table.TranslationName} was not loaded due to a missing system locale");
+                        continue;
+                    }
+
 					table.FileName = file;
 					result.Add(table);
 				}

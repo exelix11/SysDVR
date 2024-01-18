@@ -34,7 +34,12 @@ namespace SysDVR.Client.GUI
 				Label = Encoding.UTF8.GetBytes(label);
 
 				this.values = values;
-				CurrentItem = Array.FindIndex(values, x => x.Value.Equals(current));
+				
+				CurrentItem = Array.FindIndex(values, x => x.Value switch { 
+					null when current is null => true,
+					null => false,
+					_ => x.Value.Equals(current)
+				});
 
 				// Precompute labels as utf8 for ImGui
 				var lengths = values.Select(x => Encoding.UTF8.GetByteCount(x.Name) + 1).ToArray();
@@ -124,6 +129,8 @@ namespace SysDVR.Client.GUI
 			}
 		}
 
+		record AvailableLanguage(string Name, string Author, string Locale);
+
 		// Instance state 
 		readonly StringTable.SettingsTable Strings = Program.Strings.Settings;
 
@@ -154,6 +161,14 @@ namespace SysDVR.Client.GUI
 			},
 			Program.Options.Streaming.Kind
 		);
+
+		readonly ComboEnum<string> GuiLanguage = new("Display language",
+			Resources.GetAvailableTranslations().Select(x =>
+				new Opt<string?>($"{x.TranslationName} by {x.TranslationAuthor}", x.SystemLocale.First())
+			)
+			.Append(new("Auto select", null))
+			.ToArray(), 
+		Program.Options.PreferredLanguage);
 
 		readonly PathInputPopup PathInput = new();
 		readonly Gui.Popup ErrorPopup = new(Program.Strings.General.PopupErrorTitle);
@@ -231,6 +246,11 @@ namespace SysDVR.Client.GUI
 			if (ImGui.CollapsingHeader(Strings.Tab_General, ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
+
+				GuiLanguage.Draw(ref Program.Options.PreferredLanguage);
+				ImGui.TextWrapped("Translations are provided by the community, if you spot an error or want to contribute your native language reach out to us on Github.");
+
+				ImGui.NewLine();
 
 				ImGui.Checkbox(Strings.HideSerials, ref Program.Options.HideSerials);
 				ImGui.Checkbox(Strings.Hotkeys, ref Program.Options.PlayerHotkeys);

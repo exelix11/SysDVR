@@ -4,8 +4,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
@@ -25,11 +27,11 @@ namespace SysDVR.Client.Core
 		// This is a list of locales that will be used to to load translations
 		// The values come from the CultureInfo.Name property of c# https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.name?view=net-8.0#system-globalization-cultureinfo-name
 		// See examples at http://www.codedigest.com/CodeDigest/207-Get-All-Language-Country-Code-List-for-all-Culture-in-C---ASP-Net.aspx
-		public string[] SystemLocale = ["en-us"];
+		public string[] SystemLocale = ["en-us", "en-gb"];
 
 		public enum GlyphRange 
 		{
-			Auto,
+			NotSpecified,
 			ChineseFull,
 			ChineseSimplifiedCommon,
 			Cyrillic,
@@ -41,8 +43,8 @@ namespace SysDVR.Client.Core
 			Vietnamese
 		}
 
-		// This is the glyph range as defined i	n ImGUi, see https://github.com/ocornut/imgui/blob/master/docs/FONTS.md#fonts-loading-instructions
-		public GlyphRange ImGuiGlyphRange = GlyphRange.Auto;
+		// This is the glyph range as defined in ImGUi, see https://github.com/ocornut/imgui/blob/master/docs/FONTS.md#fonts-loading-instructions
+		public GlyphRange ImGuiGlyphRange = GlyphRange.NotSpecified;
 	}
 
 	// This class is used to translate the client UI in other languages
@@ -58,13 +60,13 @@ namespace SysDVR.Client.Core
 			public string AudioOnly = "No video output requested, press return to quit";
 			public string Started =
 				"Starting to stream, keyboard shortcuts list:\n" +
-				"\t- F11 : toggle full screen\n" +
-				"\t- esc :quit\n" +
+				"\t- F11: toggle full screen\n" +
+				"\t- esc: quit\n" +
 				"\t- return: Print debug information";
 
 			public string MultipleDevicesLine1 = "Multiple devices found:";
 			// Do not translate command line options such as --serial
-			public string MultipleDevicesLine2 = "THe first one will be used, you can select a specific one by using the --serial option in the command line";
+			public string MultipleDevicesLine2 = "The first one will be used, you can select a specific one by using the --serial option in the command line";
 			
 			public string DeviceNotFoundRetry = "Device not found, trying again in 5 seconds...";
 			public string UsbDeviceNotFound = "No usb device found";
@@ -210,7 +212,7 @@ namespace SysDVR.Client.Core
 			public string DisableSynchronization = "Disable Audio/Video synchronization";
 			
 			public string AnalyzeKeyframes = "Analyze keyframe NALs during the stream";
-			public string AnalyzeNALs = "Analyze";
+			public string AnalyzeNALs = "Analyze every NAL packet";
 			
 			public string GuiScale = "GUI scale";
 
@@ -298,6 +300,37 @@ namespace SysDVR.Client.Core
 			public string UsbTimeoutError = "USB warning: Couldn't communicate with the console. Try entering a compatible game, unplugging your console or restarting it.";
 		}
 
+		// The followign is windows only
+		internal class UsbDriverTable
+		{
+			public string Title = "Driver install";
+			public string Description = "SysDVR now uses standard Android ADB drivers\n" +
+				"The driver is signed by Google, so it is safe to install and doesn't require any complex install steps.";
+
+			public string InstallButton = "Install";
+			public string CheckAgainButton = "Check status again";
+			
+			public string InstallInfo = "If you choose to install the driver it will be downloaded from";
+			public string FileHashInfo = "The expected SHA256 hash of the zip file is";
+
+			public string Installing = "Installation in progress...";
+
+			public string StatusDownload = "Downloading the driver...";
+			public string StatusInstall = "Installing the driver...";
+			public string StatusClenaup = "Deleting temporary files...";
+			public string StatusDone = "Done";
+			
+			public string DetectOk = "It seems the driver is already installed, unless you face issues, you DON'T need to install it again.";
+			public string DetectNotInstalled = "It seems the driver is not installed, you need to install it to use SysDVR.";
+			public string DetectNoDevice = "It seems that Windows has never detected the SysDVR device ID. Enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
+
+			public string InstallSucceeded = "The installation was succesful";
+			public string InstallFailed = "Installation failed";
+
+			// The system error message is appended after this string
+			public string DetectionFailed = "Error while detecting the driver state";
+		}
+
 		public LegacyPlayerTable LegacyPlayer = new();
 		public ConnectionTable Connection = new();
 		public HomePageTable HomePage = new();
@@ -307,6 +340,7 @@ namespace SysDVR.Client.Core
 		public PlayerTable Player = new();
 		public UsbPageTable Usb = new();
 		public ErrorTable Errors = new();
+		public UsbDriverTable UsbDriver = new();
 
 		// Used internally to produce the reference english translation file
 		internal string Serialize() 
@@ -320,6 +354,8 @@ namespace SysDVR.Client.Core
 		WriteIndented = true,
 		PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
 		DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+		ReadCommentHandling = JsonCommentHandling.Skip,
+		AllowTrailingCommas = true,
 		IncludeFields = true,
 		UseStringEnumConverter = true,
 		IgnoreReadOnlyProperties = true)]

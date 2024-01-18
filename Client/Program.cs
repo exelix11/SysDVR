@@ -48,7 +48,7 @@ namespace SysDVR.Client
 				}.Any(x => !string.IsNullOrWhiteSpace(x));
 			}
 
-            File.WriteAllText("english.json", new StringTable().Serialize());
+            //File.WriteAllText("english.json", new StringTable().Serialize());
 		}
 
 		internal static ClientApp Instance = null!;
