@@ -1010,7 +1010,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (!is_portrait_allowed && !is_landscape_allowed) {
             if (resizable) {
                 /* All orientations are allowed */
-                req = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
+                req = ActivityInfo.SCREEN_ORIENTATION_FULL_USER;
             } else {
                 /* Fixed window and nothing specified. Get orientation from w/h of created window */
                 req = (w > h ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
@@ -1020,7 +1020,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             if (resizable) {
                 if (is_portrait_allowed && is_landscape_allowed) {
                     /* hint allows both landscape and portrait, promote to full sensor */
-                    req = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
+                    req = ActivityInfo.SCREEN_ORIENTATION_FULL_USER;
                 } else {
                     /* Use the only one allowed "orientation" */
                     req = (is_landscape_allowed ? orientation_landscape : orientation_portrait);
