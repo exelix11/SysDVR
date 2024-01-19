@@ -16,7 +16,6 @@
 // This means we use the bsd service API directly instead of the libnx wrapper
 
 static bool SocketReady;
-static bool HasNifm;
 
 #define PAGE_ALIGN(x) ((x + 0xFFF) &~ 0xFFF)
 
@@ -97,29 +96,12 @@ void SocketInit()
 
 	LOG("Initialied BSD with tmem size %x\n", TMEM_SIZE);
 	SocketReady = true;
-
-#if FAKEDVR
-    Result rc = nifmInitialize(NifmServiceType_User);
-#else
-    Result rc = nifmInitialize(NifmServiceType_Admin);
-#endif
-	if (R_FAILED(rc))
-		LOG("Failed to initialize nifm: %x\n", rc);
-	else
-		HasNifm = true;
 }
 
 void SocketDeinit()
 {
 	if (!SocketReady)
 		return;
-
-	if (HasNifm)
-	{
-		LOG("Exiting NIFM\n");
-		nifmExit();
-		HasNifm = false;
-	}
 
 	LOG("Exiting BSD\n");
 	bsdExit();
@@ -372,12 +354,19 @@ bool SocketSetBroadcast(int socket, bool allow)
 	return bsdSetSockOpt(socket, SOL_SOCKET, SO_BROADCAST, &optVal, sizeof(optVal)) != -1;
 }
 
-s32 SocketGetBroadcastAddress(int socket)
+s32 SocketGetBroadcastAddress()
 {
-	if (HasNifm)
+#if FAKEDVR
+	Result rc = nifmInitialize(NifmServiceType_User);
+#else
+	Result rc = nifmInitialize(NifmServiceType_Admin);
+#endif
+	if (R_SUCCEEDED(rc))
 	{
 		u32 addr, mask, gw, dns1, dns2;
 		Result rc = nifmGetCurrentIpConfigInfo(&addr, &mask, &gw, &dns1, &dns2);
+
+		nifmExit();
 
 		if (R_SUCCEEDED(rc))
 			return (s32)(addr | ~mask);

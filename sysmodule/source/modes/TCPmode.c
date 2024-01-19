@@ -43,7 +43,7 @@ static void InitBroadcast(GrcStream stream)
 		DeinitBroadcast(stream);
 
 	UdpBroadcastAddr.sin_port = htons(19999);
-	UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
+	//UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
 
 	LOG("Opening UDP broadcast socket\n");
 	UdpAdvertiseSocket = SocketUdp();
