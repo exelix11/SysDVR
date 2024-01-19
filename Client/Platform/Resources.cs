@@ -38,12 +38,31 @@ namespace SysDVR.Client.Platform
             
             return buf;
         }
-        
-        public static bool ResourceExists(string path) 
+
+        static unsafe string[] GetTranslationFiles()
+        {
+            var res = new List<string>();
+            if (Program.Native.IterateAssetsContent is not null)
+            {
+                Program.Native.IterateAssetsContent(ResourcePath("strings"), (ptr, characters) => {
+					var span = new Span<byte>((byte*)ptr, characters * 2);
+					string s = Encoding.Unicode.GetString(span);
+
+					if (s.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                        res.Add(ResourcePath("strings") + "/" + s);
+
+                    return true;
+                });
+
+			}
+            return res.ToArray();
+		}
+
+		public static bool ResourceExists(string path) 
         {
             try 
             {
-                LoadResource(path);
+				ReadResouce(path);
             }
             catch 
             {

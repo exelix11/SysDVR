@@ -235,6 +235,7 @@ namespace SysDVR.Client.GUI
 			if (ImGui.Button(Strings.ResetButton))
 			{
 				Program.Options = new();
+				UpdateDecoderButtonText();
 				SaveOptions();
 			}
 
@@ -387,6 +388,8 @@ namespace SysDVR.Client.GUI
 
 				if (Gui.CenterButton(GeneralStrings.CancelButton))
 					PickDecoderPopup.RequestClose();
+				
+				ImGui.EndPopup();
 			}
 		}
 
