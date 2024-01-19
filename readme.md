@@ -12,7 +12,7 @@ This is a sysmodule that allows capturing the running game output to a pc via US
 </p>
 
 # Features
-- Cross platform, can stream to Windows, Mac and Linux.
+- Cross platform, can stream to Windows, Mac, Linux and Android.
 - Stream via USB or Wifi.
 - **Video quality is fixed to 720p @ 30fps with h264 compression, this is a hardware limit**.
 - Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed.
@@ -35,9 +35,6 @@ The guide has been moved to the wiki, you can find it [here](https://github.com/
 
 ## Donations
 If you like my work and wish to support me you can donate on [ko-fi](https://ko-fi.com/exelix11)
-
-## Unfinished stuff
-At some point I tried to implement a usb video class device via software, this would have allowed for usb streaming without needing a custom client app. Unfortunately this didn't work out, if you have more experience than me in this stuff feel free to give it a try, you can find more info in the readme of the UVC branch. 
 
 ## Credits
 - Everyone from libnx and the people who reversed grc:d and wrote the service wrapper, mission2000 in particular for the suggestion on how to fix audio lag.
