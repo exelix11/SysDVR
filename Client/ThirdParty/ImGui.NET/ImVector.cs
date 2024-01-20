@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace ImGuiNET
 {
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct ImVector
     {
         public readonly int Size;
@@ -25,6 +27,12 @@ namespace ImGuiNET
         {
             return (IntPtr)((byte*)Data + index * Unsafe.SizeOf<T>());
         }
+
+        public void Free()
+        {
+            if (Data != IntPtr.Zero)
+			    ImGuiNative.igMemFree((void*)Data);
+		}
     }
 
     public unsafe struct ImVector<T>

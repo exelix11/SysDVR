@@ -1,14 +1,17 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImFontGlyphRangesBuilder
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe partial struct ImFontGlyphRangesBuilder
     {
         public ImVector UsedChars;
     }
+
     public unsafe partial struct ImFontGlyphRangesBuilderPtr
     {
         public ImFontGlyphRangesBuilder* NativePtr { get; }
@@ -18,6 +21,14 @@ namespace ImGuiNET
         public static implicit operator ImFontGlyphRangesBuilder* (ImFontGlyphRangesBuilderPtr wrappedPtr) => wrappedPtr.NativePtr;
         public static implicit operator ImFontGlyphRangesBuilderPtr(IntPtr nativePtr) => new ImFontGlyphRangesBuilderPtr(nativePtr);
         public ImVector<uint> UsedChars => new ImVector<uint>(NativePtr->UsedChars);
+        
+        public static ImFontGlyphRangesBuilderPtr Create()
+        {
+            var r = new ImFontGlyphRangesBuilderPtr(ImGui.MemAlloc((uint)Marshal.SizeOf<ImFontGlyphRangesBuilder>()));
+            r.Clear();
+            return r;
+		}
+
         public void AddChar(ushort c)
         {
             ImGuiNative.ImFontGlyphRangesBuilder_AddChar((ImFontGlyphRangesBuilder*)(NativePtr), c);

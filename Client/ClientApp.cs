@@ -233,29 +233,25 @@ public class ClientApp
         {   
             StringTableMetadata.GlyphRange.ChineseSimplifiedCommon => ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon(),
             StringTableMetadata.GlyphRange.Cyrillic => ImGui.GetIO().Fonts.GetGlyphRangesCyrillic(),
-            StringTableMetadata.GlyphRange.Default => ImGui.GetIO().Fonts.GetGlyphRangesDefault(),
             StringTableMetadata.GlyphRange.Japanese => ImGui.GetIO().Fonts.GetGlyphRangesJapanese(),
             StringTableMetadata.GlyphRange.Korean => ImGui.GetIO().Fonts.GetGlyphRangesKorean(),
             StringTableMetadata.GlyphRange.Thai => ImGui.GetIO().Fonts.GetGlyphRangesThai(),
             StringTableMetadata.GlyphRange.Vietnamese => ImGui.GetIO().Fonts.GetGlyphRangesVietnamese(),
-            _ => 0
+            // Default to this so all fants always have at least the ASCII range
+            _ => ImGui.GetIO().Fonts.GetGlyphRangesDefault()
         };
 
-        var builder = new ImFontGlyphRangesBuilder();
-        unsafe
-        {
-            var ptr = new ImFontGlyphRangesBuilderPtr(&builder);
-            ptr.Clear();
+		var ptr = ImFontGlyphRangesBuilderPtr.Create();
 
-            if (baseRange != 0)
-                ptr.AddRanges(baseRange);
-            
-            foreach (var s in Program.Strings.GetAllStringForFontBuilding())
-                ptr.AddText(s);
+		if (baseRange != 0)
+			ptr.AddRanges(baseRange);
 
-            ptr.BuildRanges(out var imvec);
-            return imvec;
-		}
+		foreach (var s in Program.Strings.GetAllStringForFontBuilding())
+			ptr.AddText(s);
+
+		ptr.BuildRanges(out var imvec);
+		ptr.Destroy();
+		return imvec;
 	}
 
 	internal void InitializeFonts() 
@@ -265,6 +261,7 @@ public class ClientApp
 		
         unsafe
 		{
+            // We are leaking this vector because the imgui bindings don't provide a way to destroy it
             var fontRange = GetFontRanges();
 
 			fixed (byte* fontPtr = fontData)
@@ -274,6 +271,8 @@ public class ClientApp
                 // fontPtr and FontRange must be kept pinned until the atlases have actually been built or else bad things will happen
                 ImGui.GetIO().Fonts.Build();
             }
+
+            fontRange.Free();
 		}
 	}
 
