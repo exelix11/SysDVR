@@ -367,7 +367,7 @@ s32 SocketGetBroadcastAddress()
 		Result rc = nifmGetCurrentIpConfigInfo(&addr, &mask, &gw, &dns1, &dns2);
 
 		nifmExit();
-
+		svcSleepThread(1000000000);
 		if (R_SUCCEEDED(rc))
 			return (s32)(addr | ~mask);
 		else 

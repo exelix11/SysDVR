@@ -65,7 +65,7 @@ static inline void AdvertiseBroadcast(GrcStream stream)
 	// Need to do this every time in case the network changes 
 	// Also needed in case we called InitBroadcast() too early when the console was resuming from sleep
 	UdpBroadcastAddr.sin_addr.s_addr = SocketGetBroadcastAddress();
-	
+
 	LOG("Sending UDP advertisement broadcast\n");
 	if (!SocketUDPSendTo(UdpAdvertiseSocket, SysDVRBeacon, SysDVRBeaconLen, (struct sockaddr*)&UdpBroadcastAddr, sizeof(UdpBroadcastAddr)))
 	{
