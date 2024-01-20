@@ -135,36 +135,38 @@ namespace SysDVR.Client.GUI
 		readonly StringTable.SettingsTable Strings = Program.Strings.Settings;
 
 		// These can not refer to a non-static member so they use the fully quelified strings object
-		readonly ComboEnum<SDLScaleMode> ScaleModes = new(Program.Strings.Settings.ScaleMode, new Opt<SDLScaleMode>[]
-			{
+		readonly ComboEnum<SDLScaleMode> ScaleModes = new(Program.Strings.Settings.ScaleMode,
+			[
 				new(Program.Strings.Settings.ScaleMode_Linear, SDLScaleMode.Linear),
 				new(Program.Strings.Settings.ScaleMode_Narest, SDLScaleMode.Nearest),
 				new(Program.Strings.Settings.ScaleMode_Best, SDLScaleMode.Best)
-			},
+			],
 			Program.Options.RendererScale
 		);
 
-		readonly ComboEnum<SDLAudioMode> AudioModes = new(Program.Strings.Settings.AudioMode, new Opt<SDLAudioMode>[]
-			{
+		readonly ComboEnum<SDLAudioMode> AudioModes = new(Program.Strings.Settings.AudioMode,
+			[
 				new(Program.Strings.Settings.AudioMode_Auto, SDLAudioMode.Auto),
 				new(Program.Strings.Settings.AudioMode_Sync, SDLAudioMode.Default),
 				new(Program.Strings.Settings.AudioMode_Compatible, SDLAudioMode.Compatible)
-			},
+			],
 			Program.Options.AudioPlayerMode
 		);
 
-		readonly ComboEnum<StreamKind> StreamChannel = new(Program.Strings.Settings.DefaultStreaming, new Opt<StreamKind>[]
-			{
+		readonly ComboEnum<StreamKind> StreamChannel = new(Program.Strings.Settings.DefaultStreaming,
+			[
 				new(Program.Strings.Settings.DefaultStreaming_Both, StreamKind.Both),
 				new(Program.Strings.Settings.DefaultStreaming_Video, StreamKind.Video),
 				new(Program.Strings.Settings.DefaultStreaming_Audio, StreamKind.Audio)
-			},
+			],
 			Program.Options.Streaming.Kind
 		);
 
 		readonly ComboEnum<string> GuiLanguage = new("Display language",
 			Resources.GetAvailableTranslations().Select(x =>
-				new Opt<string?>($"{x.TranslationName} by {x.TranslationAuthor}", x.SystemLocale.First())
+				string.IsNullOrWhiteSpace(x.TranslationAuthor) ?
+					new Opt<string?>($"{x.TranslationName}", x.SystemLocale.First()) :
+					new Opt<string?>($"{x.TranslationName} by {x.TranslationAuthor}", x.SystemLocale.First())
 			)
 			.Append(new("Auto select", null))
 			.ToArray(), 
