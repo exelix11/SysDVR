@@ -230,8 +230,7 @@ public class ClientApp
 	ImVector GetFontRanges()
     {
         var baseRange = Program.Strings.ImGuiGlyphRange switch
-        {
-            StringTableMetadata.GlyphRange.ChineseFull => ImGui.GetIO().Fonts.GetGlyphRangesChineseFull(),
+        {   
             StringTableMetadata.GlyphRange.ChineseSimplifiedCommon => ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon(),
             StringTableMetadata.GlyphRange.Cyrillic => ImGui.GetIO().Fonts.GetGlyphRangesCyrillic(),
             StringTableMetadata.GlyphRange.Default => ImGui.GetIO().Fonts.GetGlyphRangesDefault(),
@@ -248,7 +247,8 @@ public class ClientApp
             var ptr = new ImFontGlyphRangesBuilderPtr(&builder);
             ptr.Clear();
 
-            ptr.AddRanges(baseRange);
+            if (baseRange != 0)
+                ptr.AddRanges(baseRange);
             
             foreach (var s in Program.Strings.GetAllStringForFontBuilding())
                 ptr.AddText(s);
