@@ -261,7 +261,6 @@ public class ClientApp
 		
         unsafe
 		{
-            // We are leaking this vector because the imgui bindings don't provide a way to destroy it
             var fontRange = GetFontRanges();
 
 			fixed (byte* fontPtr = fontData)
