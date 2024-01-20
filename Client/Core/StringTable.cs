@@ -32,7 +32,7 @@ namespace SysDVR.Client.Core
 		public enum GlyphRange 
 		{
 			NotSpecified,
-			ChineseFull,
+			//ChineseFull, // This has too many characters and the font texture is not loaded by SDL, as a workaround we manually build the glyph table from the actually used characters
 			ChineseSimplifiedCommon,
 			Cyrillic,
 			Default,
@@ -341,6 +341,24 @@ namespace SysDVR.Client.Core
 		public UsbPageTable Usb = new();
 		public ErrorTable Errors = new();
 		public UsbDriverTable UsbDriver = new();
+
+		// Abuse the json metadata to get all strings in the table without the need for real reflection
+		public IEnumerable<string> GetAllStringForFontBuilding() 
+		{
+			var objects = StringTableSerializer.Default.SysDVRStringTable.Properties
+				.Where(prop => prop.Get != null)
+				.Select(prop => (prop.PropertyType, prop.Get(this)))
+				.ToArray();
+
+			return objects.SelectMany(x =>
+				StringTableSerializer.Default.GetTypeInfo(x.Item1)
+					.Properties
+					.Where(prop => prop.Get != null)
+					.Where(prop => prop.PropertyType == typeof(string))
+					.Select(prop => (string?)prop.Get(x.Item2))
+					.Where(str => str != null)
+			);
+		}
 
 		// Used internally to produce the reference english translation file
 		internal string Serialize() 

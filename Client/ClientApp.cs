@@ -227,18 +227,36 @@ public class ClientApp
         BackupDeafaultStyle();
     }
 
-    nint GetFontRanges() => Program.Strings.ImGuiGlyphRange switch
+	ImVector GetFontRanges()
     {
-        StringTableMetadata.GlyphRange.ChineseFull => ImGui.GetIO().Fonts.GetGlyphRangesChineseFull(),
-        StringTableMetadata.GlyphRange.ChineseSimplifiedCommon => ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon(),
-        StringTableMetadata.GlyphRange.Cyrillic => ImGui.GetIO().Fonts.GetGlyphRangesCyrillic(),
-        StringTableMetadata.GlyphRange.Default => ImGui.GetIO().Fonts.GetGlyphRangesDefault(),
-        StringTableMetadata.GlyphRange.Japanese => ImGui.GetIO().Fonts.GetGlyphRangesJapanese(),
-        StringTableMetadata.GlyphRange.Korean => ImGui.GetIO().Fonts.GetGlyphRangesKorean(),
-        StringTableMetadata.GlyphRange.Thai => ImGui.GetIO().Fonts.GetGlyphRangesThai(),
-        StringTableMetadata.GlyphRange.Vietnamese => ImGui.GetIO().Fonts.GetGlyphRangesVietnamese(),
-        _ => 0
-    };
+        var baseRange = Program.Strings.ImGuiGlyphRange switch
+        {
+            StringTableMetadata.GlyphRange.ChineseFull => ImGui.GetIO().Fonts.GetGlyphRangesChineseFull(),
+            StringTableMetadata.GlyphRange.ChineseSimplifiedCommon => ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon(),
+            StringTableMetadata.GlyphRange.Cyrillic => ImGui.GetIO().Fonts.GetGlyphRangesCyrillic(),
+            StringTableMetadata.GlyphRange.Default => ImGui.GetIO().Fonts.GetGlyphRangesDefault(),
+            StringTableMetadata.GlyphRange.Japanese => ImGui.GetIO().Fonts.GetGlyphRangesJapanese(),
+            StringTableMetadata.GlyphRange.Korean => ImGui.GetIO().Fonts.GetGlyphRangesKorean(),
+            StringTableMetadata.GlyphRange.Thai => ImGui.GetIO().Fonts.GetGlyphRangesThai(),
+            StringTableMetadata.GlyphRange.Vietnamese => ImGui.GetIO().Fonts.GetGlyphRangesVietnamese(),
+            _ => 0
+        };
+
+        var builder = new ImFontGlyphRangesBuilder();
+        unsafe
+        {
+            var ptr = new ImFontGlyphRangesBuilderPtr(&builder);
+            ptr.Clear();
+
+            ptr.AddRanges(baseRange);
+            
+            foreach (var s in Program.Strings.GetAllStringForFontBuilding())
+                ptr.AddText(s);
+
+            ptr.BuildRanges(out var imvec);
+            return imvec;
+		}
+	}
 
 	internal void InitializeFonts() 
     {
@@ -251,7 +269,7 @@ public class ClientApp
 
 			fixed (byte* fontPtr = fontData)
             {
-				FontText = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontTextSize, null, fontRange);
+				FontText = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontTextSize, null, fontRange.Data);
 
                 // fontPtr and FontRange must be kept pinned until the atlases have actually been built or else bad things will happen
                 ImGui.GetIO().Fonts.Build();
