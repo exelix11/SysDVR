@@ -40,7 +40,7 @@
     "channelAudio": "仅音频",
     "channelBoth": "同时流式传输",
     "settingsButton": "设置",
-    "guideButton": "Guide",
+    "guideButton": "帮助",
     "githubButton": "Github 页面",
     "fileAccess": "警告：未授予文件访问权限，保存录制文件可能会失败.",
     "fileAccessRequestButton": "请求权限",
