@@ -66,4 +66,44 @@ void Platform::Reboot()
 	spsmShutdown(true);
 }
 
+std::string_view Platform::GetSystemLanguage()
+{
+	SetLanguage Language = SetLanguage_ENUS;
+	u64 s_textLanguageCode = 0;
+
+	Result rc = setInitialize();
+	if (R_SUCCEEDED(rc)) rc = setGetSystemLanguage(&s_textLanguageCode);
+	if (R_SUCCEEDED(rc)) rc = setMakeLanguage(s_textLanguageCode, &Language);
+	setExit();
+
+	if (R_FAILED(rc))
+		return "SetLanguage_ENUS";
+
+#define LANG_MATCH(x) case x: return #x
+	switch (switch_on)
+	{
+		LANG_MATCH(SetLanguage_JA);
+		LANG_MATCH(SetLanguage_ENUS);
+		LANG_MATCH(SetLanguage_FR);
+		LANG_MATCH(SetLanguage_DE);
+		LANG_MATCH(SetLanguage_IT);
+		LANG_MATCH(SetLanguage_ES);
+		LANG_MATCH(SetLanguage_ZHCN);
+		LANG_MATCH(SetLanguage_KO);
+		LANG_MATCH(SetLanguage_NL);
+		LANG_MATCH(SetLanguage_PT);
+		LANG_MATCH(SetLanguage_RU);
+		LANG_MATCH(SetLanguage_ZHTW);
+		LANG_MATCH(SetLanguage_ENGB);
+		LANG_MATCH(SetLanguage_FRCA);
+		LANG_MATCH(SetLanguage_ES419);
+		LANG_MATCH(SetLanguage_ZHHANS);
+		LANG_MATCH(SetLanguage_ZHHANT);
+		LANG_MATCH(SetLanguage_PTBR);
+	}	
+#undef LANG_MATCH
+	
+	return "SetLanguage_ENUS";
+}
+
 #endif

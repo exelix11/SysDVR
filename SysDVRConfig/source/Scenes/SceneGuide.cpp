@@ -1,6 +1,8 @@
 #include "Scenes.hpp"
 #include "Common.hpp"
+
 #include "../Platform/fs.hpp"
+#include "../translaton.hpp"
 
 namespace {
 	Image::Img guide;
@@ -28,7 +30,7 @@ namespace scenes {
 		
 		ImGui::NewLine();
 
-		CenterText("The guide is hosted on Github:");
+		CenterText(Strings::Guide.GuideTitle);
 		CenterImage(guide);
 		CenterText("github.com/exelix11/SysDVR/wiki/");
 

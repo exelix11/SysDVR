@@ -54,6 +54,7 @@
     <ClCompile Include="source\Scenes\SceneNoConnection.cpp">
       <Filter>Scenes</Filter>
     </ClCompile>
+    <ClCompile Include="source\translaton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\UI\UI.hpp">
@@ -117,6 +118,7 @@
     <ClInclude Include="source\Libs\zip\miniz.h">
       <Filter>Libs\zip</Filter>
     </ClInclude>
+    <ClInclude Include="source\translaton.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
