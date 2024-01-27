@@ -24,7 +24,7 @@ namespace Strings
 		//{ "SetLanguage_JA", ASSET("strings/example.json")},
 		//{ "SetLanguage_FR", ASSET("strings/example.json")},
 		//{ "SetLanguage_DE", ASSET("strings/example.json")},
-		//{ "SetLanguage_IT", ASSET("strings/italian.json")},
+		{ "SetLanguage_IT", ASSET("strings/italian.json")},
 		//{ "SetLanguage_ES", ASSET("strings/example.json")},
 		//{ "SetLanguage_ZHCN", ASSET("strings/example.json")},
 		//{ "SetLanguage_KO", ASSET("strings/example.json")},
