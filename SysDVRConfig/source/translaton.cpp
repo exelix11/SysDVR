@@ -130,7 +130,20 @@ namespace Strings
 			return;
 		}
 
-		FontName = std::string(ASSET("fonts/")) + translation.FontName;
+		if (translation.FontName != "")
+		{
+			try {
+				auto font = std::string(ASSET("fonts/")) + translation.FontName;
+				fs::OpenFile(font);
+				FontName = font;
+			}
+			catch (std::exception& ex)
+			{
+				printf("Failed to load the specified font for language %s: %s\n", current.c_str(), ex.what());
+				return;
+			}
+		}
+
 		ImguiFontGlyphRange = translation.ImguiGlyphRange;
 
 		Main = translation.Main;
