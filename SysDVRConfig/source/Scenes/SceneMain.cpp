@@ -10,6 +10,10 @@
 	#pragma comment(lib, "ws2_32.lib")
 	#undef max
 	#undef min
+#else
+	#include <unistd.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
 #endif
 
 namespace {
@@ -136,10 +140,13 @@ void scenes::InitModeSelect()
 	TcpDescription = Strings::Main.ModeTcp;
 	UsbDescription = Strings::Main.ModeUsb;
 
-	if (RtspDescription.find("{}") != std::string::npos) {
-		char hostname[128] = { };
-		if (gethostname(hostname, sizeof(hostname)) || !strcmp(hostname, "1.0.0.127"))
+	if (RtspDescription.find("{}") != std::string::npos)
+	{
+		char hostname[255] = {};
+		if (!gethostname(hostname, sizeof(hostname)) && std::string_view(hostname) != "1.0.0.127")
+		{
 			RtspDescription.replace(RtspDescription.find("{}"), 2, hostname);
+		}
 		else
 		{
 			RtspDescription.replace(RtspDescription.find("{}"), 2, Strings::Main.ConsoleIPPlcaceholder);
