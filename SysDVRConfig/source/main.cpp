@@ -138,7 +138,6 @@ int main(int argc, char* argv[])
 {
 	Platform::Init();
 
-	Strings::SerializeCurrentLanguage();
 	Strings::LoadTranslationForSystemLanguage();
 
 	if (!UI::Init())

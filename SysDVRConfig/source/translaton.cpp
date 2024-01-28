@@ -153,6 +153,7 @@ namespace Strings
 		Connecting = translation.Connecting;
 	}
 
+	// Only for development purposes
 	void SerializeCurrentLanguage()
 	{
 		TranslationFile translation;
@@ -160,6 +161,6 @@ namespace Strings
 
 		std::string s = json.dump(4);
 		std::vector<u8> data(s.begin(), s.end());
-		fs::WriteFile("F:\\english.json", data);
+		fs::WriteFile("english.json", data);
 	}
 }
