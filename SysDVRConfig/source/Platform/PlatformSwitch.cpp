@@ -80,7 +80,7 @@ std::string_view Platform::GetSystemLanguage()
 		return "SetLanguage_ENUS";
 
 #define LANG_MATCH(x) case x: return #x
-	switch (switch_on)
+	switch (Language)
 	{
 		LANG_MATCH(SetLanguage_JA);
 		LANG_MATCH(SetLanguage_ENUS);
@@ -100,10 +100,9 @@ std::string_view Platform::GetSystemLanguage()
 		LANG_MATCH(SetLanguage_ZHHANS);
 		LANG_MATCH(SetLanguage_ZHHANT);
 		LANG_MATCH(SetLanguage_PTBR);
+		default: return "SetLanguage_ENUS";
 	}	
 #undef LANG_MATCH
-	
-	return "SetLanguage_ENUS";
 }
 
 #endif
