@@ -89,7 +89,11 @@ static bool ImguiInit()
 	
 	auto ranges = ImguiPrepareFontRange();
 
-	mainFont = io.Fonts->AddFontFromFileTTF(Strings::FontName.c_str(), FontSmallSize, nullptr, ranges.Data);
+	ImFontConfig config;
+	config.OversampleH = 3;
+	config.OversampleV = 3;
+
+	mainFont = io.Fonts->AddFontFromFileTTF(Strings::FontName.c_str(), FontSmallSize, &config, ranges.Data);
 	
 	io.Fonts->Build();
 	
