@@ -15,7 +15,7 @@ namespace Strings
 			"To setup SysDVR-Client on your pc refer to the guide on Github\n"
 			"For network modes it's recommended to use a LAN adapter.";
 
-		std::string ModeRtspTitle = "Simple network mode (RTPS)";
+		std::string ModeRtspTitle = "Simple network mode (RTSP)";
 		std::string ModeRtsp = "Stream directly to any video player application via RTSP.\n"
 			"Once you enable and apply it open rtsp://{}:6666/ with any video player like mpv or vlc.\n"
 			"This mode doesn't require SysDVR-Client on your PC.\n"
