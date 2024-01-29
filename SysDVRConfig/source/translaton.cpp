@@ -24,6 +24,8 @@ namespace Strings
 		{ "SetLanguage_IT", ASSET("strings/italian.json")},
 		{ "SetLanguage_ZHCN", ASSET("strings/simplifiedChinese.json")},
 		{ "SetLanguage_ZHTW", ASSET("strings/simplifiedChinese.json")},
+		{ "SetLanguage_ZHHANS", ASSET("strings/simplifiedChinese.json")},
+		{ "SetLanguage_ZHHANT", ASSET("strings/simplifiedChinese.json")},
 		//{ "SetLanguage_JA", ASSET("strings/example.json")},
 		//{ "SetLanguage_FR", ASSET("strings/example.json")},
 		//{ "SetLanguage_DE", ASSET("strings/example.json")},
@@ -34,8 +36,6 @@ namespace Strings
 		//{ "SetLanguage_RU", ASSET("strings/example.json")},
 		//{ "SetLanguage_FRCA", ASSET("strings/example.json")},
 		//{ "SetLanguage_ES419", ASSET("strings/example.json")},
-		//{ "SetLanguage_ZHHANS", ASSET("strings/example.json")},
-		//{ "SetLanguage_ZHHANT", ASSET("strings/example.json")},
 		//{ "SetLanguage_PTBR", ASSET("strings/example.json")},
 	};
 
