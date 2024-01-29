@@ -15,6 +15,9 @@ namespace SysDVR.Client.GUI
         readonly string Heading;
         readonly string SecondLine;
 
+        // Only shown when compiled as DEBUG
+        readonly string DevelopmentBuild;
+
         bool HasDiskPermission;
         bool CanRequesDiskPermission;
 
@@ -36,6 +39,7 @@ namespace SysDVR.Client.GUI
 
             Heading = "SysDVR-Client " + Program.Version;
             SecondLine = $"build id {Program.BuildID}";
+            DevelopmentBuild = TextEncoding.ToPlainText("Welcome to SysDVR-dev, do not open github issues for development versions as they come with no support");
 
             UpdateDiskPermissionStatus();
 
@@ -164,8 +168,10 @@ namespace SysDVR.Client.GUI
             {
                 Program.Instance.PushView(new OptionsView());
             }
+
             centerOptions.EndHere();
 
+            // Always draw popups last
             DrawInitErroPopup();
 
             Gui.EndWindow();
@@ -173,7 +179,7 @@ namespace SysDVR.Client.GUI
 
         void DrawInitErroPopup()
         {
-            if (initErrorPopup.Begin())
+			if (initErrorPopup.Begin())
             {
                 ImGui.TextWrapped(initError);
 
@@ -184,9 +190,11 @@ namespace SysDVR.Client.GUI
 
                 ImGui.EndPopup();
             }
-        }
+			else
+                Gui.CenterText(DevelopmentBuild);
+		}
 
-        void ChannelRadio(string name, StreamKind target)
+		void ChannelRadio(string name, StreamKind target)
         {
             if (ImGui.RadioButton(name, StreamMode == target))
                 StreamMode = target;

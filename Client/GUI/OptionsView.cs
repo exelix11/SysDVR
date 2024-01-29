@@ -75,11 +75,12 @@ namespace SysDVR.Client.GUI
 
 		class PathInputPopup
 		{
-			public readonly Gui.Popup Popup = new("Select path");
+			public readonly Gui.Popup Popup = new(Program.Strings.Settings.PathSelectDialog);
 			Gui.CenterGroup PathPopButtons = new();
 			string PathInputMessage;
 			readonly byte[] PathInputBuffer = new byte[1024];
 			Action<string> PathPopupApply = null!;
+			bool AddedNotExistError;
 
 			public void Configure(string message, string currentValue, Action<string> setvalue)
 			{
@@ -100,10 +101,10 @@ namespace SysDVR.Client.GUI
 
 				PathPopButtons.StartHere();
 
-				if (ImGui.Button("Cancel"))
+				if (ImGui.Button(Program.Strings.General.CancelButton))
 					Popup.RequestClose();
 				ImGui.SameLine();
-				if (ImGui.Button("Save"))
+				if (ImGui.Button(Program.Strings.General.ApplyButton))
 				{
 					var stopAt = Array.IndexOf(PathInputBuffer, (byte)0);
 					string path = "";
@@ -113,8 +114,11 @@ namespace SysDVR.Client.GUI
 
 					if (!Directory.Exists(path))
 					{
-						if (!PathInputMessage.Contains("does not exist"))
-							PathInputMessage += "\nThe selected path does not exist, try again.";
+						if (!AddedNotExistError)
+						{
+							AddedNotExistError = true;
+							PathInputMessage += "\n" + Program.Strings.Settings.InvalidPathError;
+						}
 					}
 					else
 					{

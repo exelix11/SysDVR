@@ -122,6 +122,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="romfs\strings\simplifiedChinese.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
+    <None Include="romfs\strings\traditionalChinese.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
+    <None Include="romfs\strings\english.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
+    <None Include="romfs\strings\italian.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="UI">
@@ -147,6 +159,9 @@
     </Filter>
     <Filter Include="Libs\zip">
       <UniqueIdentifier>{a295fbc4-b423-4c0e-8ca0-55c6d9e8482f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LanguageFiles">
+      <UniqueIdentifier>{0e2d8fe4-22c5-4edc-8036-2093aba805f0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -54,6 +54,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="romfs\strings\english.json" />
+    <None Include="romfs\strings\italian.json" />
+    <None Include="romfs\strings\simplifiedChinese.json" />
+    <None Include="romfs\strings\traditionalChinese.json" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
