@@ -17,6 +17,7 @@
     "multipleDevicesLine2": "The first one will be used, you can select a specific one by using the --serial option in the command line",
     "deviceNotFoundRetry": "Device not found, trying again in 5 seconds...",
     "usbDeviceNotFound": "No usb device found",
+//Translator note: the --help command line option can not be translated, you can specify "english only" when referring to it
     "noStreamingError": "No streaming has been requested. For help, use --help",
     "tcpWithoutIPError": "TCP mode without a target IP is not supported in legacy mode, use --help for help",
     "commandLineError": "Invalid command line. The legacy player only supports a subset of options, use --help for help"
@@ -40,6 +41,7 @@
     "channelAudio": "Audio only",
     "channelBoth": "Stream Both",
     "settingsButton": "Settings",
+ //Translator note: the guide on github is only in english, you can specify "english only" when referring to it
     "guideButton": "Guide",
     "githubButton": "Github page",
     "fileAccess": "Warning: File access permission was not granted, saving recordings may fail.",
@@ -51,6 +53,7 @@
     "yesButton": "Yes",
     "noButton": "No",
     "cancelButton": "Cancel",
+    "applyButton": "Apply",
     "backButton": "Go back",
     "popupErrorTitle": "Error",
     "errorMessage": "Error:",
@@ -98,6 +101,7 @@
     "uncapGUI": "Uncap GUI framerate",
     "performanceStreamingLabel": "These options affect the straming quality of SysDVR, the defaults are usually fine",
     "audioBatching": "Audio batching",
+  // Translator note: NAL is the name of individual packets in a h264 video stream
     "cachePackets": "Cache video packets (NAL) locally and replay them when needed",
     "cachePacketsKeyframes": "Apply packet cache only to keyframes (H264 IDR frames)",
     "forceSDLSoftwareRenderer": "Force SDL software rendering",
@@ -111,7 +115,9 @@
     "decoderChangeButton": "Configure hardware-accelerated decoder",
     "decoderResetButton": "Disable hardware decoder ({0})",
     "decderPopupHeading": "Select a decoder to use",
-    "decderPopupContent": "Note that not all decoders may be compatible with your system, revert this option in case of issues.\nYou can get more decoders by obtaining a custom build of ffmpeg libraries (libavcodec) and replacing the one included in SysDVR-Client.\n\nThis feature is intended for mini-PCs like Raspberry pi where software decoding might not be enough. On desktop PCs and smartphones this option should not be used."
+    "decderPopupContent": "Note that not all decoders may be compatible with your system, revert this option in case of issues.\nYou can get more decoders by obtaining a custom build of ffmpeg libraries (libavcodec) and replacing the one included in SysDVR-Client.\n\nThis feature is intended for mini-PCs like Raspberry pi where software decoding might not be enough. On desktop PCs and smartphones this option should not be used.",
+    "invalidPathError": "The selected path does not exist, try again.",
+    "pathSelectDialog": "Select path"
   },
   "player": {
     "confirmQuitPopupTitle": "Confirm quit",

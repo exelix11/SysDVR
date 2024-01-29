@@ -84,6 +84,7 @@ namespace SysDVR.Client.Core
 			public string YesButton = "Yes";
 			public string NoButton = "No";
 			public string CancelButton = "Cancel";
+			public string ApplyButton = "Apply";
 			public string BackButton = "Go back";
 			public string PopupErrorTitle = "Error";
 			
@@ -224,6 +225,9 @@ namespace SysDVR.Client.Core
 			public string DecderPopupContent = "Note that not all decoders may be compatible with your system, revert this option in case of issues.\n" +
 					"You can get more decoders by obtaining a custom build of ffmpeg libraries (libavcodec) and replacing the one included in SysDVR-Client.\n\n" +
 					"This feature is intended for mini-PCs like Raspberry pi where software decoding might not be enough. On desktop PCs and smartphones this option should not be used.";
+
+			public string InvalidPathError = "The selected path does not exist, try again.";
+			public string PathSelectDialog = "Select path";
 		}
 
 		internal class PlayerTable
