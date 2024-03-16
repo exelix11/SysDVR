@@ -69,7 +69,8 @@ namespace SysDVR.Client.Sources
         private byte VideoFlags;
         public byte AudioBatching;
 
-        fixed byte Reserved[7];
+        byte FeatureFlags;
+        fixed byte Reserved[6];
 
         static int Bit(int i) => 1 << i;
 
@@ -110,6 +111,12 @@ namespace SysDVR.Client.Sources
             get => (VideoFlags & Bit(1)) != 0;
             set => SetBit(ref VideoFlags, 1, value);
         }
+
+        public bool TurnOffConsoleScreen
+        {
+			get => (FeatureFlags & Bit(0)) != 0;
+			set => SetBit(ref FeatureFlags, 0, value);
+		}
 
         static ProtoHandshakeRequest() 
         {
@@ -219,7 +226,9 @@ namespace SysDVR.Client.Sources
             req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;
             req.IsAudioPacket = StreamProduced is StreamKind.Both or StreamKind.Audio;
 
-            uint res = await SendHandshakePacket(req).ConfigureAwait(false);
+            req.TurnOffConsoleScreen = Options.TurnOffConsoleScreen;
+
+			uint res = await SendHandshakePacket(req).ConfigureAwait(false);
             ThrowOnHandshakeCode("Console", res);
         }
 

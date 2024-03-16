@@ -214,6 +214,9 @@ namespace SysDVR.Client.Core
 			public string VerboseDebugging = "Enable verbose logging";
 			public string DisableSynchronization = "Disable Audio/Video synchronization";
 			
+			public string DisableBacklight = "Turn off the console screen backlight during streaming";
+			public string DisableBacklightWarn = "This feature is experimental and may cause issues. If SysDVR gets stuck lock and unlock the console to restore the screen.";
+			
 			public string AnalyzeKeyframes = "Analyze keyframe NALs during the stream";
 			public string AnalyzeNALs = "Analyze every NAL packet";
 			

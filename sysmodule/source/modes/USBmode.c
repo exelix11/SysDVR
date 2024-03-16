@@ -17,6 +17,7 @@ static void DisconnectClient()
 {
 	VideoConnected = false;
 	AudioConnected = false;
+	ProtoClientGlobalStateDisconnected();
 }
 
 static bool SendData(void* data, size_t length) 
@@ -57,10 +58,16 @@ bool USB_ConnectClient()
 	ProtoParsedHandshake res = ProtoHandshake(ProtoHandshakeAccept_Any, buffer, sizeof(buffer));
 
 	if (!UsbStreamingSend(&res.Result, sizeof(res.Result)))
+	{
+		ProtoClientGlobalStateDisconnected();
 		return false;
+	}
 
 	if (res.Result != Handshake_Ok)
+	{
+		ProtoClientGlobalStateDisconnected();
 		return false;
+	}
 
 	VideoConnected = res.RequestedVideo;
 	AudioConnected = res.RequestedAudio;

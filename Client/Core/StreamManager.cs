@@ -31,6 +31,8 @@ namespace SysDVR.Client.Core
 		public bool HasVideo => Kind is StreamKind.Video or StreamKind.Both;
 		public bool HasAudio => Kind is StreamKind.Audio or StreamKind.Both;
 
+		public bool TurnOffConsoleScreen = false;
+
 		public bool Validate()
 		{
 			if (AudioBatching < 0 || AudioBatching > StreamInfo.MaxAudioBatching)
@@ -46,7 +48,8 @@ namespace SysDVR.Client.Core
 				Kind = Kind,
 				AudioBatching = AudioBatching,
 				UseNALReplay = UseNALReplay,
-				UseNALReplayOnlyOnKeyframes = UseNALReplayOnlyOnKeyframes
+				UseNALReplayOnlyOnKeyframes = UseNALReplayOnlyOnKeyframes,
+				TurnOffConsoleScreen = TurnOffConsoleScreen
 			};
 		}
 	}
