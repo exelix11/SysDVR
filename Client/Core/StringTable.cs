@@ -177,6 +177,8 @@ namespace SysDVR.Client.Core
 			// This option is for windows only
 			public string ScreenshotToClipboard = "Copy screenshots to the clipboard instead of saving as files (Press SHIFT to override during capture)";
 
+			public string DefaultVolume = "Default audio volume";
+
 			public string ScaleMode = "Scale mode";
 			public string ScaleMode_Linear = "Linear (default)";
 			public string ScaleMode_Narest = "Nearest (low overhead)";
@@ -240,6 +242,7 @@ namespace SysDVR.Client.Core
 					" - S : capture screenshot\n" +
 					" - R : start/stop recording\n" +
 					" - F : toggle full screen\n" +
+					" - Up/Down : change audio volume\n" +
 					" - Esc : quit";
 
 			public string AudioOnlyMode = "Streaming is set to audio-only mode.";
@@ -272,6 +275,9 @@ namespace SysDVR.Client.Core
 
 			// {0} is replaced with the name of the codec
 			public string PlayerInitializationMessage = "Initializing video player with {0} codec.";
+
+			// {0} is replaced with the volume percentage
+			public string VolumePercent = "Volume {0} %";
 		}
 
 		internal class UsbPageTable 

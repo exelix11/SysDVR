@@ -10,22 +10,98 @@ using SDL2;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading.Channels;
+using System.Buffers;
 
 namespace SysDVR.Client.Targets.Player
 {
-    // On some devices (mainly mac os) audio doesn't work with our AudioStreamTarget implementation
-    // It's unclear why but SDL_QueueAudio seems to always work
-    // However we lose control over A/V syncrhonization so this is really just a workaround for some platforms
-    class QueuedStreamAudioTarget : OutStream
+    abstract class AudioOutStream : OutStream
+    {
+        float _volume = 1;
+        int SDL_Volume = SDL.SDL_MIX_MAXVOLUME;
+
+		public float Volume
+        {
+            get => _volume;
+			set
+            {
+				_volume = Math.Clamp(value, 0, 1);
+                SDL_Volume = (int)(_volume * SDL.SDL_MIX_MAXVOLUME);
+			}
+        }
+		
+        static readonly ArrayPool<byte> EncodingPool = ArrayPool<byte>.Create();
+
+        protected ref struct MixResult 
+        {
+            public Span<byte> Span;
+			public bool Owned;
+			public byte[] PoolObject;
+        }
+
+		protected unsafe void MixToBuffer(Span<byte> data, Span<byte> destination)
+		{
+#if DEBUG
+            if (_volume < 0 || _volume > 1)
+				throw new ArgumentOutOfRangeException(nameof(_volume));
+
+            if (data.Length != destination.Length)
+                throw new ArgumentException("Data and destination must have the same length");
+#endif
+
+            // fast path
+            if (_volume == 1)
+            {
+                data.CopyTo(destination);
+                return;
+            }
+
+            destination.Fill(0);
+			fixed (byte* output = destination, input = data)
+			{
+				SDL.SDL_MixAudioFormat(new IntPtr(output), new IntPtr(input), AudioPlayer.AudioFormat, (uint)data.Length, SDL_Volume);
+			}
+		}
+
+        protected unsafe MixResult MixToTempBuffer(Span<byte> data)
+        {
+#if DEBUG
+			if (_volume < 0 || _volume > 1)
+				throw new ArgumentOutOfRangeException(nameof(_volume));
+#endif            
+            // fast path
+            if (_volume == 1)
+				return new MixResult { Span = data, Owned = false };
+
+            var poolObject = EncodingPool.Rent(data.Length);
+            var result = poolObject.AsSpan(0, data.Length);
+            MixToBuffer(data, result);
+
+            return new MixResult { Span = result, Owned = true, PoolObject = poolObject };
+        }
+
+        protected void FreeTempMix(ref MixResult result)
+		{
+			if (result.Owned)
+				EncodingPool.Return(result.PoolObject);
+		}
+	}
+
+	// On some devices (mainly mac os) audio doesn't work with our AudioStreamTarget implementation
+	// It's unclear why but SDL_QueueAudio seems to always work
+	// However we lose control over A/V syncrhonization so this is really just a workaround for some platforms
+	class QueuedStreamAudioTarget : AudioOutStream
     {
         // This is set by the SDL audio manager during initialization
         internal uint DeviceID;
 
         protected unsafe override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            fixed (byte* ptr = block.Span)
-                SDL.SDL_QueueAudio(DeviceID, ptr, (uint)block.Span.Length);
+            var mix = MixToTempBuffer(block.Span);
 
+            fixed (byte* ptr = mix.Span)
+                SDL.SDL_QueueAudio(DeviceID, ptr, (uint)mix.Span.Length);
+
+            FreeTempMix(ref mix);
             block.Free();
         }
     }
@@ -36,7 +112,7 @@ namespace SysDVR.Client.Targets.Player
             ((AudioStreamTarget)GCHandle.FromIntPtr(userdata).Target).SDLCallback(new Span<byte>(buf.ToPointer(), len));
     }
 
-    class AudioStreamTarget : OutStream
+    class AudioStreamTarget : AudioOutStream
     {
         // Only as debug info
         public int Pending;
@@ -66,9 +142,10 @@ namespace SysDVR.Client.Targets.Player
                 {
                     // Do not overflow either buffer
                     int toCopy = Math.Min(currentBlock.Length - currentOffset, buffer.Length);
-                    
+
                     // Perform the copy
-                    currentBlock.RawBuffer.AsSpan().Slice(currentOffset, toCopy).CopyTo(buffer);
+                    var source = currentBlock.RawBuffer.AsSpan().Slice(currentOffset, toCopy);
+                    MixToBuffer(source, buffer.Slice(0, toCopy));
 
                     // Cut the SDL buffer to the remainig free space
                     buffer = buffer.Slice(toCopy);

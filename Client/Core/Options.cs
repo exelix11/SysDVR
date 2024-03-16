@@ -67,6 +67,8 @@ namespace SysDVR.Client.Core
 
         public float GuiFontScale = 1;
 
+        public int DefaultVolume = 60;
+
 		public string ScaleHintForSDL => RendererScale switch
         {
             SDLScaleMode.Linear => "linear",
