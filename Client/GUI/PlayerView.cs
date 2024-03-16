@@ -69,7 +69,10 @@ namespace SysDVR.Client.GUI
             }
 
             if (manager.HasAudio)
+            {
                 Audio = new(manager.AudioTarget);
+				manager.AudioTarget.Volume = Program.Options.DefaultVolume / 100f;
+			}
 
             manager.UseSyncManager(sync);
         }
@@ -248,6 +251,8 @@ namespace SysDVR.Client.GUI
         string recordingButtonText = Program.Strings.Player.StartRecording;
         Mp4Output? videoRecorder;
 
+        readonly string volumePercentFormat;
+
         void MessageUi(string message)
         {
             Console.WriteLine(message);
@@ -303,6 +308,11 @@ namespace SysDVR.Client.GUI
 
             if (Program.Options.PlayerHotkeys && !Program.IsAndroid) // Android is less likely to have a keyboard so don't show the hint. The hotkeys still work.
                 MessageUi(Strings.Shortcuts);
+
+            // Convert C# format to ImGui format
+            volumePercentFormat = Strings.VolumePercent
+                .Replace("%", "%%") // escape the % sign
+                .Replace("{0}", "%d"); // replace the format specifier
         }
 
         private void Manager_OnErrorMessage(string obj) =>
@@ -371,6 +381,10 @@ namespace SysDVR.Client.GUI
 				ButtonToggleRecording();
             if (key.sym == SDL_Keycode.SDLK_f)
                 Program.SdlCtx.SetFullScreen(!Program.SdlCtx.IsFullscreen);
+            if (key.sym == SDL_Keycode.SDLK_UP && player.Manager.AudioTarget is not null)
+                player.Manager.AudioTarget.Volume += 0.1f;
+			if (key.sym == SDL_Keycode.SDLK_DOWN && player.Manager.AudioTarget is not null)
+				player.Manager.AudioTarget.Volume -= 0.1f;
 		}
 
         public override void BackPressed()
@@ -403,6 +417,20 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        void DrawVolumeSlider(float x, float width) 
+        {
+			if (player.Manager.AudioTarget is not null)
+			{
+				var vol = (int)(player.Manager.AudioTarget.Volume * 100);
+				var volnew = vol;
+				ImGui.SetCursorPosX(x);
+				ImGui.PushItemWidth(width);
+				ImGui.SliderInt("##VolumeSlider", ref volnew, 0, 100, volumePercentFormat);
+				if (vol != volnew)
+					player.Manager.AudioTarget.Volume = volnew / 100f;
+			}
+		}
+
         void DrawOverlayMenu()
         {
             float OverlayY = ImGui.GetWindowSize().Y;
@@ -432,15 +460,21 @@ namespace SysDVR.Client.GUI
                 ImGui.SetCursorPosX(center);
                 if (ImGui.Button(Strings.StopStreaming, btnsize)) ButtonQuit();
 
-                ImGui.SetCursorPosX(center);
-                if (ImGui.Button(Strings.DebugInfo, btnsize)) ButtonStats();
+                if (Program.Options.Debug.Log)
+                {
+                    ImGui.SetCursorPosX(center);
+                    if (ImGui.Button(Strings.DebugInfo, btnsize)) ButtonStats();
+                }
 
                 ImGui.SetCursorPosX(center);
                 if (ImGui.Button(Strings.EnterFullScreen, btnsize)) ButtonFullscreen();
+
+                ImGui.NewLine();
+                DrawVolumeSlider(center, btnwidth);
             }
             else
             {
-                OverlayY = OverlayY * 5 / 6;
+                OverlayY = OverlayY * 4 / 6;
                 var spacing = ImGui.GetStyle().ItemSpacing.X * 3;
 
                 ImGui.SetCursorPosY(OverlayY + ImGui.GetStyle().WindowPadding.Y);
@@ -455,11 +489,20 @@ namespace SysDVR.Client.GUI
                 ImGui.SameLine(0, spacing);
                 if (ImGui.Button(Strings.StopStreaming)) ButtonQuit();
                 ImGui.SameLine(0, spacing);
-                if (ImGui.Button(Strings.DebugInfo)) ButtonStats();
-                ImGui.SameLine();
+                
+                if (Program.Options.Debug.Log)
+                {
+                    if (ImGui.Button(Strings.DebugInfo)) ButtonStats();
+                    ImGui.SameLine();
+                }
+
                 if (ImGui.Button(Strings.EnterFullScreen)) ButtonFullscreen();
                 uiOptCenter.EndHere();
-            }
+
+                ImGui.NewLine();
+                var w = ImGui.GetWindowSize().X;
+				DrawVolumeSlider(w / 4, w / 2);
+			}
 
             if (!OverlayAlwaysShowing)
             {

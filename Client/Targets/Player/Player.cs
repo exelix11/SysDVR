@@ -42,7 +42,7 @@ namespace SysDVR.Client.Targets.Player
     class PlayerManager : BaseStreamManager
     {
         internal new H264StreamTarget VideoTarget;
-        internal new OutStream AudioTarget;
+        internal new AudioOutStream AudioTarget;
 
         public bool IsCompatibleAudioStream;
 
@@ -85,7 +85,7 @@ namespace SysDVR.Client.Targets.Player
             base(source, MakeVideoStream(source.Options.HasVideo), MakeAudioStream(source.Options.HasAudio), cancel)
         {
             VideoTarget = base.VideoTarget as H264StreamTarget;
-            AudioTarget = base.AudioTarget;
+            AudioTarget = base.AudioTarget as AudioOutStream;
             IsCompatibleAudioStream = AudioTarget is QueuedStreamAudioTarget;
         }
     }
@@ -103,7 +103,9 @@ namespace SysDVR.Client.Targets.Player
         // Manually pin the Target object so it can be used as opaque pointer for the native code
         GCHandle TargetHandle;
 
-        public AudioPlayer(OutStream target) 
+        public const ushort AudioFormat = AUDIO_S16LSB;
+
+        public AudioPlayer(AudioOutStream target) 
         {
             Program.SdlCtx.BugCheckThreadId();
 
@@ -112,7 +114,7 @@ namespace SysDVR.Client.Targets.Player
             SDL_AudioSpec wantedSpec = new SDL_AudioSpec()
             {
                 channels = StreamInfo.AudioChannels,
-                format = AUDIO_S16LSB,
+                format = AudioFormat,
                 freq = StreamInfo.AudioSampleRate,
                 // StreamInfo.MinAudioSamplesPerPayload * 2 was the default until sysdvr 5.4
                 // however SDL will pick its preferred buffer size since we pass SDL_AUDIO_ALLOW_SAMPLES_CHANGE,

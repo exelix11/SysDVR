@@ -286,6 +286,10 @@ namespace SysDVR.Client.GUI
 
 				StreamChannel.Draw(ref Program.Options.Streaming.Kind);
 
+				ImGui.TextWrapped(Strings.DefaultVolume);
+				ImGui.SameLine();
+				ImGui.SliderInt("##SliderAudioVolume", ref Program.Options.DefaultVolume, 0, 100, "%d %%");
+
 				ImGui.Unindent();
 				ImGui.NewLine();
 			}
