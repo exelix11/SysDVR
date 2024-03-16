@@ -212,7 +212,7 @@ namespace SysDVR.Client.Targets.Player
                     }
                     else if (res != 0)
                     {
-                        Console.WriteLine($"avcodec_send_packet {res}");
+                        Program.DebugLog($"avcodec_send_packet {res}");
                         break;
                     }
                     else

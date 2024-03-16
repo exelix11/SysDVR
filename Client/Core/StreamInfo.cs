@@ -102,7 +102,7 @@ namespace SysDVR.Client.Core
             var parts = advertisementString.Split('|');
 
             if (parts[0] != "SysDVR")
-                throw new Exception("Invalid format");
+                throw new Exception("Invalid device beacon format");
 
             Version = parts[1];
             
@@ -114,7 +114,7 @@ namespace SysDVR.Client.Core
 
             Serial = parts[3];
 
-            var printSerial = Program.Options.HideSerials ? "(serial hidden)" : Serial;
+            var printSerial = Program.Options.HideSerials ? Program.Strings.General.PlaceholderSerial : Serial;
 
             TextRepresentation = Source == ConnectionType.Net ?
                 $"SysDVR {Version} - {printSerial} @ {ConnectionString}" :
@@ -149,7 +149,7 @@ namespace SysDVR.Client.Core
 
         public static DeviceInfo ForIp(string ipAddress)
         {
-            return new DeviceInfo("Manual connection", ConnectionType.Net, ipAddress);    
+            return new DeviceInfo(Program.Strings.Connection.ManualConnection, ConnectionType.Net, ipAddress);    
         }
 
         public static DeviceInfo Stub() 

@@ -169,7 +169,7 @@ namespace SysDVR.Client.Sources
                 return;
 
             if (code == 1) //Handshake_WrongVersion
-                throw new Exception($"{tag} handshake failed: Wrong protocol version. Update SysDVR");
+                throw new Exception($"{tag} {Program.Strings.Errors.ConsoleRejectWrongVersion} {Program.Strings.Errors.VersionTroubleshooting}");
 
             // Other codes are internal checks so shouldn't happen often
             throw new Exception($"{tag} handshake failed: error code {code}");
@@ -184,7 +184,7 @@ namespace SysDVR.Client.Sources
             // TODO: add future protocol compatibility adapters here
 
             if (str[.. "SysDVR|".Length] != "SysDVR|")
-				throw new Exception("Invalid handshake hello packet (header)");
+				throw new Exception($"{Program.Strings.Errors.InitialPacketError} {Program.Strings.Errors.VersionTroubleshooting}");
 
             if (str.Last() != '\0')
 				throw new Exception("Invalid handshake hello packet (terminator)");
@@ -204,7 +204,7 @@ namespace SysDVR.Client.Sources
 
             // TODO: Add backwards compatibility adapters here
             if (version != ProtoHandshakeRequest.CurrentProtocolVersion)
-                throw new Exception($"{StreamProduced} handshake failed: Wrong protocol version. Update SysDVR.");
+                throw new Exception($"{StreamProduced} {Program.Strings.Errors.InitialPacketWrongVersion} {Program.Strings.Errors.VersionTroubleshooting}");
 
             ProtoHandshakeRequest req = new();
 

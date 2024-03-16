@@ -24,24 +24,24 @@ namespace SysDVR.Client.Platform.Specific.Win
 			var info = DriverHelper.GetDriverInfo();
 
 			if (info == DriverStatus.Installed)
-				status = "It seems the driver is already installed, unless you face issues, you DON'T need to install it again.";
+				status = Program.Strings.UsbDriver.DetectOk;
 			else if (info == DriverStatus.NotInstalled)
-				status = "It seems the driver is not installed, you need to install it to use SysDVR.";
+				status = Program.Strings.UsbDriver.DetectNotInstalled;
 			else
-				status = "It seems that Windows has never detected the SysDVR device ID. Enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
+				status = Program.Strings.UsbDriver.DetectNoDevice;
 
 			return info == DriverStatus.Installed;
 		}
 
 		public static async Task Install(Action<string>? statusUpdate) 
 		{
-			statusUpdate?.Invoke("Downloading the driver...");
+			statusUpdate?.Invoke(Program.Strings.UsbDriver.StatusDownload);
 			await DriverHelper.DownloadDriver();
-			statusUpdate?.Invoke("Installing the driver...");
+			statusUpdate?.Invoke(Program.Strings.UsbDriver.StatusInstall);
 			DriverHelper.InstallDriver();
-			statusUpdate?.Invoke("Deleting extracted data");
+			statusUpdate?.Invoke(Program.Strings.UsbDriver.StatusClenaup);
 			DriverHelper.DeleteTempDir();
-			statusUpdate?.Invoke("Done");
+			statusUpdate?.Invoke(Program.Strings.UsbDriver.StatusDone);
 		}
 	}
 

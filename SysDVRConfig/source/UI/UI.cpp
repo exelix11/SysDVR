@@ -1,14 +1,40 @@
-#include "UI.hpp"
 #include <stdio.h>
+
+#include "UI.hpp"
 #include "imgui/imgui_impl_opengl3.h"
+
 #include "../Platform/PlatformFs.hpp"
+#include "../translaton.hpp"
 
 constexpr const char* WindowTitle = "SysDVR-conf";
 
 GLFWwindow* UI::MainWindow = nullptr;
 float UI::WRatio = 1;
 float UI::HRatio = 1;
-ImFont *UI::font20, *UI::font40;
+
+namespace {
+	ImFont* mainFont;
+
+	const float FontSmallSize = 28.0f;
+}
+
+void UI::SmallFont()
+{
+	mainFont->Scale = 1;
+	ImGui::PushFont(mainFont);
+}
+
+void UI::BigFont() 
+{
+	mainFont->Scale = 2;
+	ImGui::PushFont(mainFont);
+}
+
+void UI::PopFont()
+{
+	mainFont->Scale = 1;
+	ImGui::PopFont();
+}
 
 static void windowFramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -23,16 +49,55 @@ static void windowFramebufferSizeCallback(GLFWwindow* window, int width, int hei
 	printf("window resized: %dx%d\n", width, height);
 }
 
+static ImVector<ImWchar> ImguiPrepareFontRange()
+{
+	ImFontGlyphRangesBuilder builder;
+	
+	if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::ChineseSimplifiedCommon)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Cyrillic)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	// else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Greek)
+	//	Greek is not supported by the imgui version we are using here, TODO: consider updating
+	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Japanese)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
+	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Korean)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesKorean());
+	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Thai)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesThai());
+	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Vietnamese)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
+	else
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesDefault());
+
+	Strings::IterateAllStringsForFontBuilding(&builder, [](void* ptr, std::string_view str) {
+		ImFontGlyphRangesBuilder* builder = (ImFontGlyphRangesBuilder*)ptr;
+		builder->AddText(str.data(), str.data() + str.size());
+	});
+
+	ImVector<ImWchar> res;
+	builder.BuildRanges(&res);
+
+	return res;
+}
+
 static bool ImguiInit()
 {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2{ UI::WindowWidth, UI::WindowHeight};
 	
-	UI::font20 = io.Fonts->AddFontFromFileTTF(ASSET("opensans.ttf"), 28.0f);
-	UI::font40 = io.Fonts->AddFontFromFileTTF(ASSET("opensans.ttf"), 56.0f);
+	auto ranges = ImguiPrepareFontRange();
 
-	if (!UI::font20 || !UI::font40)
+	ImFontConfig config;
+	config.OversampleH = 3;
+	config.OversampleV = 3;
+
+	mainFont = io.Fonts->AddFontFromFileTTF(Strings::FontName.c_str(), FontSmallSize, &config, ranges.Data);
+	
+	io.Fonts->Build();
+	
+	if (!mainFont)
 		return false;
 	
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -54,7 +55,7 @@ namespace SysDVR.Client.Platform
 			var path = Resources.SettingsStorePath();
 
 			if (string.IsNullOrWhiteSpace(path))
-				throw new Exception("Couldn't find a valid path to store settings");
+				throw new Exception(Program.Strings.Errors.SettingsPathMissing);
 
 			var file = Path.Combine(path, SettingsFileName);
 			if (File.Exists(file))
@@ -67,13 +68,18 @@ namespace SysDVR.Client.Platform
 		{
 			var path = Resources.SettingsStorePath();
 			if (string.IsNullOrWhiteSpace(path))
-				throw new Exception("Couldn't find a valid path to store settings");
+				throw new Exception(Program.Strings.Errors.SettingsPathMissing);
 
 			if (!Directory.Exists(path))
 				Directory.CreateDirectory(path);
 
 			var file = Path.Combine(path, SettingsFileName);
 			File.WriteAllText(file, json);
+		}
+
+		public static string GetLanguageCode() 
+		{
+			return CultureInfo.CurrentUICulture.Name;
 		}
 	}
 }

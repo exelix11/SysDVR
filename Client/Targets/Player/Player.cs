@@ -245,7 +245,7 @@ namespace SysDVR.Client.Targets.Player
 
             string codecName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
 
-            Console.WriteLine($"Initializing video player with {codecName} codec.");
+            Console.WriteLine(string.Format(Program.Strings.Player.PlayerInitializationMessage, codecName));
 
             var codectx = avcodec_alloc_context3(codec);
             if (codectx == null)
@@ -317,7 +317,7 @@ namespace SysDVR.Client.Targets.Player
             // Not sure if this is needed but ffplay source does handle this case, all my tests had positive linesize
             else if (pic->linesize[0] < 0 && pic->linesize[1] < 0 && pic->linesize[2] < 0)
             {
-                Console.WriteLine("Negative Linesize");
+                Program.DebugLog("Negative Linesize");
                 SDL_UpdateYUVTexture(TargetTexture, ref TargetTextureSize,
                     (IntPtr)(pic->data[0] + pic->linesize[0] * (pic->height - 1)), -pic->linesize[0],
                     (IntPtr)(pic->data[1] + pic->linesize[1] * (av_ceil_rshift(pic->height, 1) - 1)), -pic->linesize[1],
@@ -348,7 +348,7 @@ namespace SysDVR.Client.Targets.Player
             else if (ret != 0)
             {
                 // Should not happen
-                Console.WriteLine($"avcodec_receive_frame {ret}");
+                Program.DebugLog($"avcodec_receive_frame {ret}");
                 return false;
             }
             else
@@ -392,7 +392,7 @@ namespace SysDVR.Client.Targets.Player
             AVFrame* dstframe = null;
             SwsContext* swsContext = null;
 
-            Console.WriteLine($"Initializing converter for {codecctx->pix_fmt}");
+            Program.DebugLog($"Initializing converter for {codecctx->pix_fmt}");
 
             dstframe = av_frame_alloc();
 
