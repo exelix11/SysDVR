@@ -48,6 +48,13 @@ enum ProtoMetaVideoFlags // 8 bits
 	ProtoMetaVideo_NalHashOnlyIDR = (1 << 2),
 };
 
+enum ExtraFeatureFlags // 8 bits
+{
+	ExtraFeatureFlags_None = 0,
+	// Request the console to turn off the display during streaming
+	ExtraFeatureFlags_TurnOffScreen = 1,
+};
+
 // Sent by the client to set up streaming
 struct ProtoHandshakeRequest
 {
@@ -60,7 +67,8 @@ struct ProtoHandshakeRequest
 	uint8_t VideoFlags; // ProtoMetaVideoFlags
 	uint8_t AudioBatching;
 
-	uint8_t Reserved[7];
+	uint8_t FeatureFlags;
+	uint8_t Reserved[6];
 };
 
 _Static_assert(sizeof(struct ProtoHandshakeRequest) == 16);
@@ -73,5 +81,8 @@ typedef enum {
 	ProtoHandshakeAccept_Audio,
 } ProtoHandshakeAccept;
 
+// Verifies the handshare and if valid sets the global state of the client
 ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, int length);
 
+// Must be called every time ProtoHandshare returned OK, it is safe to call multiple times
+void ProtoClientGlobalStateDisconnected();

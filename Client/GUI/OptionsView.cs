@@ -325,6 +325,10 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox(Strings.DisableSynchronization, ref Program.Options.Debug.NoSync);
 				ImGui.NewLine();
 
+				ImGui.Checkbox(Strings.DisableBacklight, ref Program.Options.Streaming.TurnOffConsoleScreen);
+				ImGui.TextWrapped(Strings.DisableBacklightWarn);
+
+				ImGui.NewLine();
 				ImGui.Checkbox(Strings.AnalyzeKeyframes, ref Program.Options.Debug.Keyframe);
 				ImGui.Checkbox(Strings.AnalyzeNALs, ref Program.Options.Debug.Nal);
 

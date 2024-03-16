@@ -2,7 +2,7 @@
 #include <switch.h>
 #include "modes/defines.h"
 
-// Debug UDP logging with netcat -ul 9999
+// Debug UDP logging with make -j DEFINES=-DUDP_LOGGING then netcat -ul 9999
 #define LOGGING_ENABLED (UDP_LOGGING || FILE_LOGGING || CUSTOM_LOGGING)
 
 #if (UDP_LOGGING + FILE_LOGGING + CUSTOM_LOGGING) > 1

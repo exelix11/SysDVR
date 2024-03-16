@@ -4,6 +4,7 @@
 #include "ipc.h"
 #include "../modes/defines.h"
 #include "../core.h"
+#include "../util.h"
 
 static Handle handles[2];
 static SmServiceName serverName;
@@ -135,6 +136,11 @@ static bool HandleCommand(const Request* req)
 		{
 			// Crash the process
 			*(u32*)0x0 = 0xDEAD;
+			return false;
+		}
+		case CMD_RESET_DISPLAY:
+		{
+			UtilSetConsoleScreenMode(true);
 			return false;
 		}
 		case CMD_SET_USB:

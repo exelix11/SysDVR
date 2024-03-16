@@ -43,6 +43,7 @@
     <ClCompile Include="source\sysmodule\main.c">
       <Filter>sysmodule</Filter>
     </ClCompile>
+    <ClCompile Include="source\util.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\grcd.h" />
@@ -84,6 +85,7 @@
     <ClInclude Include="source\modes\proto.h">
       <Filter>modes</Filter>
     </ClInclude>
+    <ClInclude Include="source\util.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="rtsp">
