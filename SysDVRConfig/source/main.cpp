@@ -4,6 +4,7 @@
 
 #include "UI/UI.hpp"
 #include "Platform/Platform.hpp"
+#include "Platform/fs.hpp"
 #include "UI/imgui/imgui.h"
 #include "UI/Image.hpp"
 #include "ipc.h"
@@ -77,8 +78,11 @@ namespace scenes {
 		CenterImage(SysDVRLogo, 1);
 
 		CenterText(statusMessage);
-		if (errorSecondline.size() > 0)
-			CenterText(errorSecondline);
+		if (errorSecondline.size() > 0) {
+			ImGui::PushTextWrapPos();
+			ImGui::TextUnformatted(errorSecondline.data(), errorSecondline.data() + errorSecondline.size());
+			ImGui::PopTextWrapPos();
+		}
 
 		ImGui::NewLine();
 		CenterText(Strings::Error.SysmoduleConnectionTroubleshootLink);
@@ -151,6 +155,12 @@ int main(int argc, char* argv[])
 	SysDVRLogo = Image::Img(ASSET("logo.png"));
 	
 	currentScene = Scene::ModeSelect;
+
+	if (!fs::Exists(SDMC "/atmosphere/contents/00FF0000A53BB665/exefs.nsp"))
+	{
+		app::FatalError(Strings::Error.NotInstalled, Strings::Error.NotInsalledSecondLine);
+		goto mainloop;
+	}
 
 	{
 		Result rc = ConnectToSysmodule();
