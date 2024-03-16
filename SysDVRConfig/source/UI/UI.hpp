@@ -17,8 +17,9 @@ namespace UI {
 	extern float WRatio;
 	extern float HRatio;
 
-	extern ImFont* font20;
-	extern ImFont* font40;
+	void SmallFont();
+	void BigFont();
+	void PopFont();
 
 	bool Init();
 	void Exit();

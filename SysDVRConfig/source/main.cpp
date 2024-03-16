@@ -11,6 +11,8 @@
 #include "Scenes/Scenes.hpp"
 #include "Scenes/Common.hpp"
 
+#include "translaton.hpp"
+
 Image::Img SysDVRLogo;
 
 namespace {
@@ -48,11 +50,11 @@ namespace {
 		ImGui::NewLine();
 		ImGui::NewLine();
 
-		CenterText("Connecting to SysDVR.");
-		CenterText("If you just turned on your console this may take up to 20 seconds.");
+		CenterText(Strings::Connecting.Title);
+		CenterText(Strings::Connecting.Description);
 		ImGui::NewLine();
-		CenterText("If you can't get past this screen SysDVR not running");
-		CenterText("Make sure your setup is correct and reboot your console.");
+		CenterText(Strings::Connecting.Troubleshoot1);
+		CenterText(Strings::Connecting.Troubleshoot2);
 
 		ImGui::End();
 		UI::EndFrame();
@@ -79,12 +81,12 @@ namespace scenes {
 			CenterText(errorSecondline);
 
 		ImGui::NewLine();
-		CenterText("For support check the troubleshooting page:");
+		CenterText(Strings::Error.SysmoduleConnectionTroubleshootLink);
 		CenterImage(errorQrUrl, 0.8f);
 		CenterText("github.com/exelix11/SysDVR/wiki/Troubleshooting");
 
 		ImGui::NewLine();
-		if (ImGuiCenterButtons({ "  Click or press + to exit  " }) != -1)
+		if (ImGuiCenterButtons<std::string_view>({ Strings::Error.FailExitButton }) != -1)
 			app::RequestExit();
 		
 		ImGui::End();
@@ -136,6 +138,8 @@ int main(int argc, char* argv[])
 {
 	Platform::Init();
 
+	Strings::LoadTranslationForSystemLanguage();
+
 	if (!UI::Init())
 	{
 		Platform::Exit();
@@ -158,16 +162,16 @@ int main(int argc, char* argv[])
 		u32 version;
 		rc = SysDvrGetVersion(&version);
 		if (R_FAILED(rc)) {
-			app::FatalErrorWithErrorCode("Couldn't get the SysDVR version", rc);
+			app::FatalErrorWithErrorCode(Strings::Error.SysdvrVersionError, rc);
 			goto mainloop;
 		}
 
 		if (version > SYSDVR_IPC_VERSION) {
-			app::FatalError("You're using a newer version of SysDVR", "Please download the latest settings app from github.");
+			app::FatalError(Strings::Error.NewerVersion, Strings::Error.VersionTroubleshoot);
 			goto mainloop;
 		}
 		else if (version < SYSDVR_IPC_VERSION) {
-			app::FatalError("You're using an outdated version of SysDVR", "Please download the latest version from github, then reboot your console.");
+			app::FatalError(Strings::Error.OlderVersion, Strings::Error.VersionTroubleshoot);
 			goto mainloop;
 		}
 	}
@@ -197,6 +201,8 @@ mainloop:
 
 		ImGui::Begin("_background_", 0, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration);
 		
+		UI::SmallFont();
+
 		switch (currentScene)
 		{
 		case Scene::ModeSelect:
@@ -219,7 +225,9 @@ mainloop:
 			break;
 		}
 
+		UI::PopFont();
 		ImGui::End();
+
 		UI::EndFrame();
 		Platform::Sleep(1 / 30.0f * 1000);
 	}

@@ -35,6 +35,8 @@ namespace SysDVR.Client.Core
         public string ScreenshotsPath = DefaultPlatformPicturePath();
         public bool HideSerials;
 
+        public string? PreferredLanguage;
+
         public bool PlayerHotkeys = true;
 
         // (Windows only) Capture screenshots to clipboard by default
@@ -63,7 +65,6 @@ namespace SysDVR.Client.Core
 		// Debug settings
 		public DebugOptions Debug = new();
 
-        // Ignored for now
         public float GuiFontScale = 1;
 
 		public string ScaleHintForSDL => RendererScale switch

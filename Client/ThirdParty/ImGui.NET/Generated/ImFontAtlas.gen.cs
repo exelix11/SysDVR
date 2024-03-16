@@ -413,10 +413,10 @@ namespace ImGuiNET
             return new ImFontPtr(ret);
         }
 
-		public ImFontPtr AddFontFromMemoryTTF(byte* font_data, int font_size, float size_pixels, ImFontConfigPtr font_cfg, ushort* glyph_ranges)
+		public ImFontPtr AddFontFromMemoryTTF(byte* font_data, int font_size, float size_pixels, ImFontConfigPtr font_cfg, nint glyph_ranges)
 		{
 			ImFontConfig* native_font_cfg = font_cfg.NativePtr;
-			ImFont* ret = ImGuiNative.ImFontAtlas_AddFontFromMemoryTTF((ImFontAtlas*)(NativePtr), font_data, font_size, size_pixels, native_font_cfg, glyph_ranges);
+			ImFont* ret = ImGuiNative.ImFontAtlas_AddFontFromMemoryTTF((ImFontAtlas*)(NativePtr), font_data, font_size, size_pixels, native_font_cfg, (ushort*)glyph_ranges);
 			return new ImFontPtr(ret);
 		}
 

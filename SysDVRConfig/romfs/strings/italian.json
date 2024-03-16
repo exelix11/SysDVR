@@ -1,0 +1,66 @@
+{
+  "LanguageName": "Italiano",
+  "ImguiGlyphRange": "Default",
+  "TranslationAuthor": "exelix11",
+  "Connecting": {
+    "Description": "Se hai appena acceso la console potrebbe richiedere fino a 20 secondi.",
+    "Title": "Connessione a SysDVR...",
+    "Troubleshoot1": "Se la console è bloccata su questa schermata, SysDVR non è in esecuzione",
+    "Troubleshoot2": "Assicurati di averlo installato correttamente e riavvia la console."
+  },
+  "Errors": {
+    "BootModeChangeFailed": "Impossibile modificare la modalita di avvio automatico",
+    "FailedToDetectMode": "Impossibile rilevare la modalità attuale di SysDVR",
+    "InvalidMode": "La modalità rilevata di SysDVR non è valida",
+    "ModeChangeFailed": "Impossibile cambiare modalità",
+    "TroubleshootBootMode": "Assicurati che il filesystem della tua SD non sia corrotto",
+    "TroubleshootReboot": "Prova a riavviare la console",
+    "FailExitButton": "Click qua o premi + per uscire",
+    "NewerVersion": "Stai usando una versione più recente di SysDVR",
+    "OlderVersion": "Stai usando una versione più vecchia di SysDVR",
+    "SysdvrVersionError": "Impossibile rilevare la versione di SysDVR attuale",
+    "SysmoduleConnectionFailed": "Impossibile connettersi a SysDVR.",
+    "SysmoduleConnectionTroubleshoot": "Se lo hai appena installato riavvia la console, altrimenti aspetta qualche secondo e prova di nuovo.\nQuesto errore è normale se stai usando una versione USB-Only di SysDVR.",
+    "SysmoduleConnectionTroubleshootLink": "In caso di problemi controlla la guida su GitHub:"
+  },
+  "Guide": {
+    "GuideTitle": "La guida è disponibile su Github (solo inglese):"
+  },
+  "Main": {
+    "ConsoleIPPlcaceholder": "<IP della console>",
+    "ModeDisabled": "Disattiva lo streaming",
+    "ModeRtsp": "Streaming diretto con qualsiasi player video tramite RTSP.\nAttiva questa modalità e apri rtsp://{}:6666/ in un player compatibile come mpv or vlc.\nQuesta modalità non richiede SysDVR-Client sul tuo PC.\nPer lo streaming tramite rete si consiglia una connessione tramite cavo ethernet.",
+    "ModeRtspTitle": "Modalità di rete 'semplice' (RTPS)",
+    "ModeTcp": "Streaming tramite rete all'applicazione SysDVR-Client. Questo è generalmente più stabile dilla modalità RTSP.\nÈ necessario installare SysDVR-Client sul tuo computer, segui la guida su Github\nPer lo streaming tramite rete si consiglia una connessione tramite cavo ethernet.",
+    "ModeTcpTitle": "TCP Bridge",
+    "ModeUsb": "Streaming tramite USB all'applicazione SysDVR-Client.\nÈ necessario installare SysDVR-Client sul tuo computer, segui la guida su Github.",
+    "ModeUsbTitle": "USB",
+    "OptGuide": "Guida",
+    "OptPatchManager": "Gestione dvr-patches",
+    "OptSave": "Salva ed esci",
+    "OptSetDefault": "Imposta la modalità attuale come default",
+    "SelectMode": "Seleziona una modalità",
+    "ActiveMode": "Attiva",
+    "DefaultMode": "Avvio automatico"
+  },
+  "Patches": {
+    "BackButton": "Indietro",
+    "CurlNoData": "Nessun dato ricevuto",
+    "Description": "dvr-patches sono patche per il sistema che permettono di effettuare lo streaming di quasi tutti i giochi non compatibili. Alcuni giochi potrebbero crashare, verifica la compatibilità nelle issue https://github.com/exelix11/dvr-patches.\nPuoi anche scaricare le patch manualmente con un computer.",
+    "DownloadButton": "Scarica e installa",
+    "DownloadOk": "Aggiornamento scaricato.",
+    "LatestVer": "Già hai l'ultima versione di dvr-patches.",
+    "Loading": "Caricamento...",
+    "NewVerAvail": "Una nuova versione di dvr-patches è disponibile:",
+    "RebootButton": "Riavvia ora",
+    "RebootWarning": "Per rendere effettivi i cambiamenti, riavvia la console",
+    "SdcardPath": "Percorso sulla scheda SD:",
+    "SearchLatestButton": "Cerca aggiornamenti da Github",
+    "Status": "Stato di dvr-patches:",
+    "StatusInstalled": "Installato, commit: %s",
+    "StatusNotInstalled": "Non installato",
+    "StatusUnknownVersion": "Installato, versione sconosciuta",
+    "Title": "Gestore dvr-patches",
+    "UninstallButton": "Disinstalla"
+  }
+}

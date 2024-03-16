@@ -1,12 +1,11 @@
 #include "Scenes.hpp"
 #include "Common.hpp"
 
-#include "../Platform/fs.hpp"
-
 #include <curl/curl.h>
 
+#include "../translaton.hpp"
+#include "../Platform/fs.hpp"
 #include "nlohmann/json.hpp"
-
 #include "zip/zip.h"
 
 using namespace std::string_literals;
@@ -20,6 +19,8 @@ namespace {
 		VersionUnknown,
 		NotInstalled
 	};
+
+	std::string sdCartPathlabel;
 
 	PatchStatus patchStatus;
 	std::string patchVersion;
@@ -71,7 +72,7 @@ namespace {
 		curl = curl_easy_init();
 		if (!curl)
 		{
-			statusMessage = "Curl initialization failed";
+			statusMessage = Strings::Patches.CurlError;
 			return false;
 		}
 		
@@ -111,12 +112,12 @@ namespace {
 		CURLcode res = curl_easy_perform(curl);
 		if (res != CURLE_OK)
 		{
-			statusMessage = "Curl GET failed: " + std::string(curl_easy_strerror(res));
+			statusMessage = Strings::Patches.CurlGETFailed + ": " + std::string(curl_easy_strerror(res));
 			return {};
 		}
 		else if (data.size() == 0)
 		{
-			statusMessage = "No data received";
+			statusMessage = Strings::Patches.CurlNoData;
 		}
 		
 		return data;
@@ -138,7 +139,7 @@ namespace {
 		auto& tagName = releaseDoc["tag_name"];
 		if (tagName.is_null())
 		{
-			statusMessage = "Failed to parse release info";
+			statusMessage = Strings::Patches.ParseReleaseFailure;
 			return;
 		}
 
@@ -149,7 +150,7 @@ namespace {
 
 			if (!tagsDoc.is_array())
 			{
-				statusMessage = "Failed to parse tags info";
+				statusMessage = Strings::Patches.ParseTagFailure;
 				return;
 			}
 
@@ -165,32 +166,32 @@ namespace {
 
 		if (commitName == "")
 		{
-			statusMessage = "Failed to find commit for tag "s + (std::string) tagName;
+			statusMessage = Strings::Patches.ParseTagCommitFailure + ": " + (std::string) tagName;
 			return;
 		}
 
 		if (patchStatus == PatchStatus::Insstalled && patchVersion == commitName)
 		{
-			statusMessage = "You're already using latest version of dvr-patches.";
+			statusMessage = Strings::Patches.LatestVer;
 			return;
 		}
 
 		auto& releaseUrl = releaseDoc["assets"][0]["browser_download_url"];
 		if (releaseUrl.is_null())
 		{
-			statusMessage = "Failed to parse release info";
+			statusMessage = Strings::Patches.ParseDownloadFailure;
 			return;
 		}
 
 		updateFoundUrl = (std::string)releaseUrl;
 		updateVersion = commitName;
-		updateInfo = "New version of dvr-patches available: "s + (std::string)tagName + "\n" + (std::string)releaseDoc["body"];
+		updateInfo = Strings::Patches.NewVerAvail + " "s + (std::string)tagName + "\n" + (std::string)releaseDoc["body"];
 	}
 
 	void DownloadRelease() {
 		if (updateFoundUrl.size() == 0)
 		{
-			statusMessage = "No update source found";
+			statusMessage = Strings::Patches.NoLinkFound;
 			return;
 		}
 
@@ -201,7 +202,7 @@ namespace {
 		zip_t* zip = zip_stream_open((const char*)data.data(), data.size(), ZIP_DEFAULT_COMPRESSION_LEVEL, 'r');
 		if (!zip)
 		{
-			statusMessage = "Failed to open zip archive";
+			statusMessage = Strings::Patches.ZipExtractFail;
 			return;
 		}
 
@@ -232,13 +233,14 @@ namespace {
 
 		UpdatePatchesStatus();
 		showRebootWarning = true;
-		statusMessage = "Update downloaded.";
+		statusMessage = Strings::Patches.DownloadOk;
 	}
 }
 
 namespace scenes {
 	void InitDvrPatches() 
 	{
+		sdCartPathlabel = Strings::Patches.SdcardPath + " " DVRPATCHES_DIR "     ";
 		UpdatePatchesStatus();
 	}
 	
@@ -253,9 +255,9 @@ namespace scenes {
 		
 		ImGui::SetCursorPosY(30);
 		
-		ImGui::PushFont(UI::font40);
-		CenterText("dvr-patches manager");
-		ImGui::PopFont();
+		UI::BigFont();
+		CenterText(Strings::Patches.Title);
+		UI::PopFont();
 	
 		ImGui::NewLine();
 
@@ -265,7 +267,7 @@ namespace scenes {
 			ImGui::NewLine();
 			ImGui::NewLine();
 			ImGui::NewLine();
-			CenterText("Loading...");
+			CenterText(Strings::Patches.Loading);
 			
 			if (scheduledCounter++ > 5)
 			{
@@ -276,36 +278,33 @@ namespace scenes {
 		}
 		else {
 
-			ImGui::TextWrapped(	
-				"dvr-patches are system patches that allow to stream most incompatible games with SysDVR, a few games are reported to crash, you can read mone on the issue tracker on https://github.com/exelix11/dvr-patches.\n"
-				"You can also manually download the zip file from the GitHub repo with a computer."
-			);
+			ImGui::TextWrapped(Strings::Patches.Description.c_str());
 
 			ImGui::NewLine();
-			ImGui::Text("dvr-patches status:");
+			ImGui::Text(Strings::Patches.Status.c_str());
 			ImGui::SameLine();
 
 			if (patchStatus == PatchStatus::NotInstalled)
 			{
-				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "not installed");
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), Strings::Patches.StatusNotInstalled.c_str());
 
 			}
 			else if (patchStatus == PatchStatus::VersionUnknown)
 			{
-				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.6f, 1.0f), "installed, version unknown");
-				ImGui::Text("Sdcard path: " DVRPATCHES_DIR "     ");
+				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.6f, 1.0f), Strings::Patches.StatusUnknownVersion.c_str());
+				ImGui::Text(sdCartPathlabel.c_str());
 				ImGui::SameLine();
 				
-				if (ImGui::Button("Uninstall"))
+				if (ImGui::Button(Strings::Patches.UninstallButton.c_str()))
 					scheduledAction = UninstallPatches;
 			}
 			else
 			{
-				ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "installed commit %s", patchVersion.c_str());
-				ImGui::Text("Sdcard path: " DVRPATCHES_DIR "     ");
+				ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), Strings::Patches.StatusInstalled.c_str(), patchVersion.c_str());
+				ImGui::Text(sdCartPathlabel.c_str());
 				ImGui::SameLine();
 
-				if (ImGui::Button("Uninstall"))
+				if (ImGui::Button(Strings::Patches.UninstallButton.c_str()))
 					scheduledAction = UninstallPatches;
 			}
 			ImGui::NewLine();
@@ -319,7 +318,7 @@ namespace scenes {
 			if (updateFoundUrl.size() > 0)
 			{
 				ImGui::TextWrapped("%s", updateInfo.c_str());
-				if (ImGuiCenterButtons({ "Download and install" }) == 0)
+				if (ImGuiCenterButtons<std::string_view>({ Strings::Patches.DownloadButton }) == 0)
 				{
 					scheduledAction = DownloadRelease;
 				}
@@ -328,9 +327,9 @@ namespace scenes {
 
 			if (showRebootWarning)
 			{
-				ImGui::Text("To apply the changes you need to reboot your console    ");
+				ImGui::Text(Strings::Patches.RebootWarning.c_str());
 				ImGui::SameLine();
-				if (ImGui::Button("Reboot now"))
+				if (ImGui::Button(Strings::Patches.RebootButton.c_str()))
 				{
 					Platform::Reboot();
 				}
@@ -340,7 +339,7 @@ namespace scenes {
 
 			ImGui::NewLine();
 
-			switch (ImGuiCenterButtons({ "Go back", "Search for latest patches on GitHub" }))
+			switch (ImGuiCenterButtons<std::string_view>({ Strings::Patches.BackButton, Strings::Patches.SearchLatestButton }))
 			{
 			case 0:
 				app::ReturnToPreviousScene();

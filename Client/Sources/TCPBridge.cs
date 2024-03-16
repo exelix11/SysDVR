@@ -101,9 +101,9 @@ namespace SysDVR.Client.Sources
 				return;
 
 			if (task.Exception is not null)
-				ReportMessage($"{stream.StreamName} connection error: {task.Exception.InnerException}");
+				ReportMessage($"{stream.StreamName} {Program.Strings.General.ErrorMessage} {task.Exception.InnerException}");
 			else // Shouldn't happen unless the loop was cancelled
-				ReportMessage($"{stream.StreamName} disconnected but no error was reported.");
+				ReportMessage($"{stream.StreamName} {Program.Strings.Errors.DisconnectUnknownError}");
 
 			// Just try to reconnect until the user cancels the operation
 			while (!Cancellation.IsCancellationRequested)
@@ -119,7 +119,7 @@ namespace SysDVR.Client.Sources
 				}
 				catch
 				{
-					ReportMessage($"{stream.StreamName} Fatal error: {task.Exception}");
+					ReportMessage($"{stream.StreamName} {Program.Strings.General.ErrorMessage} {task.Exception}");
 				}
 			}
 		}
@@ -238,7 +238,7 @@ namespace SysDVR.Client.Sources
 
 				for (int i = 0; i < MaxConnectionAttempts && !cancel.IsCancellationRequested; i++)
 				{
-					reportMessage($"[{StreamName}] Connecting to console (attempt {i}/{MaxConnectionAttempts})...");
+					reportMessage($"[{StreamName}] {string.Format(Program.Strings.Connection.ConnectionInProgress, i, MaxConnectionAttempts)}");
 
 					try
 					{

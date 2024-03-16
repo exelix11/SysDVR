@@ -38,16 +38,18 @@ static void SetupMainWindow(const char* name, float padding = 0)
 	ImGui::SetNextWindowSize({ UI::WindowWidth - padding, UI::WindowHeight });
 	ImGui::SetNextWindowPos({ (UI::WindowWidth - (UI::WindowWidth - padding)) / 2, 0});
 	
-	ImGui::Begin(name, 0, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+	ImGui::Begin(name, 0, (ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize) & ~ImGuiWindowFlags_NoScrollbar);
 }
 
-template <size_t N, typename T>
+template <typename T, size_t N>
 static inline int ImGuiCenterButtons(T(&& buttons)[N])
 {
 	const auto str = [&buttons](size_t i) -> const char*
 	{
 		if constexpr (std::is_same<T, std::string>())
 			return buttons[i].c_str();
+		else if constexpr (std::is_same<T, std::string_view>())
+			return buttons[i].data();
 		else if constexpr (std::is_same<T, const char*>())
 			return buttons[i];
 	};

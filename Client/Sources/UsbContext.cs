@@ -138,7 +138,7 @@ namespace SysDVR.Client.Sources
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Warning: failed to query device ID " + ex);
+				Program.DebugLog("Warning: failed to query device ID " + ex);
                 return false;
             }
         }
@@ -168,7 +168,7 @@ namespace SysDVR.Client.Sources
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Warning: failed to query device serial " + ex);
+                    Program.DebugLog("Warning: failed to query device serial " + ex);
                     return null;
                 }
             }).Where(x => x != null).Cast<DesktopUsbDevice>();

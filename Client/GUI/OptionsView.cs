@@ -34,7 +34,12 @@ namespace SysDVR.Client.GUI
 				Label = Encoding.UTF8.GetBytes(label);
 
 				this.values = values;
-				CurrentItem = Array.FindIndex(values, x => x.Value.Equals(current));
+				
+				CurrentItem = Array.FindIndex(values, x => x.Value switch { 
+					null when current is null => true,
+					null => false,
+					_ => x.Value.Equals(current)
+				});
 
 				// Precompute labels as utf8 for ImGui
 				var lengths = values.Select(x => Encoding.UTF8.GetByteCount(x.Name) + 1).ToArray();
@@ -70,11 +75,12 @@ namespace SysDVR.Client.GUI
 
 		class PathInputPopup
 		{
-			public readonly Gui.Popup Popup = new("Select path");
+			public readonly Gui.Popup Popup = new(Program.Strings.Settings.PathSelectDialog);
 			Gui.CenterGroup PathPopButtons = new();
 			string PathInputMessage;
 			readonly byte[] PathInputBuffer = new byte[1024];
 			Action<string> PathPopupApply = null!;
+			bool AddedNotExistError;
 
 			public void Configure(string message, string currentValue, Action<string> setvalue)
 			{
@@ -95,10 +101,10 @@ namespace SysDVR.Client.GUI
 
 				PathPopButtons.StartHere();
 
-				if (ImGui.Button("Cancel"))
+				if (ImGui.Button(Program.Strings.General.CancelButton))
 					Popup.RequestClose();
 				ImGui.SameLine();
-				if (ImGui.Button("Save"))
+				if (ImGui.Button(Program.Strings.General.ApplyButton))
 				{
 					var stopAt = Array.IndexOf(PathInputBuffer, (byte)0);
 					string path = "";
@@ -108,8 +114,11 @@ namespace SysDVR.Client.GUI
 
 					if (!Directory.Exists(path))
 					{
-						if (!PathInputMessage.Contains("does not exist"))
-							PathInputMessage += "\nThe selected path does not exist, try again.";
+						if (!AddedNotExistError)
+						{
+							AddedNotExistError = true;
+							PathInputMessage += "\n" + Program.Strings.Settings.InvalidPathError;
+						}
 					}
 					else
 					{
@@ -124,50 +133,64 @@ namespace SysDVR.Client.GUI
 			}
 		}
 
-		// Instance state 
+		record AvailableLanguage(string Name, string Author, string Locale);
 
-		readonly ComboEnum<SDLScaleMode> ScaleModes = new("Scale mode", new Opt<SDLScaleMode>[]
-			{
-				new("Linear (default)", SDLScaleMode.Linear),
-				new("Nearest (low overhead)", SDLScaleMode.Nearest),
-				new("Best (high quality, up to the system)", SDLScaleMode.Best)
-			},
+		// Instance state 
+		readonly StringTable.SettingsTable Strings = Program.Strings.Settings;
+
+		// These can not refer to a non-static member so they use the fully quelified strings object
+		readonly ComboEnum<SDLScaleMode> ScaleModes = new(Program.Strings.Settings.ScaleMode,
+			[
+				new(Program.Strings.Settings.ScaleMode_Linear, SDLScaleMode.Linear),
+				new(Program.Strings.Settings.ScaleMode_Narest, SDLScaleMode.Nearest),
+				new(Program.Strings.Settings.ScaleMode_Best, SDLScaleMode.Best)
+			],
 			Program.Options.RendererScale
 		);
 
-		readonly ComboEnum<SDLAudioMode> AudioModes = new("Audio player mode", new Opt<SDLAudioMode>[]
-			{
-				new("Automatic (default)", SDLAudioMode.Auto),
-				new("Synchronized", SDLAudioMode.Default),
-				new("Compatible (try it if you have audio issues)", SDLAudioMode.Compatible)
-			},
+		readonly ComboEnum<SDLAudioMode> AudioModes = new(Program.Strings.Settings.AudioMode,
+			[
+				new(Program.Strings.Settings.AudioMode_Auto, SDLAudioMode.Auto),
+				new(Program.Strings.Settings.AudioMode_Sync, SDLAudioMode.Default),
+				new(Program.Strings.Settings.AudioMode_Compatible, SDLAudioMode.Compatible)
+			],
 			Program.Options.AudioPlayerMode
 		);
 
-		readonly ComboEnum<StreamKind> StreamChannel = new("Default streaming channel", new Opt<StreamKind>[]
-			{
-				new("Both (default)", StreamKind.Both),
-				new("Video only", StreamKind.Video),
-				new("Audio only", StreamKind.Audio)
-			},
+		readonly ComboEnum<StreamKind> StreamChannel = new(Program.Strings.Settings.DefaultStreaming,
+			[
+				new(Program.Strings.Settings.DefaultStreaming_Both, StreamKind.Both),
+				new(Program.Strings.Settings.DefaultStreaming_Video, StreamKind.Video),
+				new(Program.Strings.Settings.DefaultStreaming_Audio, StreamKind.Audio)
+			],
 			Program.Options.Streaming.Kind
 		);
 
+		readonly ComboEnum<string> GuiLanguage = new("Display language",
+			Resources.GetAvailableTranslations().Select(x =>
+				string.IsNullOrWhiteSpace(x.TranslationAuthor) ?
+					new Opt<string?>($"{x.TranslationName}", x.SystemLocale.First()) :
+					new Opt<string?>($"{x.TranslationName} by {x.TranslationAuthor}", x.SystemLocale.First())
+			)
+			.Append(new("Auto select", null))
+			.ToArray(), 
+		Program.Options.PreferredLanguage);
+
 		readonly PathInputPopup PathInput = new();
-		readonly Gui.Popup ErrorPopup = new("Settings error");
+		readonly Gui.Popup ErrorPopup = new(Program.Strings.General.PopupErrorTitle);
 		string SettingsErrorMessage = "";
 		Gui.CenterGroup SaveCenter = new();
 
-		readonly Gui.Popup PickDecoderPopup = new("Select video decoder");
+		readonly Gui.Popup PickDecoderPopup = new(Program.Strings.Settings.DecoderPopupTitle);
 		string DecoderButtonText;
 		List<LibavUtils.Codec> PickDecoderList = new();
 
 		void UpdateDecoderButtonText()
 		{
 			if (Program.Options.DecoderName is not null)
-				DecoderButtonText = $"Disable hardware decoder ({Program.Options.DecoderName})";
+				DecoderButtonText = string.Format(Strings.DecoderResetButton,  Program.Options.DecoderName);
 			else
-				DecoderButtonText = "Configure hardware-accelerated decoder";
+				DecoderButtonText = Strings.DecoderChangeButton;
 		}
 
 		public OptionsView()
@@ -192,66 +215,74 @@ namespace SysDVR.Client.GUI
 			}
 			catch (Exception e)
 			{
-				SettingsErrorMessage = "Failed to save settings:\r\n" + e.ToString();
+				SettingsErrorMessage = $"{Strings.SaveFailedError}:\r\n{e}";
 				Popups.Open(ErrorPopup);
 			}
 		}
 
+		string changeRecordingButton = Program.Strings.Settings.ChangePathButton + "##clip";
+		string changePicButton = Program.Strings.Settings.ChangePathButton + "##pic";
 		public override void Draw()
 		{
 			if (!Gui.BeginWindow("Settings"))
 				return;
 
-			ImGui.TextWrapped("These settings are automatically applied for the current session, you can however save them so they become persistent");
+			ImGui.TextWrapped(Strings.Heading);
 
 			SaveCenter.StartHere();
-			if (ImGui.Button("Go back"))
+			if (ImGui.Button(GeneralStrings.BackButton))
 				Program.Instance.PopView();
 
 			ImGui.SameLine();
-			if (ImGui.Button("Save changes"))
+			if (ImGui.Button(Strings.SaveButton))
 				SaveOptions();
 
 			ImGui.SameLine();
-			if (ImGui.Button("Reset defaults"))
+			if (ImGui.Button(Strings.ResetButton))
 			{
 				Program.Options = new();
+				UpdateDecoderButtonText();
 				SaveOptions();
 			}
 
 			SaveCenter.EndHere();
 
-			Gui.CenterText("Some changes may require to restart SysDVR");
+			Gui.CenterText(Strings.RestartWarnLabel);
 			ImGui.NewLine();
 
-			if (ImGui.CollapsingHeader("General", ImGuiTreeNodeFlags.DefaultOpen))
+			if (ImGui.CollapsingHeader(Strings.Tab_General, ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 
-				ImGui.Checkbox("Hide console serials from GUI", ref Program.Options.HideSerials);
-				ImGui.Checkbox("Enable hotkeys in the player view", ref Program.Options.PlayerHotkeys);
+				GuiLanguage.Draw(ref Program.Options.PreferredLanguage);
+				ImGui.TextWrapped("Translations are provided by the community, if you spot an error or want to contribute your native language reach out to us on Github.");
+
+				ImGui.NewLine();
+
+				ImGui.Checkbox(Strings.HideSerials, ref Program.Options.HideSerials);
+				ImGui.Checkbox(Strings.Hotkeys, ref Program.Options.PlayerHotkeys);
 				ScaleModes.Draw(ref Program.Options.RendererScale);
 				AudioModes.Draw(ref Program.Options.AudioPlayerMode);
 
 				// Recording save path, TODO: implement file picker but doing it cross platform seems like a major headache
-				ImGui.TextWrapped("Video recordings output path:");
+				ImGui.TextWrapped(Strings.RecordingsOutputPath);
 				ImGui.Indent();
 				ImGui.TextWrapped(Program.Options.RecordingsPath);
 				ImGui.SameLine();
-				if (ImGui.Button("Change##video"))
-					OpenSelectPath("Select the video recording output path", Program.Options.RecordingsPath, x => Program.Options.RecordingsPath = x);
+				if (ImGui.Button(changeRecordingButton))
+					OpenSelectPath(Strings.RecordingsOutputDialogTitle, Program.Options.RecordingsPath, x => Program.Options.RecordingsPath = x);
 				ImGui.Unindent();
 
-				ImGui.TextWrapped("Screenshots output path:");
+				ImGui.TextWrapped(Strings.ScreenshotOutputPath);
 				ImGui.Indent();
 				ImGui.TextWrapped(Program.Options.ScreenshotsPath);
 				ImGui.SameLine();
-				if (ImGui.Button("Change##screen"))
-					OpenSelectPath("Select the screenshots output path", Program.Options.ScreenshotsPath, x => Program.Options.ScreenshotsPath = x);
+				if (ImGui.Button(changePicButton))
+					OpenSelectPath(Strings.ScreenshotOutputDialogTitle, Program.Options.ScreenshotsPath, x => Program.Options.ScreenshotsPath = x);
 				ImGui.Unindent();
 
 				if (Program.IsWindows)
-					ImGui.Checkbox("Copy screenshots to the clipboard instead of saving as files (Press SHIFT to override during capture)", ref Program.Options.Windows_ScreenToClip);
+					ImGui.Checkbox(Strings.ScreenshotToClipboard, ref Program.Options.Windows_ScreenToClip);
 
 				StreamChannel.Draw(ref Program.Options.Streaming.Kind);
 
@@ -259,41 +290,41 @@ namespace SysDVR.Client.GUI
 				ImGui.NewLine();
 			}
 
-			if (ImGui.CollapsingHeader("Performance", ImGuiTreeNodeFlags.DefaultOpen))
+			if (ImGui.CollapsingHeader(Strings.Tab_Performance, ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 
-				ImGui.TextWrapped("These options affect the rendering pipeline of the client, when enabling 'uncapped' modes SysDVR-client will sync to the vsync event of your device, this should remove any latency due to the rendering pipeline but mey use more power on mobile devices.");
-				ImGui.Checkbox("Uncap streaming framerate", ref Program.Options.UncapStreaming);
-				ImGui.Checkbox("Uncap GUI framerate", ref Program.Options.UncapGUI);
+				ImGui.TextWrapped(Strings.PerformanceRenderingLabel);
+				ImGui.Checkbox(Strings.UncapStreaming, ref Program.Options.UncapStreaming);
+				ImGui.Checkbox(Strings.UncapGUI, ref Program.Options.UncapGUI);
 
 				ImGui.NewLine();
-				ImGui.TextWrapped("These options affect the straming quality of SysDVR, the defaults are usually fine");
+				ImGui.TextWrapped(Strings.PerformanceStreamingLabel);
 
-				ImGui.Text("Audio batching"); ImGui.SameLine();
+				ImGui.Text(Strings.AudioBatching); ImGui.SameLine();
 				ImGui.SliderInt("##SliderAudioB", ref Program.Options.Streaming.AudioBatching, 0, StreamInfo.MaxAudioBatching);
 
-				ImGui.Checkbox("Cache video packets (NAL) locally and replay them when needed", ref Program.Options.Streaming.UseNALReplay);
-				ImGui.Checkbox("Apply packet cache only to keyframes (H264 IDR frames)", ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);
+				ImGui.Checkbox(Strings.CachePackets, ref Program.Options.Streaming.UseNALReplay);
+				ImGui.Checkbox(Strings.CachePacketsKeyframes, ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);
 
 				ImGui.Unindent();
 				ImGui.NewLine();
 			}
 
-			if (ImGui.CollapsingHeader("Advanced", ImGuiTreeNodeFlags.DefaultOpen))
+			if (ImGui.CollapsingHeader(Strings.Tab_Advanced, ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 
-				ImGui.Checkbox("Force SDL software rendering", ref Program.Options.ForceSoftwareRenderer);
-				ImGui.Checkbox("Print real-time streaming information", ref Program.Options.Debug.Stats);
-				ImGui.Checkbox("Enable verbose logging", ref Program.Options.Debug.Log);
-				ImGui.Checkbox("Disable Audio/Video synchronization", ref Program.Options.Debug.NoSync);
+				ImGui.Checkbox(Strings.ForceSDLSoftwareRenderer, ref Program.Options.ForceSoftwareRenderer);
+				ImGui.Checkbox(Strings.PrintRealtimeLogs, ref Program.Options.Debug.Stats);
+				ImGui.Checkbox(Strings.VerboseDebugging, ref Program.Options.Debug.Log);
+				ImGui.Checkbox(Strings.DisableSynchronization, ref Program.Options.Debug.NoSync);
 				ImGui.NewLine();
 
-				ImGui.Checkbox("Analyze keyframe NALs during the stream", ref Program.Options.Debug.Keyframe);
-				ImGui.Checkbox("Analyze every NAL during the stream", ref Program.Options.Debug.Nal);
+				ImGui.Checkbox(Strings.AnalyzeKeyframes, ref Program.Options.Debug.Keyframe);
+				ImGui.Checkbox(Strings.AnalyzeNALs, ref Program.Options.Debug.Nal);
 
-				ImGui.Text("GUI scale"); ImGui.SameLine();
+				ImGui.Text(Strings.GuiScale); ImGui.SameLine();
 				ImGui.SliderFloat("##sliderGuiScale", ref Program.Options.GuiFontScale, 0.1f, 4);
 
 				ImGui.NewLine();
@@ -336,10 +367,8 @@ namespace SysDVR.Client.GUI
 		{
 			if (PickDecoderPopup.Begin(ImGui.GetWindowSize()))
 			{
-				Gui.CenterText("Select a decoder to use");
-				ImGui.TextWrapped("Note that not all decoders may be compatible with your system, revert this option in case of issues.\n" +
-					"You can get more decoders by obtaining a custom build of ffmpeg libraries (libavcodec) and replacing the one included in SysDVR-Client.\n\n" +
-					"This feature is intended for mini-PCs like Raspberry pi where software decoding might not be enough. On desktop PCs and smartphones this option should not be used.");
+				Gui.CenterText(Strings.DecderPopupHeading);
+				ImGui.TextWrapped(Strings.DecderPopupContent);
 
 				ImGui.NewLine();
 
@@ -363,8 +392,10 @@ namespace SysDVR.Client.GUI
 
 				ImGui.NewLine();
 
-				if (Gui.CenterButton("Cancel"))
+				if (Gui.CenterButton(GeneralStrings.CancelButton))
 					PickDecoderPopup.RequestClose();
+				
+				ImGui.EndPopup();
 			}
 		}
 
@@ -375,7 +406,7 @@ namespace SysDVR.Client.GUI
 				ImGui.TextWrapped(SettingsErrorMessage);
 				ImGui.NewLine();
 
-				if (Gui.CenterButton("Close"))
+				if (Gui.CenterButton(GeneralStrings.PopupCloseButton))
 				{
 					SettingsErrorMessage = "";
 					ErrorPopup.RequestClose();

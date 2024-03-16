@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using FFmpeg.AutoGen;
+using ImGuiNET;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
@@ -9,8 +10,13 @@ namespace SysDVR.Client.GUI
 {
     internal class MainView : View
     {
+        readonly StringTable.HomePageTable Strings = Program.Strings.HomePage;
+
         readonly string Heading;
         readonly string SecondLine;
+
+        // Only shown when compiled as DEBUG
+        readonly string DevelopmentBuild;
 
         bool HasDiskPermission;
         bool CanRequesDiskPermission;
@@ -20,8 +26,8 @@ namespace SysDVR.Client.GUI
         Gui.CenterGroup centerRadios;
         Gui.CenterGroup centerOptions;
 
-        Gui.Popup infoPoprup = new Gui.Popup("Info");
-        Gui.Popup initErrorPopup = new Gui.Popup("Initialization error");
+        Gui.Popup initErrorPopup = new Gui.Popup(Program.Strings.HomePage.InitializationErrorTitle);
+        string? initError;
 
         float uiScale;
         int ModeButtonWidth;
@@ -29,15 +35,16 @@ namespace SysDVR.Client.GUI
 
         public MainView()
         {
-            Popups.Add(infoPoprup);
             Popups.Add(initErrorPopup);
 
             Heading = "SysDVR-Client " + Program.Version;
             SecondLine = $"build id {Program.BuildID}";
+            DevelopmentBuild = TextEncoding.ToPlainText("Welcome to SysDVR-dev, do not open github issues for development versions as they come with no support");
 
             UpdateDiskPermissionStatus();
 
-            if (DynamicLibraryLoader.CriticalWarning != null)
+			initError = Program.GetInitializationError();
+			if (!string.IsNullOrWhiteSpace(initError))
                 Popups.Open(initErrorPopup);
         }
 
@@ -74,7 +81,7 @@ namespace SysDVR.Client.GUI
             Gui.CenterImage(Resources.Logo, 120);
             Gui.H1();
             Gui.CenterText(Heading);
-            ImGui.PopFont();
+			Gui.PopFont();
             Gui.CenterText(SecondLine);
 
             bool wifi = false, usb = false;
@@ -87,12 +94,12 @@ namespace SysDVR.Client.GUI
                 var center = w / 2 - ModeButtonWidth / 2;
 
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(Resources.WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += 20 * uiScale + ModeButtonHeight;
 
                 ImGui.SetCursorPos(new(center, y));
-                usb = ModeButton(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(Resources.UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
@@ -100,10 +107,10 @@ namespace SysDVR.Client.GUI
             {
                 var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton(Resources.WifiIcon, "Network mode", ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(Resources.WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
-                usb = ModeButton(Resources.UsbIcon, "USB mode", ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(Resources.UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
@@ -115,24 +122,24 @@ namespace SysDVR.Client.GUI
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
-            Gui.CenterText("Select the streaming mode");
+            Gui.CenterText(Strings.ChannelLabel);
 
             centerRadios.StartHere();
-            ChannelRadio("Video only", StreamKind.Video);
+            ChannelRadio(Strings.ChannelVideo, StreamKind.Video);
             ImGui.SameLine();
-            ChannelRadio("Audio only", StreamKind.Audio);
+            ChannelRadio(Strings.ChannelAudio, StreamKind.Audio);
             ImGui.SameLine();
-            ChannelRadio("Stream Both", StreamKind.Both);
+            ChannelRadio(Strings.ChannelBoth, StreamKind.Both);
             centerRadios.EndHere();
 
             ImGui.NewLine();
 
             if (!HasDiskPermission)
             {
-                ImGui.TextWrapped("Warning: File access permission was not granted, saving recordings may fail.");
+                ImGui.TextWrapped(Strings.FileAccess);
                 if (CanRequesDiskPermission)
                 {
-                    if (Gui.CenterButton("Request permission"))
+                    if (Gui.CenterButton(Strings.FileAccessRequestButton))
                     {
                         Resources.RequestDiskAccessPermission();
                         UpdateDiskPermissionStatus();
@@ -142,28 +149,29 @@ namespace SysDVR.Client.GUI
             }
 
             centerOptions.StartHere();
-			if (ImGui.Button("Github page"))
+			if (ImGui.Button(Strings.GithubButton))
 				SystemUtil.OpenURL("https://github.com/exelix11/SysDVR/");
 
 			ImGui.SameLine();
-			if (ImGui.Button("Guide"))
+			if (ImGui.Button(Strings.GuideButton))
 				SystemUtil.OpenURL("https://github.com/exelix11/SysDVR/wiki");
 
 			if (Program.IsWindows)
             {
                 ImGui.SameLine();
-                if (ImGui.Button("USB driver"))
+                if (ImGui.Button(Strings.DriverInstallButton))
                     Program.Instance.PushView(new Platform.Specific.Win.WinDirverInstallView());
             }
 
 			ImGui.SameLine();
-            if (ImGui.Button("Settings"))
+            if (ImGui.Button(Strings.SettingsButton))
             {
                 Program.Instance.PushView(new OptionsView());
             }
+
             centerOptions.EndHere();
 
-            DrawUnimplmentedPopup();
+            // Always draw popups last
             DrawInitErroPopup();
 
             Gui.EndWindow();
@@ -171,34 +179,22 @@ namespace SysDVR.Client.GUI
 
         void DrawInitErroPopup()
         {
-            if (initErrorPopup.Begin())
+			if (initErrorPopup.Begin())
             {
-                ImGui.TextWrapped(DynamicLibraryLoader.CriticalWarning);
+                ImGui.TextWrapped(initError);
 
                 ImGui.NewLine();
 
-                if (ImGui.Button("Close"))
+                if (ImGui.Button(GeneralStrings.PopupCloseButton))
                     initErrorPopup.RequestClose();
 
                 ImGui.EndPopup();
             }
-        }
+			else
+                Gui.CenterText(DevelopmentBuild);
+		}
 
-        void DrawUnimplmentedPopup() 
-        {
-            if (infoPoprup.Begin())
-            {
-                ImGui.Text("This feature is not implemented yet.");
-                ImGui.Text("Please check the Discord channel for updates.");
-                ImGui.NewLine();
-                if (ImGui.Button("Close"))
-                    infoPoprup.RequestClose();
-
-                ImGui.EndPopup();
-            }
-        }
-
-        void ChannelRadio(string name, StreamKind target)
+		void ChannelRadio(string name, StreamKind target)
         {
             if (ImGui.RadioButton(name, StreamMode == target))
                 StreamMode = target;
@@ -221,7 +217,7 @@ namespace SysDVR.Client.GUI
 
             Gui.H2();
             var titleLen = ImGui.CalcTextSize(title);
-            ImGui.PopFont();
+			Gui.PopFont();
 
             Vector2 imageFrame = new(
                 width - InnerPadding * 2,
@@ -259,7 +255,7 @@ namespace SysDVR.Client.GUI
             ImGui.SetCursorPos(new(x + width / 2 - titleLen.X / 2, y));
             Gui.H2();
             ImGui.Text(title);
-            ImGui.PopFont();
+			Gui.PopFont();
 
             y += InnerPadding + titleLen.Y;
 

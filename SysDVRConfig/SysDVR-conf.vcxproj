@@ -18,6 +18,7 @@
     <ClCompile Include="source\Scenes\SceneMain.cpp" />
     <ClCompile Include="source\Scenes\SceneNoConnection.cpp" />
     <ClCompile Include="source\Scenes\ScenePatches.cpp" />
+    <ClCompile Include="source\translaton.cpp" />
     <ClCompile Include="source\UI\glad.c" />
     <ClCompile Include="source\UI\Image.cpp" />
     <ClCompile Include="source\UI\imgui\imgui.cpp" />
@@ -38,6 +39,7 @@
     <ClInclude Include="source\Platform\Windows\dirent.h" />
     <ClInclude Include="source\Scenes\Common.hpp" />
     <ClInclude Include="source\Scenes\Scenes.hpp" />
+    <ClInclude Include="source\translaton.hpp" />
     <ClInclude Include="source\UI\glad.h" />
     <ClInclude Include="source\UI\Image.hpp" />
     <ClInclude Include="source\UI\imgui\imconfig.h" />
@@ -52,6 +54,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="romfs\strings\english.json" />
+    <None Include="romfs\strings\italian.json" />
+    <None Include="romfs\strings\simplifiedChinese.json" />
+    <None Include="romfs\strings\traditionalChinese.json" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
