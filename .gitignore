@@ -366,3 +366,4 @@ SysmoduleRelease/
 Client/Platform/Resources/resources/buildid.txt
 Client/Platform/Android/app/src/main/assets
 Client/Platform/Resources/win-x64/native/cimgui_r2
+*.7z

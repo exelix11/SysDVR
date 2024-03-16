@@ -62,6 +62,9 @@ namespace Strings
 		std::string NewerVersion = "You're using a newer version of SysDVR";
 
 		std::string VersionTroubleshoot = "Please download the latest settings app from github.";
+
+		std::string NotInstalled = "SysDVR is not installed on your console";
+		std::string NotInsalledSecondLine = "The file /atmosphere/contents/00FF0000A53BB665/exefs.nsp was not found on your SD card, this means you did not extract the SysDVR zip correctly. Fix the issue then reboot the console.";
 	};
 
 	struct PatchesTable
