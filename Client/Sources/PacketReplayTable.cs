@@ -62,12 +62,12 @@ namespace SysDVR.Client.Sources
 			}
 		}
 
-		public bool LookupSlot(int slot, out PoolBuffer buffer)
+		public bool LookupSlot(int slot, out PoolBuffer? buffer)
 		{
 			// invaid slot
 			if (slot == 0xFF)
 			{
-				buffer = default;
+				buffer = null;
 				return false;
 			}
 

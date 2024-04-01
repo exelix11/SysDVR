@@ -1,15 +1,8 @@
 ﻿using SysDVR.Client.Sources;
-using SysDVR.Client.Targets;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
+using System.Collections.Concurrent;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
@@ -56,16 +49,48 @@ namespace SysDVR.Client.Core
 
 	class PoolBuffer
 	{
-		private readonly static ArrayPool<byte> pool = ArrayPool<byte>.Shared;
+		readonly static ArrayPool<byte> bufferPool = ArrayPool<byte>.Shared;
+		readonly static ConcurrentBag<PoolBuffer> instancePool = new();
 
 		public int Length { get; private set; }
 		private byte[] _buffer;
 		private int refcount;
 
 		public byte[] RawBuffer => _buffer ?? throw new Exception("The buffer has been freed");
+		public bool IsFree => refcount == 0;
+
+		private static PoolBuffer GetInstance() 
+		{
+			if (instancePool.TryTake(out var instance))
+				return instance;
+
+			return new PoolBuffer();
+		}
+
+		private void ReturnToPool() 
+		{
+			if (!IsFree)
+				throw new Exception("Attempted to return a non-free buffer to the pool");
+
+			Length = 0;
+			_buffer = null;
+			refcount = 0;
+
+			instancePool.Add(this);
+		}
+
+		private void Configure(byte[] buf, int len)
+		{
+			Length = len;
+			_buffer = buf;
+			refcount = 1;
+		}
 
 		public void Reference()
 		{
+			if (IsFree || _buffer == null)
+				throw new Exception("Attempted to reference an invalid buffer");
+
 			Interlocked.Increment(ref refcount);
 		}
 
@@ -73,16 +98,13 @@ namespace SysDVR.Client.Core
 		{
 			Interlocked.Decrement(ref refcount);
 
-#if DEBUG
 			if (refcount < 0)
 				throw new Exception("Buffer refcount is negative");
-#endif
 
 			if (refcount == 0)
 			{
-				pool.Return(RawBuffer);
-				_buffer = null;
-				GC.SuppressFinalize(this);
+				bufferPool.Return(RawBuffer);
+				ReturnToPool();
 			}
 		}
 
@@ -90,23 +112,18 @@ namespace SysDVR.Client.Core
 		{
 			if (len == 0)
 				throw new Exception("Invalid lngth");
-			return new PoolBuffer(pool.Rent(len), len);
-		}
-
-		private PoolBuffer(byte[] buf, int len)
-		{
-			Length = len;
-			_buffer = buf;
-			refcount = 1;
+			
+			var res = GetInstance();
+			res.Configure(bufferPool.Rent(len), len);
+			return res;
 		}
 
 		~PoolBuffer()
 		{
-			if (refcount != 0)
+			if (!IsFree)
 			{
-#if DEBUG
-				Console.WriteLine($"Buffer was not freed {refcount}");
-#endif
+				// It is normal to see this on shutdown since we might be closing with some buffers stuck in the pipeline
+				Program.DebugLog($"A buffer was not freed len={Length} ref={refcount}");
 				refcount = 1;
 				Free();
 			}
@@ -156,18 +173,12 @@ namespace SysDVR.Client.Core
 				return false;
 		}
 
-		protected virtual void UseCancellationTokenImpl(CancellationToken tok)
-		{
-			Cancel = tok;
-			Next?.UseCancellationToken(tok);
-		}
-
 		protected abstract void SendDataImpl(PoolBuffer block, ulong ts);
 
 		// This must be called before sending any data
-		public void UseCancellationToken(CancellationToken tok)
+		public virtual void UseCancellationToken(CancellationToken tok)
 		{
-			UseCancellationTokenImpl(tok);
+			Cancel = tok;
 			Next?.UseCancellationToken(tok);
 		}
 
@@ -314,7 +325,7 @@ namespace SysDVR.Client.Core
 								packet.Buffer?.Free();
 								if (!Replay.LookupSlot(packet.Header.ReplaySlot, out packet.Buffer))
 								{
-									Console.WriteLine("Unknown hash value, skipping packet");
+									ReportError("Unknown hash value, skipping packet");
 									continue;
 								}
 							}
@@ -337,7 +348,8 @@ namespace SysDVR.Client.Core
 			}
 			finally
 			{
-				packet.Buffer?.Free();
+				if (packet.Buffer is { IsFree: false })
+					packet.Buffer.Free();
 			}
 		}
 
