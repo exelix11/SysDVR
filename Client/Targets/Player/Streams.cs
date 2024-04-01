@@ -333,9 +333,10 @@ namespace SysDVR.Client.Targets.Player
             onFrame = ctx.OnFrameEvent;
         }
 
-        protected override void UseCancellationTokenImpl(CancellationToken tok)
-        {
-            base.UseCancellationTokenImpl(tok);
+		public override void UseCancellationToken(CancellationToken tok)
+		{
+            base.UseCancellationToken(tok);
+            
             // Start the consumer only after the token is set
             VideoConsumerTask = Task.Run(ConsumeVideoAsync);
         }
