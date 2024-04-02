@@ -144,7 +144,7 @@ namespace SysDVR.Client.Targets.Player
                     int toCopy = Math.Min(currentBlock.Length - currentOffset, buffer.Length);
 
                     // Perform the copy
-                    var source = currentBlock.RawBuffer.AsSpan().Slice(currentOffset, toCopy);
+                    var source = currentBlock.Span.Slice(currentOffset, toCopy);
                     MixToBuffer(source, buffer.Slice(0, toCopy));
 
                     // Cut the SDL buffer to the remainig free space
@@ -367,13 +367,12 @@ namespace SysDVR.Client.Targets.Player
         long firstTs = -1;
         public unsafe int DecodePacket(PoolBuffer data, ulong ts)
         {
-            byte[] buffer = data.RawBuffer;
             int size = data.Length;
 
             if (firstTs == -1)
                 firstTs = (long)ts;
 
-            fixed (byte* nal_data = buffer)
+            fixed (byte* nal_data = data.Span)
             {
                 var pkt = packet;
                 pkt->data = nal_data;

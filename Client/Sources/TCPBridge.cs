@@ -325,7 +325,7 @@ namespace SysDVR.Client.Sources
 					data = PoolBuffer.Rent(header.DataSize);
 					try
 					{
-						await ReadExact(data.RawBuffer, 0, header.DataSize).ConfigureAwait(false);
+						await ReadExact(data.GetRawArray(), 0, header.DataSize).ConfigureAwait(false);
 					}
 					catch
 					{

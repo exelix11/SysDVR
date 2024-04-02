@@ -2,6 +2,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,8 +57,9 @@ namespace SysDVR.Client.Core
 		private byte[] _buffer;
 		private int refcount;
 
-		public byte[] RawBuffer => _buffer ?? throw new Exception("The buffer has been freed");
-		public bool IsFree => refcount == 0;
+		public bool IsFree => refcount == 0 || _buffer is null;
+		
+		public byte[] GetRawArray([CallerMemberName] string? caller = null) => _buffer ?? throw new Exception($"The buffer has been freed [{caller}]");
 
 		private static PoolBuffer GetInstance() 
 		{
@@ -88,7 +90,7 @@ namespace SysDVR.Client.Core
 
 		public void Reference()
 		{
-			if (IsFree || _buffer == null)
+			if (IsFree)
 				throw new Exception("Attempted to reference an invalid buffer");
 
 			Interlocked.Increment(ref refcount);
@@ -96,6 +98,9 @@ namespace SysDVR.Client.Core
 
 		public void Free()
 		{
+			if (IsFree)
+				throw new Exception("Attempted to free an invalid buffer");
+
 			Interlocked.Decrement(ref refcount);
 
 			if (refcount < 0)
@@ -103,7 +108,7 @@ namespace SysDVR.Client.Core
 
 			if (refcount == 0)
 			{
-				bufferPool.Return(RawBuffer);
+				bufferPool.Return(_buffer);
 				ReturnToPool();
 			}
 		}
@@ -130,15 +135,13 @@ namespace SysDVR.Client.Core
 		}
 
 		public Span<byte> Span =>
-			new Span<byte>(RawBuffer, 0, Length);
+			new Span<byte>(GetRawArray(), 0, Length);
 
 		public Memory<byte> Memory =>
-			new Memory<byte>(RawBuffer, 0, Length);
+			new Memory<byte>(GetRawArray(), 0, Length);
 
 		public ArraySegment<byte> ArraySegment =>
-			new ArraySegment<byte>(RawBuffer, 0, Length);
-
-		public static implicit operator Span<byte>(PoolBuffer o) => o.Span;
+			new ArraySegment<byte>(GetRawArray(), 0, Length);
 	}
 
 	abstract class OutStream : IDisposable

@@ -102,7 +102,7 @@ namespace SysDVR.Client.Targets.FileOutput
         long firstTs = -1;
         // need to fill the encoder frame before sending it, it can also happen across SendData calls
         int frameFreeSpace = 0;
-        private void SendData(byte[] data, int size, ulong ts)
+        private void SendData(Span<byte> data, ulong ts)
         {
             if (!running)
                 return;
@@ -115,8 +115,7 @@ namespace SysDVR.Client.Targets.FileOutput
                     firstTs = FirstTimestamp.GetOrSet(ts);
 
                 // Should look into endianness for this
-                Span<byte> d = new Span<byte>(data, 0, size);
-                while (d.Length > 0 && running)
+                while (data.Length > 0 && running)
                 {
                     bool newframe = frameFreeSpace == 0;
 
@@ -134,10 +133,10 @@ namespace SysDVR.Client.Targets.FileOutput
                     }
 
                     Span<byte> target = new Span<byte>(frame->data[0] + frame->linesize[0] - frameFreeSpace, frameFreeSpace);
-                    int copyBytes = Math.Min(d.Length, frameFreeSpace);
+                    int copyBytes = Math.Min(data.Length, frameFreeSpace);
 
-                    d.Slice(0, copyBytes).CopyTo(target);
-                    d = d.Slice(copyBytes);
+                    data.Slice(0, copyBytes).CopyTo(target);
+					data = data.Slice(copyBytes);
                     frameFreeSpace -= copyBytes;
 
                     if (frameFreeSpace == 0)
@@ -188,7 +187,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            SendData(block.RawBuffer, block.Length, ts);
+            SendData(block.Span, ts);
             block.Free();
         }
 
@@ -226,7 +225,7 @@ namespace SysDVR.Client.Targets.FileOutput
         }
 
         long firstTs = -1;
-        private void SendData(byte[] data, int size, ulong ts)
+        private void SendData(Span<byte> data, ulong ts)
         {
             if (!running)
                 return;
@@ -236,13 +235,12 @@ namespace SysDVR.Client.Targets.FileOutput
                 // Must add SPS and PPS to the first frame manually to keep ffmpeg happy
                 if (firstTs == -1)
                 {
-                    byte[] next = new byte[size + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
+                    byte[] next = new byte[data.Length + StreamInfo.SPS.Length + StreamInfo.PPS.Length];
                     Buffer.BlockCopy(StreamInfo.SPS, 0, next, 0, StreamInfo.SPS.Length);
                     Buffer.BlockCopy(StreamInfo.PPS, 0, next, StreamInfo.SPS.Length, StreamInfo.PPS.Length);
-                    Buffer.BlockCopy(data, 0, next, StreamInfo.SPS.Length + StreamInfo.PPS.Length, size);
+                    data.CopyTo(next.AsSpan(StreamInfo.SPS.Length + StreamInfo.PPS.Length, data.Length));
 
                     data = next;
-                    size = next.Length;
 
                     firstTs = FirstTimestamp.GetOrSet(ts);
                 }
@@ -252,7 +250,7 @@ namespace SysDVR.Client.Targets.FileOutput
                     AVPacket* pkt = av_packet_alloc();
 
                     pkt->data = nal_data;
-                    pkt->size = size;
+                    pkt->size = data.Length;
                     pkt->dts = pkt->pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
                     pkt->stream_index = 0;
 
@@ -266,7 +264,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)
         {
-            SendData(block.RawBuffer, block.Length, ts);
+            SendData(block.Span, ts);
             block.Free();
         }
     }
