@@ -54,12 +54,12 @@ namespace SysDVR.Client.Core
 		readonly static ConcurrentBag<PoolBuffer> instancePool = new();
 
 		public int Length { get; private set; }
-		private byte[] _buffer;
+		private byte[] buffer;
 		private int refcount;
 
-		public bool IsFree => refcount == 0 || _buffer is null;
+		public bool IsFree => refcount <= 0;
 		
-		public byte[] GetRawArray([CallerMemberName] string? caller = null) => _buffer ?? throw new Exception($"The buffer has been freed [{caller}]");
+		public byte[] GetRawArray([CallerMemberName] string? caller = null) => buffer ?? throw new Exception($"The buffer has been freed [{caller}]");
 
 		private static PoolBuffer GetInstance() 
 		{
@@ -69,22 +69,25 @@ namespace SysDVR.Client.Core
 			return new PoolBuffer();
 		}
 
-		private void ReturnToPool() 
+		private static void ReturnToPool(PoolBuffer buffer) 
 		{
-			if (!IsFree)
+			if (!buffer.IsFree)
 				throw new Exception("Attempted to return a non-free buffer to the pool");
 
-			Length = 0;
-			_buffer = null;
-			refcount = 0;
+			buffer.Length = 0;
+			buffer.refcount = 0;
+			buffer.buffer = null;
 
-			instancePool.Add(this);
+			instancePool.Add(buffer);
 		}
 
 		private void Configure(byte[] buf, int len)
 		{
+			if (buf == null)
+				throw new Exception("Can't initialize a pooled buffer from null");
+
 			Length = len;
-			_buffer = buf;
+			buffer = buf;
 			refcount = 1;
 		}
 
@@ -96,20 +99,22 @@ namespace SysDVR.Client.Core
 			Interlocked.Increment(ref refcount);
 		}
 
+		// It is actually fine to not call free and leak this buffer,
+		// The GC will collect it but next time we need a buffer it will be allocated from scratch adding GC pressure and potentially stuttering
 		public void Free()
 		{
 			if (IsFree)
 				throw new Exception("Attempted to free an invalid buffer");
 
-			Interlocked.Decrement(ref refcount);
+			var curCount = Interlocked.Decrement(ref refcount);
 
-			if (refcount < 0)
+			if (curCount < 0)
 				throw new Exception("Buffer refcount is negative");
 
-			if (refcount == 0)
+			if (curCount == 0)
 			{
-				bufferPool.Return(_buffer);
-				ReturnToPool();
+				bufferPool.Return(buffer);
+				ReturnToPool(this);
 			}
 		}
 
@@ -121,17 +126,6 @@ namespace SysDVR.Client.Core
 			var res = GetInstance();
 			res.Configure(bufferPool.Rent(len), len);
 			return res;
-		}
-
-		~PoolBuffer()
-		{
-			if (!IsFree)
-			{
-				// It is normal to see this on shutdown since we might be closing with some buffers stuck in the pipeline
-				Program.DebugLog($"A buffer was not freed len={Length} ref={refcount}");
-				refcount = 1;
-				Free();
-			}
 		}
 
 		public Span<byte> Span =>
