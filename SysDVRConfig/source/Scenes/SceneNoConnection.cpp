@@ -1,6 +1,8 @@
 #include "Scenes.hpp"
 #include "Common.hpp"
 
+#include "../translaton.hpp"
+
 namespace scenes {
 	// From fatal error resources
 	extern Image::Img errorQrUrl;
@@ -10,15 +12,15 @@ namespace scenes {
 		SetupMainWindow("No connection");
 		CenterImage(SysDVRLogo, 1);
 
-		CenterText("Couldn't connect to SysDVR.");
-		CenterText("If you just installed it reboot, otherwise wait a bit and try again.\nThis is normal if you're using an USB-Only version of SysDVR.");
+		CenterText(Strings::Error.SysmoduleConnectionFailed);
+		CenterText(Strings::Error.SysmoduleConnectionTroubleshoot);
 
 		ImGui::NewLine();
-		CenterText("For support check the troubleshooting page:");
+		CenterText(Strings::Error.SysmoduleConnectionTroubleshootLink);
 		CenterImage(errorQrUrl, 0.8f);
 		CenterText("github.com/exelix11/SysDVR/wiki/Troubleshooting");
 
-		auto selection = ImGuiCenterButtons({ "  Click or press + to exit  ", "   dvr-patches manager   " });
+		auto selection = ImGuiCenterButtons<std::string_view>({ Strings::Error.FailExitButton, Strings::Main.OptPatchManager });
 		
 		if (selection == 0)
 			app::RequestExit();

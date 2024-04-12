@@ -29,8 +29,15 @@ public class ClientApp
         ShowDebugInfo = Program.Options.Debug.Log;
 	}
 
-    public ImFontPtr FontH1 { get; private set; }
-    public ImFontPtr FontH2 { get; private set; }
+
+	// Fonts are loaded at double the resolution to reduce blurriness when scaling on high DPI
+	const int FontMultiplier = 2;
+	const int FontTextSize = 30 * FontMultiplier;
+	const float FontH1Size = 45 * FontMultiplier;
+	const float FontH2Size = 40 * FontMultiplier;
+	
+    public const float FontH1Scale = FontH1Size / FontTextSize;
+    public const float FontH2Scale = FontH2Size / FontTextSize;
     public ImFontPtr FontText { get; private set; }
 
 	public bool IsPortrait { get; private set; }
@@ -220,34 +227,51 @@ public class ClientApp
         BackupDeafaultStyle();
     }
 
-    internal void InitializeFonts() 
+	ImVector GetFontRanges()
     {
-        // Fonts are loaded at double the resolution to reduce blurriness when scaling on high DPI
-        const int FontMultiplier = 2;
-        const int FontTextSize = 30 * FontMultiplier;
-        const int FontH1Size = 45 * FontMultiplier;
-        const int FontH2Size = 40 * FontMultiplier;
+        var baseRange = Program.Strings.ImGuiGlyphRange switch
+        {   
+            StringTableMetadata.GlyphRange.ChineseSimplifiedCommon => ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon(),
+            StringTableMetadata.GlyphRange.Cyrillic => ImGui.GetIO().Fonts.GetGlyphRangesCyrillic(),
+            StringTableMetadata.GlyphRange.Japanese => ImGui.GetIO().Fonts.GetGlyphRangesJapanese(),
+            StringTableMetadata.GlyphRange.Korean => ImGui.GetIO().Fonts.GetGlyphRangesKorean(),
+            StringTableMetadata.GlyphRange.Thai => ImGui.GetIO().Fonts.GetGlyphRangesThai(),
+            StringTableMetadata.GlyphRange.Vietnamese => ImGui.GetIO().Fonts.GetGlyphRangesVietnamese(),
+            // Default to this so all fants always have at least the ASCII range
+            _ => ImGui.GetIO().Fonts.GetGlyphRangesDefault()
+        };
 
-        var fontData = Resources.ReadResouce(Resources.MainFont);
+		var ptr = ImFontGlyphRangesBuilderPtr.Create();
+
+		if (baseRange != 0)
+			ptr.AddRanges(baseRange);
+
+		foreach (var s in Program.Strings.GetAllStringForFontBuilding())
+			ptr.AddText(s);
+
+		ptr.BuildRanges(out var imvec);
+		ptr.Destroy();
+		return imvec;
+	}
+
+	internal void InitializeFonts() 
+    {
+        ImGui.GetIO().Fonts.Flags |= ImFontAtlasFlags.NoPowerOfTwoHeight;
+		var fontData = Resources.ReadResouce(Resources.MainFont);
 		
         unsafe
 		{
-			// TODO: Multilanguage support, we need to add unicode ranges of the languages we want to support
-			// However this also needs using a font file that includes them, we could try Google Noto but those come as multiple files
-			// and we would need to manually sort out which languages we want to support by unicode ranges
-			// There is also probably a limit in texture size cause using range 0x0020 to 0xFFFF seems to fail...
-            // For now let imgui figure it out on its own
-			ushort* fontRange = null; //stackalloc ushort[] { 0x0020, 0x1FFF, 0 };
+            var fontRange = GetFontRanges();
 
 			fixed (byte* fontPtr = fontData)
             {
-                FontText = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontTextSize, null, fontRange);
-                FontH1 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontH1Size, null, fontRange);
-                FontH2 = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontH2Size, null, fontRange);
+				FontText = ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontPtr, fontData.Length, FontTextSize, null, fontRange.Data);
 
                 // fontPtr and FontRange must be kept pinned until the atlases have actually been built or else bad things will happen
                 ImGui.GetIO().Fonts.Build();
             }
+
+            fontRange.Free();
 		}
 	}
 

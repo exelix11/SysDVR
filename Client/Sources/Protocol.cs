@@ -69,7 +69,8 @@ namespace SysDVR.Client.Sources
         private byte VideoFlags;
         public byte AudioBatching;
 
-        fixed byte Reserved[7];
+        byte FeatureFlags;
+        fixed byte Reserved[6];
 
         static int Bit(int i) => 1 << i;
 
@@ -110,6 +111,12 @@ namespace SysDVR.Client.Sources
             get => (VideoFlags & Bit(1)) != 0;
             set => SetBit(ref VideoFlags, 1, value);
         }
+
+        public bool TurnOffConsoleScreen
+        {
+			get => (FeatureFlags & Bit(0)) != 0;
+			set => SetBit(ref FeatureFlags, 0, value);
+		}
 
         static ProtoHandshakeRequest() 
         {
@@ -169,7 +176,7 @@ namespace SysDVR.Client.Sources
                 return;
 
             if (code == 1) //Handshake_WrongVersion
-                throw new Exception($"{tag} handshake failed: Wrong protocol version. Update SysDVR");
+                throw new Exception($"{tag} {Program.Strings.Errors.ConsoleRejectWrongVersion} {Program.Strings.Errors.VersionTroubleshooting}");
 
             // Other codes are internal checks so shouldn't happen often
             throw new Exception($"{tag} handshake failed: error code {code}");
@@ -184,7 +191,7 @@ namespace SysDVR.Client.Sources
             // TODO: add future protocol compatibility adapters here
 
             if (str[.. "SysDVR|".Length] != "SysDVR|")
-				throw new Exception("Invalid handshake hello packet (header)");
+				throw new Exception($"{Program.Strings.Errors.InitialPacketError} {Program.Strings.Errors.VersionTroubleshooting}");
 
             if (str.Last() != '\0')
 				throw new Exception("Invalid handshake hello packet (terminator)");
@@ -204,7 +211,7 @@ namespace SysDVR.Client.Sources
 
             // TODO: Add backwards compatibility adapters here
             if (version != ProtoHandshakeRequest.CurrentProtocolVersion)
-                throw new Exception($"{StreamProduced} handshake failed: Wrong protocol version. Update SysDVR.");
+                throw new Exception($"{StreamProduced} {Program.Strings.Errors.InitialPacketWrongVersion} {Program.Strings.Errors.VersionTroubleshooting}");
 
             ProtoHandshakeRequest req = new();
 
@@ -219,7 +226,9 @@ namespace SysDVR.Client.Sources
             req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;
             req.IsAudioPacket = StreamProduced is StreamKind.Both or StreamKind.Audio;
 
-            uint res = await SendHandshakePacket(req).ConfigureAwait(false);
+            req.TurnOffConsoleScreen = Options.TurnOffConsoleScreen;
+
+			uint res = await SendHandshakePacket(req).ConfigureAwait(false);
             ThrowOnHandshakeCode("Console", res);
         }
 

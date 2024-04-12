@@ -14,6 +14,8 @@ namespace SysDVR.Client.GUI
 {
     internal class ConnectingView : View
     {
+        readonly StringTable.ConnectionTable Strings = Program.Strings.Connection;
+
         readonly DeviceInfo info;
         readonly DeviceConnector conn;
 
@@ -110,8 +112,11 @@ namespace SysDVR.Client.GUI
             ImGui.NewLine();
 
             Gui.H2();
-            Gui.CenterText(isError ? "Fatal error" : "Connecting, please wait");
-            ImGui.PopFont();
+
+            var title = isError ? Strings.Error : Strings.Title;
+			Gui.CenterText(title);
+			
+            Gui.PopFont();
 
             Gui.CenterText(info.ToString());
             
@@ -122,7 +127,9 @@ namespace SysDVR.Client.GUI
                 ImGui.TextWrapped(errorLine);
 
             Gui.CursorFromBottom(btnSize.Y);
-            if (Gui.CenterButton(isError ? "Go back" : "Cancel", btnSize))
+
+            var text = isError ? GeneralStrings.BackButton : GeneralStrings.CancelButton;
+			if (Gui.CenterButton(text, btnSize))
                 BackPressed();
 
             Gui.EndWindow();

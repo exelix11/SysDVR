@@ -80,4 +80,8 @@ void Platform::Reboot()
 	exit(0);
 }
 
+std::string_view Platform::GetSystemLanguage()
+{
+	return "SetLanguage_ENUS";
+}
 #endif

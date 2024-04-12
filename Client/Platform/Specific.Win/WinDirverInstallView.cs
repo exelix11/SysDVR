@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.Core;
 using SysDVR.Client.GUI;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,8 @@ namespace SysDVR.Client.Platform.Specific.Win
 {
 	internal class WinDirverInstallView : View
 	{
+		readonly StringTable.UsbDriverTable Strings = Program.Strings.UsbDriver;
+
 		string DriverStatus;
 
 		bool IsInstalling;
@@ -23,7 +26,7 @@ namespace SysDVR.Client.Platform.Specific.Win
 			}
 			catch (Exception ex) 
 			{
-				DriverStatus = "Error while detecting the driver state: " + ex.Message;
+				DriverStatus = $"{Strings.DetectionFailed} : {ex}";
 				Console.WriteLine(ex.ToString());
 			}
 		}
@@ -48,11 +51,11 @@ namespace SysDVR.Client.Platform.Specific.Win
 			try
 			{
 				await WinDriverInstall.Install((s) => InstallationState = s + "\n");
-				DriverStatus = "The installation was succesful";
+				DriverStatus = Strings.InstallSucceeded;
 			}
 			catch (Exception ex) 
 			{
-				DriverStatus = "Installation failed: " + ex.ToString();
+				DriverStatus = $"{Strings.InstallFailed} : {ex}";
 			}
 
 			IsInstalling = false;
@@ -64,7 +67,7 @@ namespace SysDVR.Client.Platform.Specific.Win
 			if (!Gui.BeginWindow("Driver install"))
 				return;
 
-			Gui.CenterText("Driver install");
+			Gui.CenterText(Strings.Title);
 			ImGui.NewLine();
 
 			var portrait = Program.Instance.IsPortrait;
@@ -74,13 +77,12 @@ namespace SysDVR.Client.Platform.Specific.Win
 			sz.Y = Gui.ButtonHeight();
 			sz.X *= portrait ? .92f : .82f;
 
-			ImGui.TextWrapped("SysDVR now uses standard Android ADB drivers");
-			ImGui.TextWrapped("The driver is signed by Google, so it is safe to install and doesn't require any complex install steps.");
+			ImGui.TextWrapped(Strings.Description);
 			ImGui.NewLine();
 
 			if (IsInstalling)
 			{
-				ImGui.TextWrapped("Installation in progress...");
+				ImGui.TextWrapped(Strings.Installing);
 				ImGui.TextWrapped(InstallationState);
 			}
 			else
@@ -88,20 +90,20 @@ namespace SysDVR.Client.Platform.Specific.Win
 				ImGui.TextWrapped(DriverStatus);
 				ImGui.NewLine();
 
-				if (Gui.CenterButton("Install", sz))
+				if (Gui.CenterButton(Strings.InstallButton, sz))
 					InstallDriver();
 
-				if (Gui.CenterButton("Check status again", sz))
+				if (Gui.CenterButton(Strings.CheckAgainButton, sz))
 					CheckStatus();
 
 				ImGui.NewLine();
-				ImGui.TextWrapped("If you choose to install the driver it will be downloaded from");
+				ImGui.TextWrapped(Strings.InstallInfo);
 				ImGui.TextWrapped(WinDriverInstall.DriverUrl);
-				ImGui.TextWrapped("The expected SHA256 hash of the zip file is " + WinDriverInstall.DriverHash);
+				ImGui.TextWrapped($"{Strings.FileHashInfo} {WinDriverInstall.DriverHash}");
 				ImGui.NewLine();
 
 				Gui.CursorFromBottom(sz.Y);
-				if (Gui.CenterButton("Back", sz))
+				if (Gui.CenterButton(GeneralStrings.BackButton, sz))
 					BackPressed();
 			}
 

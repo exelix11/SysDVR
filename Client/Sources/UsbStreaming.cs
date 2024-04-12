@@ -34,7 +34,7 @@ namespace SysDVR.Client.Sources
 
 		bool Reconnect(string reason)
 		{
-			ReportMessage($"USB warning: Couldn't communicate with the console ({reason}). Resetting the connection...");
+			ReportMessage(string.Format(Program.Strings.Errors.UsbResetMessage, reason));
 			if (device.TryReconnect())
 			{
 				(reader, writer) = device.Open();
@@ -60,7 +60,7 @@ namespace SysDVR.Client.Sources
 				}
 				catch (Exception e)
 				{
-                    ReportMessage($"USB warning: Couldn't communicate with the console. Try entering a compatible game, unplugging your console or restarting it.");
+                    ReportMessage(Program.Strings.Errors.UsbTimeoutError);
 
                     if (!Cancellation.IsCancellationRequested)
 						await Task.Delay(1000, Cancellation).ConfigureAwait(false);

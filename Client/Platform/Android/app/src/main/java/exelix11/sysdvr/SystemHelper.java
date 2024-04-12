@@ -8,6 +8,8 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 
+import java.util.ArrayList;
+
 public class SystemHelper {
     public static boolean OpenURL(String Url) {
         try {
@@ -94,5 +96,17 @@ public class SystemHelper {
         {
             sysdvrActivity.Log("RequestFilePermission failed: " + ex.toString());
         }
+    }
+
+    public static String[] ListAssetsContent(String path)
+    {
+        try {
+            return sysdvrActivity.instance.getAssets().list(path);
+        }
+        catch (Exception ex)
+        {
+            sysdvrActivity.Log("ListAssetsContent("+ path + ") failed: " + ex.toString());
+        }
+        return new String[0];
     }
 }

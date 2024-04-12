@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.IO;
+using System.ComponentModel;
 
 namespace SysDVR.Client.GUI
 {
@@ -68,7 +69,10 @@ namespace SysDVR.Client.GUI
             }
 
             if (manager.HasAudio)
+            {
                 Audio = new(manager.AudioTarget);
+				manager.AudioTarget.Volume = Program.Options.DefaultVolume / 100f;
+			}
 
             manager.UseSyncManager(sync);
         }
@@ -132,18 +136,18 @@ namespace SysDVR.Client.GUI
             {
                 if (Video.DecoderName != Program.Options.DecoderName)
                 {
-                    return $"Decoder {Program.Options.DecoderName} not found, using {Video.DecoderName} instead.";
+                    return string.Format(Program.Strings.Player.CustomDecoderError, Program.Options.DecoderName, Video.DecoderName);
                 }
                 else
                 {
-                    return $"Using custom decoder {Program.Options.DecoderName}, in case of issues try disabling this option to use the default one.";
+                    return string.Format(Program.Strings.Player.CustomDecoderEnabled, Program.Options.DecoderName);
                 }
             }
 
             if (Video.AcceleratedDecotr)
             {
-                return $"Using the {Video.DecoderName} hardware accelerated video decoder, in case of issues try to use the default one by disabling this option.";
-            }
+				return string.Format(Program.Strings.Player.CustomDecoderEnabled, Video.DecoderName);
+			}
 
             return null;
         }
@@ -224,6 +228,8 @@ namespace SysDVR.Client.GUI
 
     internal class PlayerView : View
     {
+        public readonly StringTable.PlayerTable Strings = Program.Strings.Player;
+
         readonly bool HasAudio;
         readonly bool HasVideo;
 
@@ -235,15 +241,17 @@ namespace SysDVR.Client.GUI
 
         Gui.CenterGroup uiOptCenter;
         Gui.CenterGroup quitOptCenter;
-        Gui.Popup quitConfirm = new("Confirm quit");
-        Gui.Popup fatalError = new("Fatal error");
+        Gui.Popup quitConfirm = new(Program.Strings.Player.ConfirmQuitPopupTitle);
+        Gui.Popup fatalError = new(Program.Strings.General.PopupErrorTitle);
 
         bool drawUi;
         string fatalMessage;
 
         public bool IsRecording => videoRecorder is not null;
-        string recordingButtonText = "Start recording";
+        string recordingButtonText = Program.Strings.Player.StartRecording;
         Mp4Output? videoRecorder;
+
+        readonly string volumePercentFormat;
 
         void MessageUi(string message)
         {
@@ -299,11 +307,12 @@ namespace SysDVR.Client.GUI
             drawUi = OverlayAlwaysShowing;
 
             if (Program.Options.PlayerHotkeys && !Program.IsAndroid) // Android is less likely to have a keyboard so don't show the hint. The hotkeys still work.
-                MessageUi("Player shortcuts:\n" +
-                    " - S : capture screenshot\n" +
-                    " - R : start/stop recording\n" +
-                    " - F : toggle full screen\n" +
-                    " - Esc : quit");
+                MessageUi(Strings.Shortcuts);
+
+            // Convert C# format to ImGui format
+            volumePercentFormat = Strings.VolumePercent
+                .Replace("%", "%%") // escape the % sign
+                .Replace("{0}", "%d"); // replace the format specifier
         }
 
         private void Manager_OnErrorMessage(string obj) =>
@@ -323,8 +332,8 @@ namespace SysDVR.Client.GUI
             if (!HasVideo)
             {
                 Gui.H2();
-                Gui.CenterText("Streaming is set to audio-only mode.");
-                ImGui.PopFont();
+                Gui.CenterText(Strings.AudioOnlyMode);
+				Gui.PopFont();
             }
 
             for (int i = 0; i < notifications.Count; i++)
@@ -350,7 +359,7 @@ namespace SysDVR.Client.GUI
             if (fatalError.Begin(ImGui.GetIO().DisplaySize * 0.95f))
             {
                 ImGui.TextWrapped(fatalMessage);
-                if (Gui.CenterButton("  Ok  "))
+                if (Gui.CenterButton(GeneralStrings.PopupCloseButton))
                     Program.Instance.PopView();
 
                 Gui.MakeWindowScrollable();
@@ -372,6 +381,10 @@ namespace SysDVR.Client.GUI
 				ButtonToggleRecording();
             if (key.sym == SDL_Keycode.SDLK_f)
                 Program.SdlCtx.SetFullScreen(!Program.SdlCtx.IsFullscreen);
+            if (key.sym == SDL_Keycode.SDLK_UP && player.Manager.AudioTarget is not null)
+                player.Manager.AudioTarget.Volume += 0.1f;
+			if (key.sym == SDL_Keycode.SDLK_DOWN && player.Manager.AudioTarget is not null)
+				player.Manager.AudioTarget.Volume -= 0.1f;
 		}
 
         public override void BackPressed()
@@ -404,6 +417,20 @@ namespace SysDVR.Client.GUI
             }
         }
 
+        void DrawVolumeSlider(float x, float width) 
+        {
+			if (player.Manager.AudioTarget is not null)
+			{
+				var vol = (int)(player.Manager.AudioTarget.Volume * 100);
+				var volnew = vol;
+				ImGui.SetCursorPosX(x);
+				ImGui.PushItemWidth(width);
+				ImGui.SliderInt("##VolumeSlider", ref volnew, 0, 100, volumePercentFormat);
+				if (vol != volnew)
+					player.Manager.AudioTarget.Volume = volnew / 100f;
+			}
+		}
+
         void DrawOverlayMenu()
         {
             float OverlayY = ImGui.GetWindowSize().Y;
@@ -424,24 +451,30 @@ namespace SysDVR.Client.GUI
                 if (HasVideo)
                 {
                     ImGui.SetCursorPosX(center);
-                    if (ImGui.Button("Screenshot", btnsize)) ButtonScreenshot();
+                    if (ImGui.Button(Strings.TakeScreenshot, btnsize)) ButtonScreenshot();
                 }
 
                 ImGui.SetCursorPosX(center);
                 if (ImGui.Button(recordingButtonText, btnsize)) ButtonToggleRecording();
 
                 ImGui.SetCursorPosX(center);
-                if (ImGui.Button("Stop streaming", btnsize)) ButtonQuit();
+                if (ImGui.Button(Strings.StopStreaming, btnsize)) ButtonQuit();
+
+                if (Program.Options.Debug.Log)
+                {
+                    ImGui.SetCursorPosX(center);
+                    if (ImGui.Button(Strings.DebugInfo, btnsize)) ButtonStats();
+                }
 
                 ImGui.SetCursorPosX(center);
-                if (ImGui.Button("Debug info", btnsize)) ButtonStats();
+                if (ImGui.Button(Strings.EnterFullScreen, btnsize)) ButtonFullscreen();
 
-                ImGui.SetCursorPosX(center);
-                if (ImGui.Button("Full screen", btnsize)) ButtonFullscreen();
+                ImGui.NewLine();
+                DrawVolumeSlider(center, btnwidth);
             }
             else
             {
-                OverlayY = OverlayY * 5 / 6;
+                OverlayY = OverlayY * 4 / 6;
                 var spacing = ImGui.GetStyle().ItemSpacing.X * 3;
 
                 ImGui.SetCursorPosY(OverlayY + ImGui.GetStyle().WindowPadding.Y);
@@ -449,23 +482,32 @@ namespace SysDVR.Client.GUI
                 uiOptCenter.StartHere();
                 if (HasVideo)
                 {
-                    if (ImGui.Button("Screenshot")) ButtonScreenshot();
+                    if (ImGui.Button(Strings.TakeScreenshot)) ButtonScreenshot();
                     ImGui.SameLine();
                 }
                 if (ImGui.Button(recordingButtonText)) ButtonToggleRecording();
                 ImGui.SameLine(0, spacing);
-                if (ImGui.Button("Stop streaming")) ButtonQuit();
+                if (ImGui.Button(Strings.StopStreaming)) ButtonQuit();
                 ImGui.SameLine(0, spacing);
-                if (ImGui.Button("Debug info")) ButtonStats();
-                ImGui.SameLine();
-                if (ImGui.Button("Full screen")) ButtonFullscreen();
+                
+                if (Program.Options.Debug.Log)
+                {
+                    if (ImGui.Button(Strings.DebugInfo)) ButtonStats();
+                    ImGui.SameLine();
+                }
+
+                if (ImGui.Button(Strings.EnterFullScreen)) ButtonFullscreen();
                 uiOptCenter.EndHere();
-            }
+
+                ImGui.NewLine();
+                var w = ImGui.GetWindowSize().X;
+				DrawVolumeSlider(w / 4, w / 2);
+			}
 
             if (!OverlayAlwaysShowing)
             {
                 ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - ImGui.CalcTextSize("A").Y - ImGui.GetStyle().WindowPadding.Y);
-                Gui.CenterText("Tap anywhere to hide the overlay");
+                Gui.CenterText(Strings.HideOverlayLabel);
             }
 
             ImGui.GetBackgroundDrawList().AddRectFilled(new(0, OverlayY), ImGui.GetWindowSize(), 0xe0000000);
@@ -475,13 +517,13 @@ namespace SysDVR.Client.GUI
         {
             if (quitConfirm.Begin())
             {
-                ImGui.Text("Are you sure you want to quit?");
+                ImGui.Text(Strings.ConfirmQuitLabel);
                 ImGui.Separator();
 
                 var w = ImGui.GetWindowSize().X / 4;
                 quitOptCenter.StartHere();
 
-				if (ImGui.Button("Yes", new(w, 0)))
+				if (ImGui.Button(GeneralStrings.YesButton, new(w, 0)))
                 {
                     quitConfirm.RequestClose();
                     Program.Instance.PopView();
@@ -489,7 +531,7 @@ namespace SysDVR.Client.GUI
 
                 ImGui.SameLine();
 
-                if (ImGui.Button("No", new(w, 0)))
+                if (ImGui.Button(GeneralStrings.NoButton, new(w, 0)))
                     quitConfirm.RequestClose();
 
                 quitOptCenter.EndHere();
@@ -506,14 +548,14 @@ namespace SysDVR.Client.GUI
 			using (var cap = SDLCapture.CaptureTexture(player.Video.TargetTexture))
 				Platform.Specific.Win.WinClipboard.CopyCapture(cap);
 
-			MessageUi("Screenshot saved to clipboard");
+			MessageUi(Strings.ScreenshotSavedToClip);
 		}
 
         void ScreenshotToFile() 
         {
 			var path = Program.Options.GetFilePathForScreenshot();
 			SDLCapture.ExportTexture(player.Video.TargetTexture, path);
-			MessageUi("Screenshot saved to " + path);
+			MessageUi(string.Format(Strings.ScreenshotSaved, path));
 		}
 
         void ButtonScreenshot()
@@ -538,13 +580,13 @@ namespace SysDVR.Client.GUI
 			}
             catch (Exception ex)
             {
-                MessageUi("Error: " + ex.Message);
+                MessageUi($"{GeneralStrings.ErrorMessage} {ex}");
                 Console.WriteLine(ex);
 #if ANDROID_LIB
-                MessageUi("Make sure you enabled file access permissions to the app !");
+                MessageUi(Strings.AndroidPermissionError);
 #endif
-            }
-        }
+			}
+		}
 
         void ButtonToggleRecording()
         {
@@ -562,13 +604,12 @@ namespace SysDVR.Client.GUI
 
                     player.Manager.ChainTargets(v, a);
 
-                    recordingButtonText = "Stop recording";
-                    MessageUi("Recording to " + videoFile);
+                    recordingButtonText = Strings.StopRecording;
+                    MessageUi(string.Format(Strings.RecordingStartedMessage, videoFile));
                 }
                 catch (Exception ex)
                 {
-                    MessageUi("Failed to start recording: " + ex.ToString());
-                    
+                    MessageUi($"{GeneralStrings.ErrorMessage} {ex}");                    
                     videoRecorder?.Dispose();
                     videoRecorder = null;
 				}
@@ -579,8 +620,8 @@ namespace SysDVR.Client.GUI
                 videoRecorder.Stop();
                 videoRecorder.Dispose();
                 videoRecorder = null;
-                recordingButtonText = "Start recording";
-                MessageUi("Finished recording");
+                recordingButtonText = Strings.StartRecording;
+                MessageUi(Strings.RecordingSuccessMessage);
             }
         }
 

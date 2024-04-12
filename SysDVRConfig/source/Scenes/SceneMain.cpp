@@ -1,8 +1,20 @@
 #include "Scenes.hpp"
 #include "Common.hpp"
 
+#include "../translaton.hpp"
 #include "../ipc.h"
 #include "../Platform/fs.hpp"
+
+#ifdef WIN32
+	#include <WinSock2.h>
+	#pragma comment(lib, "ws2_32.lib")
+	#undef max
+	#undef min
+#else
+	#include <unistd.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+#endif
 
 namespace {
 	Image::Img ModeRtsp;
@@ -13,17 +25,9 @@ namespace {
 	u32 BootMode;
 	u32 CurrentMode;
 	
-	std::string RtspDescription = "Stream directly to any video player application via RTSP.\n"
-		"Once you enable and apply it open rtsp://{}:6666/ with any video player like mpv or vlc.\n"
-		"This mode doesn't require SysDVR-Client on your PC.\n"
-		"For network modes it's recommended to use a LAN adapter.";
-
-	const std::string TcpDescription = "Stream to the SysDVR-Client application via network. This is more stable than the simple network mode.\n"
-		"To setup SysDVR-Client on your pc refer to the guide on Github\n"
-		"For network modes it's recommended to use a LAN adapter.";
-
-	const std::string UsbDescription = "Use this mode to stream to the SysDVR-Client application via USB.\n"
-		"To setup SysDVR-Client on your pc refer to the guide on Github";
+	std::string RtspDescription;
+	std::string TcpDescription;
+	std::string UsbDescription;
 
 	u32 GetBootMode()
 	{
@@ -61,7 +65,7 @@ namespace {
 		return true;
 	}
 
-	constexpr float ModeButtonW = 1280 * 0.7f;
+	constexpr float ModeButtonW = 1280 * 0.8f;
 	bool ModeButton(std::string_view title, std::string_view description, Image::Img& image, bool Active, bool OnBoot)
 	{
 		ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -107,17 +111,17 @@ namespace {
 			ImVec2 pos = bb.GetTR();
 			if (Active)
 			{
-				const ImVec2 sz = ImGui::CalcTextSize("Enabled") + ImVec2{ 6, 0 };
+				const ImVec2 sz = ImGui::CalcTextSize(Strings::Main.ActiveMode.c_str()) + ImVec2{ 6, 0 };
 				pos.x -= sz.x;
 				window->DrawList->AddRectFilled(pos, pos + sz, 0xFF008800);
-				ImGui::RenderText(pos + ImVec2{ 3,0 }, "Enabled");
+				ImGui::RenderText(pos + ImVec2{ 3,0 }, Strings::Main.ActiveMode.c_str());
 			}
 			if (OnBoot)
 			{
-				const ImVec2 sz = ImGui::CalcTextSize("On boot") + ImVec2{ 6, 0 };
+				const ImVec2 sz = ImGui::CalcTextSize(Strings::Main.DefaultMode.c_str()) + ImVec2{ 6, 0 };
 				pos.x -= sz.x;
 				window->DrawList->AddRectFilled(pos, pos + sz, 0xFF000088);
-				ImGui::RenderText(pos + ImVec2{ 3,0 }, "On boot");
+				ImGui::RenderText(pos + ImVec2{ 3,0 }, Strings::Main.DefaultMode.c_str());
 			}
 		}
 
@@ -131,22 +135,32 @@ void scenes::InitModeSelect()
 	ModeRtsp = Image::Img(ASSET("ModeRtsp.png"));
 	ModeTcp = Image::Img(ASSET("ModeTcp.png"));
 	ModeUsb = Image::Img(ASSET("ModeUsb.png"));
-
-	char hostname[128] = "<console IP address>";
-#ifdef __SWITCH__	
-	if (gethostname(hostname, sizeof(hostname)) || !strcmp(hostname, "1.0.0.127"))
-		strcpy(hostname, "<console IP address>");
-#endif
-	RtspDescription.replace(RtspDescription.find("{}"), 2, hostname);
 	
+	RtspDescription = Strings::Main.ModeRtsp;
+	TcpDescription = Strings::Main.ModeTcp;
+	UsbDescription = Strings::Main.ModeUsb;
+
+	if (RtspDescription.find("{}") != std::string::npos)
+	{
+		char hostname[255] = {};
+		if (!gethostname(hostname, sizeof(hostname)) && std::string_view(hostname) != "1.0.0.127")
+		{
+			RtspDescription.replace(RtspDescription.find("{}"), 2, hostname);
+		}
+		else
+		{
+			RtspDescription.replace(RtspDescription.find("{}"), 2, Strings::Main.ConsoleIPPlcaceholder);
+		}
+	}
+
 	Result rc = SysDvrGetMode(&CurrentMode);
 	if (R_FAILED(rc)) {
-		app::FatalErrorWithErrorCode("Couldn't get the SysDVR mode", rc);
+		app::FatalErrorWithErrorCode(Strings::Error.FailedToDetectMode, rc);
 		return;
 	}
 
 	if (CurrentMode == TYPE_MODE_INVALID)
-		app::FatalError("Couldn't get the current SysDVR mode", "Try rebooting your console");
+		app::FatalError(Strings::Error.InvalidMode, Strings::Error.TroubleshootReboot);
 
 	BootMode = GetBootMode();
 	InitialMode = CurrentMode;
@@ -154,7 +168,6 @@ void scenes::InitModeSelect()
 
 void scenes::ModeSelect()
 {
-
 	constexpr auto SetMode = [](u32 mode) -> bool
 	{
 		Result rc = SysDvrSetMode(mode);
@@ -165,7 +178,7 @@ void scenes::ModeSelect()
 			ImGui::End();
 			UI::EndFrame();
 
-			app::FatalErrorWithErrorCode("Couldn't change mode", rc);
+			app::FatalErrorWithErrorCode(Strings::Error.ModeChangeFailed, rc);
 			return false;
 		}
 
@@ -184,34 +197,34 @@ void scenes::ModeSelect()
 	//	app::SetNextScene(Scene::DevScene);
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
-	if (ModeButton("Simple network mode", RtspDescription, ModeRtsp, CurrentMode == TYPE_MODE_RTSP, BootMode == TYPE_MODE_RTSP))
+	if (ModeButton(Strings::Main.ModeRtspTitle, RtspDescription, ModeRtsp, CurrentMode == TYPE_MODE_RTSP, BootMode == TYPE_MODE_RTSP))
 		if (!SetMode(TYPE_MODE_RTSP))
 			return;
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
-	if (ModeButton("TCP Bridge", TcpDescription, ModeTcp, CurrentMode == TYPE_MODE_TCP, BootMode == TYPE_MODE_TCP))
+	if (ModeButton(Strings::Main.ModeTcpTitle, TcpDescription, ModeTcp, CurrentMode == TYPE_MODE_TCP, BootMode == TYPE_MODE_TCP))
 		if (!SetMode(TYPE_MODE_TCP))
 			return;
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
-	if (ModeButton("USB", UsbDescription, ModeUsb, CurrentMode == TYPE_MODE_USB, BootMode == TYPE_MODE_USB))
+	if (ModeButton(Strings::Main.ModeUsbTitle, UsbDescription, ModeUsb, CurrentMode == TYPE_MODE_USB, BootMode == TYPE_MODE_USB))
 		if (!SetMode(TYPE_MODE_USB))
 			return;
 
 	ImGui::SetCursorPosX(1280 / 2 - ModeButtonW / 2);
-	if (ImGui::Button("Stop streaming", { ModeButtonW , 0 }))
+	if (ImGui::Button(Strings::Main.ModeDisabled.c_str(), {ModeButtonW , 0}))
 		if (!SetMode(TYPE_MODE_NULL))
 			return;
 
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
-	switch (ImGuiCenterButtons({ "Guide", "Set current mode as default on boot", "dvr-patches manager", "Save and exit"}))
+	switch (ImGuiCenterButtons<std::string_view>({ Strings::Main.OptGuide, Strings::Main.OptSetDefault, Strings::Main.OptPatchManager, Strings::Main.OptSave}))
 	{
 	case 0:
 		app::SetNextScene(Scene::Guide);
 		break;
 	case 1:
 		if (!SetDefaultBootMode(CurrentMode))
-			app::FatalError("Couldn't set boot mode", "Try checking your SD card for corruption");
+			app::FatalError(Strings::Error.BootModeChangeFailed, Strings::Error.TroubleshootBootMode);
 		else
 			BootMode = CurrentMode;
 		break;

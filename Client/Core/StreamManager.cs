@@ -1,15 +1,9 @@
 ﻿using SysDVR.Client.Sources;
-using SysDVR.Client.Targets;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Core
@@ -31,6 +25,8 @@ namespace SysDVR.Client.Core
 		public bool HasVideo => Kind is StreamKind.Video or StreamKind.Both;
 		public bool HasAudio => Kind is StreamKind.Audio or StreamKind.Both;
 
+		public bool TurnOffConsoleScreen = false;
+
 		public bool Validate()
 		{
 			if (AudioBatching < 0 || AudioBatching > StreamInfo.MaxAudioBatching)
@@ -46,40 +42,79 @@ namespace SysDVR.Client.Core
 				Kind = Kind,
 				AudioBatching = AudioBatching,
 				UseNALReplay = UseNALReplay,
-				UseNALReplayOnlyOnKeyframes = UseNALReplayOnlyOnKeyframes
+				UseNALReplayOnlyOnKeyframes = UseNALReplayOnlyOnKeyframes,
+				TurnOffConsoleScreen = TurnOffConsoleScreen
 			};
 		}
 	}
 
 	class PoolBuffer
 	{
-		private readonly static ArrayPool<byte> pool = ArrayPool<byte>.Shared;
+		readonly static ArrayPool<byte> bufferPool = ArrayPool<byte>.Shared;
+		readonly static ConcurrentBag<PoolBuffer> instancePool = new();
 
 		public int Length { get; private set; }
-		private byte[] _buffer;
+		private byte[] buffer;
 		private int refcount;
 
-		public byte[] RawBuffer => _buffer ?? throw new Exception("The buffer has been freed");
+		public bool IsFree => refcount <= 0;
+		
+		public byte[] GetRawArray([CallerMemberName] string? caller = null) => buffer ?? throw new Exception($"The buffer has been freed [{caller}]");
+
+		private static PoolBuffer GetInstance() 
+		{
+			if (instancePool.TryTake(out var instance))
+				return instance;
+
+			return new PoolBuffer();
+		}
+
+		private static void ReturnToPool(PoolBuffer buffer) 
+		{
+			if (!buffer.IsFree)
+				throw new Exception("Attempted to return a non-free buffer to the pool");
+
+			buffer.Length = 0;
+			buffer.refcount = 0;
+			buffer.buffer = null;
+
+			instancePool.Add(buffer);
+		}
+
+		private void Configure(byte[] buf, int len)
+		{
+			if (buf == null)
+				throw new Exception("Can't initialize a pooled buffer from null");
+
+			Length = len;
+			buffer = buf;
+			refcount = 1;
+		}
 
 		public void Reference()
 		{
+			if (IsFree)
+				throw new Exception("Attempted to reference an invalid buffer");
+
 			Interlocked.Increment(ref refcount);
 		}
 
+		// It is actually fine to not call free and leak this buffer,
+		// The GC will collect it but next time we need a buffer it will be allocated from scratch adding GC pressure and potentially stuttering
 		public void Free()
 		{
-			Interlocked.Decrement(ref refcount);
+			if (IsFree)
+				throw new Exception("Attempted to free an invalid buffer");
 
-#if DEBUG
-			if (refcount < 0)
+			var curCount = Interlocked.Decrement(ref refcount);
+
+			if (curCount < 0)
 				throw new Exception("Buffer refcount is negative");
-#endif
 
-			if (refcount == 0)
+			if (curCount == 0)
 			{
-				pool.Return(RawBuffer);
-				_buffer = null;
-				GC.SuppressFinalize(this);
+				bufferPool.Return(buffer);
+				ReturnToPool(this);
 			}
 		}
 
@@ -87,38 +122,20 @@ namespace SysDVR.Client.Core
 		{
 			if (len == 0)
 				throw new Exception("Invalid lngth");
-			return new PoolBuffer(pool.Rent(len), len);
-		}
-
-		private PoolBuffer(byte[] buf, int len)
-		{
-			Length = len;
-			_buffer = buf;
-			refcount = 1;
-		}
-
-		~PoolBuffer()
-		{
-			if (refcount != 0)
-			{
-#if DEBUG
-				Console.WriteLine($"Buffer was not freed {refcount}");
-#endif
-				refcount = 1;
-				Free();
-			}
+			
+			var res = GetInstance();
+			res.Configure(bufferPool.Rent(len), len);
+			return res;
 		}
 
 		public Span<byte> Span =>
-			new Span<byte>(RawBuffer, 0, Length);
+			new Span<byte>(GetRawArray(), 0, Length);
 
 		public Memory<byte> Memory =>
-			new Memory<byte>(RawBuffer, 0, Length);
+			new Memory<byte>(GetRawArray(), 0, Length);
 
 		public ArraySegment<byte> ArraySegment =>
-			new ArraySegment<byte>(RawBuffer, 0, Length);
-
-		public static implicit operator Span<byte>(PoolBuffer o) => o.Span;
+			new ArraySegment<byte>(GetRawArray(), 0, Length);
 	}
 
 	abstract class OutStream : IDisposable
@@ -153,18 +170,12 @@ namespace SysDVR.Client.Core
 				return false;
 		}
 
-		protected virtual void UseCancellationTokenImpl(CancellationToken tok)
-		{
-			Cancel = tok;
-			Next?.UseCancellationToken(tok);
-		}
-
 		protected abstract void SendDataImpl(PoolBuffer block, ulong ts);
 
 		// This must be called before sending any data
-		public void UseCancellationToken(CancellationToken tok)
+		public virtual void UseCancellationToken(CancellationToken tok)
 		{
-			UseCancellationTokenImpl(tok);
+			Cancel = tok;
 			Next?.UseCancellationToken(tok);
 		}
 
@@ -311,7 +322,7 @@ namespace SysDVR.Client.Core
 								packet.Buffer?.Free();
 								if (!Replay.LookupSlot(packet.Header.ReplaySlot, out packet.Buffer))
 								{
-									Console.WriteLine("Unknown hash value, skipping packet");
+									ReportError("Unknown hash value, skipping packet");
 									continue;
 								}
 							}
@@ -334,7 +345,8 @@ namespace SysDVR.Client.Core
 			}
 			finally
 			{
-				packet.Buffer?.Free();
+				if (packet.Buffer is { IsFree: false })
+					packet.Buffer.Free();
 			}
 		}
 

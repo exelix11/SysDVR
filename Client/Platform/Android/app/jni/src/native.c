@@ -29,6 +29,27 @@ jstring GetPackageName()
     return str;
 }
 
+void SysIterateAssetsContent(const wchar_t* path, bool(*callback)(const wchar_t*, int32_t))
+{
+    DECLARE_JNI;
+    jmethodID mid = STATIC_METHOD(sys, "ListAssetsContent", "(Ljava/lang/String;)[Ljava/lang/String;");
+    jstring pathstr = (*env)->NewString(env, path, jstrlen(path));
+    jarray arr = (jarray)(*env)->CallStaticObjectMethod(env, sys, mid, pathstr);
+    jsize len = (*env)->GetArrayLength(env, arr);
+    for (jsize i = 0; i < len; i++)
+    {
+        jstring str = (*env)->GetObjectArrayElement(env, (jobjectArray)arr, i);
+        jchar* chars = (*env)->GetStringChars(env, str, NULL);
+        jsize len = (*env)->GetStringLength(env, str);
+        bool should_continue = callback(chars, len);
+        (*env)->ReleaseStringChars(env, str, chars);
+
+        if (!should_continue)
+            break;
+    }
+    (*env)->DeleteLocalRef(env, pathstr);
+}
+
 void SysGetClipboard(char* buffer, int size)
 {
     DECLARE_JNI;

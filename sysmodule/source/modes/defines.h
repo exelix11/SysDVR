@@ -51,3 +51,6 @@
 
 // Crash the process so we can get a crash report to figure out what's going on, don't call it outside of dev tools
 #define CMD_DEBUG_CRASH 102
+
+// Force reset the display backlight to on, useful in case the display was turned off and the console is not responding
+#define CMD_RESET_DISPLAY 103

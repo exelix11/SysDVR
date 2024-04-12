@@ -142,6 +142,7 @@ restart:
 
 			LOG("TCP %d Client %d handshake failed\n", (int)stream, client);
 			SocketClose(&client);
+			ProtoClientGlobalStateDisconnected();
 		}
 		else if (status == SocketAcceptError_NetDown)
 		{
@@ -235,6 +236,7 @@ static void TCP_StreamThread(void* argConfig)
 
 		LOG("TCP %d Closing client after %lu bytes\n", (int)config.Type, total);
 		SocketClose(&client);
+		ProtoClientGlobalStateDisconnected();
 		svcSleepThread(2E+8);
 	}
 

@@ -3,6 +3,7 @@
 #include "../capture.h"
 #include "defines.h"
 #include "../core.h"
+#include "../util.h"
 
 static inline bool hasVideo(const struct ProtoHandshakeRequest* req)
 {
@@ -34,6 +35,26 @@ static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, str
 		return Handshake_InvalidMeta;
 
 	return Handshake_Ok;
+}
+
+static bool screenStateModified = false;
+
+static void ProtoGlobalClientStateConnect(uint8_t protocolFlags)
+{
+	if (protocolFlags & ExtraFeatureFlags_TurnOffScreen)
+	{
+		UtilSetConsoleScreenMode(false);
+		screenStateModified = true;
+	}
+}
+
+void ProtoClientGlobalStateDisconnected()
+{
+	if (screenStateModified)
+	{
+		screenStateModified = false;
+		UtilSetConsoleScreenMode(true);
+	}
 }
 
 ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, int length)
@@ -72,6 +93,11 @@ ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, 
 			res.Result = Handshake_InvalidArg;
 
 		res.RequestedAudio = true;
+	}
+
+	if (res.Result == Handshake_Ok) 
+	{
+		ProtoGlobalClientStateConnect(req.FeatureFlags);
 	}
 
 	return res;
