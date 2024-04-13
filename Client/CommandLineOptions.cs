@@ -3,6 +3,7 @@ using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -36,6 +37,9 @@ namespace SysDVR.Client
 			new OptionArg("--title", (x, v) => x.WindowTitle = v),
 			
 			new OptionArg("--serial", (x, v) => x.ConsoleSerial = v),
+
+			new OptionArg("--volume", (x, v) => x.Volume = v),
+			new OptionNoArg("--screen-off", (x) => x.TurnOfConsoleScreen = true),
 			
 			// Legacy usb arg
 			new OptionArg("--usb-serial", (x, v) => x.ConsoleSerial = v),
@@ -153,6 +157,9 @@ namespace SysDVR.Client
 
 		public bool LaunchFullscreen;
 
+		public string? Volume;
+		public bool? TurnOfConsoleScreen;
+
 		// Other advanced options
 		public string? LibDir;
 		public string? DebugFlags;
@@ -194,6 +201,15 @@ namespace SysDVR.Client
 
 			if (SoftwareRendering)
 				Program.Options.ForceSoftwareRenderer = true;
+
+			if (Volume is not null && int.TryParse(Volume, out var vol))
+			{ 
+				vol = Math.Clamp(vol, 0, 100);
+				Program.Options.DefaultVolume = vol;
+			}
+
+			if (TurnOfConsoleScreen.HasValue)
+				Program.Options.Streaming.TurnOffConsoleScreen = TurnOfConsoleScreen.Value;
 		}
 
 		public void PrintDeprecationWarnings() 
@@ -220,6 +236,7 @@ Stream sources:
 	The source mode is how the client connects to SysDVR running on the console. Make sure to set the correct mode with SysDVR-Settings.
 	`usb` : Connects to SysDVR via USB, used if no source is specified. Remember to setup the driver as explained on the guide
 	`bridge [IP address]` : Connects to SysDVR via network at the specified IP address, requires a strong connection between the PC and switch (LAN or full signal wireless). If the IP address is not specified the client will connect to the first console it detects, you can also use the --serial option to pick a specific one by serial
+
 	Note that the `Simple network mode` option in SysDVR-Settings does not require the client, you must open it directly in a video player.
 
 Source options:
@@ -227,6 +244,7 @@ Source options:
 		This also matches partial serials starting from the end, for example NX012345 will be matched by doing --usb-serial 45
 	`--usb-warn` : Enables printing warnings from the usb stack, use it to debug USB issues
 	`--usb-debug` : Same as `--usb-warn` but more detailed
+	`--screen-off` : Turn off the console screen during streaming
 
 Stream options:
 	`--no-video` : Disable video streaming, only streams audio
@@ -234,6 +252,7 @@ Stream options:
 
 Player options:
 	Since 6.0 SysDVR-Client only comes with the built-in player, the following options are available:
+	`--volume <value>` : Set the player volume to a number between 0 and 100
 	`--hw-acc` : Try to use hardware acceleration for decoding, this option uses the first detected decoder, it's recommended to manually specify the decoder name with --decoder
 	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-decoders
 	`--fullscreen` : Start in full screen mode. Press F11 to toggle manually
@@ -253,16 +272,10 @@ Extra options:
 
 Command examples:
 	SysDVR-Client.exe usb
-		Connects to switch via USB and streams video and audio in the built-in player
-
-	SysDVR-Client.exe usb --rtsp	
-		Connects to switch via USB and streams video and audio via rtsp at rtsp://127.0.0.1:6666/
+		Connects to switch via USB and streams video and audio
 		
-	SysDVR-Client.exe bridge 192.168.1.20 --no-video --rtsp-port 9090
-		Connects to switch via network at 192.168.1.20 and streams the audio over rtsp at rtsp://127.0.0.1:9090/
-
-	SysDVR-Client.exe usb --mpv `C:\Program Files\mpv\mpv.com`
-		Connects to switch via USB and streams the video in low-latency mode via mpv
+	SysDVR-Client.exe bridge 192.168.1.20 --no-video
+		Connects to switch via network at 192.168.1.20 and streams only the audio
 ";
 
 	}
