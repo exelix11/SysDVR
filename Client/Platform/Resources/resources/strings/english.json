@@ -17,7 +17,7 @@
     "multipleDevicesLine2": "The first one will be used, you can select a specific one by using the --serial option in the command line",
     "deviceNotFoundRetry": "Device not found, trying again in 5 seconds...",
     "usbDeviceNotFound": "No usb device found",
-//Translator note: the --help command line option can not be translated, you can specify "english only" when referring to it
+	//Translator note: the --help command line option can not be translated, you can specify "english only" when referring to it
     "noStreamingError": "No streaming has been requested. For help, use --help",
     "tcpWithoutIPError": "TCP mode without a target IP is not supported in legacy mode, use --help for help",
     "commandLineError": "Invalid command line. The legacy player only supports a subset of options, use --help for help"
@@ -41,8 +41,8 @@
     "channelAudio": "Audio only",
     "channelBoth": "Stream Both",
     "settingsButton": "Settings",
- //Translator note: the guide on github is only in english, you can specify "english only" when referring to it
-    "guideButton": "Guide",
+     //Translator note: the guide on github is only in english, you can specify "english only" when referring to it
+	"guideButton": "Guide",
     "githubButton": "Github page",
     "fileAccess": "Warning: File access permission was not granted, saving recordings may fail.",
     "fileAccessRequestButton": "Request permission",
@@ -83,6 +83,7 @@
     "screenshotOutputDialogTitle": "Select the screenshots output path",
     "changePathButton": "Change",
     "screenshotToClipboard": "Copy screenshots to the clipboard instead of saving as files (Press SHIFT to override during capture)",
+    "defaultVolume": "Default audio volume",
     "scaleMode": "Scale mode",
     "scaleMode_Linear": "Linear (default)",
     "scaleMode_Narest": "Nearest (low overhead)",
@@ -101,13 +102,15 @@
     "uncapGUI": "Uncap GUI framerate",
     "performanceStreamingLabel": "These options affect the straming quality of SysDVR, the defaults are usually fine",
     "audioBatching": "Audio batching",
-  // Translator note: NAL is the name of individual packets in a h264 video stream
-    "cachePackets": "Cache video packets (NAL) locally and replay them when needed",
+     // Translator note: NAL is the name of individual packets in a h264 video stream
+	"cachePackets": "Cache video packets (NAL) locally and replay them when needed",
     "cachePacketsKeyframes": "Apply packet cache only to keyframes (H264 IDR frames)",
     "forceSDLSoftwareRenderer": "Force SDL software rendering",
     "printRealtimeLogs": "Print real-time streaming information",
     "verboseDebugging": "Enable verbose logging",
     "disableSynchronization": "Disable Audio/Video synchronization",
+    "disableBacklight": "Turn off the console screen backlight during streaming",
+    "disableBacklightWarn": "This feature is experimental and may cause issues. You can lock and unlock the console to restore the screen.",
     "analyzeKeyframes": "Analyze keyframe NALs during the stream",
     "analyzeNALs": "Analyze every NAL packet",
     "guiScale": "GUI scale",
@@ -122,7 +125,7 @@
   "player": {
     "confirmQuitPopupTitle": "Confirm quit",
     "confirmQuitLabel": "Are you sure you want to quit?",
-    "shortcuts": "Player shortcuts:\n - S : capture screenshot\n - R : start/stop recording\n - F : toggle full screen\n - Esc : quit",
+    "shortcuts": "Player shortcuts:\n - S : capture screenshot\n - R : start/stop recording\n - F : toggle full screen\n - Up/Down : change audio volume\n - Esc : quit",
     "audioOnlyMode": "Streaming is set to audio-only mode.",
     "takeScreenshot": "Screenshot",
     "startRecording": "Start recording",
@@ -138,7 +141,8 @@
     "androidPermissionError": "Make sure you enabled file access permissions to the app !",
     "customDecoderError": "Decoder {0} not found, using {1} instead",
     "customDecoderEnabled": "Using custom decoder {0}, in case of issues try disabling this option to use the default one.",
-    "playerInitializationMessage": "Initializing video player with {0} codec."
+    "playerInitializationMessage": "Initializing video player with {0} codec.",
+    "volumePercent": "Volume {0} %"
   },
   "usb": {
     "title": "Connect over USB",
