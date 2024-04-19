@@ -10,7 +10,7 @@ static inline bool hasVideo(const struct ProtoHandshakeRequest* req)
 	return req->MetaFlags & ProtoMeta_Video;
 }
 
-static inline bool hasAusio(const struct ProtoHandshakeRequest* req)
+static inline bool hasAudio(const struct ProtoHandshakeRequest* req)
 {
 	return req->MetaFlags & ProtoMeta_Audio;
 }
@@ -29,7 +29,7 @@ static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, str
 		return Handshake_WrongVersion;
 
 	bool video = hasVideo(out_req);
-	bool audio = hasAusio(out_req);
+	bool audio = hasAudio(out_req);
 
 	if (!video && !audio)
 		return Handshake_InvalidMeta;
@@ -67,7 +67,7 @@ ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, 
 	// The caller may only accept video or audio
 	if (res.Result == Handshake_Ok) 
 	{
-		if (config == ProtoHandshakeAccept_Video && hasAusio(&req))
+		if (config == ProtoHandshakeAccept_Video && hasAudio(&req))
 			res.Result = Hanshake_InvalidChannel;
 		else if (config == ProtoHandshakeAccept_Audio && hasVideo(&req))
 			res.Result = Hanshake_InvalidChannel;
