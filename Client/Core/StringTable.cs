@@ -240,8 +240,8 @@ namespace SysDVR.Client.Core
 			public string ConfirmQuitPopupTitle = "Confirm quit";
 			public string ConfirmQuitLabel = "Are you sure you want to quit?";
 
-			public string Shortcuts = 
-					"Player shortcuts:\n" +
+			public string Shortcuts =
+					"Keyboard shortcuts:\n" +
 					" - S : capture screenshot\n" +
 					" - R : start/stop recording\n" +
 					" - F : toggle full screen\n" +

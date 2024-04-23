@@ -125,7 +125,7 @@
   "player": {
     "confirmQuitPopupTitle": "Confirm quit",
     "confirmQuitLabel": "Are you sure you want to quit?",
-    "shortcuts": "Player shortcuts:\n - S : capture screenshot\n - R : start/stop recording\n - F : toggle full screen\n - Up/Down : change audio volume\n - Esc : quit",
+    "shortcuts": "Keyboard shortcuts:\n - S : capture screenshot\n - R : start/stop recording\n - F : toggle full screen\n - Up/Down : change audio volume\n - Esc : quit",
     "audioOnlyMode": "Streaming is set to audio-only mode.",
     "takeScreenshot": "Screenshot",
     "startRecording": "Start recording",
