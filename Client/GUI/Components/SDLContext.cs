@@ -12,7 +12,7 @@ using static SDL2.SDL;
 
 namespace SysDVR.Client.GUI.Components
 {
-	public enum GuiMessage 
+	public enum GuiMessage
 	{
 		None,
 		Other,
@@ -55,12 +55,12 @@ namespace SysDVR.Client.GUI.Components
 				throw new InvalidOperationException($"SDL Bug check on thread {Thread.CurrentThread.ManagedThreadId} insteadl of {SDLThreadId}.");
 		}
 
-		public void SetNewThreadOwner() 
+		public void SetNewThreadOwner()
 		{
 			SDLThreadId = Thread.CurrentThread.ManagedThreadId;
 		}
 
-		public SDLContext() 
+		public SDLContext()
 		{
 			Program.DebugLog("Initializing SDL");
 
@@ -127,12 +127,21 @@ namespace SysDVR.Client.GUI.Components
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public GuiMessage PumpEvents(out SDL_Event evt) 
+		public GuiMessage PumpEvents(out SDL_Event evt)
 		{
 			if (SDL_PollEvent(out evt) == 0)
 				return GuiMessage.None;
 
 			//Console.WriteLine($"Received SDL_Event {evt.type}");
+
+#if ANDROID_LIB
+			// Fix for Samsung Dex software touchpad inputs
+			if (evt.type is SDL_EventType.SDL_MOUSEBUTTONDOWN or SDL_EventType.SDL_MOUSEBUTTONUP)
+			{
+				if (evt.button.button == 0)
+					evt.button.button = 1;
+			}
+#endif
 
 			if (evt.type == SDL_EventType.SDL_QUIT ||
 					(evt.type == SDL_EventType.SDL_WINDOWEVENT && evt.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
@@ -173,12 +182,12 @@ namespace SysDVR.Client.GUI.Components
 			{
 				return GuiMessage.BackButton;
 			}
-			
+
 			return GuiMessage.Other;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void Render() 
+		public void Render()
 		{
 			SDL_RenderPresent(RendererHandle);
 		}
@@ -211,7 +220,7 @@ namespace SysDVR.Client.GUI.Components
 #endif
 		}
 
-		public void DestroyWindow() 
+		public void DestroyWindow()
 		{
 			if (RendererHandle != IntPtr.Zero)
 			{
@@ -227,7 +236,7 @@ namespace SysDVR.Client.GUI.Components
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void ClearScreen() 
+		public void ClearScreen()
 		{
 			SDL_SetRenderDrawColor(RendererHandle, 0x0, 0x0, 0x0, 0xFF);
 			SDL_RenderClear(RendererHandle);
@@ -240,7 +249,7 @@ namespace SysDVR.Client.GUI.Components
 			SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
 		}
 
-		public string GetDebugInfo() 
+		public string GetDebugInfo()
 		{
 			StringBuilder sb = new();
 			sb.AppendLine($"SDLThreadId: {SDLThreadId} Window Size: {WindowSize}");
