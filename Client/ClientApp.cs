@@ -61,7 +61,7 @@ public class ClientApp
     public bool ShowDebugInfo = false;
     bool ShowImguiDemo;
 
-    unsafe void BackupDeafaultStyle()
+    unsafe void BackupDefaultStyle()
     {
         DefaultStyle = *ImGui.GetStyle().NativePtr;
     }
@@ -224,7 +224,7 @@ public class ClientApp
 
         InitializeFonts();
 
-        BackupDeafaultStyle();
+        BackupDefaultStyle();
     }
 
 	ImVector GetFontRanges()
@@ -257,7 +257,7 @@ public class ClientApp
 	internal void InitializeFonts() 
     {
         ImGui.GetIO().Fonts.Flags |= ImFontAtlasFlags.NoPowerOfTwoHeight;
-		var fontData = Resources.ReadResouce(Resources.MainFont);
+		var fontData = Resources.ReadResource(Resources.MainFont);
 		
         unsafe
 		{

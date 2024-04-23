@@ -19,7 +19,7 @@ namespace SysDVR.Client.GUI
         readonly string DevelopmentBuild;
 
         bool HasDiskPermission;
-        bool CanRequesDiskPermission;
+        bool CanRequestDiskPermission;
 
         StreamKind StreamMode = StreamKind.Both;
 
@@ -58,7 +58,7 @@ namespace SysDVR.Client.GUI
         {
             HasDiskPermission = Resources.HasDiskAccessPermission();
             if (!HasDiskPermission)
-                CanRequesDiskPermission = Resources.CanRequestDiskAccessPermission();
+                CanRequestDiskPermission = Resources.CanRequestDiskAccessPermission();
         }
 
         public override void ResolutionChanged()
@@ -137,7 +137,7 @@ namespace SysDVR.Client.GUI
             if (!HasDiskPermission)
             {
                 ImGui.TextWrapped(Strings.FileAccess);
-                if (CanRequesDiskPermission)
+                if (CanRequestDiskPermission)
                 {
                     if (Gui.CenterButton(Strings.FileAccessRequestButton))
                     {
