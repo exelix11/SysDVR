@@ -78,6 +78,7 @@
     "screenshotOutputDialogTitle": "选择屏幕截图输出路径",
     "changePathButton": "切换",
     "screenshotToClipboard": "将屏幕截图复制到剪贴板，而不是另存为文件（在捕获过程中按 SHIFT 键覆盖）",
+    "defaultVolume": "默认音量",
     "scaleMode": "缩放模式",
     "scaleMode_Linear": "线性（默认）",
     "scaleMode_Narest": "最小（低功耗）",
@@ -102,6 +103,8 @@
     "printRealtimeLogs": "打印实时流信息",
     "verboseDebugging": "启用详细日志记录",
     "disableSynchronization": "禁用音频/视频同步",
+    "disableBacklight": "在流媒体播放期间关闭控制台屏幕背光",
+    "disableBacklightWarn": "此功能处于试验阶段，可能会引起问题。你可以通过锁定和解锁控制台以恢复屏幕。",
     "analyzeKeyframes": "在流期间分析关键帧 NAL",
     "analyzeNALs": "分析每个 NAL 数据包",
     "guiScale": "GUI 比例",
@@ -114,7 +117,7 @@
   "player": {
     "confirmQuitPopupTitle": "Confirm quit",
     "confirmQuitLabel": "Are you sure you want to quit?",
-    "shortcuts": "播放器快捷方式:\n - S ： 截取截图\n - R：开始/停止录制\n - F ： 切换全屏\n - Esc ： 退出",
+    "shortcuts": "播放器快捷键：\n - S ：捕获截屏\n - R ：开始/停止录制\n - F ：切换全屏\n - 上/下 ：改变音量\n - Esc ：退出",
     "audioOnlyMode": "流式传输设置为纯音频模式.",
     "takeScreenshot": "截屏",
     "startRecording": "开始录制",
@@ -130,7 +133,8 @@
     "androidPermissionError": "确保您为应用程序启用了文件访问权限 !",
     "customDecoderError": "未找到解码器{0}，而是使用 {1}",
     "customDecoderEnabled": "使用自定义解码器{0}，如果出现问题，请尝试禁用此选项以使用默认解码器.",
-    "playerInitializationMessage": "使用编解码器初始化视频播放器{0}."
+    "playerInitializationMessage": "使用编解码器初始化视频播放器{0}.",
+    "volumePercent": "音量 {0} %"
   },
   "usb": {
     "title": "通过 USB 连接",
