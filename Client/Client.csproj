@@ -7,10 +7,10 @@
 		<Company />
 		<PackageProjectUrl>https://github.com/exelix11/SysDVR</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/exelix11/SysDVR</RepositoryUrl>
-		<Version>6.0</Version>
+		<Version>6.1</Version>
 		<RootNamespace>SysDVR.Client</RootNamespace>
-		<AssemblyVersion>6.0</AssemblyVersion>
-		<FileVersion>6.0</FileVersion>
+		<AssemblyVersion>6.1</AssemblyVersion>
+		<FileVersion>6.1</FileVersion>
 		<Configurations>Debug;Release</Configurations>
 		<ApplicationIcon>Client.ico</ApplicationIcon>
 		<RollForward>Major</RollForward>
