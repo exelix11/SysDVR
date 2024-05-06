@@ -11,11 +11,11 @@ namespace Strings
 	std::string FontName;
 	GlyphRange ImguiFontGlyphRange;
 
-	MainPageTable Main;
-	GuideTable Guide;
-	ErrorTable Error;
-	PatchesTable Patches;
-	ConnectingTable Connecting;
+	MainPageTable Main = {};
+	GuideTable Guide = {};
+	ErrorTable Error = {};
+	PatchesTable Patches = {};
+	ConnectingTable Connecting = {};
 
 	// TODO: Uncomment the line of the language you want to add and change the name of the json
 	static std::map<std::string, std::string> Translations = {
@@ -106,6 +106,17 @@ namespace Strings
 			Main, Guide, Error, Patches, Connecting)
 	};
 	
+	void ResetStringTable()
+	{
+		FontName = ASSET("fonts/opensans.ttf");
+		ImguiFontGlyphRange = GlyphRange::Default;
+		Main = {};
+		Guide = {};
+		Error = {};
+		Patches = {};
+		Connecting = {};
+	}
+
 	void LoadTranslationForSystemLanguage()
 	{
 		FontName = ASSET("fonts/opensans.ttf");
