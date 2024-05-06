@@ -142,6 +142,8 @@ namespace Strings
 
 	void LoadTranslationForSystemLanguage();
 	void IterateAllStringsForFontBuilding(void*, void (*)(void*, std::string_view));
+
+	void ResetStringTable();
 	
 	// For development only
 	void SerializeCurrentLanguage();
