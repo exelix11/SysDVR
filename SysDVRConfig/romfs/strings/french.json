@@ -65,7 +65,7 @@
     "RebootWarning": "Pour appliquer les changements vous devez redémarrer votre console",
     "SdcardPath": "Chemin carte sd:",
     "SearchLatestButton": "Recherche des derniers patchs sur Github",
-    "Status": "Status patchs dvr:",
+    "Status": "Statut patchs dvr:",
     "StatusInstalled": "commit installé %s",
     "StatusNotInstalled": "non installé",
     "StatusUnknownVersion": "installé, version inconnue",
