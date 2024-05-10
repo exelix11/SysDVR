@@ -38,15 +38,15 @@ subs.populate(text="".join(characters))
 # add ascii
 subs.populate(text="".join(chr(i) for i in range(32, 127)))
 
-# Then go through fonts
+# Then go through the fonts
 for root, dirs, files in os.walk(FONT_FOLDER):
 	for file in files:
 		if file.endswith(".ttf"):
 			print("Processing " + file + " ...")
-			# if the font is less than 1MB then we can keep it as is
+			# if the font is less than 2MB then we can keep it as is
 			file_size = os.path.getsize(os.path.join(root, file))
-			if file_size < 1 * 1024 * 1024:
-				print("Font is less than 1MB, skipping")
+			if file_size < 2 * 1024 * 1024:
+				print("Font is less than 2MB, skipping")
 				continue
 			# Otherwise we need to prune it
 			font = TTFont(os.path.join(root, file))

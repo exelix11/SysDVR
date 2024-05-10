@@ -8,20 +8,23 @@
     "Troubleshoot1": "Se la console è bloccata su questa schermata, SysDVR non è in esecuzione",
     "Troubleshoot2": "Assicurati di averlo installato correttamente e riavvia la console."
   },
-  "Errors": {
+  "Error": {
     "BootModeChangeFailed": "Impossibile modificare la modalita di avvio automatico",
     "FailedToDetectMode": "Impossibile rilevare la modalità attuale di SysDVR",
     "InvalidMode": "La modalità rilevata di SysDVR non è valida",
     "ModeChangeFailed": "Impossibile cambiare modalità",
-    "TroubleshootBootMode": "Assicurati che il filesystem della tua SD non sia corrotto",
-    "TroubleshootReboot": "Prova a riavviare la console",
     "FailExitButton": "Click qua o premi + per uscire",
     "NewerVersion": "Stai usando una versione più recente di SysDVR",
     "OlderVersion": "Stai usando una versione più vecchia di SysDVR",
     "SysdvrVersionError": "Impossibile rilevare la versione di SysDVR attuale",
     "SysmoduleConnectionFailed": "Impossibile connettersi a SysDVR.",
     "SysmoduleConnectionTroubleshoot": "Se lo hai appena installato riavvia la console, altrimenti aspetta qualche secondo e prova di nuovo.\nQuesto errore è normale se stai usando una versione USB-Only di SysDVR.",
-    "SysmoduleConnectionTroubleshootLink": "In caso di problemi controlla la guida su GitHub:"
+    "SysmoduleConnectionTroubleshootLink": "In caso di problemi controlla la guida su GitHub:",
+    "TroubleshootBootMode": "Assicurati che il filesystem della tua SD non sia corrotto",
+    "TroubleshootReboot": "Prova a riavviare la console",
+    "VersionTroubleshoot": "Scarica l'ultima versione di SysDVR da github.",
+    "NotInstalled": "SysDVR non è installato sulla tua console",
+    "NotInsalledSecondLine": "Il file /atmosphere/contents/00FF0000A53BB665/exefs.nsp non è stato trovato sulla scheda SD, questo significa che non hai estratto SysDVR.zip correttamente. Risolvi il problema, quindi riavvia la console."
   },
   "Guide": {
     "GuideTitle": "La guida è disponibile su Github (solo inglese):"
@@ -46,10 +49,10 @@
   "Patches": {
     "BackButton": "Indietro",
     "CurlNoData": "Nessun dato ricevuto",
-    "Description": "dvr-patches sono patche per il sistema che permettono di effettuare lo streaming di quasi tutti i giochi non compatibili. Alcuni giochi potrebbero crashare, verifica la compatibilità nelle issue https://github.com/exelix11/dvr-patches.\nPuoi anche scaricare le patch manualmente con un computer.",
+    "Description": "dvr-patches sono patch per il sistema che permettono di effettuare lo streaming di quasi tutti i giochi non compatibili. Alcuni giochi potrebbero crashare, verifica la compatibilità nelle issue https://github.com/exelix11/dvr-patches.\nPuoi anche scaricare le patch manualmente con un computer.",
     "DownloadButton": "Scarica e installa",
     "DownloadOk": "Aggiornamento scaricato.",
-    "LatestVer": "Già hai l'ultima versione di dvr-patches.",
+    "LatestVer": "Hai già l'ultima versione di dvr-patches.",
     "Loading": "Caricamento...",
     "NewVerAvail": "Una nuova versione di dvr-patches è disponibile:",
     "RebootButton": "Riavvia ora",
@@ -61,6 +64,14 @@
     "StatusNotInstalled": "Non installato",
     "StatusUnknownVersion": "Installato, versione sconosciuta",
     "Title": "Gestore dvr-patches",
-    "UninstallButton": "Disinstalla"
+    "UninstallButton": "Disinstalla",
+    "CurlError": "Impossibile inizializzare curl",
+    "CurlGETFailed": "Curl GET failed",
+    "NoLinkFound": "Impossibile trovare una sorgente per l'aggiornamento",
+    "ParseDownloadFailure": "Impossibile trovare il link di download per l'aggiornamento",
+    "ParseReleaseFailure": "Impossibile caricare le informazioni della release",
+    "ParseTagCommitFailure": "Commit del tag non trovato",
+    "ParseTagFailure": "Impossibile caricare le informazioni sui tag da GitHub",
+    "ZipExtractFail": "Impossibile estrarre il file zip"
   }
 }
