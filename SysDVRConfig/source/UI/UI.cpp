@@ -97,6 +97,8 @@ static bool ImguiInit()
 	
 	if (!io.Fonts->Build())
 	{
+		printf("UI: failed to initialize font\n");
+
 		// Font building failed, it means we might be out of memory, try to reload the hardcoded english-only font
 		Strings::ResetStringTable();
 		io.Fonts->Clear();
