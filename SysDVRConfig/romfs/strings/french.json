@@ -24,6 +24,8 @@
     "TroubleshootBootMode": "Essayez de vérifier que votre carte SD n'est pas corrompue",
     "TroubleshootReboot": "Essayez de redémarrer votre console",
     "VersionTroubleshoot": "Merci de télécharger les réglages de l'application les plus récents depuis github."
+    "NotInstalled" : "SysDVR n'est pas installé sur votre console",
+    "NotInsalledSecondLine" : "Le fichier /atmosphere/contents/00FF0000A53BB665/exefs.nsp n'a pas été trouvé sur votre carte SD, ce qui indique une extraction du fichier zip incorrecte. Résoudre le problème puis redémarrer la console."
   },
   "Guide": {
     "GuideTitle": "Le guide est hébergé sur Github:"
