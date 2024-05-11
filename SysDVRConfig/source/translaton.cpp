@@ -27,7 +27,7 @@ namespace Strings
 		{ "SetLanguage_ZHTW", ASSET("strings/traditionalChinese.json")},
 		{ "SetLanguage_ZHHANT", ASSET("strings/traditionalChinese.json")},
 		//{ "SetLanguage_JA", ASSET("strings/example.json")},
-		//{ "SetLanguage_FR", ASSET("strings/example.json")},
+		{ "SetLanguage_FR", ASSET("strings/french.json")},
 		//{ "SetLanguage_DE", ASSET("strings/example.json")},
 		//{ "SetLanguage_ES", ASSET("strings/example.json")},
 		//{ "SetLanguage_KO", ASSET("strings/example.json")},
