@@ -2,8 +2,7 @@
   "translationName": "Simplified Chinese",
   "translationAuthor": "Fakerdev",
   "systemLocale": [
-    "zh-cn",
-    "zh-tw"
+    "zh-cn"
   ],
   "fontName": "NotoSansSC-Regular.ttf",
   "imGuiGlyphRange": "ChineseSimplifiedCommon",
