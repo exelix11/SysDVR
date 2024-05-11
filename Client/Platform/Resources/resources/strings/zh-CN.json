@@ -59,6 +59,7 @@
     "manualConnectButton": "使用 IP 地址",
     "connectByIPLabel": "这是主机的本地 IP 地址，应类似于 192.168.X.Y。您可以在控制台设置或 SysDVR-Settings 自制软件中找到它。n如果无法连接，请确保在控制台上启用了 TCP 桥接模式.",
     "connectByIPButton": "连接",
+    "ipConnectDialogTitle": "输入Switch的IP地址",
     "firewallLabel": "请记住在防火墙中允许 SysDVR 客户端，否则它将无法检测到控制台。某些网络可能会阻止设备发现，在这种情况下，您必须通过 IP 进行连接."
   },
   "settings": {

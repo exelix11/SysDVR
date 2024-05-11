@@ -56,8 +56,9 @@
     "title": "Ricerca di console...",
     "manualConnectLabel": "La console non viene rilevata ?",
     "manualConnectButton": "Connetti con indirizzo IP",
-    "connectByIPLabel": "Inserisci l'indirizzo IP locale della console, in genere è del tipo 192.168.X.Y. Lo trovi nelle impostazioni di rete della console.\nSe la connessione fallisce assicurati che la console sia in modalità 'TCP bridge' tramite l'homebrew SysDVR-Settings.",
+    "connectByIPLabel": "Inserisci l'indirizzo IP locale della console, in genere è del tipo 192.168.X.Y. Lo trovi nelle impostazioni di rete.\nSe la connessione fallisce assicurati che la console sia in modalità 'TCP bridge' tramite l'homebrew SysDVR-Settings.",
     "connectByIPButton": "Connetti",
+    "ipConnectDialogTitle": "Inserisci l'indirizzo IP della console",
     "firewallLabel": "Ricorda di sbloccare SysDVR client nel firewall altrimenti non sarà possibile rilevare console nella rete locale. Alcune reti potrebbero bloccare la ricerca dei dispositivi, in questi casi si deve usare la connessione manuale."
   },
   "settings": {

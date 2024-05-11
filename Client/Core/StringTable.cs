@@ -150,6 +150,7 @@ namespace SysDVR.Client.Core
 
 			public string ConnectByIPLabel = "This is the local IP address of your console, it should look like 192.168.X.Y. You can find it in the console settings or in the SysDVR-Settings homebrew.\nIf you can't connect make sure you enabled TCP bridge mode on the console.";
 			public string ConnectByIPButton = "Connect";
+			public string IpConnectDialogTitle = "Enter console IP address";
 
 			// This is shown only on PC devices
 			public string FirewallLabel = "Remember to allow SysDVR client in your firewall or else it won't be able to detect consoles. Some networks may block device discovery, in that case you will have to connect by IP.";
