@@ -57,7 +57,7 @@ namespace SysDVR.Client
 
 		static readonly StringBuilder InitializationError = new();
 
-		public static string Version = "6.1";
+		public static string Version = "6.1.1";
 		public static string BuildID = "";
 
 		public static Options Options = new();
