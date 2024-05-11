@@ -1,6 +1,9 @@
 # This script prunes fonts to only include the characters needed by the translation + the set of base ascii characters
 # This reduces the nro size from 16MB to 8MB since the chinese fonts take a lot of space
 
+# Run this script every time the language files are updated
+# As of now it is not automated in the build process and the pruned fonts are manually committed to the repo
+
 import json
 import os
 from fontTools.ttLib import TTFont

@@ -64,6 +64,7 @@
     "manualConnectButton": "Utiliser l'adresse IP",
     "connectByIPLabel": "Il s'agit de l'adresse IP locale de votre console, cela devrait ressemble à 192.168.X.Y. Vous pouvez la trouver dans les paramètres de la console, ou dans l'homebrew SysDVR-Settings.\nSi vous ne pouvez pas vous connecter, vérifier que vous avez activé le mode de pont TCP sur la console.",
     "connectByIPButton": "Connexion",
+    "ipConnectDialogTitle": "Entrer l' adresse IP",
     "firewallLabel": "Penser à autoriser SysDVR dans votre pare-feu, ou il ne parviendra pas à détecter de console. Certains réseaux peuvent bloquer la découverte de nouveaux appareils, dans ce cas vous devrez vous connecter via l'adresse IP."
   },
   "settings": {

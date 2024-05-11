@@ -55,14 +55,15 @@
      "errorMessage": "錯誤:",
      "placeholderSerial": "(串行隱藏)"
    },
-   "networkScan": {
-     "title": "搜尋網路設備...",
-     "manualConnectLabel": "找不到您的裝置",
-     "manualConnectButton": "使用 IP 位址",
-     "connectByIPLabel": "這是主機的本機IP 位址，應類似於192.168.X.Y。您可以在控制台設定或SysDVR-Settings 自製軟體中找到它。n如果無法連接，請確保在控制台上啟用了TCP 橋接模式.",
-     "connectByIPButton": "連線",
-     "firewallLabel": "請記住在防火牆中允許 SysDVR 用戶端，否則它將無法偵測到控制台。某些網路可能會阻止裝置發現，在這種情況下，您必須透過 IP 進行連線."
-   },
+  "networkScan": {
+    "title": "搜尋網路設備...",
+    "manualConnectLabel": "找不到您的裝置",
+    "manualConnectButton": "使用 IP 位址",
+    "connectByIPLabel": "這是主機的本機IP 位址，應類似於192.168.X.Y。您可以在控制台設定或SysDVR-Settings 自製軟體中找到它。n如果無法連接，請確保在控制台上啟用了TCP 橋接模式.",
+    "connectByIPButton": "連線",
+    "ipConnectDialogTitle": "輸入Switch的IP地址",
+    "firewallLabel": "請記住在防火牆中允許 SysDVR 用戶端，否則它將無法偵測到控制台。某些網路可能會阻止裝置發現，在這種情況下，您必須透過 IP 進行連線."
+  },
   "settings": {
     "heading": "這些設定會自動套用至目前會話，但您可以儲存它們，以便它們變成持久性",
     "saveButton": "儲存變更",
