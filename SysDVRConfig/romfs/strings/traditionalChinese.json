@@ -24,8 +24,8 @@
     "TroubleshootBootMode": "嘗試檢查您的 SD 卡是否損壞",
     "TroubleshootReboot": "嘗試重新啟動主機",
     "VersionTroubleshoot": "請從 github 下載最新的設定應用程式.",
-    "NotInstalled": "Switch主机上未安装SysDVR",
-    "NotInsalledSecondLine": "/atmosphere/contents/00FF0000A53BB665/exefs.nsp 在您的内存卡上无法找到该文件，这意味着您没有正确解压SysDVR.zip。解决该问题之后，然后重新启动Switch主机。"
+    "NotInstalled": "Switch主機上未安裝SysDVR",
+    "NotInsalledSecondLine": "/atmosphere/contents/00FF0000A53BB665/exefs.nsp 在您的記憶卡上無法找到該文件，這意味著您沒有正確解壓縮SysDVR.zip。解決該問題之後，然後重新啟動Switch主機。"
   },
   "Guide": {
     "GuideTitle": "該指南託管在 Github 上:"
