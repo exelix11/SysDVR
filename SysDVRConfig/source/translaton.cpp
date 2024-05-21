@@ -29,13 +29,13 @@ namespace Strings
 		//{ "SetLanguage_JA", ASSET("strings/example.json")},
 		{ "SetLanguage_FR", ASSET("strings/french.json")},
 		//{ "SetLanguage_DE", ASSET("strings/example.json")},
-		//{ "SetLanguage_ES", ASSET("strings/example.json")},
+		{ "SetLanguage_ES", ASSET("strings/spanish.json")},
 		//{ "SetLanguage_KO", ASSET("strings/example.json")},
 		//{ "SetLanguage_NL", ASSET("strings/example.json")},
 		//{ "SetLanguage_PT", ASSET("strings/example.json")},
 		//{ "SetLanguage_RU", ASSET("strings/example.json")},
 		//{ "SetLanguage_FRCA", ASSET("strings/example.json")},
-		//{ "SetLanguage_ES419", ASSET("strings/example.json")},
+		{ "SetLanguage_ES419", ASSET("strings/spanish.json")},
 		//{ "SetLanguage_PTBR", ASSET("strings/example.json")},
 	};
 
