@@ -2,12 +2,12 @@
   "LanguageName": "Spanish",
   "FontName": "opensans.ttf",
   "ImguiGlyphRange": "Por defecto",
-  "TranslationAuthor": "Unai González",
+  "TranslationAuthor": "unaigonzalezz",
   "Connecting": {
     "Description": "Si acabas de encender tu consola, esto puede tardar hasta 20 segundos.",
     "Title": "Conectando a SysDVR.",
     "Troubleshoot1": "Si no puedes pasar de esta pantalla, SysDVR podría no estar ejecutándose.",
-    "Troubleshoot2": "Aseguráte de que tus ajustes son correctos y reinicia tu consola."
+    "Troubleshoot2": "Asegúrate de que tus ajustes son correctos y reinicia tu consola."
   },
   "Error": {
     "BootModeChangeFailed": "No se pudo cambiar el modo de arranque",
@@ -19,13 +19,13 @@
     "OlderVersion": "Estás usando una versión antigua de SysDVR, por favor actualiza a la última versión",
     "SysdvrVersionError": "No se puede obtener la versión de SysDVR",
     "SysmoduleConnectionFailed": "No se puede conectar a SysDVR",
-    "SysmoduleConnectionTroubleshoot": "Si acabas de instar la aplicación, prueba a reiniciar, de lo contrario espera un poco y prueba de nuevo.\nEsto es normal si estás usando el modo USB de SysDVR.",
-    "SysmoduleConnectionTroubleshootLink": "Para soporte, visita la paágina de solución de errores:",
+    "SysmoduleConnectionTroubleshoot": "Si acabas de instalar la aplicación, prueba a reiniciar, de lo contrario espera un poco y prueba de nuevo.\nEsto es normal si estás usando el modo USB de SysDVR.",
+    "SysmoduleConnectionTroubleshootLink": "Para soporte, visita la página de solución de errores:",
     "TroubleshootBootMode": "Compruebe su SD",
     "TroubleshootReboot": "Pruebe reiniciando su consola",
     "VersionTroubleshoot": "Por favor, descargue la última versión de SysDVR desde GitHub",
     "NotInstalled" : "SysDVR no está instalado en su consola",
-	"NotInsalledSecondLine" : "El archivo /atmosphere/contents/00FF0000A53BB665/exefs.nsp no se puedo encontrar en su SD, esto significa que no instaló SysDVR correctamente. Arregle el problema y reinicie la consola."
+	"NotInsalledSecondLine" : "El archivo /atmosphere/contents/00FF0000A53BB665/exefs.nsp no se pudo encontrar en su SD, esto significa que no instaló SysDVR correctamente. Arregle el problema y reinicie la consola."
   },
   "Guide": {
     "GuideTitle": "La guía está alojada en GitHub:"
@@ -33,18 +33,18 @@
   "Main": {
     "ActiveMode": "Activado",
     "ConsoleIPPlcaceholder": "<IP de la consola>",
-    "DefaultMode": "Al arrancar",
-    "ModeDisabled": "Parar retransmisión",
-    "ModeRtsp": "Retransmitir directamente a cualquier reproductor de vídeo a través de RTSP\nUna vez que lo hayas activado y aplicado abre rtsp://{}:6666/ con cualquier reporductor como MPV o VLC.\nEste modo no requiere la instalación de SysDVR en tu PC.\nPara los modos de red se recomienda usar un adaptador LAN.",
+    "DefaultMode": "Al iniciar",
+    "ModeDisabled": "Dejar de retransmitir",
+    "ModeRtsp": "Retransmitir directamente a cualquier reproductor de vídeo a través de RTSP.\nUna vez que lo hayas activado y aplicado abre rtsp://{}:6666/ con cualquier reproductor como MPV o VLC.\nEste modo no requiere la instalación de SysDVR en tu PC.\nPara los modos de red se recomienda usar un adaptador LAN.",
     "ModeRtspTitle": "Modo de red simple (RTSP)",
-    "ModeTcp": "Retransmitir a la aplicación SysDVR mediante la red. Este modo es más estable que el modo de red simple\nPara configurar el cliente de SysDVR en su PC, use la guía de GitHub\nPara los modos de red se recomienda usar un adaptador LAN.",
+    "ModeTcp": "Retransmitir al cliente SysDVR mediante la red. Este modo es más estable que el modo de red simple.\nPara configurar el cliente de SysDVR en su PC, use la guía de GitHub.\nPara los modos de red se recomienda usar un adaptador LAN.",
     "ModeTcpTitle": "Puente TCP",
     "ModeUsb": "Use este modo para retransmitir a la aplicación SysDVR por USB.\nPara configurar el cliente de SysDVR en su PC, use la guía de GitHub",
     "ModeUsbTitle": "USB",
     "OptGuide": "Guía de usuario",
     "OptPatchManager": "Gestor de DVR-Patches",
     "OptSave": "Guardar y salir",
-    "OptSetDefault": "Activar modo actual al arrancar",
+    "OptSetDefault": "Activar modo actual al iniciar",
     "SelectMode": "Seleccionar modo"
   },
   "Patches": {
@@ -69,10 +69,10 @@
     "SearchLatestButton": "Buscar últimos parches disponible",
     "Status": "Estado de los DVR-Patches:",
     "StatusInstalled": "Commit instalado %s",
-    "StatusNotInstalled": "No instaldo",
+    "StatusNotInstalled": "No instalado",
     "StatusUnknownVersion": "Instalado, versión desconocida",
     "Title": "Gestor de DVR-Patches",
     "UninstallButton": "Desinstalar",
-    "ZipExtractFail": "Error al abrir archivo .zip"
+    "ZipExtractFail": "Error al abrir el archivo .zip"
   }
 }
