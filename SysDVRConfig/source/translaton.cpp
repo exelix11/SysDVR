@@ -35,7 +35,7 @@ namespace Strings
 		//{ "SetLanguage_PT", ASSET("strings/example.json")},
 		//{ "SetLanguage_RU", ASSET("strings/example.json")},
 		//{ "SetLanguage_FRCA", ASSET("strings/example.json")},
-		//{ "SetLanguage_ES419", ASSET("strings/example.json")},
+		{ "SetLanguage_ES419", ASSET("strings/spanish.json")},
 		//{ "SetLanguage_PTBR", ASSET("strings/example.json")},
 	};
 
