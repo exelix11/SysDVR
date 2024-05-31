@@ -35,7 +35,7 @@
     "ConsoleIPPlcaceholder": "<Switch IP 位址>",
     "DefaultMode": "已啟動",
     "ModeDisabled": "停止串流",
-    "ModeRtsp": "透過RTSP 直接串流到任何視訊播放器應用程式.\n啟用並套用它後，使用任何視訊播放器（如mpv 或vlc）開啟rtsp://{}：6666\n此模式不需要PC 上的SysDVR-Client.\n對於網路模式，建議使用LAN 適配器.",
+    "ModeRtsp": "透過RTSP 直接串流到任何視訊播放器應用程式.\n啟用並套用它後，使用任何視訊播放器（如mpv 或vlc）開啟rtsp://{}:6666\n此模式不需要PC 上的SysDVR-Client.\n對於網路模式，建議使用LAN 適配器.",
     "ModeRtspTitle": "簡單網路模式 （RTSP）",
     "ModeTcp": "透過網路串流傳輸到SysDVR客戶端應用程式。這比簡單的網路模式更穩定.\n要在您的PC 上設定SysDVR-Client，請參閱Github 上的指南\n對於網路模式 ，建議使用LAN 適配器.",
     "ModeTcpTitle": "TCP 橋接",
