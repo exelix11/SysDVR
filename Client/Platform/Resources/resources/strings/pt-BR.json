@@ -82,7 +82,7 @@
     "screenshotOutputPath": "Caminho de saída das capturas de tela:",
     "screenshotOutputDialogTitle": "Selecione o caminho de saída das capturas de tela",
     "changePathButton": "Mudar",
-    "screenshotToClipboard": "Copiar capturas de tela para a área de transferência em vez de salvá-las como arquivos (Aperte SHIFT para fazer o contrário durante uma captura)",
+    "screenshotToClipboard": "Copiar capturas de tela para a área de transferência em vez de salvá-las como arquivos (Aperte SHIFT para fazer\n o contrário durante uma captura)",
     "defaultVolume": "Volume de áudio padrão",
     "scaleMode": "Modo de escala",
     "scaleMode_Linear": "Linear (padrão)",
