@@ -11,11 +11,11 @@ namespace Strings
 	std::string FontName;
 	GlyphRange ImguiFontGlyphRange;
 
-	MainPageTable Main;
-	GuideTable Guide;
-	ErrorTable Error;
-	PatchesTable Patches;
-	ConnectingTable Connecting;
+	MainPageTable Main = {};
+	GuideTable Guide = {};
+	ErrorTable Error = {};
+	PatchesTable Patches = {};
+	ConnectingTable Connecting = {};
 
 	// TODO: Uncomment the line of the language you want to add and change the name of the json
 	static std::map<std::string, std::string> Translations = {
@@ -27,15 +27,15 @@ namespace Strings
 		{ "SetLanguage_ZHTW", ASSET("strings/traditionalChinese.json")},
 		{ "SetLanguage_ZHHANT", ASSET("strings/traditionalChinese.json")},
 		//{ "SetLanguage_JA", ASSET("strings/example.json")},
-		//{ "SetLanguage_FR", ASSET("strings/example.json")},
+		{ "SetLanguage_FR", ASSET("strings/french.json")},
 		//{ "SetLanguage_DE", ASSET("strings/example.json")},
-		//{ "SetLanguage_ES", ASSET("strings/example.json")},
+		{ "SetLanguage_ES", ASSET("strings/spanish.json")},
 		//{ "SetLanguage_KO", ASSET("strings/example.json")},
 		//{ "SetLanguage_NL", ASSET("strings/example.json")},
 		//{ "SetLanguage_PT", ASSET("strings/example.json")},
 		//{ "SetLanguage_RU", ASSET("strings/example.json")},
 		//{ "SetLanguage_FRCA", ASSET("strings/example.json")},
-		//{ "SetLanguage_ES419", ASSET("strings/example.json")},
+		{ "SetLanguage_ES419", ASSET("strings/spanish.json")},
 		//{ "SetLanguage_PTBR", ASSET("strings/example.json")},
 	};
 
@@ -106,42 +106,84 @@ namespace Strings
 			Main, Guide, Error, Patches, Connecting)
 	};
 	
+	void ResetStringTable()
+	{
+		FontName = ASSET("fonts/opensans.ttf");
+		ImguiFontGlyphRange = GlyphRange::Default;
+		Main = {};
+		Guide = {};
+		Error = {};
+		Patches = {};
+		Connecting = {};
+	}
+
+	static std::string ReadString(const std::string& path)
+	{
+		auto file = fs::OpenFile(path);
+		return std::string(file.begin(), file.end());
+	}
+
+	static std::vector<uint8_t> GetLanguageJson()
+	{
+		if (fs::Exists(SDMC "/config/sysdvr/language.json"))
+		{
+			return fs::OpenFile(SDMC "/config/sysdvr/language.json");
+		}
+
+		auto name = std::string(Platform::GetSystemLanguage());
+		if (fs::Exists(SDMC "/config/sysdvr/force_language"))
+		{
+			auto forceName = ReadString(SDMC "/config/sysdvr/force_language");
+			if (Translations.count(forceName))
+			{
+				name = forceName;
+			}
+			else
+			{
+				printf("force_language does not contain a valid language: %s\n", forceName.c_str());
+			}
+		}
+		
+		if (Translations.count(name))
+		{
+			auto path = Translations[name];
+			printf("Loading translation %s: %s\n", name.c_str(), path.c_str());
+			return fs::OpenFile(path);
+		}
+
+		return {};
+	}
+
 	void LoadTranslationForSystemLanguage()
 	{
 		FontName = ASSET("fonts/opensans.ttf");
 
-		auto current = std::string(Platform::GetSystemLanguage());
-		if (!Translations.count(current))
-		{
-			printf("Failed to load translation for language %s\n", current.c_str());
-			return;
-		}
-
 		TranslationFile translation;
 		
 		try {
-			auto file = fs::OpenFile(Translations[current]);
+			auto file = GetLanguageJson();
+			if (file.empty())
+				return;
+			
 			auto json = nlohmann::json::parse(file.begin(), file.end());
 			translation = json.get<TranslationFile>();
 		}
 		catch (std::exception& ex)
 		{
-			printf("Failed to load translation for language %s: %s\n", current.c_str(), ex.what());
+			printf("Failed to load translation: %s\n", ex.what());
 			return;
 		}
 
 		if (translation.FontName != "")
 		{
-			try {
-				auto font = std::string(ASSET("fonts/")) + translation.FontName;
-				fs::OpenFile(font);
-				FontName = font;
-			}
-			catch (std::exception& ex)
+			auto fontPath = std::string(ASSET("fonts/")) + translation.FontName;
+			if (!fs::Exists(fontPath))
 			{
-				printf("Failed to load the specified font for language %s: %s\n", current.c_str(), ex.what());
+				printf("The specified font does not exist: %s %s\n", translation.FontName.c_str(), fontPath.c_str());
 				return;
 			}
+
+			FontName = fontPath;
 		}
 
 		ImguiFontGlyphRange = translation.ImguiGlyphRange;

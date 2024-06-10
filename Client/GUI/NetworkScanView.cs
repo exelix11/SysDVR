@@ -25,7 +25,7 @@ namespace SysDVR.Client.GUI
         string? autoConnect;
         string autoConnectGuiText;
 
-        Gui.Popup ipEnterPopup = new("Enter console IP address");
+        Gui.Popup ipEnterPopup = new(Program.Strings.NetworkScan.IpConnectDialogTitle);
         Gui.Popup incompatiblePopup = new(Program.Strings.General.PopupErrorTitle);
         Gui.CenterGroup popupBtnCenter = new();
         Gui.CenterGroup popupTbCenter = new();

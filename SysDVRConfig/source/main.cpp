@@ -156,15 +156,15 @@ int main(int argc, char* argv[])
 	
 	currentScene = Scene::ModeSelect;
 
-	if (!fs::Exists(SDMC "/atmosphere/contents/00FF0000A53BB665/exefs.nsp"))
-	{
-		app::FatalError(Strings::Error.NotInstalled, Strings::Error.NotInsalledSecondLine);
-		goto mainloop;
-	}
-
 	{
 		Result rc = ConnectToSysmodule();
 		if (R_FAILED(rc)) {
+			if (!fs::Exists(SDMC "/atmosphere/contents/00FF0000A53BB665/exefs.nsp"))
+			{
+				app::FatalError(Strings::Error.NotInstalled, Strings::Error.NotInsalledSecondLine);
+				goto mainloop;
+			}
+
 			app::SetNextScene(Scene::NoConnection);
 			goto dvrNotConnected;
 		}
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 	scenes::InitGuide();
 
 dvrNotConnected:
-
+	// When sysdvr is not connected we can still show the dvr patches page
 	scenes::InitDvrPatches();
 
 mainloop:

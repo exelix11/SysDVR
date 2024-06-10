@@ -56,8 +56,9 @@
     "title": "Ricerca di console...",
     "manualConnectLabel": "La console non viene rilevata ?",
     "manualConnectButton": "Connetti con indirizzo IP",
-    "connectByIPLabel": "Inserisci l'indirizzo IP locale della console, in genere è del tipo 192.168.X.Y. Lo trovi nelle impostazioni di rete della console.\nSe la connessione fallisce assicurati che la console sia in modalità 'TCP bridge' tramite l'homebrew SysDVR-Settings.",
+    "connectByIPLabel": "Inserisci l'indirizzo IP locale della console, in genere è del tipo 192.168.X.Y. Lo trovi nelle impostazioni di rete.\nSe la connessione fallisce assicurati che la console sia in modalità 'TCP bridge' tramite l'homebrew SysDVR-Settings.",
     "connectByIPButton": "Connetti",
+    "ipConnectDialogTitle": "Inserisci l'indirizzo IP della console",
     "firewallLabel": "Ricorda di sbloccare SysDVR client nel firewall altrimenti non sarà possibile rilevare console nella rete locale. Alcune reti potrebbero bloccare la ricerca dei dispositivi, in questi casi si deve usare la connessione manuale."
   },
   "settings": {
@@ -76,6 +77,7 @@
     "screenshotOutputDialogTitle": "Seleziona la cartella di salvataggio",
     "changePathButton": "Cambia",
     "screenshotToClipboard": "Copia gli screenshot nella clipboard invece che salvarli (Usa SHIFT durante la cattura per invertire questa opzione)",
+    "defaultVolume": "Volume di default",
     "scaleMode": "Modalità di ingrandimento",
     "scaleMode_Linear": "Lineare (default)",
     "scaleMode_Narest": "Più vicina (veloce)",
@@ -100,6 +102,8 @@
     "printRealtimeLogs": "Mostra informazioni sullo stream in tempo reale",
     "verboseDebugging": "Attiva i log dettagliati",
     "disableSynchronization": "Disattiva la sincronizzazione Audio/Video",
+    "disableBacklight": "Spegni lo schermo della console durante lo streaming",
+    "disableBacklightWarn": "Questa funzione è sperimentale e potrebbe causare problemi. Puoi resettare lo schermo della console bloccandola con il tasto di accensione.",
     "analyzeKeyframes": "Analizza i NAL keyframe durante lo stream",
     "analyzeNALs": "Analizza tutti i pacchetti NAL",
     "guiScale": "Scala dell'interfaccia",
@@ -114,7 +118,7 @@
   "player": {
     "confirmQuitPopupTitle": "Conferma",
     "confirmQuitLabel": "Sei sicuro di voler uscire ?",
-    "shortcuts": "Scorciatoie da tastiera:\n - S : screenshot\n - R : avvia o ferma la registrazione\n - F : schermo intero\n - Esc : esci",
+    "shortcuts": "Scorciatoie da tastiera:\n - S : screenshot\n - R : avvia o ferma la registrazione\n - F : schermo intero\n - Freccia Su/Giu : regola volume\n - Esc : esci",
     "audioOnlyMode": "Lo stream è in modalità solo audio.",
     "takeScreenshot": "Screenshot",
     "startRecording": "Registra",
@@ -130,7 +134,8 @@
     "androidPermissionError": "Assicurati di aver permesso l'accesso ai file dalle impostazioni !",
     "customDecoderError": "Il decoder {0} non è stato trovato, verrà usato {1}",
     "customDecoderEnabled": "Viene usato il decoder {0}, in caso di problemi disattiva l'utilizzo di decoder custom.",
-    "playerInitializationMessage": "Inizializzazione del player con il codec {0}."
+    "playerInitializationMessage": "Inizializzazione del player con il codec {0}.",
+    "volumePercent": "Volume {0} %"
   },
   "usb": {
     "title": "Connetti tramite USB",

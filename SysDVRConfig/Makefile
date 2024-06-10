@@ -46,7 +46,7 @@ ROMFS		:=	romfs
 APP_TITLE	:=	SysDVR
 TARGET		:=	${APP_TITLE}
 APP_AUTHOR	:=	Exelix
-APP_VERSION	:=	6.0
+APP_VERSION	:=	6.1.1
 
 #---------------------------------------------------------------------------------
 # options for code generation

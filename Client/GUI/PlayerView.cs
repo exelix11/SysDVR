@@ -203,7 +203,7 @@ namespace SysDVR.Client.GUI
 
             try
             {
-                data = Resources.ReadResouce(Resources.LoadingImage);
+                data = Resources.ReadResource(Resources.LoadingImage);
             }
             catch
             {
@@ -540,7 +540,7 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        void ScreenshitToClipboard() 
+        void ScreenshotToClipboard() 
         {
             if (!Program.IsWindows)
                 throw new Exception("Screenshots to clipboard are only supported on windows");
@@ -571,7 +571,7 @@ namespace SysDVR.Client.GUI
 
                     if (clip)
                     {
-                        ScreenshitToClipboard();
+                        ScreenshotToClipboard();
                         return;
                     }
 				}

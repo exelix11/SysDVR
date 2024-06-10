@@ -95,7 +95,18 @@ static bool ImguiInit()
 
 	mainFont = io.Fonts->AddFontFromFileTTF(Strings::FontName.c_str(), FontSmallSize, &config, ranges.Data);
 	
-	io.Fonts->Build();
+	if (!io.Fonts->Build())
+	{
+		printf("UI: failed to initialize font\n");
+
+		// Font building failed, it means we might be out of memory, try to reload the hardcoded english-only font
+		Strings::ResetStringTable();
+		io.Fonts->Clear();
+		mainFont = io.Fonts->AddFontFromFileTTF(Strings::FontName.c_str(), FontSmallSize, &config);
+		
+		// If this fails, not sure what's the right thing to do since we can't even display an error message
+		io.Fonts->Build();
+	}
 	
 	if (!mainFont)
 		return false;

@@ -65,6 +65,7 @@
     "manualConnectButton": "Use IP address",
     "connectByIPLabel": "This is the local IP address of your console, it should look like 192.168.X.Y. You can find it in the console settings or in the SysDVR-Settings homebrew.\nIf you can't connect make sure you enabled TCP bridge mode on the console.",
     "connectByIPButton": "Connect",
+    "ipConnectDialogTitle": "Enter console IP address",
     "firewallLabel": "Remember to allow SysDVR client in your firewall or else it won't be able to detect consoles. Some networks may block device discovery, in that case you will have to connect by IP."
   },
   "settings": {
@@ -125,7 +126,7 @@
   "player": {
     "confirmQuitPopupTitle": "Confirm quit",
     "confirmQuitLabel": "Are you sure you want to quit?",
-    "shortcuts": "Player shortcuts:\n - S : capture screenshot\n - R : start/stop recording\n - F : toggle full screen\n - Up/Down : change audio volume\n - Esc : quit",
+    "shortcuts": "Keyboard shortcuts:\n - S : capture screenshot\n - R : start/stop recording\n - F : toggle full screen\n - Up/Down : change audio volume\n - Esc : quit",
     "audioOnlyMode": "Streaming is set to audio-only mode.",
     "takeScreenshot": "Screenshot",
     "startRecording": "Start recording",

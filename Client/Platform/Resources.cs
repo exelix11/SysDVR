@@ -21,7 +21,7 @@ namespace SysDVR.Client.Platform
 #if ANDROID_LIB
         // Android is such a shit platform that you can't fopen(), all resources must be read like this
         // thank god SDL already wraps its stupid interface
-        public static byte[] ReadResouce(string path)
+        public static byte[] ReadResource(string path)
         {
             Console.WriteLine($"Loading resource {path}");
 
@@ -62,7 +62,7 @@ namespace SysDVR.Client.Platform
         {
             try 
             {
-				ReadResouce(path);
+				ReadResource(path);
             }
             catch 
             {
@@ -150,7 +150,7 @@ namespace SysDVR.Client.Platform
 			return path;
 		}
 
-		public static byte[] ReadResouce(string path) => File.ReadAllBytes(path);
+		public static byte[] ReadResource(string path) => File.ReadAllBytes(path);
 		public static bool ResourceExists(string path) => File.Exists(path);
 
 		public static bool HasDiskAccessPermission() => true;
@@ -199,7 +199,7 @@ namespace SysDVR.Client.Platform
             {
                 try
                 {
-                    var table = JsonSerializer.Deserialize<StringTableMetadata>(ReadResouce(file), StringTableSerializer.Default.SysDVRStringTableMetadata);
+                    var table = JsonSerializer.Deserialize<StringTableMetadata>(ReadResource(file), StringTableSerializer.Default.SysDVRStringTableMetadata);
                     if (table is null)
                         continue;
 
@@ -221,9 +221,9 @@ namespace SysDVR.Client.Platform
 			return result.ToArray();
         }
 
-        public static StringTable? LoadtranslationFromAssetName(string fullAssetName)
+        public static StringTable? LoadTranslationFromAssetName(string fullAssetName)
         {
-            return JsonSerializer.Deserialize<StringTable>(ReadResouce(fullAssetName), StringTableSerializer.Default.SysDVRStringTable) 
+            return JsonSerializer.Deserialize<StringTable>(ReadResource(fullAssetName), StringTableSerializer.Default.SysDVRStringTable) 
                 ?? throw new Exception($"Failed to deserialize {fullAssetName}");
         }
 

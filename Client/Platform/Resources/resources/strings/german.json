@@ -75,6 +75,7 @@
     "screenshotOutputDialogTitle": "Wählen Sie den Ausgabepfad für die Bildschirmfotos",
     "changePathButton": "ändern",
     "screenshotToClipboard": "Screenshots in die Zwischenablage kopieren, anstatt sie als Dateien zu speichern (Drücken Sie SHIFT, um dies während der Aufnahme zu überschreiben)",
+    "defaultVolume": "Standardlautstärke",
     "scaleMode": "Skalierungsart",
     "scaleMode_Linear": "Linear (standard)",
     "scaleMode_Narest": "Nächstes (geringer Aufwand)",
@@ -99,6 +100,8 @@
     "printRealtimeLogs": "Drucken von Echtzeit-Streaming-Informationen",
     "verboseDebugging": "Ausführliche Protokollierung einschalten",
     "disableSynchronization": "Audio/Video-Synchronisation deaktivieren",
+    "disableBacklight": "Schalte die Hintergrundbeleuchtung der Konsole aus während gestreamt wird",
+    "disableBacklightWarn": "Dieses Feature ist experimentell und kann Probleme verursachen. Um den Bildschirm wiederherzustellen sperre und entsperre die Konsole.",
     "analyzeKeyframes": "Analysieren von Keyframe-NALs während des Streams",
     "analyzeNALs": "Analysieren Sie jedes NAL-Paket",
     "guiScale": "GUI Skalierung",
@@ -111,7 +114,7 @@
   "player": {
     "confirmQuitPopupTitle": "Beenden bestätigen",
     "confirmQuitLabel": "Sind Sie sicher, dass Sie das Programm beenden wollen?",
-    "shortcuts": "Spielerkurzbefehle:\n - S : Bildschirmfoto aufnehmen\n - R : Aufnahme starten/stoppen\n - F : Vollbild umschalten\n - Esc : Beenden",
+    "shortcuts": "Tastenkürzel:\n - S : Bildschirmfoto aufnehmen\n - R : Aufnahme starten/stoppen\n - F : Vollbildmodus an/aus\n - Hoch/Runter : Lautstärke ändern\n - Esc : Schließen",
     "audioOnlyMode": "Das Streaming ist auf den reinen Audiomodus eingestellt.",
     "takeScreenshot": "Screenshot",
     "startRecording": "Aufnahme starten",
@@ -127,7 +130,8 @@
     "androidPermissionError": "Stellen Sie sicher, dass Sie die Dateizugriffsrechte für die Anwendung aktiviert haben!",
     "customDecoderError": "Decoder {0} nicht gefunden, stattdessen wird {1} verwendet",
     "customDecoderEnabled": "Verwendung des benutzerdefinierten Decoders {0}, falls Probleme auftreten, deaktivieren Sie diese Option und verwenden Sie den Standarddecoder.",
-    "playerInitializationMessage": "Initialisierung des Videoplayers mit {0} Codec."
+    "playerInitializationMessage": "Initialisierung des Videoplayers mit {0} Codec.",
+    "volumePercent": "Lautstärke {0} %"
   },
   "usb": {
     "title": "Anschluss über USB",

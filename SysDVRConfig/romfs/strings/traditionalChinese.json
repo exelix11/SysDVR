@@ -23,7 +23,9 @@
     "SysmoduleConnectionTroubleshootLink": "如需支持，請查看故障排除頁面:",
     "TroubleshootBootMode": "嘗試檢查您的 SD 卡是否損壞",
     "TroubleshootReboot": "嘗試重新啟動主機",
-    "VersionTroubleshoot": "請從 github 下載最新的設定應用程式."
+    "VersionTroubleshoot": "請從 github 下載最新的設定應用程式.",
+    "NotInstalled": "Switch主機上未安裝SysDVR",
+    "NotInsalledSecondLine": "/atmosphere/contents/00FF0000A53BB665/exefs.nsp 在您的記憶卡上無法找到該文件，這意味著您沒有正確解壓縮SysDVR.zip。解決該問題之後，然後重新啟動Switch主機。"
   },
   "Guide": {
     "GuideTitle": "該指南託管在 Github 上:"
@@ -33,7 +35,7 @@
     "ConsoleIPPlcaceholder": "<Switch IP 位址>",
     "DefaultMode": "已啟動",
     "ModeDisabled": "停止串流",
-    "ModeRtsp": "透過RTSP 直接串流到任何視訊播放器應用程式.\n啟用並套用它後，使用任何視訊播放器（如mpv 或vlc）開啟rtsp://{}：6666\n此模式不需要PC 上的SysDVR-Client.\n對於網路模式，建議使用LAN 適配器.",
+    "ModeRtsp": "透過RTSP 直接串流到任何視訊播放器應用程式.\n啟用並套用它後，使用任何視訊播放器（如mpv 或vlc）開啟rtsp://{}:6666\n此模式不需要PC 上的SysDVR-Client.\n對於網路模式，建議使用LAN 適配器.",
     "ModeRtspTitle": "簡單網路模式 （RTSP）",
     "ModeTcp": "透過網路串流傳輸到SysDVR客戶端應用程式。這比簡單的網路模式更穩定.\n要在您的PC 上設定SysDVR-Client，請參閱Github 上的指南\n對於網路模式 ，建議使用LAN 適配器.",
     "ModeTcpTitle": "TCP 橋接",
