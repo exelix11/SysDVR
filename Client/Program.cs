@@ -2,12 +2,11 @@
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
-using SysDVR.Client.Test;
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 #if ANDROID_LIB
@@ -57,8 +56,9 @@ namespace SysDVR.Client
 
 		static readonly StringBuilder InitializationError = new();
 
-		public static string Version = "6.1.1";
-		public static string BuildID = "";
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "It works here")]
+        public static readonly string Version = ThisAssembly.Git.BaseTag.ToString();
+        public static readonly string BuildID = ThisAssembly.Git.Commit.ToString();
 
 		public static Options Options = new();
 
@@ -127,8 +127,6 @@ namespace SysDVR.Client
 				if (Instance is null && LegacyInstance is null)
 				{
 					DynamicLibraryLoader.Initialize();
-
-					BuildID = Resources.GetBuildId() ?? "unknown";
 
 					Console.WriteLine($"SysDVR-Client {Version} - by exelix");
 					Console.WriteLine("https://github.com/exelix11/SysDVR");

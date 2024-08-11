@@ -173,22 +173,6 @@ namespace SysDVR.Client.Platform
 		public readonly static LazyImage UsbIcon = new LazyImage(ResourcePath("ico_usb.png"));
 		public readonly static LazyImage WifiIcon = new LazyImage(ResourcePath("ico_wifi.png"));
 
-		public static string? GetBuildId()
-		{
-			try
-			{
-				// Reflection doesn't usually work with AOT but this is a special case
-				return typeof(Program).Assembly
-					.GetCustomAttributes<AssemblyMetadataAttribute>()
-					.FirstOrDefault(a => a.Key == "BuildCommit")?.Value;
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Couldn't load build id file" + ex.ToString());
-			}
-
-			return null;
-		}
 
         public static StringTableMetadata[] GetAvailableTranslations()
         {
