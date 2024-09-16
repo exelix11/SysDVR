@@ -1,15 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
 using FFmpeg.AutoGen;
 using SysDVR.Client.Core;
-using SysDVR.Client.Targets.Player;
 using static FFmpeg.AutoGen.ffmpeg;
 
 namespace SysDVR.Client.Targets.FileOutput

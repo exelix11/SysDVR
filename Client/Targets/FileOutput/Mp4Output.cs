@@ -14,49 +14,6 @@ using SysDVR.Client.Sources;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
-    class Mp4OutputManager : BaseStreamManager, IDisposable
-    {
-        private bool disposedValue;
-        readonly Mp4Output output;
-
-        public Mp4OutputManager(StreamingSource source, string filename, bool HasVideo, bool HasAudio, CancellationTokenSource cancel) : base(
-            source,
-            HasVideo ? new Mp4VideoTarget() : null,
-            HasAudio ? new Mp4AudioTarget() : null,
-            cancel)
-        {
-            output = new Mp4Output(filename, VideoTarget as Mp4VideoTarget, AudioTarget as Mp4AudioTarget);
-        }
-
-        public override void Begin()
-        {
-            // Open output handles before launching threads
-            output.Start();
-            base.Begin();
-        }
-
-        public override async Task Stop()
-        {
-            // Close the output first because sometimes the other threads can get stuck (especially with USB) and prevent the recorder from finalizing the file.
-            output.Stop();
-            await base.Stop().ConfigureAwait(false);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    output.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-    }
-
     unsafe class Mp4Output : IDisposable
     {
         bool Running = false;
