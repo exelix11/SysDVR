@@ -95,7 +95,10 @@ static void USB_VideoStreamThread(void*)
 		}
 		else if (VideoConnected)
 		{
-			if (!CaptureReadVideo() || !IsThreadRunning)
+			// Do not check for errors here, in case grc failed we will be sending the error packet
+			CaptureReadVideo();
+
+			if (!IsThreadRunning)
 				continue;
 
 			if (!SendData(&VPkt, VPkt.Header.DataSize + sizeof(PacketHeader)))
@@ -117,7 +120,10 @@ static void USB_AudioStreamThread(void*)
 	{
 		if (AudioConnected)
 		{
-			if (!CaptureReadAudio() || !IsThreadRunning)
+			// Do not check for errors here, in case grc failed we will be sending the error packet
+			CaptureReadAudio();
+			
+			if (!IsThreadRunning)
 				continue;
 
 			if (!SendData(&APkt, APkt.Header.DataSize + sizeof(PacketHeader)))

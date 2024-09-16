@@ -28,6 +28,9 @@ namespace SysDVR.Client.Core
         // Debug dynamic library loading
         public bool DynLib;
 
+        // Display console error reports
+        public bool ConsoleErrors;
+
 		public bool RequiresH264Analysis => Keyframe || Nal;
     }
 

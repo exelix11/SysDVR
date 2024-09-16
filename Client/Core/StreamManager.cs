@@ -311,7 +311,19 @@ namespace SysDVR.Client.Core
 						continue;
 					}
 
-					if (packet.Header.IsAudio)
+					// This flag only exists starting with protocol version 03
+					if (packet.Header.IsError)
+					{
+						var error = PacketErrorParser.GetPacketErrorAsString(packet);
+						
+						if (Program.Options.Debug.ConsoleErrors)
+							OnErrorMessage?.Invoke(PacketErrorParser.GetPacketErrorAsString(packet));
+						else
+							Console.WriteLine(error);
+
+						packet.Buffer?.Free();
+					}
+					else if (packet.Header.IsAudio)
 						AudioTarget.SendData(packet.Buffer, packet.Header.Timestamp);
 					else
 					{

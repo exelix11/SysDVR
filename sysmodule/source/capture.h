@@ -35,10 +35,11 @@ enum PacketMeta
 	PacketMeta_Type_Video = BIT(0),
 	PacketMeta_Type_Audio = BIT(1),
 
-	PacketMeta_Content_Mask = BIT(2) | BIT(3) | BIT(4),
+	PacketMeta_Content_Mask = BIT(2) | BIT(3) | BIT(4) | BIT(5),
 	PacketMeta_Content_Data = BIT(2),
 	PacketMeta_Content_Replay = BIT(3),	// Only if PacketMeta_Type_Video
-	PacketMeta_Content_MultiNal = BIT(4) // Only if PacketMeta_Type_Video
+	PacketMeta_Content_MultiNal = BIT(4), // Only if PacketMeta_Type_Video
+	PacketMeta_Content_Error = BIT(5)
 };
 
 typedef struct {
@@ -68,6 +69,16 @@ typedef struct {
 } AudioPacket;
 
 _Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * (1 + MaxABatching));
+
+#define ERROR_TYPE_RESULT 1
+
+typedef struct {
+	u32 ErrorType;
+	u32 ErrorCode;
+	u64 Context1;
+	u64 Context2;
+	u64 Context3;
+} __attribute__((packed)) ErrorPacket;
 
 extern VideoPacket VPkt;
 extern AudioPacket APkt;
