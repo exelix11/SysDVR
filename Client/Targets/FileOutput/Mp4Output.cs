@@ -1,16 +1,8 @@
 ﻿using FFmpeg.AutoGen;
-using SysDVR.Client.Targets.Player;
 using System;
 using static FFmpeg.AutoGen.ffmpeg;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Runtime.InteropServices;
 using System.IO;
 using SysDVR.Client.Core;
-using SysDVR.Client.Sources;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
@@ -79,7 +71,7 @@ namespace SysDVR.Client.Targets.FileOutput
             avio_open(&OutCtx->pb, Filename, AVIO_FLAG_WRITE).AssertZero();
             avformat_write_header(OutCtx, null).AssertZero();
 
-            object sync = new object();
+            StreamsSyncObject sync = new();
             VideoTarget?.StartWithContext(OutCtx, sync);
             AudioTarget?.StartWithContext(OutCtx, sync, AStream->id);
 
