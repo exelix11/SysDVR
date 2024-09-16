@@ -73,7 +73,7 @@ namespace SysDVR.Client.Core
 
         // In practice we only check in the UI since the actual communication will check the protocol again. We use this to filter out devices that are not compatible from their broadcasts.
         // In case of IsManualConnection we can't know the real protocol version until we connect.
-        public bool IsProtocolSupported => IsManualConnection || ProtocolVersion == ProtoHandshakeRequest.CurrentProtocolString;
+        public bool IsProtocolSupported => IsManualConnection || ProtoHandshakeRequest.IsProtocolSupported(ProtocolVersion);
 
         private DeviceInfo(string name, ConnectionType source, string connectionString)
         {

@@ -27,6 +27,7 @@ static void RTSP_StreamVideo(void* _)
 
 		while (true)
 		{
+			// Do not handle grc errors here as we have no way of reporting them over RTSP
 			if (!CaptureReadVideo() || !IsThreadRunning)
 				break;
 
