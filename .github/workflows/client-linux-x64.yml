@@ -28,7 +28,7 @@ jobs:
         chmod +x build-flatpak.sh
         ./build-flatpak.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client.flatpak
         path: Client/Platform/Linux/SysDVR-Client.flatpak

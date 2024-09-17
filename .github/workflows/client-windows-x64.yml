@@ -17,7 +17,7 @@ jobs:
       run: |
           cd Client\Platform
           .\BuildWindows.bat
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client-Windows-x64
         path: Client\Client.7z

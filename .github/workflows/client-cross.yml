@@ -31,7 +31,7 @@ jobs:
       run: |
         cd Client
         dotnet build -c Release
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client-dotnet.zip
         path: Client/bin/Release/net8.0/
