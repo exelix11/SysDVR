@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,12 +13,10 @@ namespace SysDVR.Client.Core
         Stopwatch sw = new Stopwatch();
         StringBuilder sb = new();
 
-        public TimeTrace Begin(string kind, string extra, string funcname)
+        public TimeTrace(string kind, string extra = "", [CallerMemberName] string func = null)
         {
-            sb.Clear();
-            sb.Append($"[{kind}] [{funcname}] {extra} ");
+            sb.Append($"[{kind}] [{func}] {extra} ");
             sw.Restart();
-            return this;
         }
 
         public void Mark(string name)
@@ -31,7 +30,7 @@ namespace SysDVR.Client.Core
         {
             sw.Stop();
             sb.Append($"{sw.ElapsedMilliseconds} ms");
-            Console.WriteLine(sb.ToString());
+            Trace.WriteLine(sb.ToString());
         }
     }
 

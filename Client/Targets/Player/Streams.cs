@@ -241,7 +241,7 @@ namespace SysDVR.Client.Targets.Player
 
         public int Pending;
 
-        DecoderContext ctx;
+        //DecoderContext ctx;
         int timebase_den;
         unsafe AVPacket* packet;
         StreamSynchronizationHelper sync;
@@ -325,13 +325,13 @@ namespace SysDVR.Client.Targets.Player
                 av_packet_free(p);
         }
 
-        unsafe public void UseContext(DecoderContext ctx)
-        {
-            this.ctx = ctx;
-            timebase_den = ctx.CodecCtx->time_base.den;
-            sync = ctx.SyncHelper;
-            onFrame = ctx.OnFrameEvent;
-        }
+        //unsafe public void UseContext(DecoderContext ctx)
+        //{
+        //    this.ctx = ctx;
+        //    timebase_den = ctx.CodecCtx->time_base.den;
+        //    sync = ctx.SyncHelper;
+        //    onFrame = ctx.OnFrameEvent;
+        //}
 
 		public override void UseCancellationToken(CancellationToken tok)
 		{
@@ -367,21 +367,22 @@ namespace SysDVR.Client.Targets.Player
         long firstTs = -1;
         public unsafe int DecodePacket(PoolBuffer data, ulong ts)
         {
-            int size = data.Length;
+            //int size = data.Length;
 
-            if (firstTs == -1)
-                firstTs = (long)ts;
+            //if (firstTs == -1)
+            //    firstTs = (long)ts;
 
-            fixed (byte* nal_data = data.Span)
-            {
-                var pkt = packet;
-                pkt->data = nal_data;
-                pkt->size = size;
-                pkt->pts = pkt->dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
+            //fixed (byte* nal_data = data.Span)
+            //{
+            //    var pkt = packet;
+            //    pkt->data = nal_data;
+            //    pkt->size = size;
+            //    pkt->pts = pkt->dts = (long)(((long)ts - firstTs) / 1E+6 * timebase_den);
 
-                lock (ctx.CodecLock)
-                    return avcodec_send_packet(ctx.CodecCtx, pkt);
-            }
+            //    lock (ctx.CodecLock)
+            //        return avcodec_send_packet(ctx.CodecCtx, pkt);
+            //}
+            return 0;
         }
 
         protected override void SendDataImpl(PoolBuffer block, ulong ts)

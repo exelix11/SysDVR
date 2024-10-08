@@ -14,24 +14,26 @@ using SysDVR.Client.GUI;
 using ImGuiNET;
 using SDL2;
 using SysDVR.Client.Sources;
+using SysDVR.Client.ThirdParty.Openh264;
+using SysDVR.Client.Targets.Decoding;
 
 namespace SysDVR.Client.Targets.Player
 {
-    unsafe class DecoderContext
-    {
-        public AVCodecContext* CodecCtx { get; init; }
+    //unsafe class DecoderContext
+    //{
+    //    public AVCodecContext* CodecCtx { get; init; }
 
-        public AVFrame* RenderFrame;
-        public AVFrame* ReceiveFrame;
+    //    public AVFrame* RenderFrame;
+    //    public AVFrame* ReceiveFrame;
 
-        public AVFrame* Frame1 { get; init; }
-        public AVFrame* Frame2 { get; init; }
+    //    public AVFrame* Frame1 { get; init; }
+    //    public AVFrame* Frame2 { get; init; }
 
-        public object CodecLock { get; init; }
+    //    public object CodecLock { get; init; }
 
-        public StreamSynchronizationHelper SyncHelper;
-        public AutoResetEvent OnFrameEvent;
-    }
+    //    public StreamSynchronizationHelper SyncHelper;
+    //    public AutoResetEvent OnFrameEvent;
+    //}
 
     unsafe struct FormatConverterContext
     {
@@ -41,7 +43,7 @@ namespace SysDVR.Client.Targets.Player
 
     class PlayerManager : BaseStreamManager
     {
-        internal new H264StreamTarget VideoTarget;
+        internal new OpenH264PlayerTarget VideoTarget;
         internal new AudioOutStream AudioTarget;
 
         public bool IsCompatibleAudioStream;
@@ -70,7 +72,7 @@ namespace SysDVR.Client.Targets.Player
             if (!hasVideo)
                 return null;
 
-            return new H264StreamTarget();
+            return new OpenH264PlayerTarget();
         }
 
         public void UseSyncManager(StreamSynchronizationHelper manager)
@@ -84,7 +86,7 @@ namespace SysDVR.Client.Targets.Player
         public PlayerManager(StreamingSource source, CancellationTokenSource cancel) :
             base(source, MakeVideoStream(source.Options.HasVideo), MakeAudioStream(source.Options.HasAudio), cancel)
         {
-            VideoTarget = base.VideoTarget as H264StreamTarget;
+            VideoTarget = base.VideoTarget as OpenH264PlayerTarget;
             AudioTarget = base.AudioTarget as AudioOutStream;
             IsCompatibleAudioStream = AudioTarget is QueuedStreamAudioTarget;
         }
@@ -165,7 +167,7 @@ namespace SysDVR.Client.Targets.Player
         public const AVPixelFormat TargetDecodingFormat = AVPixelFormat.AV_PIX_FMT_YUV420P;
         public readonly uint TargetTextureFormat = SDL_PIXELFORMAT_IYUV;
 
-        public DecoderContext Decoder { get; private set; }
+        //public DecoderContext Decoder { get; private set; }
         FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 
         public string DecoderName { get; private set; }
@@ -175,8 +177,15 @@ namespace SysDVR.Client.Targets.Player
         public IntPtr TargetTexture;
         public SDL_Rect TargetTextureSize;
 
-        public VideoPlayer(string? preferredDecoderName, bool hwAccel)
+        PlanarYUVFrame Render;
+        readonly OpenH264PlayerTarget Target;
+
+        public VideoPlayer(string? preferredDecoderName, bool hwAccel, OpenH264PlayerTarget target)
         {
+            this.Target = target;
+
+            Render = target.AcquireFrame();
+
             InitVideoDecoder(preferredDecoderName, hwAccel);
             InitSDLRenderTexture();
         }
@@ -209,84 +218,84 @@ namespace SysDVR.Client.Targets.Player
 
         unsafe void InitVideoDecoder(string? name, bool useHwAcc)
         {
-            AVCodec* codec = null;
+            //AVCodec* codec = null;
 
-            if (name is not null)
-            {
-                codec = avcodec_find_decoder_by_name(name);
-            }
+            //if (name is not null)
+            //{
+            //    codec = avcodec_find_decoder_by_name(name);
+            //}
             
-            if (codec == null && useHwAcc)
-            {
-                name = LibavUtils.GetH264Decoders().Where(x => x.Name != "h264").FirstOrDefault()?.Name;
+            //if (codec == null && useHwAcc)
+            //{
+            //    name = LibavUtils.GetH264Decoders().Where(x => x.Name != "h264").FirstOrDefault()?.Name;
 
-                if (name != null)
-                {
-                    codec = avcodec_find_decoder_by_name(name);
-                    if (codec != null)
-                    {
-                        AcceleratedDecotr = true;
-                    }
-                }
-            }
+            //    if (name != null)
+            //    {
+            //        codec = avcodec_find_decoder_by_name(name);
+            //        if (codec != null)
+            //        {
+            //            AcceleratedDecotr = true;
+            //        }
+            //    }
+            //}
 
-            if (codec == null)
-                codec = avcodec_find_decoder(AVCodecID.AV_CODEC_ID_H264);
+            //if (codec == null)
+            //    codec = avcodec_find_decoder(AVCodecID.AV_CODEC_ID_H264);
 
-            if (codec == null)
-                throw new Exception("Couldn't find any compatible video codecs");
+            //if (codec == null)
+            //    throw new Exception("Couldn't find any compatible video codecs");
 
-            Decoder = CreateDecoderContext(codec);
-            DecoderName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
+            //Decoder = CreateDecoderContext(codec);
+            //DecoderName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
         }
 
-        static unsafe DecoderContext CreateDecoderContext(AVCodec* codec)
-        {
-            if (codec == null)
-                throw new Exception("Codec can't be null");
+        //static unsafe DecoderContext CreateDecoderContext(AVCodec* codec)
+        //{
+        //    if (codec == null)
+        //        throw new Exception("Codec can't be null");
 
-            string codecName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
+        //    string codecName = Marshal.PtrToStringAnsi((IntPtr)codec->name);
 
-            Console.WriteLine(string.Format(Program.Strings.Player.PlayerInitializationMessage, codecName));
+        //    Console.WriteLine(string.Format(Program.Strings.Player.PlayerInitializationMessage, codecName));
 
-            var codectx = avcodec_alloc_context3(codec);
-            if (codectx == null)
-                throw new Exception("Couldn't allocate a codec context");
+        //    var codectx = avcodec_alloc_context3(codec);
+        //    if (codectx == null)
+        //        throw new Exception("Couldn't allocate a codec context");
 
-            // These are set in ffplay
-            codectx->codec_id = codec->id;
-            codectx->codec_type = AVMediaType.AVMEDIA_TYPE_VIDEO;
-            codectx->bit_rate = 0;
+        //    // These are set in ffplay
+        //    codectx->codec_id = codec->id;
+        //    codectx->codec_type = AVMediaType.AVMEDIA_TYPE_VIDEO;
+        //    codectx->bit_rate = 0;
 
-            // Some decoders break without this
-            codectx->width = StreamInfo.VideoWidth;
-            codectx->height = StreamInfo.VideoHeight;
+        //    // Some decoders break without this
+        //    codectx->width = StreamInfo.VideoWidth;
+        //    codectx->height = StreamInfo.VideoHeight;
 
-            var (ex, sz) = LibavUtils.AllocateH264Extradata();
-            codectx->extradata_size = sz;
-            codectx->extradata = (byte*)ex.ToPointer();
+        //    var (ex, sz) = LibavUtils.AllocateH264Extradata();
+        //    codectx->extradata_size = sz;
+        //    codectx->extradata = (byte*)ex.ToPointer();
 
-            avcodec_open2(codectx, codec, null).AssertZero("Couldn't open the codec.");
+        //    avcodec_open2(codectx, codec, null).AssertZero("Couldn't open the codec.");
 
-            var pic = av_frame_alloc();
-            if (pic == null)
-                throw new Exception("Couldn't allocate the decoding frame");
+        //    var pic = av_frame_alloc();
+        //    if (pic == null)
+        //        throw new Exception("Couldn't allocate the decoding frame");
 
-            var pic2 = av_frame_alloc();
-            if (pic2 == null)
-                throw new Exception("Couldn't allocate the decoding frame");
+        //    var pic2 = av_frame_alloc();
+        //    if (pic2 == null)
+        //        throw new Exception("Couldn't allocate the decoding frame");
 
-            return new DecoderContext()
-            {
-                CodecCtx = codectx,
-                Frame1 = pic,
-                Frame2 = pic2,
-                ReceiveFrame = pic,
-                RenderFrame = pic2,
-                CodecLock = new object(),
-                OnFrameEvent = new AutoResetEvent(true)
-            };
-        }
+        //    return new DecoderContext()
+        //    {
+        //        CodecCtx = codectx,
+        //        Frame1 = pic,
+        //        Frame2 = pic2,
+        //        ReceiveFrame = pic,
+        //        RenderFrame = pic2,
+        //        CodecLock = new object(),
+        //        OnFrameEvent = new AutoResetEvent(true)
+        //    };
+        //}
 
         public unsafe bool DecodeFrame() 
         {
@@ -294,7 +303,7 @@ namespace SysDVR.Client.Targets.Player
             {
                 // TODO: this call is needed only with opengl on linux (and not on every linux install i tested) where TextureUpdate must be called by the main thread,
                 // Check if are there any performance improvements by moving this to the decoder thread on other OSes
-                UpdateSDLTexture(Decoder.RenderFrame);
+                UpdateSDLTexture(Render);
 
                 return true;
             }
@@ -306,6 +315,15 @@ namespace SysDVR.Client.Targets.Player
             -(-a >> b);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe void UpdateSDLTexture(PlanarYUVFrame pic)
+        {
+			SDL_UpdateYUVTexture(TargetTexture, ref TargetTextureSize,
+				pic.YDecoded, pic.YLineSize,
+				pic.UDecoded, pic.ULineSize,
+				pic.VDecoded, pic.VLineSize);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe void UpdateSDLTexture(AVFrame* pic)
         {
             if (pic->linesize[0] > 0 && pic->linesize[1] > 0 && pic->linesize[2] > 0)
@@ -337,57 +355,8 @@ namespace SysDVR.Client.Targets.Player
         bool converterFirstFrameCheck = false;
         unsafe bool DecodeFrameInternal()
         {
-            int ret = 0;
-
-            lock (Decoder.CodecLock)
-                ret = avcodec_receive_frame(Decoder.CodecCtx, Decoder.ReceiveFrame);
-
-            if (ret == AVERROR(EAGAIN))
-            {
-                // Try again for the next SDL frame
-                return false;
-            }
-            else if (ret != 0)
-            {
-                // Should not happen
-                Program.DebugLog($"avcodec_receive_frame {ret}");
-                return false;
-            }
-            else
-            {
-                // On the first frame we get check if we need to use a converter
-                if (!converterFirstFrameCheck && Decoder.CodecCtx->pix_fmt != AVPixelFormat.AV_PIX_FMT_NONE)
-                {
-					Program.DebugLog($"Decoder.CodecCtx uses pixel format {Decoder.CodecCtx->pix_fmt}");
-
-                    converterFirstFrameCheck = true;
-                    if (Decoder.CodecCtx->pix_fmt != TargetDecodingFormat)
-                    {
-                        Converter = InitializeConverter(Decoder.CodecCtx);
-                        // Render to the converted frame
-                        Decoder.RenderFrame = Converter.Frame;
-                    }
-                }
-
-                if (Converter.Converter != null)
-                {
-                    var source = Decoder.ReceiveFrame;
-                    var target = Decoder.RenderFrame;
-                    sws_scale(Converter.Converter, source->data, source->linesize, 0, source->height, target->data, target->linesize);
-                }
-                else
-                {
-                    // Swap the frames so we can render source
-                    var toRender = Decoder.ReceiveFrame;
-                    var receiveNext = Decoder.RenderFrame;
-
-                    Decoder.ReceiveFrame = receiveNext;
-                    Decoder.RenderFrame = toRender;
-                }
-
-                return true;
-            }
-        }
+            return Target.SwapBuffers(ref Render);
+		}
 
         unsafe static FormatConverterContext InitializeConverter(AVCodecContext* codecctx)
         {
@@ -423,27 +392,27 @@ namespace SysDVR.Client.Targets.Player
 
         public unsafe void Dispose()
         {
-            var ptr = Decoder.Frame1;
-            av_frame_free(&ptr);
+            //var ptr = Decoder.Frame1;
+            //av_frame_free(&ptr);
 
-            ptr = Decoder.Frame2;
-            av_frame_free(&ptr);
+            //ptr = Decoder.Frame2;
+            //av_frame_free(&ptr);
 
-            var ptr2 = Decoder.CodecCtx;
-            avcodec_free_context(&ptr2);
+            //var ptr2 = Decoder.CodecCtx;
+            //avcodec_free_context(&ptr2);
 
-            if (Converter.Converter != null)
-            {
-                var ptr3 = Converter.Frame;
-                av_frame_free(&ptr3);
+            //if (Converter.Converter != null)
+            //{
+            //    var ptr3 = Converter.Frame;
+            //    av_frame_free(&ptr3);
 
-                sws_freeContext(Converter.Converter);
-            }
+            //    sws_freeContext(Converter.Converter);
+            //}
 
-            if (TargetTexture != 0)
-                SDL_DestroyTexture(TargetTexture);
+            //if (TargetTexture != 0)
+            //    SDL_DestroyTexture(TargetTexture);
 
-            Decoder.OnFrameEvent.Dispose();
+            //Decoder.OnFrameEvent.Dispose();
         }
     }
 }

@@ -59,9 +59,9 @@ namespace SysDVR.Client.GUI
 
             if (manager.HasVideo)
             {
-                Video = new(Program.Options.DecoderName, Program.Options.HardwareAccel);
-                Video.Decoder.SyncHelper = sync;
-                manager.VideoTarget.UseContext(Video.Decoder);
+                Video = new(Program.Options.DecoderName, Program.Options.HardwareAccel, Manager.VideoTarget);
+                //Video.Decoder.SyncHelper = sync;
+                //manager.VideoTarget.UseContext(Video.Decoder);
 
                 InitializeLoadingTexture();
 
@@ -125,7 +125,7 @@ namespace SysDVR.Client.GUI
                 debugFps = f;
 
             sb.AppendLine($"Video fps: {debugFps} DispRect {DisplayRect.x} {DisplayRect.y} {DisplayRect.w} {DisplayRect.h}");
-            sb.AppendLine($"Video pending packets: {Manager.VideoTarget?.Pending}");
+            //sb.AppendLine($"Video pending packets: {Manager.VideoTarget?.Pending}");
             sb.AppendLine($"IsCompatibleAudioStream: {Manager.IsCompatibleAudioStream}");
             return sb.ToString();
         }
@@ -152,7 +152,7 @@ namespace SysDVR.Client.GUI
             return null;
         }
 
-        // For imgui usage, this function draws the current frame
+        // For imgui usage, this function draws the current frame on the render texture bypassing imgui rendering
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DrawAsync()
         {
@@ -168,14 +168,14 @@ namespace SysDVR.Client.GUI
             SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
 
             // Signal we're presenting something to SDL to kick the decoding thread
-            // We don't care if we didn't actually decode anything we just do it here
-            // to do this on every vsync to avoid arbitrary sleeps on the other side
-            Video.Decoder.OnFrameEvent.Set();
+            // We don't care if we didn't actually decode anything we need to do it 
+            // on every vsync to avoid arbitrary sleeps on the other side
+            //Video.Decoder.OnFrameEvent.Set();
 
             return true;
         }
 
-        // For legacy player usage, this locks the thread until the next frame is ready
+        // For legacy player usage, this does not render if not needed since we don't clear the screen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DrawLocked()
         {
@@ -186,7 +186,7 @@ namespace SysDVR.Client.GUI
                 return false;
 
 			SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
-			Video.Decoder.OnFrameEvent.Set();
+			//Video.Decoder.OnFrameEvent.Set();
 
             return true;
 		}
