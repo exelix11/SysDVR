@@ -70,7 +70,7 @@ namespace SysDVR.Client.Sources
 
 		protected override Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
 		{
-			return Task.FromResult(Encoding.ASCII.GetBytes($"SysDVR|{ProtoHandshakeRequest.CurrentProtocolString}\0"));
+			return Task.FromResult(Encoding.ASCII.GetBytes($"SysDVR|03\0"));
 		}
 
 		protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)

@@ -1,8 +1,7 @@
 ﻿using SysDVR.Client.Core;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -23,9 +22,10 @@ namespace SysDVR.Client.Sources
         
         public const byte MetaIsData = 1 << 2;
         public const byte MetaIsHash = 1 << 3;
-        public const byte MetaIsMultiNAL = 1 << 4;
+		public const byte MetaIsMultiNAL = 1 << 4;
+		public const byte MetaIsError = 1 << 5;
 
-        public uint Magic;
+		public uint Magic;
         public int DataSize;
         public ulong Timestamp;
 
@@ -37,6 +37,7 @@ namespace SysDVR.Client.Sources
 
         public readonly bool IsReplay => (Flags & MetaIsHash) != 0;
         public readonly bool IsMultiNAL => (Flags & MetaIsMultiNAL) != 0;
+        public readonly bool IsError => (Flags & MetaIsError) != 0;
 
         public override string ToString() =>
             $"Magic: {Magic:X8} Len: {DataSize + StructLength} Bytes - ts: {Timestamp}";
@@ -51,13 +52,13 @@ namespace SysDVR.Client.Sources
     [StructLayout(LayoutKind.Sequential)]
     unsafe struct ProtoHandshakeRequest
     {
-        const char ProtoHigh = '0';
-        const char ProtoLow = '2';
+        public static bool IsProtocolSupported(string protoString) =>
+            protoString is "03" or "02";
 
-        public static readonly string CurrentProtocolString = $"{ProtoHigh}{ProtoLow}";
-        public const ushort CurrentProtocolVersion = ProtoHigh | (ProtoLow << 8);
+		public static bool IsProtocolSupported(ushort protoValue) =>
+			protoValue is ('0' | ('3' << 8 )) or ('0' | ('2' << 8));
 
-        public const int HelloPacketSize = 10;
+		public const int HelloPacketSize = 10;
         public const int StructureSize = 16;
         public const uint RequestMagic = 0xAAAAAAAA;
         public const uint HandshakeOKCode = 6;
@@ -137,6 +138,31 @@ namespace SysDVR.Client.Sources
 		}
     }
 
+    static class PacketErrorParser 
+    {
+        public static string GetPacketErrorAsString(in ReceivedPacket packet)
+        {
+            if (!packet.Header.IsError)
+				return "Packet is not an error";
+
+            if (packet.Buffer is null)
+                return "Packet buffer is null";
+
+            uint ErrorType = BitConverter.ToUInt32(packet.Buffer.Span);
+			uint ErrorCode = BitConverter.ToUInt32(packet.Buffer.Span[4..]);
+			ulong Context1 = BitConverter.ToUInt64(packet.Buffer.Span[8..]);
+			ulong Context2 = BitConverter.ToUInt64(packet.Buffer.Span[16..]);
+			ulong Context3 = BitConverter.ToUInt64(packet.Buffer.Span[24..]);
+
+            if (ErrorType == 1)
+            {
+                return $"Libnx error code 0x{ErrorCode:x} context {Context1:x} {Context2:x} {Context3:x}";
+			}
+            
+            return $"Unknown error type 0x{ErrorType:x} ";
+		}
+    }
+
 	abstract class StreamingSource : IDisposable
     {
         // Note that the source should respect the target output type,
@@ -210,13 +236,13 @@ namespace SysDVR.Client.Sources
             var version = await GetCurrentVersionFromHelloPacket(StreamProduced).ConfigureAwait(false);
 
             // TODO: Add backwards compatibility adapters here
-            if (version != ProtoHandshakeRequest.CurrentProtocolVersion)
+            if (!ProtoHandshakeRequest.IsProtocolSupported(version))
                 throw new Exception($"{StreamProduced} {Program.Strings.Errors.InitialPacketWrongVersion} {Program.Strings.Errors.VersionTroubleshooting}");
 
             ProtoHandshakeRequest req = new();
 
             req.Magic = ProtoHandshakeRequest.RequestMagic;
-            req.Version = ProtoHandshakeRequest.CurrentProtocolVersion;
+            req.Version = version;
 
             req.AudioBatching = (byte)Options.AudioBatching;
             req.UseNalhashes = Options.UseNALReplay;

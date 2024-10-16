@@ -26,15 +26,15 @@ jobs:
         sudo apt-get install -y p7zip-full
         chmod +x ReleaseSysmodule.sh
         ./ReleaseSysmodule.sh
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR sysmodule USB only
         path: SysmoduleRelease/USB.zip
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR sysmodule
         path: SysmoduleRelease/SysDVR.zip
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: Sysmodule debug ELFs
         path: SysmoduleRelease/Debug/

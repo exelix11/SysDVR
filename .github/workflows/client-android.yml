@@ -59,7 +59,7 @@ jobs:
         ./gradlew assembleRelease
       env: 
         ANDROID_CI_KEY: ${{ secrets.ANDROID_CI_KEY }}
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client
         path: ./Client/Platform/Android/app/build/outputs/apk/release/app-release.apk

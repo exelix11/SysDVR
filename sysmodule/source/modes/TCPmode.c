@@ -214,7 +214,10 @@ static void TCP_StreamThread(void* argConfig)
 		u64 total = 0;
 		while (true)
 		{
-			if (!ReadStream() || !IsThreadRunning)
+			// Do not check errors here, in case grc failed we will send the error packet to the client
+			ReadStream();
+
+			if (!IsThreadRunning)
 				break;
 
 			LOG_V("Sending MAGIC %x TS %lu BYTES %lu\n", config.Pkt->Magic, config.Pkt->Timestamp, config.Pkt->DataSize + sizeof(PacketHeader));

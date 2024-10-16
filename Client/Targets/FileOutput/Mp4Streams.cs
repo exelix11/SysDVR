@@ -1,41 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
 using FFmpeg.AutoGen;
 using SysDVR.Client.Core;
-using SysDVR.Client.Targets.Player;
 using static FFmpeg.AutoGen.ffmpeg;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
-    static class FirstTimestamp
+    class StreamsSyncObject
     {
-        static object sync = new object();
-        static long value = -1;
+        object sync = new();
+        long firstTs = -1;
 
-        public static long GetOrSet(ulong ts)
+        public long GetOrSetFirstTimestamp(ulong ts)
         {
             lock (sync)
             {
-                if (value == -1)
+                if (firstTs == -1)
                 {
-                    value = (long)ts;
+                    firstTs = (long)ts;
                 }
             }
-            return value;
+            return firstTs;
         }
     }
 
     unsafe class Mp4AudioTarget : OutStream
     {
+        StreamsSyncObject Sync;
+
         AVFormatContext* outCtx;
-        object ctxSync;
         AVCodecContext* codecCtx;
 
         AVFrame* frame;
@@ -59,10 +51,10 @@ namespace SysDVR.Client.Targets.FileOutput
             }
         }
 
-        public void StartWithContext(AVFormatContext* ctx, object sync, int id)
+        public void StartWithContext(AVFormatContext* ctx, StreamsSyncObject sync, int id)
         {
             outCtx = ctx;
-            ctxSync = sync;
+            Sync = sync;
             channelId = id;
 
             timebase_den = outCtx->streams[id]->time_base.den;
@@ -112,7 +104,7 @@ namespace SysDVR.Client.Targets.FileOutput
             lock (this)
             {
                 if (firstTs == -1)
-                    firstTs = FirstTimestamp.GetOrSet(ts);
+                    firstTs = Sync.GetOrSetFirstTimestamp(ts);
 
                 // Should look into endianness for this
                 while (data.Length > 0 && running)
@@ -156,7 +148,7 @@ namespace SysDVR.Client.Targets.FileOutput
             while (avcodec_receive_packet(codecCtx, packet) == 0)
             {
                 packet->stream_index = channelId;
-                lock (ctxSync)
+                lock (Sync)
                     av_interleaved_write_frame(outCtx, packet).AssertNotNeg();
                 av_packet_unref(packet);
             }
@@ -202,7 +194,7 @@ namespace SysDVR.Client.Targets.FileOutput
     unsafe class Mp4VideoTarget : OutStream
     {
         AVFormatContext* outCtx;
-        object ctxSync;
+        StreamsSyncObject Sync;
 
         int timebase_den;
 
@@ -216,10 +208,10 @@ namespace SysDVR.Client.Targets.FileOutput
             }
         }
 
-        public void StartWithContext(AVFormatContext* ctx, object sync)
+        public void StartWithContext(AVFormatContext* ctx, StreamsSyncObject sync)
         {
             outCtx = ctx;
-            ctxSync = sync;
+			Sync = sync;
             timebase_den = outCtx->streams[0]->time_base.den;
             running = true;
         }
@@ -242,7 +234,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
                     data = next;
 
-                    firstTs = FirstTimestamp.GetOrSet(ts);
+                    firstTs = Sync.GetOrSetFirstTimestamp(ts);
                 }
 
                 fixed (byte* nal_data = data)
@@ -254,7 +246,7 @@ namespace SysDVR.Client.Targets.FileOutput
                     pkt->dts = pkt->pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
                     pkt->stream_index = 0;
 
-                    lock (ctxSync)
+                    lock (Sync)
                         av_interleaved_write_frame(outCtx, pkt).AssertNotNeg();
 
                     av_packet_free(&pkt);
