@@ -70,7 +70,10 @@ typedef struct {
 
 _Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * (1 + MaxABatching));
 
-#define ERROR_TYPE_RESULT 1
+// Error values
+#define ERROR_TYPE_VIDEO_CAP 1
+#define ERROR_TYPE_AUDIO_CAP 2
+#define ERROR_TYPE_AUDIO_CAP_BATCH 3
 
 typedef struct {
 	u32 ErrorType;

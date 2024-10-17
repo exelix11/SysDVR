@@ -156,10 +156,14 @@ namespace SysDVR.Client.Sources
 
             if (ErrorType == 1)
             {
-                return $"Libnx error code 0x{ErrorCode:x} context {Context1:x} {Context2:x} {Context3:x}";
+                return $"Video capture failed with code 0x{ErrorCode:x} requested size was 0x{Context1:x}";
 			}
-            
-            return $"Unknown error type 0x{ErrorType:x} ";
+            else if (ErrorType is 2 or 3)
+            {
+                return $"Audio capture failed with code 0x{ErrorCode:x} requested size was 0x{Context1:x}, iteration was {Context2}";
+            }
+
+            return $"Unknown error type 0x{ErrorType:x} 0x{ErrorCode:x} 0x{Context1:x} 0x{Context2:x} 0x{Context3:x}";
 		}
     }
 
