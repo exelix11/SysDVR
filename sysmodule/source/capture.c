@@ -36,10 +36,10 @@ static void PacketMakeData(PacketHeader* packet)
 	packet->MetaData = (packet->MetaData & ~PacketMeta_Content_Mask) | PacketMeta_Content_Data;
 }
 
-static void PacketMakeError(PacketHeader* packet, void* packedBody, u32 code, u64 context1, u64 context2)
+static void PacketMakeError(u32 type, PacketHeader* packet, void* packedBody, u32 code, u64 context1, u64 context2)
 {
 	ErrorPacket error = {
-		.ErrorType = ERROR_TYPE_RESULT,
+		.ErrorType = type,
 		.ErrorCode = code,
 		.Context1 = context1,
 		.Context2 = context2,
@@ -75,7 +75,7 @@ bool CaptureReadAudio()
 	if (!R_SUCCEEDED(rc))
 	{
 		LOG("Audio capture failed: %x size: %x\n", rc, dataSize);
-		PacketMakeError(&APkt.Header, APkt.Data, rc, dataSize, 0);
+		PacketMakeError(ERROR_TYPE_AUDIO_CAP, &APkt.Header, APkt.Data, rc, dataSize, 0);
 		return false;
 	}
 
@@ -93,7 +93,7 @@ bool CaptureReadAudio()
 		if (!R_SUCCEEDED(rc))
 		{
 			LOG("Audio capture failed: %x size: %x (loop %d)\n", rc, tmpSize, i);
-			PacketMakeError(&APkt.Header, APkt.Data, rc, tmpSize, i + 1);
+			PacketMakeError(ERROR_TYPE_AUDIO_CAP_BATCH, &APkt.Header, APkt.Data, rc, tmpSize, i + 1);
 			return false;
 		}
 
@@ -197,7 +197,7 @@ bool CaptureReadVideo()
 	{
 		LOG("Video capture failed: %x size: %x\n", res, dataSize);
 		// In these cases, set the meta error flag and the payload is just the size 
-		PacketMakeError(&VPkt.Header, VPkt.Data, res, dataSize, 0);
+		PacketMakeError(ERROR_TYPE_VIDEO_CAP, &VPkt.Header, VPkt.Data, res, dataSize, 0);
 	}
 	else
 	{
