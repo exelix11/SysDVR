@@ -35,6 +35,8 @@ namespace SysDVR.Client.GUI.Components
 		public bool IsFullscreen { get; private set; } = false;
 		public Vector2 WindowSize { get; private set; }
 
+		internal bool AcceptControllerInput = true;
+
 		// Scaling info
 		Vector2 PixelSize;
 		Vector2 WantedDPIScale;
@@ -130,6 +132,9 @@ namespace SysDVR.Client.GUI.Components
 		public GuiMessage PumpEvents(out SDL_Event evt)
 		{
 			if (SDL_PollEvent(out evt) == 0)
+				return GuiMessage.None;
+
+			if (evt.type == SDL_EventType.SDL_JOYBUTTONDOWN && !AcceptControllerInput)
 				return GuiMessage.None;
 
 			//Console.WriteLine($"Received SDL_Event {evt.type}");

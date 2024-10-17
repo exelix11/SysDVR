@@ -69,6 +69,8 @@ namespace SysDVR.Client.Core
 
         public int DefaultVolume = 60;
 
+        public bool ControllerInput = true;
+
 		public string ScaleHintForSDL => RendererScale switch
         {
             SDLScaleMode.Linear => "linear",

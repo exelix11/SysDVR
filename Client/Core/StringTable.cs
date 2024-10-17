@@ -234,6 +234,8 @@ namespace SysDVR.Client.Core
 
 			public string InvalidPathError = "The selected path does not exist, try again.";
 			public string PathSelectDialog = "Select path";
+			
+			public string ControllerInput = "Enable joypad input for controlling the SysDVR GUI";
 		}
 
 		internal class PlayerTable

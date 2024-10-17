@@ -290,7 +290,10 @@ namespace SysDVR.Client.GUI
 				ImGui.SameLine();
 				ImGui.SliderInt("##SliderAudioVolume", ref Program.Options.DefaultVolume, 0, 100, "%d %%");
 
-				ImGui.Unindent();
+				if (ImGui.Checkbox(Strings.ControllerInput, ref Program.Options.ControllerInput))
+					Program.Instance.ApplyImguiSetings();
+
+                ImGui.Unindent();
 				ImGui.NewLine();
 			}
 
