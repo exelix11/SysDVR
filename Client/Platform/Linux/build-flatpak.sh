@@ -2,17 +2,8 @@
 
 set -e
 
-# install flatpak dependencies
-flatpak install --user -y flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08 runtime/org.freedesktop.Sdk.Extension.dotnet6/x86_64/22.08
-
 if [ ! -d "shared-modules" ]; then
-	mkdir shared-modules
-	cd shared-modules
-	git init
-	git remote add origin https://github.com/flathub/shared-modules.git
-	git fetch --depth 1 origin d88a9156b91eef64ecf1a313c868f1401c4bb39b
-	git checkout FETCH_HEAD
-	cd ..
+	git clone --depth 1 https://github.com/flathub/shared-modules.git
 fi
 
 cd .. # Go to Platforms folder
@@ -41,5 +32,5 @@ fi
 mkdir -p dvr-build
 cp -r ../../bin/Release/net8.0/linux-x64/publish/* dvr-build/
 
-flatpak-builder --user --install tmp com.github.exelix11.sysdvr.json --force-clean
+flatpak-builder --user --install --install-deps-from=flathub tmp com.github.exelix11.sysdvr.json --force-clean
 flatpak build-bundle ~/.local/share/flatpak/repo SysDVR-Client.flatpak com.github.exelix11.sysdvr --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
