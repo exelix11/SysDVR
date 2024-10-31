@@ -6,9 +6,12 @@ set -e
 flatpak install --user -y flathub org.freedesktop.Platform//22.08 org.freedesktop.Sdk//22.08 runtime/org.freedesktop.Sdk.Extension.dotnet6/x86_64/22.08
 
 if [ ! -d "shared-modules" ]; then
-	git clone --depth 1 https://github.com/flathub/shared-modules.git
+	mkdir shared-modules
 	cd shared-modules
-	git checkout d88a9156b91eef64ecf1a313c868f1401c4bb39b
+	git init
+	git remote add origin https://github.com/flathub/shared-modules.git
+	git fetch --depth 1 origin d88a9156b91eef64ecf1a313c868f1401c4bb39b
+	git checkout FETCH_HEAD
 	cd ..
 fi
 
