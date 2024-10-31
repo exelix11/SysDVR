@@ -13,16 +13,13 @@
 		<RollForward>Major</RollForward>
 		<Nullable>annotations</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<PublishAot>true</PublishAot>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(SysDvrTarget)!='android'">
 		<OutputType>Exe</OutputType>
 	</PropertyGroup>
-
-	<PropertyGroup Condition="$(SysDvrTarget)=='windows'">
-		<PublishAot>true</PublishAot>
-	</PropertyGroup>
-
+	
 	<PropertyGroup Condition="$(SysDvrTarget)=='linux'">
 		<PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
 	</PropertyGroup>
