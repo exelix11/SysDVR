@@ -7,6 +7,9 @@ flatpak install --user -y flathub org.freedesktop.Platform//22.08 org.freedeskto
 
 if [ ! -d "shared-modules" ]; then
 	git clone --depth 1 https://github.com/flathub/shared-modules.git
+	cd shared-modules
+	git checkout d88a9156b91eef64ecf1a313c868f1401c4bb39b
+	cd ..
 fi
 
 cd .. # Go to Platforms folder
