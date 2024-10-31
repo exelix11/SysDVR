@@ -31,7 +31,8 @@
 
 	<ItemGroup Condition="$(SysDvrTarget)=='android'">
 		<!--Android needs a proper soname property or it will refuse to load the library-->
-		<LinkerArg Include="-Wl,-soname,SysDVR-Client.so" />
+		<!--Also it seems some NDK versions need --undefined-version https://github.com/dotnet/runtime/issues/92272-->
+		<LinkerArg Include="-Wl,-soname,SysDVR-Client.so,--undefined-version" />
 	</ItemGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
