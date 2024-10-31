@@ -363,7 +363,12 @@ SysmoduleRelease/
 *.o
 *.lst
 *.map
-Client/Platform/Resources/resources/buildid.txt
 Client/Platform/Android/app/src/main/assets
-Client/Platform/Resources/win-x64/native/cimgui_r2
+Client/Platform/Resources/win-x64/native/
 *.7z
+
+Client/Platform/Linux/dvr-build/
+Client/Platform/Linux/tmp/
+Client/Platform/Linux/shared-modules/
+Client/Platform/Linux-x64.zip
+Client/Platform/Resources/linux-x64/native/
