@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 #endif
 
+[assembly: SuppressMessage("Usage", "CA2265:Comparing a span to 'null' might be redundant, the 'null' literal will be implicitly converted to a 'Span<T>.Empty'", Justification = "Auto generated code.", Target = "ImGuiNET", Scope = "namespaceanddescendants")]
+
 namespace SysDVR.Client
 {
 	public static class Program

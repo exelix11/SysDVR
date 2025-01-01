@@ -89,9 +89,10 @@ if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
 	# This reduces the final APK size from 120MB to 60MB
 	echo Trimming ffmpeg-kit
 	unzip -q ffmpeg-kit-full-5.1.LTS.aar -d ffmpegkit
-	rm -rf ffmpegkit/armeabi-v7a ffmpegkit/x86_64 ffmpegkit/x86 ffmpegkit/jni/x86_64 ffmpegkit/jni/x86 ffmpegkit/jni/armeabi-v7a libffmpegkit.so
+	rm -rf ffmpegkit/x86_64 ffmpegkit/x86 ffmpegkit/jni/x86_64 ffmpegkit/jni/x86 libffmpegkit.so
 	# Also get rid of some libraries we don't need 	
 	rm -rf ffmpegkit/jni/arm64-v8a/libffmpegkit.so ffmpegkit/jni/arm64-v8a/libffmpegkit_abidetect.so
+	rm -rf ffmpegkit/jni/armeabi-v7a/libffmpegkit.so ffmpegkit/jni/armeabi-v7a/libffmpegkit_abidetect.so
 	7z a ffmpegkit.aar.zip ./ffmpegkit/*
 	mv ffmpegkit.aar.zip app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar
 	rm -rf ffmpegkit
@@ -102,10 +103,19 @@ echo Building client...
 
 # Move to client root
 cd ../../
+dotnet clean
 
 # This needs android clang before system clang in path. Something like:
 #	export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH
-dotnet publish -r linux-bionic-arm64 /p:SysDvrTarget=android
 
-mv bin/Release/net8.0/linux-bionic-arm64/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/
+echo Building 64-bit client...
+dotnet publish -r linux-bionic-arm64 /p:SysDvrTarget=android
+mkdir Platform/Android/app/jni/SysDVR-Client/arm64-v8a
+mv bin/Release/net9.0/linux-bionic-arm64/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/arm64-v8a/
+
+echo Building 32-bit client...
+dotnet publish -r linux-bionic-arm /p:SysDvrTarget=android
+mkdir Platform/Android/app/jni/SysDVR-Client/armeabi-v7a
+mv bin/Release/net9.0/linux-bionic-arm/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/armeabi-v7a/
+
 cd Platform/Android/
