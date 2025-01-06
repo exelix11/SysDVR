@@ -1,5 +1,6 @@
 #include "JniHelper.h"
 #include <string.h>
+#include <malloc.h>
 
 static jclass sys = NULL;
 
@@ -48,6 +49,58 @@ void SysIterateAssetsContent(const wchar_t* path, bool(*callback)(const wchar_t*
             break;
     }
     (*env)->DeleteLocalRef(env, pathstr);
+}
+
+enum {
+    ASSET_READ_OK = 0,
+    ASSET_READ_ERROR = 1,
+    ASSET_READ_ERROR_JNI = 2,
+    ASSET_READ_ERROR_MALLOC = 3,
+};
+
+int SysReadAssetFile(const wchar_t* path, uint8_t ** buffer, int32_t* length)
+{
+    DECLARE_JNI;
+
+    *length = 0;
+    *buffer = NULL;
+
+    jstring pathstr = (*env)->NewString(env, path, jstrlen(path));
+    jmethodID mid = STATIC_METHOD(sys, "ReadAsset", "(Ljava/lang/String;)[B");
+    jbyteArray data = (jbyteArray)(*env)->CallStaticObjectMethod(env, sys, mid, pathstr);
+
+    (*env)->DeleteLocalRef(env, pathstr);
+
+    if (!data)
+        return ASSET_READ_ERROR;
+
+    int result = ASSET_READ_OK;
+    jsize jlen = (*env)->GetArrayLength(env, data);
+    jbyte* jbuffer = (*env)->GetByteArrayElements(env, data, NULL);
+
+    if (!jbuffer)
+        result = ASSET_READ_ERROR_JNI;
+    else
+    {
+        *buffer = malloc(jlen);
+        if (!*buffer)
+            result = ASSET_READ_ERROR_MALLOC;
+        else
+        {
+            memcpy(*buffer, jbuffer, jlen);
+            *length = jlen;
+        }
+        (*env)->ReleaseByteArrayElements(env, data, jbuffer, 0);
+    }
+
+    (*env)->DeleteLocalRef(env, data);
+    return result;
+}
+
+void SysFreeDynamicBuffer(void* buffer)
+{
+    if (buffer)
+        free(buffer);
 }
 
 void SysGetClipboard(char* buffer, int size)

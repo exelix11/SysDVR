@@ -48,11 +48,17 @@ namespace SysDVR.Client.Core
 		[return: MarshalAs(UnmanagedType.LPStr)]
 		public delegate string GetSettingsStoragePath();
 
-        // Not an android function
+        // Callback type for IterateAssetsContent, not part of the init block
 		public delegate bool IterateAssetsContentCallback(nint ptr, int characters);
 
 		public delegate void IterateAssetsContent([MarshalAs(UnmanagedType.LPWStr)] string path, IterateAssetsContentCallback callback);
-	}
+
+        // Reads an asset file into an unmanaged buffer, returns 0 if success.
+        // The buffer must be freed with FreeDynamicBuffer
+        public delegate int ReadAssetFile([MarshalAs(UnmanagedType.LPWStr)] string path, out IntPtr buffer, out int size);
+
+        public delegate void FreeDynamicBuffer(IntPtr buffer);
+    }
 
     public enum NativeError : int 
     {
@@ -91,6 +97,10 @@ namespace SysDVR.Client.Core
         public NativeContracts.RequestFileAccessPermission RequestFileAccess;
         public NativeContracts.GetSettingsStoragePath GetSettingsStoragePath;
         public NativeContracts.IterateAssetsContent IterateAssetsContent;
+
+        // Asset management, must be populated
+        public NativeContracts.ReadAssetFile ReadAssetFile;
+        public NativeContracts.FreeDynamicBuffer FreeDynamicBuffer;
 
 		public bool PlatformSupportsUsb => 
             UsbAcquireSnapshot != null && UsbReleaseSnapshot != null &&
@@ -153,6 +163,8 @@ namespace SysDVR.Client.Core
             public IntPtr SysRequestFileAccess;
             public IntPtr SysGetSettingsStoragePath;
             public IntPtr SysIterateAssetsContent;
+            public IntPtr SysReadAssetFile;
+            public IntPtr SysFreeDynamicBuffer;
         }
 
         public unsafe static NativeError Read(IntPtr ptr, out NativeInitBlock native)
@@ -198,6 +210,9 @@ namespace SysDVR.Client.Core
                 RequestFileAccess = repr.SysRequestFileAccess == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.RequestFileAccessPermission>(repr.SysRequestFileAccess),
 				GetSettingsStoragePath = repr.SysGetSettingsStoragePath == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.GetSettingsStoragePath>(repr.SysGetSettingsStoragePath),
                 IterateAssetsContent = repr.SysIterateAssetsContent == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.IterateAssetsContent>(repr.SysIterateAssetsContent),
+                
+                ReadAssetFile = repr.SysReadAssetFile == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.ReadAssetFile>(repr.SysReadAssetFile),
+                FreeDynamicBuffer = repr.SysFreeDynamicBuffer == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<NativeContracts.FreeDynamicBuffer>(repr.SysFreeDynamicBuffer),
 			};
 
             return NativeError.Success;

@@ -8,6 +8,8 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class SystemHelper {
@@ -96,6 +98,27 @@ public class SystemHelper {
         {
             sysdvrActivity.Log("RequestFilePermission failed: " + ex.toString());
         }
+    }
+
+    public static byte[] ReadAsset(String assetPath)
+    {
+        try {
+            InputStream inputStream = sysdvrActivity.instance.getAssets().open(assetPath);
+
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                output.write(buffer, 0, bytesRead);
+            }
+
+            return output.toByteArray();
+        }
+        catch (Exception ex)
+        {
+            sysdvrActivity.Log("ReadAsset("+ assetPath + ") failed: " + ex.toString());
+        }
+        return null;
     }
 
     public static String[] ListAssetsContent(String path)

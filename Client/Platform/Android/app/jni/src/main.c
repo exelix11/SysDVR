@@ -30,6 +30,8 @@ struct NativeInitBlock
 	void* SysRequestFileAccess;
     void* SysGetSettingsStoragePath;
     void* SysIterateAssetsContent;
+    void* SysReadAssetFile;
+    void* SysFreeDynamicBuffer;
 };
 
 // Forward declare needed functions
@@ -56,6 +58,8 @@ bool SysGetFileAccessInfo(bool* hasPermission, bool* canRequest);
 void SysRequestFileAccess();
 const char* SysGetSettingsStoragePath();
 void SysIterateAssetsContent(const wchar_t* path, bool(*callback)(const wchar_t*, int32_t));
+int SysReadAssetFile(const wchar_t* path, uint8_t ** buffer, int32_t* length);
+void SysFreeDynamicBuffer(void* buffer);
 
 #define L(...) __android_log_print(ANDROID_LOG_ERROR, "SysDVRLogger", __VA_ARGS__)
 
@@ -85,7 +89,9 @@ struct NativeInitBlock g_native =
 	.SysGetFileAccessInfo = SysGetFileAccessInfo,
 	.SysRequestFileAccess = SysRequestFileAccess,
     .SysGetSettingsStoragePath = SysGetSettingsStoragePath,
-    .SysIterateAssetsContent = SysIterateAssetsContent
+    .SysIterateAssetsContent = SysIterateAssetsContent,
+    .SysReadAssetFile = SysReadAssetFile,
+    .SysFreeDynamicBuffer = SysFreeDynamicBuffer
 };
 
 extern int sysdvr_entrypoint(struct NativeInitBlock* init);

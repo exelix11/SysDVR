@@ -110,12 +110,16 @@ dotnet clean
 
 echo Building 64-bit client...
 dotnet publish -r linux-bionic-arm64 /p:SysDvrTarget=android
-mkdir Platform/Android/app/jni/SysDVR-Client/arm64-v8a
+if [ ! -d Platform/Android/app/jni/SysDVR-Client/arm64-v8a/ ]]; then
+	mkdir Platform/Android/app/jni/SysDVR-Client/arm64-v8a
+fi
 mv bin/Release/net9.0/linux-bionic-arm64/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/arm64-v8a/
 
 echo Building 32-bit client...
 dotnet publish -r linux-bionic-arm /p:SysDvrTarget=android
-mkdir Platform/Android/app/jni/SysDVR-Client/armeabi-v7a
+if [ ! -d Platform/Android/app/jni/SysDVR-Client/armeabi-v7a/ ]]; then
+	mkdir Platform/Android/app/jni/SysDVR-Client/armeabi-v7a
+fi
 mv bin/Release/net9.0/linux-bionic-arm/publish/SysDVR-Client.so Platform/Android/app/jni/SysDVR-Client/armeabi-v7a/
 
 cd Platform/Android/
