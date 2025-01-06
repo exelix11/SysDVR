@@ -62,9 +62,9 @@ echo Building client...
 cd ..
 dotnet publish -c Release -r win-x64 /p:SysDvrTarget=windows || goto error
 
-del bin\Release\net8.0\win-x64\publish\*.pdb
+del bin\Release\net9.0\win-x64\publish\*.pdb
 
-7z a Client.7z .\bin\Release\net8.0\win-x64\publish\*
+7z a Client.7z .\bin\Release\net9.0\win-x64\publish\*
 
 :error
 exit /B %ERRORLEVEL%

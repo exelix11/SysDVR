@@ -66,7 +66,7 @@ echo Building x64 client...
 dotnet publish -c Release -r osx-x64 /p:SysDvrTarget=macos
 
 mkdir MacOsBuild-x64
-cp -r bin/Release/net8.0/osx-x64/publish/* MacOsBuild-x64/
+cp -r bin/Release/net9.0/osx-x64/publish/* MacOsBuild-x64/
 mkdir -p MacOsBuild-x64/runtimes/osx-x64/native
 cp macos-deps/* MacOsBuild-x64/runtimes/osx-x64/native/
 cd MacOsBuild-x64
@@ -78,7 +78,7 @@ echo Building arm64 client...
 dotnet publish -c Release -r osx-arm64 /p:SysDvrTarget=macos
 
 mkdir MacOsBuild-arm64
-cp -r bin/Release/net8.0/osx-arm64/publish/* MacOsBuild-arm64/
+cp -r bin/Release/net9.0/osx-arm64/publish/* MacOsBuild-arm64/
 mkdir -p MacOsBuild-arm64/runtimes/osx-arm64/native
 cp macos-deps/* MacOsBuild-arm64/runtimes/osx-arm64/native/
 cd MacOsBuild-arm64

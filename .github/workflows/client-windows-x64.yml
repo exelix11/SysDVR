@@ -11,7 +11,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 8.x
+        dotnet-version: 9.x
     - name: Run build script
       shell: cmd
       run: |
