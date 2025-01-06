@@ -25,7 +25,7 @@ namespace SysDVR.Client.Platform
         {
             Console.WriteLine($"Loading resource {path}");
 
-            var file = SDL.SDL_RWFromFile(path, "r").AssertNotNull(SDL.SDL_GetError);
+            var file = SDL.SDL_RWFromFile(path, "rb").AssertNotNull(SDL.SDL_GetError);
 
             var len = (int)SDL.SDL_RWsize(file);
             var buf = new byte[len];
