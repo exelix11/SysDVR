@@ -221,7 +221,7 @@ public class ClientApp
 
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
         ImGui.GetIO().NavVisible = true;
-        ApplyImguiSetings();
+        ApplyImguiSettings();
 
         InitializeFonts();
 
@@ -297,9 +297,11 @@ public class ClientApp
         }
 	}
 
-    internal void ApplyImguiSetings() 
+    internal void ApplyImguiSettings() 
     {
         sdlCtx.AcceptControllerInput = Program.Options.ControllerInput;
+        sdlCtx.DebugPrintSdlEvents = Program.Options.Debug.SDLEvents;
+
         if (Program.Options.ControllerInput)
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
         else

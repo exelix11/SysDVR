@@ -78,6 +78,7 @@ namespace SysDVR.Client
 			new ("noprot", "Disable dll-injection protection on Windows", x => x.NoProt = true),
 			new ("dynlib", "Enable verbose logging for native library loading", x => x.DynLib = true),
 			new ("err", "Display console error reports", x => x.ConsoleErrors = true),
+			new ("sdl", "Log SDL input events", x => x.SDLEvents = true),
 		};
 
 		public static CommandLineOptions Parse(string[] args)

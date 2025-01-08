@@ -36,6 +36,7 @@ namespace SysDVR.Client.GUI.Components
 		public Vector2 WindowSize { get; private set; }
 
 		internal bool AcceptControllerInput = true;
+		internal bool DebugPrintSdlEvents = false;
 
 		// Scaling info
 		Vector2 PixelSize;
@@ -137,7 +138,8 @@ namespace SysDVR.Client.GUI.Components
 			if (evt.type == SDL_EventType.SDL_JOYBUTTONDOWN && !AcceptControllerInput)
 				return GuiMessage.None;
 
-			//Console.WriteLine($"Received SDL_Event {evt.type}");
+			if (DebugPrintSdlEvents)
+				Console.WriteLine($"Received SDL_Event {evt.type}");
 
 #if ANDROID_LIB
 			// Fix for Samsung Dex software touchpad inputs
