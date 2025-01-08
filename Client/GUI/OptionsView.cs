@@ -291,7 +291,7 @@ namespace SysDVR.Client.GUI
 				ImGui.SliderInt("##SliderAudioVolume", ref Program.Options.DefaultVolume, 0, 100, "%d %%");
 
 				if (ImGui.Checkbox(Strings.ControllerInput, ref Program.Options.ControllerInput))
-					Program.Instance.ApplyImguiSetings();
+					Program.Instance.ApplyImguiSettings();
 
                 ImGui.Unindent();
 				ImGui.NewLine();
@@ -334,8 +334,12 @@ namespace SysDVR.Client.GUI
 				ImGui.NewLine();
 				ImGui.Checkbox(Strings.AnalyzeKeyframes, ref Program.Options.Debug.Keyframe);
 				ImGui.Checkbox(Strings.AnalyzeNALs, ref Program.Options.Debug.Nal);
+				
+				if (ImGui.Checkbox(Strings.LogSDLEvents, ref Program.Options.Debug.SDLEvents))
+                    Program.Instance.ApplyImguiSettings();
 
-				ImGui.Text(Strings.GuiScale); ImGui.SameLine();
+				ImGui.NewLine();
+                ImGui.Text(Strings.GuiScale); 
 				ImGui.SliderFloat("##sliderGuiScale", ref Program.Options.GuiFontScale, 0.1f, 4);
 
 				ImGui.NewLine();

@@ -31,6 +31,9 @@ namespace SysDVR.Client.Core
         // Display console error reports
         public bool ConsoleErrors;
 
+        // Log SDL input events
+        public bool SDLEvents;
+
 		public bool RequiresH264Analysis => Keyframe || Nal;
     }
 
