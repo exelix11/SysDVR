@@ -129,6 +129,19 @@ namespace SysDVR.Client.GUI.Components
 			return true;
 		}
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe string DebugSdlEvent(in SDL_Event evt)
+		{
+			StringBuilder sb = new();
+			fixed (byte* data = evt.padding)
+			{
+				sb.Append($"SDL_Event: {evt.type} ");
+				for (int i = 0; i < SDL_Event.SizeOf; i++)
+					sb.Append($"{data[i]:X2} ");
+			}
+			return sb.ToString();
+        }
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public GuiMessage PumpEvents(out SDL_Event evt)
 		{
@@ -139,7 +152,7 @@ namespace SysDVR.Client.GUI.Components
 				return GuiMessage.None;
 
 			if (DebugPrintSdlEvents)
-				Console.WriteLine($"Received SDL_Event {evt.type}");
+				Console.WriteLine(DebugSdlEvent(evt));
 
 #if ANDROID_LIB
 			// Fix for Samsung Dex software touchpad inputs

@@ -5264,11 +5264,13 @@ namespace SDL2
 			public IntPtr msg; /* SDL_SysWMmsg*, system-dependent*/
 		}
 
-		/* General event structure */
-		// C# doesn't do unions, so we do this ugly thing. */
-		[StructLayout(LayoutKind.Explicit)]
+        /* General event structure */
+        // C# doesn't do unions, so we do this ugly thing. */
+        [StructLayout(LayoutKind.Explicit)]
 		public unsafe struct SDL_Event
 		{
+            public const int SizeOf = 56;
+            
 			[FieldOffset(0)]
 			public SDL_EventType type;
 			[FieldOffset(0)]
@@ -5330,7 +5332,7 @@ namespace SDL2
 			[FieldOffset(0)]
 			public SDL_DropEvent drop;
 			[FieldOffset(0)]
-			private fixed byte padding[56];
+			internal fixed byte padding[SizeOf];
 		}
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
