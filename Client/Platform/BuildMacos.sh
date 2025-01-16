@@ -34,7 +34,7 @@ fi
 
 if [ ! -e "macos-deps/libavcodec.dylib" ]; then
 	echo Downloading ffmpeg...
-	curl -L https://github.com/arthenica/ffmpeg-kit/releases/download/v5.1/ffmpeg-kit-full-gpl-5.1-macos-xcframework.zip -o ffmpeg.zip
+	curl -L https://github.com/exelix11/ffmpeg-kit/releases/download/v5.1/ffmpeg-kit-full-gpl-5.1-macos-xcframework.zip -o ffmpeg.zip
 	7z x ffmpeg.zip -Otmp
 	rm ffmpeg.zip
 
