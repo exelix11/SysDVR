@@ -220,7 +220,7 @@ namespace SysDVR.Client.Core
 			
 			public string AnalyzeKeyframes = "Analyze keyframe NALs during the stream";
 			public string AnalyzeNALs = "Analyze every NAL packet";
-			public string LogSDLEvents = "Log SDL UI input events";
+			public string LogSDLEvents = "Debug log of SDL events";
 			
 			public string GuiScale = "GUI scale";
 
