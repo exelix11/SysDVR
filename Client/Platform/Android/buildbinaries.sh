@@ -84,7 +84,10 @@ fi
 # Ensure android ffmpeg binaries are present
 if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
 	echo Downloading android ffmpeg-kit builds...
-	wget https://github.com/arthenica/ffmpeg-kit/releases/download/v5.1.LTS/ffmpeg-kit-full-5.1.LTS.aar
+	# The original repo https://github.com/arthenica/ffmpeg-kit/ is now discontinued
+ 	# This is my mirror with the source and binary releases
+  	# This will likely never receive updates...
+ 	wget https://github.com/exelix11/ffmpeg-kit/releases/download/v5.1.LTS/ffmpeg-kit-full-5.1.LTS.aar
 	# We manually trim ffmpegkit to get rid of architectures we don't need
 	# This reduces the final APK size from 120MB to 60MB
 	echo Trimming ffmpeg-kit
