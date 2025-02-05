@@ -41,7 +41,7 @@
 				"ln -s /usr/lib/x86_64-linux-gnu/libSDL2_net-2.0.so.0 /app/lib/libSDL2_net.so",
 				"ln -s /usr/lib/x86_64-linux-gnu/libSDL2_ttf-2.0.so.0 /app/lib/libSDL2_ttf.so",
 				"install -Dm644 com.github.exelix11.sysdvr.desktop /app/share/applications/com.github.exelix11.sysdvr.desktop",
-				"install -Dm644 dvr-build/runtimes/resources/logo.png /app/share/icons/hicolor/256x256/apps/com.github.exelix11.sysdvr.png",
+				"install -Dm644 flatpak_icon.png /app/share/icons/hicolor/256x256/apps/com.github.exelix11.sysdvr.png",
 				"cp -r dvr-build /app/bin"
 			],
 			"sources":
