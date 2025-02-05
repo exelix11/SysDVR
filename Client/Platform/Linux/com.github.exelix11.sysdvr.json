@@ -54,6 +54,10 @@
 				{
 					"type": "file",
 					"path": "com.github.exelix11.sysdvr.desktop"
+				},
+				{
+					"type": "file",
+					"path": "flatpak_icon.png"
 				}
 			]
 		}
