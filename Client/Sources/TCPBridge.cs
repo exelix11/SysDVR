@@ -152,7 +152,7 @@ namespace SysDVR.Client.Sources
 			return await poolBuffers.Reader.ReadAsync(Cancellation).ConfigureAwait(false);
 		}
 
-		protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+		protected override async Task<byte[]> SendHandshakePacket(ProtoHandshakeRequest req, int outputSize)
 		{
 			byte[] buffer = new byte[ProtoHandshakeRequest.StructureSize];
 			MemoryMarshal.Write(buffer, in req);
@@ -160,7 +160,7 @@ namespace SysDVR.Client.Sources
 			var stream = req.IsVideoPacket ? videoStream : audioStream;
 
 			// This is only invoked from the Connect() method so stream is always guranteed to not be null
-			var h = await stream!.DoHandshake(buffer).ConfigureAwait(false);
+			var h = await stream!.DoHandshake(buffer, outputSize).ConfigureAwait(false);
 			return h;
 		}
 
@@ -197,7 +197,7 @@ namespace SysDVR.Client.Sources
 			public readonly string StreamName;
 			public readonly StreamKind Channel;
 
-			public Task? PendingLoop;
+            public Task? PendingLoop;
 
 			readonly Action<ReceivedPacket> onBuffer;
 			readonly Action<string> reportMessage;
@@ -221,7 +221,7 @@ namespace SysDVR.Client.Sources
 				this.port = kind == StreamKind.Video ? TcpBridgeVideoPort : TcpBridgeAudioPort;
 				this.StreamName = kind == StreamKind.Video ? "Video stream" : "Audio stream";
 				this.reportMessage = reportMessage;
-			}
+            }
 
 			public async Task Connect()
 			{
@@ -231,8 +231,8 @@ namespace SysDVR.Client.Sources
 				{
 					socket.ReceiveTimeout = 2000;
 					socket.SendTimeout = 2000;
-					socket.ReceiveBufferSize = PacketHeader.MaxTransferSize;
-					socket.NoDelay = true;
+                    socket.ReceiveBufferSize = PacketHeader.MaxTransferSize;
+                    socket.NoDelay = true;
 				}
 				catch { }
 
@@ -337,15 +337,16 @@ namespace SysDVR.Client.Sources
 				return (true, new ReceivedPacket(header, data));
 			}
 
-			public async Task<uint> DoHandshake(byte[] reqBuffer)
+			public async Task<byte[]> DoHandshake(byte[] reqBuffer, int outputSize)
 			{
 				if (await socket.SendAsync(reqBuffer, cancel).ConfigureAwait(false) <= 0)
 					throw new Exception("Socket send error");
 
-				await ReadExact(headerBuffer, 0, sizeof(uint)).ConfigureAwait(false);
+				byte[] output = new byte[outputSize];
+				await ReadExact(output, 0, outputSize).ConfigureAwait(false);
 
-				return MemoryMarshal.Read<uint>(headerBuffer);
-			}
+				return output;
+            }
 
 			public async Task ProcessLoop()
 			{

@@ -121,7 +121,7 @@ namespace SysDVR.Client.Sources
 			return buffer;
 		}
 
-		protected override async Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+		protected override async Task<byte[]> SendHandshakePacket(ProtoHandshakeRequest req, int expectedSize)
         {
 			var buffer = new byte[ProtoHandshakeRequest.StructureSize];
 			MemoryMarshal.Write(buffer, in req);
@@ -131,11 +131,12 @@ namespace SysDVR.Client.Sources
             if (err != LibUsbDotNet.Error.Success || transfer != buffer.Length)
             	throw new Exception($"libusb write handshake failed, result: {err} len: {transfer}");
 
-            (err, transfer) = await reader.ReadAsync(buffer, 0, 4, 1500).ConfigureAwait(false);
+			var response = new byte[expectedSize];
+            (err, transfer) = await reader.ReadAsync(buffer, 0, expectedSize, 1500).ConfigureAwait(false);
             if (err != LibUsbDotNet.Error.Success || transfer != 4)
                 throw new Exception($"libusb receive handshake failed, result: {err} len: {transfer}");
 
-			return BitConverter.ToUInt32(buffer, 0);
+			return response;
         }
 
 		public override void Dispose()
