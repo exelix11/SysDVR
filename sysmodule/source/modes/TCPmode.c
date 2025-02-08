@@ -101,7 +101,7 @@ static inline bool TCP_DoHandshake(GrcStream stream, int socket)
 	if (!SocketSendAll(socket, &res.Result, sizeof(res.Result)))
 		return false;
 
-	return res.Result == Handshake_Ok;
+	return res.Result.Code == Handshake_Ok;
 }
 
 static inline int TCP_Accept(GrcStream stream)

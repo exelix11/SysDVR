@@ -27,10 +27,24 @@ typedef enum
 	Handshake_WrongMagic = 5,
 	Handshake_Ok = 6,
 	Hanshake_InvalidChannel = 7,
-} ProtoHandshakeResult;
+} ProtoHandshakeResultCode;
+
+typedef struct
+{
+	uint32_t Code; // ProtoHandshakeResultCode
+	struct {
+		uint32_t QueryResult; // this is a libnx result. Special value UINT32_MAX means not requested
+		uint64_t ApplicationSize, ApplicationUsed;
+		uint64_t AppletSize, AppletUsed;
+		uint64_t SystemSize, SystemUsed;
+		uint64_t SystemUnsafeSize, SystemUnsafeUsed;
+	} __attribute__((packed)) MemoryPools;
+} __attribute__((packed)) ProtoHandshakeResponse;
+
+_Static_assert(sizeof(ProtoHandshakeResponse) == 72);
 
 typedef struct {
-	ProtoHandshakeResult Result;
+	ProtoHandshakeResponse Result;
 	bool RequestedAudio;
 	bool RequestedVideo;
 } ProtoParsedHandshake;
@@ -52,7 +66,9 @@ enum ExtraFeatureFlags // 8 bits
 {
 	ExtraFeatureFlags_None = 0,
 	// Request the console to turn off the display during streaming
-	ExtraFeatureFlags_TurnOffScreen = 1,
+	ExtraFeatureFlags_TurnOffScreen = (1 << 0),
+	// Request a memory report before starting to stream to debug the state of the console
+	ExtraFeatureFlags_MemoryDiag = (1 << 1),
 };
 
 // Sent by the client to set up streaming
@@ -81,8 +97,8 @@ typedef enum {
 	ProtoHandshakeAccept_Audio,
 } ProtoHandshakeAccept;
 
-// Verifies the handshare and if valid sets the global state of the client
+// Verifies the handshake and if valid sets the global state of the client
 ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, int length);
 
-// Must be called every time ProtoHandshare returned OK, it is safe to call multiple times
+// Must be called every time ProtoHandshake returned OK, it is safe to call multiple times
 void ProtoClientGlobalStateDisconnected();

@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SysDVR.Client.Sources
@@ -19,13 +20,13 @@ namespace SysDVR.Client.Sources
 
         public const byte MetaIsVideo = 1 << 0;
         public const byte MetaIsAudio = 1 << 1;
-        
+
         public const byte MetaIsData = 1 << 2;
         public const byte MetaIsHash = 1 << 3;
-		public const byte MetaIsMultiNAL = 1 << 4;
-		public const byte MetaIsError = 1 << 5;
+        public const byte MetaIsMultiNAL = 1 << 4;
+        public const byte MetaIsError = 1 << 5;
 
-		public uint Magic;
+        public uint Magic;
         public int DataSize;
         public ulong Timestamp;
 
@@ -49,23 +50,40 @@ namespace SysDVR.Client.Sources
         }
     }
 
+    public static class ProtocolUtil
+    {
+        public static readonly ushort ProtocolVersion2 = StringToVersionCode("02");
+        public static readonly ushort ProtocolVersion3 = StringToVersionCode("03");
+
+        public static ushort StringToVersionCode(string code)
+        {
+            if (code.Length != 2)
+                throw new ArgumentException("Invalid version code");
+
+            return (ushort)(code[0] | (code[1] << 8));
+        }
+
+        public static string VersionCodeToString(ushort code) =>
+            $"{(char)(code & 0xFF)}{(char)(code >> 8)}";
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     unsafe struct ProtoHandshakeRequest
     {
         public static bool IsProtocolSupported(string protoString) =>
             protoString is "03" or "02";
 
-		public static bool IsProtocolSupported(ushort protoValue) =>
-			protoValue is ('0' | ('3' << 8 )) or ('0' | ('2' << 8));
+        public static bool IsProtocolSupported(ushort protoValue) =>
+            IsProtocolSupported(ProtocolUtil.VersionCodeToString(protoValue));
 
-		public const int HelloPacketSize = 10;
+        public const int HelloPacketSize = 10;
         public const int StructureSize = 16;
         public const uint RequestMagic = 0xAAAAAAAA;
         public const uint HandshakeOKCode = 6;
 
         public uint Magic;
         public ushort Version;
-        
+
         private byte MetaFlags;
         private byte VideoFlags;
         public byte AudioBatching;
@@ -83,45 +101,99 @@ namespace SysDVR.Client.Sources
                 b &= (byte)~Bit(i);
         }
 
+        static bool GetBit(byte b, int i)
+        {
+            return (b & Bit(i)) != 0;
+        }
+
+        void AssertVersion(ushort version)
+        {
+            if (version != Version)
+                throw new Exception($"This feature is not available in protocol version {ProtocolUtil.VersionCodeToString(Version)}");
+        }
+
         public bool IsVideoPacket
         {
-            get => (MetaFlags & Bit(0)) != 0;
+            get => GetBit(MetaFlags, 0);
             set => SetBit(ref MetaFlags, 0, value);
         }
 
         public bool IsAudioPacket
         {
-            get => (MetaFlags & Bit(1)) != 0;
+            get => GetBit(MetaFlags, 1);
             set => SetBit(ref MetaFlags, 1, value);
         }
 
-        public bool UseNalhashes
+        public bool UseNalHashes
         {
-            get => (VideoFlags & Bit(0)) != 0;
+            get => GetBit(VideoFlags, 0);
             set => SetBit(ref VideoFlags, 0, value);
         }
 
         public bool UseNalHashesOnlyForKeyframes
         {
-            get => (VideoFlags & Bit(2)) != 0;
+            get => GetBit(VideoFlags, 2);
             set => SetBit(ref VideoFlags, 2, value);
         }
 
         public bool InjectPPSSPS
         {
-            get => (VideoFlags & Bit(1)) != 0;
+            get => GetBit(VideoFlags, 1);
             set => SetBit(ref VideoFlags, 1, value);
         }
 
+        // Requires protocol version 3
         public bool TurnOffConsoleScreen
         {
-			get => (FeatureFlags & Bit(0)) != 0;
-			set => SetBit(ref FeatureFlags, 0, value);
-		}
+            get => GetBit(FeatureFlags, 0);
+            set { if (value) AssertVersion(ProtocolUtil.ProtocolVersion3); SetBit(ref FeatureFlags, 0, value); }
+        }
 
-        static ProtoHandshakeRequest() 
+        // Requires protocol version 3
+        public bool PerformMemoryDiagnostic
+        {
+            get => GetBit(FeatureFlags, 1);
+            set { if (value) AssertVersion(ProtocolUtil.ProtocolVersion3); SetBit(ref FeatureFlags, 1, value); }
+        }
+
+        static ProtoHandshakeRequest()
         {
             if (Marshal.SizeOf<ProtoHandshakeRequest>() != StructureSize)
+                throw new Exception("Invalid structure size, check the sysmodule source");
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct ProtoHandshakeResponse02
+    {
+        public const int Size = 4;
+
+        public uint Result;
+
+        static ProtoHandshakeResponse02()
+        {
+            if (Marshal.SizeOf<ProtoHandshakeResponse02>() != Size)
+                throw new Exception("Invalid structure size, check the sysmodule source");
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct ProtoHandshakeResponse03
+    {
+        public const int Size = 72;
+
+        public uint Result;
+
+        // Optional memory query result
+        public uint MemoryPools_QueryResult;
+        public ulong MemoryPools_ApplicationSize, MemoryPools_ApplicationUsed;
+        public ulong MemoryPools_AppletSize, MemoryPools_AppletUsed;
+        public ulong MemoryPools_SystemSize, MemoryPools_SystemUsed;
+        public ulong MemoryPools_SystemUnsafeSize, MemoryPools_SystemUnsafeUsed;
+
+        static ProtoHandshakeResponse03()
+        {
+            if (Marshal.SizeOf<ProtoHandshakeResponse03>() != (int)Size)
                 throw new Exception("Invalid structure size, check the sysmodule source");
         }
     }
@@ -133,41 +205,41 @@ namespace SysDVR.Client.Sources
 
         public ReceivedPacket(PacketHeader header, PoolBuffer? buffer)
         {
-			Header = header;
-			Buffer = buffer;
-		}
+            Header = header;
+            Buffer = buffer;
+        }
     }
 
-    static class PacketErrorParser 
+    static class PacketErrorParser
     {
         public static string GetPacketErrorAsString(in ReceivedPacket packet)
         {
             if (!packet.Header.IsError)
-				return "Packet is not an error";
+                return "Packet is not an error";
 
             if (packet.Buffer is null)
                 return "Packet buffer is null";
 
             uint ErrorType = BitConverter.ToUInt32(packet.Buffer.Span);
-			uint ErrorCode = BitConverter.ToUInt32(packet.Buffer.Span[4..]);
-			ulong Context1 = BitConverter.ToUInt64(packet.Buffer.Span[8..]);
-			ulong Context2 = BitConverter.ToUInt64(packet.Buffer.Span[16..]);
-			ulong Context3 = BitConverter.ToUInt64(packet.Buffer.Span[24..]);
+            uint ErrorCode = BitConverter.ToUInt32(packet.Buffer.Span[4..]);
+            ulong Context1 = BitConverter.ToUInt64(packet.Buffer.Span[8..]);
+            ulong Context2 = BitConverter.ToUInt64(packet.Buffer.Span[16..]);
+            ulong Context3 = BitConverter.ToUInt64(packet.Buffer.Span[24..]);
 
             if (ErrorType == 1)
             {
                 return $"Video capture failed with code 0x{ErrorCode:x} requested size was 0x{Context1:x}";
-			}
+            }
             else if (ErrorType is 2 or 3)
             {
                 return $"Audio capture failed with code 0x{ErrorCode:x} requested size was 0x{Context1:x}, iteration was {Context2}";
             }
 
             return $"Unknown error type 0x{ErrorType:x} 0x{ErrorCode:x} 0x{Context1:x} 0x{Context2:x} 0x{Context3:x}";
-		}
+        }
     }
 
-	abstract class StreamingSource : IDisposable
+    abstract class StreamingSource : IDisposable
     {
         // Note that the source should respect the target output type,
         // this means that by the time it's added to a StreamManager
@@ -176,7 +248,7 @@ namespace SysDVR.Client.Sources
         protected CancellationToken Cancellation { get; private init; }
 
         public StreamingSource(StreamingOptions options, CancellationToken cancellation)
-        {       
+        {
             Options = options;
             Cancellation = cancellation;
         }
@@ -196,11 +268,11 @@ namespace SysDVR.Client.Sources
 
         public abstract Task<ReceivedPacket> ReadNextPacket();
 
-        protected abstract Task<uint> SendHandshakePacket(ProtoHandshakeRequest req);
+        protected abstract Task<byte[]> SendHandshakePacket(ProtoHandshakeRequest req, int expectedLength);
         protected abstract Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes);
         public abstract void Dispose();
 
-		protected void ThrowOnHandshakeCode(string tag, uint code)
+        protected void ThrowOnHandshakeCode(string tag, uint code)
         {
             if (code == ProtoHandshakeRequest.HandshakeOKCode)
                 return;
@@ -212,7 +284,7 @@ namespace SysDVR.Client.Sources
             throw new Exception($"{tag} handshake failed: error code {code}");
         }
 
-        async Task<ushort> GetCurrentVersionFromHelloPacket(StreamKind stream) 
+        async Task<ushort> GetCurrentVersionFromHelloPacket(StreamKind stream)
         {
             var data = await ReadHandshakeHello(stream, ProtoHandshakeRequest.HelloPacketSize).ConfigureAwait(false);
 
@@ -220,11 +292,11 @@ namespace SysDVR.Client.Sources
 
             // TODO: add future protocol compatibility adapters here
 
-            if (str[.. "SysDVR|".Length] != "SysDVR|")
-				throw new Exception($"{Program.Strings.Errors.InitialPacketError} {Program.Strings.Errors.VersionTroubleshooting}");
+            if (str[.."SysDVR|".Length] != "SysDVR|")
+                throw new Exception($"{Program.Strings.Errors.InitialPacketError} {Program.Strings.Errors.VersionTroubleshooting}");
 
             if (str.Last() != '\0')
-				throw new Exception("Invalid handshake hello packet (terminator)");
+                throw new Exception("Invalid handshake hello packet (terminator)");
 
             var high = str["SysDVR|".Length];
             var low = str["SysDVR|".Length + 1];
@@ -232,9 +304,10 @@ namespace SysDVR.Client.Sources
             if (!char.IsAscii(high) || !char.IsAscii(low))
                 throw new Exception("Invalid handshake hello packet (version)");
 
-            return (ushort)(high | (low << 8));
+            return ProtocolUtil.StringToVersionCode($"{high}{low}");
         }
 
+        // On success, this fills the options structure
         protected async Task DoHandshake(StreamKind StreamProduced)
         {
             var version = await GetCurrentVersionFromHelloPacket(StreamProduced).ConfigureAwait(false);
@@ -249,17 +322,69 @@ namespace SysDVR.Client.Sources
             req.Version = version;
 
             req.AudioBatching = (byte)Options.AudioBatching;
-            req.UseNalhashes = Options.UseNALReplay;
+            req.UseNalHashes = Options.UseNALReplay;
             req.UseNalHashesOnlyForKeyframes = Options.UseNALReplayOnlyOnKeyframes;
             req.InjectPPSSPS = true;
 
             req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;
             req.IsAudioPacket = StreamProduced is StreamKind.Both or StreamKind.Audio;
 
-            req.TurnOffConsoleScreen = Options.TurnOffConsoleScreen;
+            if (req.Version >= ProtocolUtil.ProtocolVersion3)
+            {
+                req.PerformMemoryDiagnostic = Program.Options.Debug.Log;
+                req.TurnOffConsoleScreen = Options.TurnOffConsoleScreen;
+            }
 
-			uint res = await SendHandshakePacket(req).ConfigureAwait(false);
-            ThrowOnHandshakeCode("Console", res);
+            var size = ProtoHandshakeResponse02.Size;
+            if (req.Version >= ProtocolUtil.ProtocolVersion3)
+                size = ProtoHandshakeResponse03.Size;
+
+            var res = await SendHandshakePacket(req, size).ConfigureAwait(false);
+
+            if (req.Version >= ProtocolUtil.ProtocolVersion3)
+                ParseResponse03(res);
+            else
+                ParseResponse02(res);
+        }
+
+        void ParseResponse02(Span<byte> data)
+        {
+            if (data.Length != ProtoHandshakeResponse02.Size)
+                throw new Exception($"Invalid handshake response size: {data.Length} (expected {ProtoHandshakeResponse02.Size})");
+
+            var parsed = MemoryMarshal.Read<ProtoHandshakeResponse02>(data);
+            
+            ThrowOnHandshakeCode("console_02", parsed.Result);
+        }
+
+        void ParseResponse03(Span<byte> data)
+        {
+            if (data.Length != ProtoHandshakeResponse03.Size)
+                throw new Exception($"Invalid handshake response size: {data.Length} (expected {ProtoHandshakeResponse03.Size})");
+
+            var parsed = MemoryMarshal.Read<ProtoHandshakeResponse03>(data);
+            ThrowOnHandshakeCode("console_03", parsed.Result);
+
+            if (Program.Options.Debug.Log)
+            {
+                StringBuilder sb = new();
+                sb.AppendLine($"Console memory report: result {parsed.MemoryPools_QueryResult:x}");
+
+                if (parsed.MemoryPools_QueryResult == uint.MaxValue)
+                    sb.AppendLine("Error code indicates that report was not requested");
+                else if (parsed.MemoryPools_QueryResult != 0)
+                    sb.AppendLine("Error code indicates a libnx error");
+
+                void add(string name, ulong total, ulong used) =>
+                    sb.AppendLine($"\t{name} pool: total={total} used={used} ({(total == 0 ? 0 : (used / total) * 100)}% used)");
+
+                add("Application", parsed.MemoryPools_ApplicationSize, parsed.MemoryPools_ApplicationUsed);
+                add("Applet", parsed.MemoryPools_AppletSize, parsed.MemoryPools_AppletUsed);
+                add("System", parsed.MemoryPools_SystemSize, parsed.MemoryPools_SystemUsed);
+                add("SystemUnsafe", parsed.MemoryPools_SystemUnsafeSize, parsed.MemoryPools_SystemUnsafeUsed);
+
+                Program.DebugLog(sb.ToString());
+            }
         }
 
         static protected bool ValidatePacketHeader(in PacketHeader header)
@@ -272,5 +397,5 @@ namespace SysDVR.Client.Sources
 
             return true;
         }
-	}
+    }
 }

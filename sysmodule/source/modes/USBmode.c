@@ -63,7 +63,7 @@ bool USB_ConnectClient()
 		return false;
 	}
 
-	if (res.Result != Handshake_Ok)
+	if (res.Result.Code != Handshake_Ok)
 	{
 		ProtoClientGlobalStateDisconnected();
 		return false;
