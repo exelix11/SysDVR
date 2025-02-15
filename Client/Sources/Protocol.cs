@@ -241,10 +241,11 @@ namespace SysDVR.Client.Sources
 
     abstract class StreamingSource : IDisposable
     {
-        // Note that the source should respect the target output type,
-        // this means that by the time it's added to a StreamManager
-        // this field should match the NoAudio/NoVideo state of the target
+        // This is a single object shared between the streaming target and the source(s)
+        // The sources should respect the NoVideo/Audio state of the options object and not change it
+        // In the case of TCP there are two different StreamingSource objects, they are configured by the manager and not by this field
         public StreamingOptions Options { get; private init; }
+
         protected CancellationToken Cancellation { get; private init; }
 
         public StreamingSource(StreamingOptions options, CancellationToken cancellation)
@@ -329,17 +330,16 @@ namespace SysDVR.Client.Sources
             req.IsVideoPacket = StreamProduced is StreamKind.Both or StreamKind.Video;
             req.IsAudioPacket = StreamProduced is StreamKind.Both or StreamKind.Audio;
 
+            var responseSize = ProtoHandshakeResponse02.Size;
             if (req.Version >= ProtocolUtil.ProtocolVersion3)
             {
+                responseSize = ProtoHandshakeResponse03.Size;
+
                 req.PerformMemoryDiagnostic = Program.Options.Debug.Log;
                 req.TurnOffConsoleScreen = Options.TurnOffConsoleScreen;
             }
 
-            var size = ProtoHandshakeResponse02.Size;
-            if (req.Version >= ProtocolUtil.ProtocolVersion3)
-                size = ProtoHandshakeResponse03.Size;
-
-            var res = await SendHandshakePacket(req, size).ConfigureAwait(false);
+            var res = await SendHandshakePacket(req, responseSize).ConfigureAwait(false);
 
             if (req.Version >= ProtocolUtil.ProtocolVersion3)
                 ParseResponse03(res);

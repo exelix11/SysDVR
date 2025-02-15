@@ -213,7 +213,7 @@ namespace SysDVR.Client.Core
 		}
 	}
 
-	abstract class BaseStreamManager : IDisposable
+	class StreamManager : IDisposable
 	{
 		private bool disposedValue;
 
@@ -241,7 +241,7 @@ namespace SysDVR.Client.Core
 		public void ReportFatalError(Exception ex) =>
 			OnFatalError?.Invoke(ex);
 
-		public BaseStreamManager(StreamingSource source, OutStream? videoTarget, OutStream? audioTarget, CancellationTokenSource cancel)
+		public StreamManager(StreamingSource source, OutStream? videoTarget, OutStream? audioTarget, CancellationTokenSource cancel)
 		{
 			Source = source;
 			VideoTarget = videoTarget;
