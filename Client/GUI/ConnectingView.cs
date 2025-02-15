@@ -51,7 +51,7 @@ namespace SysDVR.Client.GUI
 
         public override async void Created()
         {
-            BaseStreamManager manager;
+            StreamManager manager;
             try
             {
                 manager = await conn.ConnectForPlayer();

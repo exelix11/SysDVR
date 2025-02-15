@@ -1,7 +1,6 @@
 ﻿#if DEBUG
 using System;
 using System.Diagnostics;
-using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,6 +19,9 @@ namespace SysDVR.Client.Targets.FileOutput
         readonly public OutStream VideoTarget;
         readonly public OutStream AudioTarget;
 
+        bool Written = false;
+        readonly object lockObj = new object();
+
         public LoggingTarget(string filename)
         {
             this.filename = filename;
@@ -31,7 +33,12 @@ namespace SysDVR.Client.Targets.FileOutput
 
         public void FlushToDisk()
         {
-            File.WriteAllBytes(filename, mem.ToArray());
+            lock (lockObj)
+            {
+                if (Written) return;
+                Written = true;
+                File.WriteAllBytes(filename, mem.ToArray());
+            }
         }
 
         Stopwatch sw = new Stopwatch();
@@ -85,34 +92,26 @@ namespace SysDVR.Client.Targets.FileOutput
             {
                 parent.AddBuffer(streamKind, block, ts);
             }
+
+            protected override void DisposeImpl()
+            {
+                parent.FlushToDisk();
+                base.DisposeImpl(); 
+            }
         }
     }
 
-    class LoggingManager : BaseStreamManager
+    class LoggingManager
     {
-        static LoggingTarget target = null!;
-
-        static LoggingTarget GetTarget()
+        public static StreamManager Create(StreamingSource source, CancellationTokenSource cancel) 
         {
-            if (target is null)
-                target = new LoggingTarget("log.bin");
-
-            return target;
-        }
-
-        public LoggingManager(StreamingSource source, string VPath, string APath, CancellationTokenSource cancel) : base(
-            source,
-            VPath != null ? GetTarget().VideoTarget : null,
-            APath != null ? GetTarget().AudioTarget : null,
-            cancel)
-        {
-
-        }
-
-        public override async Task Stop()
-        {
-            await base.Stop().ConfigureAwait(false);
-            target.FlushToDisk();
+            var target = new LoggingTarget("log.bin");
+            
+            return new StreamManager(source, 
+                source.Options.HasVideo ? target.VideoTarget : null,
+                source.Options.HasAudio ? target.AudioTarget : null,
+                cancel
+            );
         }
     }
 }
