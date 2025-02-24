@@ -1,5 +1,6 @@
 ﻿using SysDVR.Client.Core;
 using System;
+using System.Buffers.Binary;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -43,7 +44,7 @@ namespace SysDVR.Client.Sources
         public override string ToString() =>
             $"Magic: {Magic:X8} Len: {DataSize + StructLength} Bytes - ts: {Timestamp}";
 
-        static PacketHeader()
+        public static void CheckSize()
         {
             if (Marshal.SizeOf<PacketHeader>() != StructLength)
                 throw new Exception("PacketHeader struct binary size is wrong");
@@ -59,6 +60,10 @@ namespace SysDVR.Client.Sources
         {
             if (code.Length != 2)
                 throw new ArgumentException("Invalid version code");
+
+            // The sysmodule compares memory with memcmp
+            // This mean that version "02" has to appear in memory as '0' '2'
+            // Since we assume little endian, they must be reversed so the lower byte is first
 
             return (ushort)(code[0] | (code[1] << 8));
         }
@@ -156,7 +161,7 @@ namespace SysDVR.Client.Sources
             set { if (value) AssertVersion(ProtocolUtil.ProtocolVersion3); SetBit(ref FeatureFlags, 1, value); }
         }
 
-        static ProtoHandshakeRequest()
+        public static void CheckSize()
         {
             if (Marshal.SizeOf<ProtoHandshakeRequest>() != StructureSize)
                 throw new Exception("Invalid structure size, check the sysmodule source");
@@ -170,7 +175,7 @@ namespace SysDVR.Client.Sources
 
         public uint Result;
 
-        static ProtoHandshakeResponse02()
+        public static void CheckSize()
         {
             if (Marshal.SizeOf<ProtoHandshakeResponse02>() != Size)
                 throw new Exception("Invalid structure size, check the sysmodule source");
@@ -191,7 +196,7 @@ namespace SysDVR.Client.Sources
         public ulong MemoryPools_SystemSize, MemoryPools_SystemUsed;
         public ulong MemoryPools_SystemUnsafeSize, MemoryPools_SystemUnsafeUsed;
 
-        static ProtoHandshakeResponse03()
+        public static void CheckSize()
         {
             if (Marshal.SizeOf<ProtoHandshakeResponse03>() != (int)Size)
                 throw new Exception("Invalid structure size, check the sysmodule source");
@@ -252,6 +257,11 @@ namespace SysDVR.Client.Sources
         {
             Options = options;
             Cancellation = cancellation;
+
+            PacketHeader.CheckSize();
+            ProtoHandshakeRequest.CheckSize();
+            ProtoHandshakeResponse02.CheckSize();
+            ProtoHandshakeResponse03.CheckSize();
         }
 
         public event Action<string> OnMessage;
