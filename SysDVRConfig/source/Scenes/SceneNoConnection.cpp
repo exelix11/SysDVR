@@ -22,7 +22,7 @@ namespace scenes {
 
 		auto selection = ImGuiCenterButtons<std::string_view>({ Strings::Error.FailExitButton, Strings::Main.OptPatchManager });
 		
-		if (selection == 0)
+		if (selection == 0 || ImGui::GetIO().NavInputs[ImGuiNavInput_Menu])
 			app::RequestExit();
 		else if (selection == 1)
 			app::SetNextScene(Scene::DvrPatches);
