@@ -37,7 +37,7 @@ namespace SysDVR.Client.GUI
         {
             Popups.Add(initErrorPopup);
 
-            Heading = "SysDVR-Client " + Program.Version;
+            Heading = "SysDVR-Client " + Program.DisplayVersion;
             SecondLine = $"build id {Program.BuildID}";
             DevelopmentBuild = TextEncoding.ToPlainText("Welcome to SysDVR-dev, do not open github issues for development versions as they come with no support");
 

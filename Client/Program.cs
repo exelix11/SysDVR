@@ -58,8 +58,10 @@ namespace SysDVR.Client
 
 		static readonly StringBuilder InitializationError = new();
 
+        // Use a manual display version flag instead of the git tag because that might not always be accurate on local and github actions builds
+        public static readonly string DisplayVersion = "6.2";
+
         [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "It works here")]
-        public static readonly string Version = ThisAssembly.Git.BaseTag.ToString();
         public static readonly string BuildID = ThisAssembly.Git.Commit.ToString();
 
 		public static Options Options = new();
@@ -130,7 +132,7 @@ namespace SysDVR.Client
 				{
 					DynamicLibraryLoader.Initialize();
 
-					Console.WriteLine($"SysDVR-Client {Version} - by exelix");
+					Console.WriteLine($"SysDVR-Client {DisplayVersion} - by exelix");
 					Console.WriteLine("https://github.com/exelix11/SysDVR");
 					Console.WriteLine($"Build ID: {BuildID}\n");
 
