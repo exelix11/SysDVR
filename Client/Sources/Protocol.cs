@@ -386,7 +386,7 @@ namespace SysDVR.Client.Sources
                     sb.AppendLine("Error code indicates a libnx error");
 
                 void add(string name, ulong total, ulong used) =>
-                    sb.AppendLine($"\t{name} pool: total={total} used={used} ({(total == 0 ? 0 : (used / total) * 100)}% used)");
+                    sb.AppendLine($"\t{name} pool: total={total} used={used} ({(total == 0 ? 0 : ((float)used / total) * 100):0.00}% used)");
 
                 add("Application", parsed.MemoryPools_ApplicationSize, parsed.MemoryPools_ApplicationUsed);
                 add("Applet", parsed.MemoryPools_AppletSize, parsed.MemoryPools_AppletUsed);
