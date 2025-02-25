@@ -3,8 +3,8 @@
   <ItemGroup>
     <None Include="sysmodule.json" />
     <None Include="Makefile" />
-    <None Include="release.bat" />
     <None Include="cpp.nx.hint" />
+    <None Include="..\ReleaseSysmodule.sh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\grcd.c" />

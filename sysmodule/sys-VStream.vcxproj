@@ -75,9 +75,9 @@
     <ClCompile Include="source\util.c" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\ReleaseSysmodule.sh" />
     <None Include="cpp.nx.hint" />
     <None Include="Makefile" />
-    <None Include="release.bat" />
     <None Include="sysmodule.json" />
   </ItemGroup>
   <ItemGroup>

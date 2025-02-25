@@ -25,8 +25,6 @@ namespace {
 
 	std::string formattedError;
 
-	bool waitOnExit = false;
-
 	void ImguiBindController()
 	{
 		ImGuiIO& io = ImGui::GetIO();
@@ -38,6 +36,8 @@ namespace {
 
 		io.NavInputs[ImGuiNavInput_Activate] = g_gamepad.buttons[GLFW_GAMEPAD_BUTTON_A];
 		io.NavInputs[ImGuiNavInput_Cancel] = g_gamepad.buttons[GLFW_GAMEPAD_BUTTON_B];
+		
+		io.NavInputs[ImGuiNavInput_Menu] = g_gamepad.buttons[GLFW_GAMEPAD_BUTTON_START];
 	}
 		
 	Result ConnectToSysmodule()
@@ -90,7 +90,7 @@ namespace scenes {
 		CenterText("github.com/exelix11/SysDVR/wiki/Troubleshooting");
 
 		ImGui::NewLine();
-		if (ImGuiCenterButtons<std::string_view>({ Strings::Error.FailExitButton }) != -1)
+		if (ImGuiCenterButtons<std::string_view>({ Strings::Error.FailExitButton }) != -1 || ImGui::GetIO().NavInputs[ImGuiNavInput_Menu])
 			app::RequestExit();
 		
 		ImGui::End();
@@ -125,11 +125,6 @@ namespace app {
 		SetNextScene(Scene::FatalError);
 		statusMessage = message;
 		errorSecondline = secondline;
-	}
-
-	void SetWaitOnExit(bool shouldWait)
-	{
-		waitOnExit = shouldWait;
 	}
 
 	void RequestExit()
@@ -245,9 +240,6 @@ mainloop:
 	scenes::DeinitDvrPatches();
 
 	SysDvrClose();
-
-	if (waitOnExit)
-		Platform::Sleep(2000);
 
 	UI::Exit();
 	Platform::Exit();

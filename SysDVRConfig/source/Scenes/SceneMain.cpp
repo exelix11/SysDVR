@@ -231,13 +231,7 @@ void scenes::ModeSelect()
 	case 2:
 		app::SetNextScene(Scene::DvrPatches);
 		break;
-	case 3:
-		// Mode was changed, after deinitializing the sysdvr port wait a little
-		// This fixes a possible race condition when the user opens the settings app
-		// right after closing it and sysdvr will miss the request causing the app to hang
-		if (InitialMode != CurrentMode)
-			app::SetWaitOnExit(true);
-		
+	case 3:		
 		app::RequestExit();
 		break;
 	default:

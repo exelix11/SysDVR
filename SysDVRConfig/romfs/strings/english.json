@@ -24,8 +24,8 @@
     "TroubleshootBootMode": "Try checking your SD card for corruption",
     "TroubleshootReboot": "Try rebooting your console",
     "VersionTroubleshoot": "Please download the latest settings app from github.",
-    "NotInstalled" : "SysDVR is not installed on your console",
-	"NotInsalledSecondLine" : "The file /atmosphere/contents/00FF0000A53BB665/exefs.nsp was not found on your SD card, this means you did not extract the SysDVR zip correctly. Fix the issue then reboot the console."
+    "NotInstalled": "SysDVR is not installed on your console",
+    "NotInsalledSecondLine": "The file /atmosphere/contents/00FF0000A53BB665/exefs.nsp was not found on your SD card, this means you did not extract the SysDVR zip correctly. Fix the issue then reboot the console."
   },
   "Guide": {
     "GuideTitle": "The guide is hosted on Github:"
