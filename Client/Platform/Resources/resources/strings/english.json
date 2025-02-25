@@ -1,4 +1,5 @@
 {	
+{
   // For more context see the documentation in https://github.com/exelix11/SysDVR/blob/translation-support/Client/Core/StringTable.cs 
   "translationName": "English",
   "translationAuthor": "SysDVR",
@@ -114,6 +115,7 @@
     "disableBacklightWarn": "This feature is experimental and may cause issues. You can lock and unlock the console to restore the screen.",
     "analyzeKeyframes": "Analyze keyframe NALs during the stream",
     "analyzeNALs": "Analyze every NAL packet",
+    "logSDLEvents": "Debug log of SDL events",
     "guiScale": "GUI scale",
     "decoderPopupTitle": "Select video decoder",
     "decoderChangeButton": "Configure hardware-accelerated decoder",
@@ -121,7 +123,8 @@
     "decderPopupHeading": "Select a decoder to use",
     "decderPopupContent": "Note that not all decoders may be compatible with your system, revert this option in case of issues.\nYou can get more decoders by obtaining a custom build of ffmpeg libraries (libavcodec) and replacing the one included in SysDVR-Client.\n\nThis feature is intended for mini-PCs like Raspberry pi where software decoding might not be enough. On desktop PCs and smartphones this option should not be used.",
     "invalidPathError": "The selected path does not exist, try again.",
-    "pathSelectDialog": "Select path"
+    "pathSelectDialog": "Select path",
+    "controllerInput": "Enable joypad input for controlling the SysDVR GUI"
   },
   "player": {
     "confirmQuitPopupTitle": "Confirm quit",
