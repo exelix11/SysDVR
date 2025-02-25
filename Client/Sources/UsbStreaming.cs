@@ -133,8 +133,8 @@ namespace SysDVR.Client.Sources
 
 			var response = new byte[expectedSize];
             (err, transfer) = await reader.ReadAsync(response, 0, expectedSize, 1500).ConfigureAwait(false);
-            if (err != LibUsbDotNet.Error.Success || transfer != 4)
-                throw new Exception($"libusb receive handshake failed, result: {err} len: {transfer}");
+            if (err != LibUsbDotNet.Error.Success || transfer != expectedSize)
+                throw new Exception($"libusb receive handshake failed, result: {err} len: {transfer}/{expectedSize}");
 
 			return response;
         }
