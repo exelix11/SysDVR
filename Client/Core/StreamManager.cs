@@ -315,11 +315,16 @@ namespace SysDVR.Client.Core
 					if (packet.Header.IsError)
 					{
 						var error = PacketErrorParser.GetPacketErrorAsString(packet);
-						
-						if (Program.Options.Debug.ConsoleErrors)
-							OnErrorMessage?.Invoke(PacketErrorParser.GetPacketErrorAsString(packet));
+
+						if (Program.Options.Debug.Log)
+							OnErrorMessage?.Invoke(error);
 						else
-							Console.WriteLine(error);
+						{
+                            // Tracking these at least silently should be useful
+                            // On PC they will appear in the console window
+                            // On android they will appear in the logcat
+                            Console.WriteLine(error);
+						}
 
 						packet.Buffer?.Free();
 					}
