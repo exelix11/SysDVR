@@ -16,10 +16,30 @@
 		<PublishAot>true</PublishAot>
 	</PropertyGroup>
 
+	<!--Versioning: I don't like the default output of GitInfo since tags may not always correlate to the expected release version, for example in CI builds before the github tag/release is made-->
+	<!--The displayed version is always set manually and GitInfo provides the commit number-->
+	<!--Update the release_version.txt file to set the version-->
+	<PropertyGroup>
+		<GitVersion>false</GitVersion>
+		<GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
+		<GitIgnoreTagVersion>true</GitIgnoreTagVersion>
+		<GitVersionFile>release_version.txt</GitVersionFile>
+	</PropertyGroup>
+
+	<Target Name="PopulateInfo" DependsOnTargets="GitVersion" BeforeTargets="GetAssemblyVersion;GenerateNuspec;GetPackageContents">
+		<PropertyGroup>
+			<PackageVersion>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</PackageVersion>
+			<Version>$(PackageVersion)</Version>
+			<RepositoryBranch>$(GitBranch)</RepositoryBranch>
+			<RepositoryCommit>$(GitCommit)</RepositoryCommit>
+			<SourceRevisionId>$(GitBranch) $(GitCommit)</SourceRevisionId>
+		</PropertyGroup>
+	</Target>
+
 	<PropertyGroup Condition="$(SysDvrTarget)!='android'">
 		<OutputType>Exe</OutputType>
 	</PropertyGroup>
-	
+
 	<PropertyGroup Condition="$(SysDvrTarget)=='linux'">
 		<PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
 	</PropertyGroup>
@@ -34,7 +54,7 @@
 		<!--Also it seems some NDK versions need undefined-version https://github.com/dotnet/runtime/issues/92272 -->
 		<LinkerArg Include="-Wl,-soname,SysDVR-Client.so,--undefined-version" />
 	</ItemGroup>
-	
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<Optimize>false</Optimize>
 	</PropertyGroup>
@@ -63,10 +83,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="GitInfo" Version="3.3.5">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Include="System.Text.Json" Version="9.0.0" />
+		<PackageReference Include="GitInfo" Version="3.3.5">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="System.Text.Json" Version="9.0.0" />
 	</ItemGroup>
 </Project>
