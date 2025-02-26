@@ -15,7 +15,7 @@ echo Downloading ffmpeg binaries...
 curl -L https://github.com/exelix11/sysdvr-ffmpeg-builds/releases/download/5.1.2-39-g2953c6381a/ffmpeg-n5.1.2-39-g2953c6381a-win64-lgpl-shared-5.1.zip --output ffmpeg.zip
 7z x ffmpeg.zip -olib_ffmpeg || goto error
 :: Chage this when the download URL changes
-copy lib_ffmpeg\ffmpeg-n5.1.2-39-g2953c6381a-win64-lgpl-shared-5.1\*.dll Resources\win-x64\native\
+copy lib_ffmpeg\*.dll Resources\win-x64\native\
 del ffmpeg.zip
 
 :skip_ffmpeg
