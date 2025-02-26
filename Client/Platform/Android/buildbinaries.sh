@@ -95,7 +95,8 @@ if [ ! -e "app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar" ]; then
 	rm -rf ffmpegkit/x86_64 ffmpegkit/x86 ffmpegkit/jni/x86_64 ffmpegkit/jni/x86 libffmpegkit.so
 	# Also get rid of some libraries we don't need 	
 	rm -rf ffmpegkit/jni/arm64-v8a/libffmpegkit.so ffmpegkit/jni/arm64-v8a/libffmpegkit_abidetect.so
-	rm -rf ffmpegkit/jni/armeabi-v7a/libffmpegkit.so ffmpegkit/jni/armeabi-v7a/libffmpegkit_abidetect.so
+	rm -rf ffmpegkit/jni/armeabi-v7a/libffmpegkit.so ffmpegkit/jni/armeabi-v7a/libffmpegkit_abidetect.so ffmpegkit/jni/armeabi-v7a/ibffmpegkit_armv7a_neon.so
+
 	7z a ffmpegkit.aar.zip ./ffmpegkit/*
 	mv ffmpegkit.aar.zip app/libs/ffmpeg-kit-full-5.1.LTS_trimmed.aar
 	rm -rf ffmpegkit
