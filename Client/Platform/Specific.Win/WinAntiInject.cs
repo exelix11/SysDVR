@@ -9,7 +9,6 @@ namespace SysDVR.Client.Platform.Specific.Win
     // Discord causes sysdvr to crash when it injects its dll
     // Debugging the issue seems to be an invalid icall (CFG guard) from SDL_RenderPresent
     // In practice it's not our issue and we're implementing poorman's anticheat to stop discord from messing with our process
-    // TODO: This may triggr antiviruses, consider obfucating this code....
     internal static class AntiInject
     {
         // Currently we're only blocking discord, in practice we could implement a generic anti-injection approach
@@ -119,6 +118,12 @@ namespace SysDVR.Client.Platform.Specific.Win
 
         public static void Initialize() 
         {
+            if (Program.Options.Debug.NoProt)
+            {
+                Program.DebugLog("[AntiInj] disabled due to debug options");
+                return;
+            }
+
             if (!Program.IsWindows || !Environment.Is64BitProcess)
             {
 				Program.DebugLog("[AntiInj] not enabled due to unsupported OS/CPU");
