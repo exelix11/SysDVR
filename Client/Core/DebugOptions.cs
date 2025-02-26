@@ -28,9 +28,6 @@ namespace SysDVR.Client.Core
         // Debug dynamic library loading
         public bool DynLib;
 
-        // Display console error reports
-        public bool ConsoleErrors;
-
         // Log SDL input events
         public bool SDLEvents;
 

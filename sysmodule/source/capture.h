@@ -28,7 +28,6 @@
 
 #define DefaultABatching 3
 
-// five bits
 enum PacketMeta 
 {
 	PacketMeta_Type_Mask = BIT(0) | BIT(1),
@@ -40,6 +39,8 @@ enum PacketMeta
 	PacketMeta_Content_Replay = BIT(3),	// Only if PacketMeta_Type_Video
 	PacketMeta_Content_MultiNal = BIT(4), // Only if PacketMeta_Type_Video
 	PacketMeta_Content_Error = BIT(5)
+
+	// Bits 6 and 7 are reserved for future use
 };
 
 typedef struct {

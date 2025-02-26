@@ -114,7 +114,7 @@ DEFINE_UNALIGNED_ACCESSOR(u64);
 DEFINE_UNALIGNED_ACCESSOR(u32);
 DEFINE_UNALIGNED_ACCESSOR(u16);
 
-u32 crc32_arm64_hw(const u8* p, unsigned int len)
+static u32 crc32_arm64_hw(const u8* p, unsigned int len)
 {
 	u32 crc = 0xffffffff;
 
@@ -206,8 +206,8 @@ bool CaptureReadVideo()
 
 		// Static images are particularly bad for sysdvr cause they cause the video encoder
 		// to emit really big keyframes, all to produce a static image. So here's a trick:
-		// We hash these big blocks and keep the last 10 or os, if they keep repeating we know
-		// this is a static images so we can just not send it with no consequences to free
+		// We hash these big blocks and keep the last 10 or so, if they keep repeating we know
+		// this is a static image so we can just not send it with no consequences to free
 		// up bandwidth for audio and reduce delay once the image changes
 		const bool UseHash = HashNals && (isIDRFrame || !HashOnlyKeyframes);
 
