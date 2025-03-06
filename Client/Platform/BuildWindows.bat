@@ -61,7 +61,7 @@ del libusb.7z
 echo Building client...
 
 cd ..
-dotnet publish -c Release -r win-x64 /p:SysDvrTarget=windows || goto error
+dotnet publish -c Release -r win-x64 /p:SysDvrTarget=windows --self-contained || goto error
 
 del bin\Release\net9.0\win-x64\publish\*.pdb
 

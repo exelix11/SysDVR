@@ -35,8 +35,19 @@
 			<SourceRevisionId>$(GitBranch) $(GitCommit)</SourceRevisionId>
 		</PropertyGroup>
 	</Target>
+	
+	<!--Platform specific config-->
+	<PropertyGroup Condition="$(SysDvrTarget)=='windows'">
+		<!-- Due to antimalware vendors flagging AOT releases https://github.com/exelix11/SysDVR/issues/338 -->
+		<!-- Windows releases now don't use AOT anymore but framework-independent dotnet releases -->
+		<!-- This is not optimal since we have to ship the whole framework along with sysdvr but at least it's not detected -->
+		<PublishAot>false</PublishAot>
+		<PublishTrimmed>true</PublishTrimmed>
+	</PropertyGroup>
 
 	<PropertyGroup Condition="$(SysDvrTarget)!='android'">
+		<!--On android we build as a shared library that is loaded by the SDL java shell-->
+		<!--On other platforms we build as a standalone executable-->
 		<OutputType>Exe</OutputType>
 	</PropertyGroup>
 
