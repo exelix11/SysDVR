@@ -128,7 +128,7 @@ namespace SysDVR.Client.Core
 			public string AutoConnect = "SysDVR will connect automatically to the first valid device";
 			// {0} is replaced with the user-provided serial
 			public string AutoConnectWithSerial = "SysDVR will connect automatically to the console with serial containing: {0}";
-			public string AutoConnectCancelButton = "Cancel auto conect";
+			public string AutoConnectCancelButton = "Cancel auto connect";
 
 			public string DeviceNotCompatible =
 				"The selected device is not compatible with this version of the client.\n" +
@@ -197,11 +197,11 @@ namespace SysDVR.Client.Core
 
 			public string SaveFailedError = "Failed to save settings";
 
-			public string PerformanceRenderingLabel = "These options affect the rendering pipeline of the client, when enabling 'uncapped' modes SysDVR-client will sync to the vsync event of your device, this should remove any latency due to the rendering pipeline but mey use more power on mobile devices.";
+			public string PerformanceRenderingLabel = "These options affect the rendering pipeline of the client, when enabling 'uncapped' modes SysDVR-client will sync to the vsync event of your device, this should remove any latency due to the rendering pipeline but may use more power on mobile devices.";
 			public string UncapStreaming = "Uncap streaming framerate";
 			public string UncapGUI = "Uncap GUI framerate";
 			
-			public string PerformanceStreamingLabel = "These options affect the straming quality of SysDVR, the defaults are usually fine";
+			public string PerformanceStreamingLabel = "These options affect the streaming quality of SysDVR, the defaults are usually fine";
 			
 			// Technical note: batching is the term used to group together multiple audio packets as a single one to reduce transfer overhead but increase latency
 			public string AudioBatching = "Audio batching";
@@ -295,7 +295,7 @@ namespace SysDVR.Client.Core
 			
 			public string NoDevicesHelpWindows = "The first time you run SysDVR on Windows you must install the USB driver, follow the guide.";
 			public string NoDevicesHelpLinux = "To properly use USB mode on Linux you need to install the needed udev rule according to the guide";
-			public string NoDevicesHelpAndroid = "In case of issues make sure your device supports USB OTG, note that certain USB C to C cables are known to cause issues, try with a OTG adapter on your phone USB port";
+			public string NoDevicesHelpAndroid = "In case of issues make sure your device supports USB OTG, note that certain USB-C to USB-C cables are known to cause issues, try with a OTG adapter on your phone USB port";
 
 			public string RefreshButton = "Refresh device list";
 		}
@@ -327,7 +327,7 @@ namespace SysDVR.Client.Core
 			public string InstallButton = "Install";
 			public string CheckAgainButton = "Check status again";
 			
-			public string InstallInfo = "If you choose to install the driver it will be downloaded from";
+			public string InstallInfo = "If you choose to install the driver, it will be downloaded from";
 			public string FileHashInfo = "The expected SHA256 hash of the zip file is";
 
 			public string Installing = "Installation in progress...";
@@ -341,7 +341,7 @@ namespace SysDVR.Client.Core
 			public string DetectNotInstalled = "It seems the driver is not installed, you need to install it to use SysDVR.";
 			public string DetectNoDevice = "It seems that Windows has never detected the SysDVR device ID. Enable USB mode in SysDVR-Settings and connect your console. Note that USB-C to C cables may not work.";
 
-			public string InstallSucceeded = "The installation was succesful";
+			public string InstallSucceeded = "The installation was successful";
 			public string InstallFailed = "Installation failed";
 
 			// The system error message is appended after this string
