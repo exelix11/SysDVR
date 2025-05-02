@@ -32,7 +32,7 @@ namespace Strings
 		{ "SetLanguage_ES", ASSET("strings/spanish.json")},
 		//{ "SetLanguage_KO", ASSET("strings/example.json")},
 		//{ "SetLanguage_NL", ASSET("strings/example.json")},
-		//{ "SetLanguage_PT", ASSET("strings/example.json")},
+		{ "SetLanguage_PT", ASSET("strings/portuguese.json")},
 		//{ "SetLanguage_RU", ASSET("strings/example.json")},
 		//{ "SetLanguage_FRCA", ASSET("strings/example.json")},
 		{ "SetLanguage_ES419", ASSET("strings/spanish.json")},
