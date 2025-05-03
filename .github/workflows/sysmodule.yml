@@ -23,7 +23,7 @@ jobs:
     - name: Run build script
       run: |
         sudo apt-get update
-        sudo apt-get install -y p7zip-full
+        sudo apt-get install -y p7zip-full binutils
         chmod +x ReleaseSysmodule.sh
         ./ReleaseSysmodule.sh
     - uses: actions/upload-artifact@v4
