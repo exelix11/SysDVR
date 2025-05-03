@@ -26,6 +26,7 @@ namespace scenes {
 	void InitFatalError();
 	void FatalError();
 	
+	void InitNoConnection();
 	void NoConnection();
 }
 

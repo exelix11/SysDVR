@@ -12,12 +12,40 @@ AudioPacket alignas(0x1000) APkt;
 static Service grcdVideo;
 static Service grcdAudio;
 
+// To support disabling and enabling sysdvr without rebooting the console we now don't call grcdServiceBegin on start.
+// This is because this function globally enables a flag in grc, when this is called with the flag already set it will cause the console to crash
+// The solution is to attempt to record directory and if we get the error code 0x3E8D4/2212-0500 we know grcdServiceBegin was not called before and it's safe to call
+// Note that this same error code is also returned when grcdTransfer is called with an invalid stream argument, but this does not apply to us.
+#define GRCD_NOT_INITIALIZED 0x3E8D4
+static bool grcdBeginCalled = false;
+static Mutex grcdBeginMutex;
+
 static const uint8_t SPS[] = { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x0C, 0x20, 0xAC, 0x2B, 0x40, 0x28, 0x02, 0xDD, 0x35, 0x01, 0x0D, 0x01, 0xE0, 0x80 };
 static const uint8_t PPS[] = { 0x00, 0x00, 0x00, 0x01, 0x68, 0xEE, 0x3C, 0xB0 };
 
 static bool forceSPSPPS = false;
 
 static atomic_bool capturing = false;
+
+static bool EnsureGrcdInit(Result* rc)
+{
+	if (grcdBeginCalled) 
+		return false;
+
+	mutexLock(&grcdBeginMutex);
+
+	if (grcdBeginCalled)
+		return false;
+
+	grcdBeginCalled = true;
+
+	*rc = grcdServiceBegin(&grcdVideo);
+	LOG("grcdServiceBegin: %x\n", *rc);
+
+	mutexUnlock(&grcdBeginMutex);
+
+	return true;
+}
 
 // User configuration
 static int AudioBatching = DefaultABatching;
@@ -60,7 +88,7 @@ void CaptureAudioConnected()
 
 bool CaptureReadAudio()
 {
-	u32 dataSize; u64 timestamp;
+	u32 dataSize = 0; u64 timestamp = 0;
 
 	Result rc = grcdServiceTransfer(
 		&grcdAudio, GrcStream_Audio,
@@ -68,6 +96,16 @@ bool CaptureReadAudio()
 		NULL,
 		&dataSize,
 		&timestamp);
+
+	if (rc == GRCD_NOT_INITIALIZED && EnsureGrcdInit(&rc))
+	{
+		if (R_FAILED(rc))
+		{
+			PacketMakeError(ERROR_TYPE_AUDIO_INIT, &APkt.Header, APkt.Data, rc, 0, 0);
+			return false;
+		}
+		else return CaptureReadAudio();
+	}
 
 	APkt.Header.DataSize = dataSize;
 	APkt.Header.Timestamp = timestamp;
@@ -175,7 +213,7 @@ void CaptureVideoConnected()
 
 bool CaptureReadVideo()
 {
-	u32 dataSize; u64 timestamp;
+	u32 dataSize = 0; u64 timestamp = 0;
 
 	Result res = grcdServiceTransfer(
 		&grcdVideo, GrcStream_Video,
@@ -183,6 +221,16 @@ bool CaptureReadVideo()
 		NULL,
 		&dataSize,
 		&timestamp);
+
+	if (res == GRCD_NOT_INITIALIZED && EnsureGrcdInit(&res))
+	{
+		if (R_FAILED(res))
+		{
+			PacketMakeError(ERROR_TYPE_VIDEO_INIT, &VPkt.Header, VPkt.Data, res, 0, 0);
+			return false;
+		}
+		else return CaptureReadVideo();
+	}
 
 	VPkt.Header.DataSize = dataSize;
 	VPkt.Header.Timestamp = timestamp;
@@ -192,7 +240,7 @@ bool CaptureReadVideo()
 
 	// Sometimes the buffer is too small for IDR frames causing this https://github.com/exelix11/SysDVR/issues/91 
 	// These big NALs are not common and even if they're missed they only cause graphical glitches
-	// Error code should be 2212-0006
+	// Error code should be 0xcd4/2212-0006
 	if (!result) 
 	{
 		LOG("Video capture failed: %x size: %x\n", res, dataSize);
@@ -286,7 +334,7 @@ Result CaptureInitialize()
 
 	R_RET_ON_FAIL(grcdServiceOpen(&grcdVideo));
 	R_RET_ON_FAIL(grcdServiceOpen(&grcdAudio));
-	return grcdServiceBegin(&grcdVideo);
+	return 0;
 }
 
 void CaptureFinalize()

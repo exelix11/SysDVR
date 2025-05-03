@@ -232,13 +232,13 @@ namespace SysDVR.Client.Sources
             ulong Context3 = BitConverter.ToUInt64(packet.Buffer.Span[24..]);
 
             if (ErrorType == 1)
-            {
                 return $"Video capture failed with code 0x{ErrorCode:x} requested size was 0x{Context1:x}";
-            }
             else if (ErrorType is 2 or 3)
-            {
                 return $"Audio capture failed with code 0x{ErrorCode:x} requested size was 0x{Context1:x}, iteration was {Context2}";
-            }
+            else if (ErrorType == 4)
+                return $"Grc:d begin from video thread failed with code 0x{ErrorCode:x}";
+            else if (ErrorType == 5)
+                return $"Grc:d begin from audio thread failed with code 0x{ErrorCode:x}";
 
             return $"Unknown error type 0x{ErrorType:x} 0x{ErrorCode:x} 0x{Context1:x} 0x{Context2:x} 0x{Context3:x}";
         }

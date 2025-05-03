@@ -25,7 +25,11 @@
     "TroubleshootReboot": "Try rebooting your console",
     "VersionTroubleshoot": "Please download the latest settings app from github.",
     "NotInstalled": "SysDVR is not installed on your console",
-    "NotInsalledSecondLine": "The file /atmosphere/contents/00FF0000A53BB665/exefs.nsp was not found on your SD card, this means you did not extract the SysDVR zip correctly. Fix the issue then reboot the console."
+    "NotInsalledSecondLine": "The file /atmosphere/contents/00FF0000A53BB665/exefs.nsp was not found on your SD card, this means you did not extract the SysDVR zip correctly. Fix the issue then reboot the console.",
+    "SysmoduleConnectionTroubleshootFull": "Wait a bit and try again if you still can't get past this screen try rebooting your console.",
+    "SysmoduleConnectionTroubleshootUsbOnly": "You're using a USB-Only version of SysDVR. The SysDVR-Settings app does not support it.",
+    "DiagProcessStatusOn": "The sysmodule process seems to be running.",
+    "DiagProcessStatusOff": "The sysmodule process is not running."
   },
   "Guide": {
     "GuideTitle": "The guide is hosted on Github:"
@@ -45,7 +49,15 @@
     "OptPatchManager": "dvr-patches manager",
     "OptSave": "Save and exit",
     "OptSetDefault": "Set current mode as default on boot",
-    "SelectMode": "Select mode"
+    "SelectMode": "Select mode",
+    "OptTerminateSysmodule": "Terminate SysDVR",
+    "WarnSysmoduleKill": "This will terminate the SysDVR process and free its memory for other sysmodules to use.\nNote that this option may cause conflicts with third-party sysmodule managers.",
+    "ContinueQuestion": "Do you want to continue?",
+    "Yes": "Yes",
+    "No": "No",
+    "OptTryStart": "Try to start SysDVR",
+    "StartFailed": "Launching SysDVR failed. Error code: ",
+    "StartSuccess": "SysDVR was started. Close and open this app again."
   },
   "Patches": {
     "BackButton": "Go back",

@@ -1,7 +1,7 @@
 {
   "LanguageName": "Italiano",
   "ImguiGlyphRange": "Default",
-  "TranslationAuthor": "exelix11",
+  "TranslationAuthor": "",
   "Connecting": {
     "Description": "Se hai appena acceso la console potrebbe richiedere fino a 20 secondi.",
     "Title": "Connessione a SysDVR...",
@@ -24,7 +24,11 @@
     "TroubleshootReboot": "Prova a riavviare la console",
     "VersionTroubleshoot": "Scarica l'ultima versione di SysDVR da github.",
     "NotInstalled": "SysDVR non è installato sulla tua console",
-    "NotInsalledSecondLine": "Il file /atmosphere/contents/00FF0000A53BB665/exefs.nsp non è stato trovato sulla scheda SD, questo significa che non hai estratto SysDVR.zip correttamente. Risolvi il problema, quindi riavvia la console."
+    "NotInsalledSecondLine": "Il file /atmosphere/contents/00FF0000A53BB665/exefs.nsp non è stato trovato sulla scheda SD, questo significa che non hai estratto SysDVR.zip correttamente. Risolvi il problema, quindi riavvia la console.",
+    "SysmoduleConnectionTroubleshootFull": "Riprova tra qualche secondo, se non riesci a superare questa pagina prova a riavviare la console.",
+    "SysmoduleConnectionTroubleshootUsbOnly": "Stai usando una versione USB-Only di SysDVR. SysDVR-Settings supporta solo la versione completa.",
+    "DiagProcessStatusOn": "Il processo del sysmodule sembra in esecuzione.",
+    "DiagProcessStatusOff": "Il processo del sysmodule non è in esecuzione."
   },
   "Guide": {
     "GuideTitle": "La guida è disponibile su Github (solo inglese):"
@@ -44,7 +48,15 @@
     "OptSetDefault": "Imposta la modalità attuale come default",
     "SelectMode": "Seleziona una modalità",
     "ActiveMode": "Attiva",
-    "DefaultMode": "Avvio automatico"
+    "DefaultMode": "Avvio automatico",
+    "OptTerminateSysmodule": "Termina SysDVR",
+    "WarnSysmoduleKill": "Terminare il processo di SysDVR? Questo renderà la memoria utilizzata disponibile per altri sysmodule.\nNota che questa opzione potrebbe causare conflitti con altri homebrew che gestiscono i sysmodule.",
+    "ContinueQuestion": "Vuoi continuare?",
+    "Yes": "Si",
+    "No": "No",
+    "OptTryStart": "Avvia SysDVR",
+    "StartFailed": "Impossibile avviare SysDVR. Codice di errore: ",
+    "StartSuccess": "SysDVR è stato avviato. Chiudi e riapri questa app per gestirlo."
   },
   "Patches": {
     "BackButton": "Indietro",

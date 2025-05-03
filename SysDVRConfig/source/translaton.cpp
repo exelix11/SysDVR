@@ -54,11 +54,11 @@ namespace Strings
 	} \
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(classname, __VA_ARGS__)
 
-	DEFINE_LANGUAGE_JSON_PARSER(MainPageTable, ModeUsbTitle, ModeUsb, ModeTcpTitle, ModeTcp, ModeRtspTitle, ModeRtsp, ModeDisabled, ConsoleIPPlcaceholder, SelectMode, OptGuide, OptSetDefault, OptPatchManager, OptSave, ActiveMode, DefaultMode)
+	DEFINE_LANGUAGE_JSON_PARSER(MainPageTable, ModeUsbTitle, ModeUsb, ModeTcpTitle, ModeTcp, ModeRtspTitle, ModeRtsp, ModeDisabled, ConsoleIPPlcaceholder, SelectMode, OptGuide, OptSetDefault, OptPatchManager, OptSave, ActiveMode, DefaultMode, OptTerminateSysmodule, WarnSysmoduleKill, ContinueQuestion, Yes, No, OptTryStart, StartFailed, StartSuccess)
 
 	DEFINE_LANGUAGE_JSON_PARSER(GuideTable, GuideTitle)
 
-	DEFINE_LANGUAGE_JSON_PARSER(ErrorTable, FailedToDetectMode, InvalidMode, TroubleshootReboot, ModeChangeFailed, BootModeChangeFailed, TroubleshootBootMode, SysmoduleConnectionFailed, SysmoduleConnectionTroubleshoot, SysmoduleConnectionTroubleshootLink, FailExitButton, SysdvrVersionError, OlderVersion, NewerVersion, VersionTroubleshoot)
+	DEFINE_LANGUAGE_JSON_PARSER(ErrorTable, FailedToDetectMode, InvalidMode, TroubleshootReboot, ModeChangeFailed, BootModeChangeFailed, TroubleshootBootMode, SysmoduleConnectionFailed, SysmoduleConnectionTroubleshoot, SysmoduleConnectionTroubleshootLink, FailExitButton, SysdvrVersionError, OlderVersion, NewerVersion, VersionTroubleshoot, SysmoduleConnectionTroubleshootFull, SysmoduleConnectionTroubleshootUsbOnly, DiagProcessStatusOn, DiagProcessStatusOff)
 
 	DEFINE_LANGUAGE_JSON_PARSER(PatchesTable, CurlError, CurlGETFailed, CurlNoData, ParseReleaseFailure, ParseTagFailure, ParseTagCommitFailure, ParseDownloadFailure, NoLinkFound, ZipExtractFail, LatestVer, NewVerAvail, DownloadOk, Title, Loading, Description, Status, StatusNotInstalled, StatusUnknownVersion, StatusInstalled, SdcardPath, UninstallButton, DownloadButton, RebootWarning, RebootButton, BackButton, SearchLatestButton)
 

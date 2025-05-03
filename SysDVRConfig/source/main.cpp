@@ -42,6 +42,14 @@ namespace {
 		
 	Result ConnectToSysmodule()
 	{
+		// Sysdvr takes about 25 seconds to boot
+		// That is an hardcoded delay of 20 seconds + some time for actual initialization
+		int connectAttemptCount = 0;
+		int connectMaxAttempt = 9;
+		int connDelaySeconds = 3;
+
+		try_again:
+
 		UI::StartFrame();
 
 		SetupMainWindow("Connecting...");
@@ -53,6 +61,12 @@ namespace {
 
 		CenterText(Strings::Connecting.Title);
 		CenterText(Strings::Connecting.Description);
+
+		std::string attemptLine = std::to_string(connectAttemptCount + 1) + "/" + std::to_string(connectMaxAttempt);
+		UI::SmallFont();
+		CenterText(attemptLine);
+		UI::PopFont();
+
 		ImGui::NewLine();
 		CenterText(Strings::Connecting.Troubleshoot1);
 		CenterText(Strings::Connecting.Troubleshoot2);
@@ -60,7 +74,26 @@ namespace {
 		ImGui::End();
 		UI::EndFrame();
 
-		return SysDvrConnect();
+		Result rc = SysDvrConnect();
+		if (R_FAILED(rc))
+		{
+			if (SysDvrProcIsRunning())
+			{
+				// If the process is running, ensure that we're not using the usb only version because that will never connect
+				if (SysDvrDetectVariantCached(SDMC SYSDVR_EXEFS_PATH) == SYSDVR_VARIANT_USB_ONLY)
+					return rc;
+
+				// Otherwise, just try connecting for a while
+				if (++connectAttemptCount == connectMaxAttempt)
+					return rc;
+
+				Platform::Sleep(connDelaySeconds * 1000);
+
+				goto try_again;
+			}
+		}
+
+		return rc;
 	}
 }
 
@@ -145,7 +178,11 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	
+	
 	Platform::AfterInit();
+	
+	// If this fails, it's fine
+	SysDvrProcManagerInit();
 
 	SysDVRLogo = Image::Img(ASSET("logo.png"));
 	
@@ -154,7 +191,7 @@ int main(int argc, char* argv[])
 	{
 		Result rc = ConnectToSysmodule();
 		if (R_FAILED(rc)) {
-			if (!fs::Exists(SDMC "/atmosphere/contents/00FF0000A53BB665/exefs.nsp"))
+			if (!fs::Exists(SDMC SYSDVR_EXEFS_PATH))
 			{
 				app::FatalError(Strings::Error.NotInstalled, Strings::Error.NotInsalledSecondLine);
 				goto mainloop;
@@ -191,6 +228,7 @@ dvrNotConnected:
 mainloop:
 	// Always init the fatal error scene
 	scenes::InitFatalError();
+	scenes::InitNoConnection();
 	
 	while (Glfw::MainLoop())
 	{
@@ -240,6 +278,7 @@ mainloop:
 	scenes::DeinitDvrPatches();
 
 	SysDvrClose();
+	SysDvrProcManagerExit();
 
 	UI::Exit();
 	Platform::Exit();
