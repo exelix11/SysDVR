@@ -24,8 +24,12 @@
     "TroubleshootBootMode": "Tente verificar que seu cartão SD não esteja corrompido",
     "TroubleshootReboot": "Tente reiniciar seu console",
     "VersionTroubleshoot": "Por favor, baixe a versão mais recente no Github",
-    "NotInstalled" : "SysDVR não está instalado no seu console",
-	"NotInsalledSecondLine" : "O arquivo /atmosphere/contents/00FF0000A53BB665/exefs.nsp não foi encontrado no seu cartão SD. Isso significa que você não extraiu o zip do SysDVR corretamente. Conserte o problema e reinicie o console."
+    "NotInstalled": "SysDVR não está instalado no seu console",
+    "NotInsalledSecondLine": "O arquivo /atmosphere/contents/00FF0000A53BB665/exefs.nsp não foi encontrado no seu cartão SD. Isso significa que você não extraiu corretamente o arquivo zip do SysDVR. Corrija isso e reinicie o console.",
+    "SysmoduleConnectionTroubleshootFull": "Aguarde um pouco e tente novamente. Se ainda não conseguir passar dessa tela, tente reiniciar o console.",
+    "SysmoduleConnectionTroubleshootUsbOnly": "Você está usando uma versão apenas USB do SysDVR. O app SysDVR-Settings não a suporta.",
+    "DiagProcessStatusOn": "O processo do sysmodule parece estar em execução.",
+    "DiagProcessStatusOff": "O processo do sysmodule não está em execução."
   },
   "Guide": {
     "GuideTitle": "O guia está hospedado no Github:"
@@ -45,7 +49,15 @@
     "OptPatchManager": "Gerenciador dvr-patches",
     "OptSave": "Salvar e sair",
     "OptSetDefault": "Definir modo atual como padrão ao inicializar",
-    "SelectMode": "Selecionar modo"
+    "SelectMode": "Selecionar modo",
+    "OptTerminateSysmodule": "Encerrar SysDVR",
+    "WarnSysmoduleKill": "Isso encerrará o processo do SysDVR e liberará a memória para outros sysmodules.\nNote que essa opção pode causar conflitos com gerenciadores de sysmodule de terceiros.",
+    "ContinueQuestion": "Deseja continuar?",
+    "Yes": "Sim",
+    "No": "Não",
+    "OptTryStart": "Tentar iniciar o SysDVR",
+    "StartFailed": "Falha ao iniciar o SysDVR. Código de erro: ",
+    "StartSuccess": "SysDVR iniciado com sucesso. Feche e abra o app novamente."
   },
   "Patches": {
     "BackButton": "Voltar",
