@@ -51,7 +51,7 @@
     "OptSetDefault": "Definir modo atual como padrão ao inicializar",
     "SelectMode": "Selecionar modo",
     "OptTerminateSysmodule": "Encerrar SysDVR",
-    "WarnSysmoduleKill": "Isto vai encerrar o processo do SysDVR e libertar memória para outros sysmodules.\nMas atenção: esta opção pode dar conflitos com gestores de sysmodule de terceiros.",
+    "WarnSysmoduleKill": "Isto vai encerrar o processo do SysDVR e libertar memória para outros sysmodules.\nAtenção: esta opção pode dar conflitos com gestores de sysmodule de terceiros.",
     "ContinueQuestion": "Queres continuar?",
     "Yes": "Sim",
     "No": "Não",

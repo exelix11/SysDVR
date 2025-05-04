@@ -24,8 +24,12 @@
     "TroubleshootBootMode": "Compruebe su SD",
     "TroubleshootReboot": "Pruebe reiniciando su consola",
     "VersionTroubleshoot": "Por favor, descargue la última versión de SysDVR desde GitHub",
-    "NotInstalled" : "SysDVR no está instalado en su consola",
-	"NotInsalledSecondLine" : "El archivo /atmosphere/contents/00FF0000A53BB665/exefs.nsp no se pudo encontrar en su SD, esto significa que no instaló SysDVR correctamente. Arregle el problema y reinicie la consola."
+    "NotInstalled": "SysDVR no está instalado en su consola",
+    "NotInsalledSecondLine": "El archivo /atmosphere/contents/00FF0000A53BB665/exefs.nsp no se pudo encontrar en su SD, esto significa que no instaló SysDVR correctamente. Arregle el problema y reinicie la consola.",
+    "SysmoduleConnectionTroubleshootFull": "Espera un poco y vuelve a intentarlo. Si sigues sin poder pasar de esta pantalla, prueba a reiniciar la consola.",
+    "SysmoduleConnectionTroubleshootUsbOnly": "Estás usando una versión solo USB de SysDVR. La app SysDVR-Settings no es compatible con ella.",
+    "DiagProcessStatusOn": "Parece que el proceso del sysmodule está en marcha.",
+    "DiagProcessStatusOff": "El proceso del sysmodule no está en marcha."
   },
   "Guide": {
     "GuideTitle": "La guía está alojada en GitHub:"
@@ -45,7 +49,15 @@
     "OptPatchManager": "Gestor de DVR-Patches",
     "OptSave": "Guardar y salir",
     "OptSetDefault": "Activar modo actual al iniciar",
-    "SelectMode": "Seleccionar modo"
+    "SelectMode": "Seleccionar modo",
+    "OptTerminateSysmodule": "Cerrar SysDVR",
+    "WarnSysmoduleKill": "Esto va a cerrar el proceso de SysDVR y liberar memoria para que la usen otros sysmodules.\nOjo: esta opción puede causar conflictos con gestores de sysmodule de terceros.",
+    "ContinueQuestion": "¿Quieres continuar?",
+    "Yes": "Sí",
+    "No": "No",
+    "OptTryStart": "Intentar arrancar SysDVR",
+    "StartFailed": "No se pudo arrancar SysDVR. Código de error: ",
+    "StartSuccess": "SysDVR arrancó. Cierra y vuelve a abrir la app."
   },
   "Patches": {
     "BackButton": "Volver atrás",
