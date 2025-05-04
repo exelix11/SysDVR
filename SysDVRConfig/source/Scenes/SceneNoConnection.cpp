@@ -47,19 +47,20 @@ namespace scenes {
 		SetupMainWindow("No connection");
 		CenterImage(SysDVRLogo, 1);
 
-		CenterText(Strings::Error.SysmoduleConnectionFailed);
-
-		if (detectedVariant == SYSDVR_VARIANT_USB_ONLY)
-			CenterText(Strings::Error.SysmoduleConnectionTroubleshootUsbOnly);
-		else if (detectedVariant == SYSDVR_VARIANT_FULL)
-			CenterText(Strings::Error.SysmoduleConnectionTroubleshootFull);
-		else
-			CenterText(Strings::Error.SysmoduleConnectionTroubleshoot);
-
-		ImGui::NewLine();
-
-		if (startSysdvrResult == "") 
+		// Default screen of this page. Show diagnostics and if we know the current sysdvr is the full version allow the user to start it.
+		if (startSysdvrResult == "")
 		{
+			CenterText(Strings::Error.SysmoduleConnectionFailed);
+
+			if (detectedVariant == SYSDVR_VARIANT_USB_ONLY)
+				CenterText(Strings::Error.SysmoduleConnectionTroubleshootUsbOnly);
+			else if (detectedVariant == SYSDVR_VARIANT_FULL)
+				CenterText(Strings::Error.SysmoduleConnectionTroubleshootFull);
+			else
+				CenterText(Strings::Error.SysmoduleConnectionTroubleshoot);
+
+			ImGui::NewLine();
+
 			if (isProcessRunning)
 				CenterText(Strings::Error.DiagProcessStatusOn);
 			else
@@ -83,7 +84,12 @@ namespace scenes {
 		else
 		{
 			// If we attempted to start sysdvr, regardless of the result, only show the exit button.
+
+			ImGui::NewLine();
+
 			CenterText(startSysdvrResult);
+
+			ImGui::NewLine();
 
 			int selection = ImGuiCenterButtons<std::string_view>({ Strings::Error.FailExitButton });
 

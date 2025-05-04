@@ -152,11 +152,19 @@ Result SysDvrProcLaunch()
 
 static Service dvr;
 
-bool SysDvrIsRunning()
+// Ams extension, see https://github.com/Atmosphere-NX/Atmosphere/blob/master/docs/components/modules/sm.md#ipc-commands
+static Result smAtmosphereHasService(SmServiceName name, bool *available)
 {
-	SmServiceName name = {0};
-	memcpy(name.name, "sysdvr", sizeof("sysdvr"));
-	
+    // _smShouldUseTipc from libnx
+    // Not sure if this check is actually needed since this is supposed to work only on ams anyway
+	if (hosversionIsAtmosphere() || hosversionAtLeast(12,0,0))
+	    return tipcDispatchInOut(smGetServiceSessionTipc(), 65100, name, *available);
+    else
+        return serviceDispatchInOut(smGetServiceSession(), 65100, name, *available);
+}
+
+static bool smLegacyServiceCheck(SmServiceName name)
+{
 	Handle h;
 	Result rc = smRegisterService(&h, name, false, 1);	
 	
@@ -169,8 +177,28 @@ bool SysDvrIsRunning()
 	return true;
 }
 
-Result SysDvrConnect()
+bool SysDvrIsRunning()
 {
+	SmServiceName name = {0};
+	memcpy(name.name, "sysdvr", sizeof("sysdvr"));
+	
+	bool available = false;
+    Result rc = smAtmosphereHasService(name, &available);
+	if (R_SUCCEEDED(rc))
+	{
+        printf("Using modern service check\n");
+        return available;
+    }
+	
+	// Hopefully, never used ever again.
+    printf("Modern check failed with %x, using legacy check...\n", rc);
+	return smLegacyServiceCheck(name);
+}
+
+Result SysDvrConnect()
+{	
+	// If we're running the USB version the process will be counted as running but there will be no IPC service
+	// This is an issue since smGetService block forever if the service name is not found. We must always ensure it is available first.
 	if (!SysDvrIsRunning())
 		return ERR_MAIN_NOTRUNNING;
 	
