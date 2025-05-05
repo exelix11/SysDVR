@@ -25,7 +25,11 @@
     "TroubleshootReboot": "Tenta reiniciar a tua consola",
     "VersionTroubleshoot": "Por favor, descarrega a versão mais recente no Github",
     "NotInstalled": "O SysDVR não está instalado na tua consola",
-    "NotInsalledSecondLine": "O ficheiro /atmosphere/contents/00FF0000A53BB665/exefs.nsp não foi encontrado no teu cartão SD. Isto significa que não extraíste corretamente o zip do SysDVR. Resolve o problema e reinicia a consola."
+    "NotInsalledSecondLine": "O ficheiro /atmosphere/contents/00FF0000A53BB665/exefs.nsp não foi encontrado no teu cartão SD. Isto significa que não extraíste corretamente o zip do SysDVR. Resolve o problema e reinicia a consola.",
+    "SysmoduleConnectionTroubleshootFull": "Espera um bocado e tenta outra vez. Se continuares sem conseguir passar deste ecrã, tenta reiniciar a consola.",
+    "SysmoduleConnectionTroubleshootUsbOnly": "Estás a usar uma versão só com USB do SysDVR. A app SysDVR-Settings não funciona com ela.",
+    "DiagProcessStatusOn": "Parece que o processo do sysmodule está a correr.",
+    "DiagProcessStatusOff": "O processo do sysmodule não está a correr."
   },
   "Guide": {
     "GuideTitle": "O guia está alojado no Github:"
@@ -45,7 +49,15 @@
     "OptPatchManager": "Gestor de dvr-patches",
     "OptSave": "Guardar e sair",
     "OptSetDefault": "Definir modo atual como padrão ao inicializar",
-    "SelectMode": "Selecionar modo"
+    "SelectMode": "Selecionar modo",
+    "OptTerminateSysmodule": "Encerrar SysDVR",
+    "WarnSysmoduleKill": "Isto vai encerrar o processo do SysDVR e libertar memória para outros sysmodules.\nAtenção: esta opção pode dar conflitos com gestores de sysmodule de terceiros.",
+    "ContinueQuestion": "Queres continuar?",
+    "Yes": "Sim",
+    "No": "Não",
+    "OptTryStart": "Tentar arrancar o SysDVR",
+    "StartFailed": "O SysDVR não conseguiu arrancar. Código de erro: ",
+    "StartSuccess": "SysDVR arrancou. Fecha e volta a abrir a app."
   },
   "Patches": {
     "BackButton": "Voltar",
