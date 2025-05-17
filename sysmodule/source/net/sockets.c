@@ -372,7 +372,7 @@ bool SocketSetBroadcast(int socket, bool allow)
 	return bsdSetSockOpt(socket, SOL_SOCKET, SO_BROADCAST, &optVal, sizeof(optVal)) != -1;
 }
 
-s32 SocketGetBroadcastAddress(int socket)
+s32 SocketGetBroadcastAddress()
 {
 	if (HasNifm)
 	{
