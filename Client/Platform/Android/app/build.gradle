@@ -15,8 +15,8 @@ android {
         }
         minSdkVersion 23
         targetSdkVersion 33
-        versionCode 4
-        versionName "6.2"
+        versionCode 5
+        versionName "6.2.1"
         externalNativeBuild {
             ndkBuild {
                 arguments "APP_PLATFORM=android-19"
