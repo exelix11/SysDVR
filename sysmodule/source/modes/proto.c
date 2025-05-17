@@ -15,7 +15,7 @@ static inline bool hasAudio(const struct ProtoHandshakeRequest* req)
 	return req->MetaFlags & ProtoMeta_Audio;
 }
 
-static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, struct ProtoHandshakeRequest* out_req)
+static ProtoHandshakeResultCode ProtoHandshakeVersion(uint8_t* data, int length, struct ProtoHandshakeRequest* out_req)
 {
 	if (length != sizeof(struct ProtoHandshakeRequest))
 		return Handshake_InvalidSize;
@@ -39,12 +39,48 @@ static ProtoHandshakeResult ProtoHandshakeVersion(uint8_t* data, int length, str
 
 static bool screenStateModified = false;
 
-static void ProtoGlobalClientStateConnect(uint8_t protocolFlags)
+static void QueryMemoryState(ProtoParsedHandshake* response)
+{
+	u64 application_size = 0, application_used = 0;
+	u64 applet_size = 0, applet_used = 0;
+	u64 system_size = 0, system_used = 0;
+	u64 system_unsafe_size = 0, system_unsafe_used = 0;
+
+	Result rc = svcGetSystemInfo(&application_size, SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_Application);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&application_used, SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_Application);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&applet_size, SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_Applet);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&applet_used, SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_Applet);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&system_size, SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_System);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&system_used, SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_System);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&system_unsafe_size, SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_SystemUnsafe);
+	if (R_SUCCEEDED(rc)) rc = svcGetSystemInfo(&system_unsafe_used, SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, PhysicalMemorySystemInfo_SystemUnsafe);
+
+	response->Result.MemoryPools.QueryResult = rc;
+	response->Result.MemoryPools.ApplicationSize = application_size;
+	response->Result.MemoryPools.ApplicationUsed = application_used;
+	response->Result.MemoryPools.AppletSize = applet_size;
+	response->Result.MemoryPools.AppletUsed = applet_used;
+	response->Result.MemoryPools.SystemSize = system_size;
+	response->Result.MemoryPools.SystemUsed = system_used;
+	response->Result.MemoryPools.SystemUnsafeSize = system_unsafe_size;
+	response->Result.MemoryPools.SystemUnsafeUsed = system_unsafe_used;
+}
+
+static void ProtoGlobalClientStateConnect(uint8_t protocolFlags, ProtoParsedHandshake* response)
 {
 	if (protocolFlags & ExtraFeatureFlags_TurnOffScreen)
 	{
 		UtilSetConsoleScreenMode(false);
 		screenStateModified = true;
+	}
+
+	if (protocolFlags & ExtraFeatureFlags_MemoryDiag)
+	{
+		QueryMemoryState(response);
+	}
+	else
+	{
+		response->Result.MemoryPools.QueryResult = UINT32_MAX;
 	}
 }
 
@@ -62,18 +98,18 @@ ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, 
 	struct ProtoHandshakeRequest req;
 	
 	ProtoParsedHandshake res = {};
-	res.Result = ProtoHandshakeVersion(data, length, &req);
+	res.Result.Code = ProtoHandshakeVersion(data, length, &req);
 
 	// The caller may only accept video or audio
-	if (res.Result == Handshake_Ok) 
+	if (res.Result.Code == Handshake_Ok)
 	{
 		if (config == ProtoHandshakeAccept_Video && hasAudio(&req))
-			res.Result = Hanshake_InvalidChannel;
+			res.Result.Code = Hanshake_InvalidChannel;
 		else if (config == ProtoHandshakeAccept_Audio && hasVideo(&req))
-			res.Result = Hanshake_InvalidChannel;
+			res.Result.Code = Hanshake_InvalidChannel;
 	}
 
-	if (res.Result != Handshake_Ok) 
+	if (res.Result.Code != Handshake_Ok)
 	{
 		LOG("Handshake failed with code %d\n", res.Result);
 		return res;
@@ -90,14 +126,14 @@ ProtoParsedHandshake ProtoHandshake(ProtoHandshakeAccept config, uint8_t* data, 
 	if (req.MetaFlags & ProtoMeta_Audio)
 	{
 		if (CaptureSetAudioBatching(req.AudioBatching) != req.AudioBatching)
-			res.Result = Handshake_InvalidArg;
+			res.Result.Code = Handshake_InvalidArg;
 
 		res.RequestedAudio = true;
 	}
 
-	if (res.Result == Handshake_Ok) 
+	if (res.Result.Code == Handshake_Ok)
 	{
-		ProtoGlobalClientStateConnect(req.FeatureFlags);
+		ProtoGlobalClientStateConnect(req.FeatureFlags, &res);
 	}
 
 	return res;

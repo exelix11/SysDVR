@@ -26,12 +26,12 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 8.x
+        dotnet-version: 9.x
     - name: Run dotnet build
       run: |
         cd Client
         dotnet build -c Release
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client-dotnet.zip
-        path: Client/bin/Release/net8.0/
+        path: Client/bin/Release/net9.0/

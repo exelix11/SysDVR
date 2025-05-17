@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
 		<AssemblyName>SysDVR-Client</AssemblyName>
 		<Description>https://github.com/exelix11/SysDVR</Description>
@@ -13,14 +13,42 @@
 		<RollForward>Major</RollForward>
 		<Nullable>annotations</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<PublishAot>true</PublishAot>
+	</PropertyGroup>
+
+	<!--Versioning: I don't like the default output of GitInfo since tags may not always correlate to the expected release version, for example in CI builds before the github tag/release is made-->
+	<!--The displayed version is always set manually and GitInfo provides the commit number-->
+	<!--Update the release_version.txt file to set the version-->
+	<PropertyGroup>
+		<GitVersion>false</GitVersion>
+		<GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
+		<GitIgnoreTagVersion>true</GitIgnoreTagVersion>
+		<GitVersionFile>release_version.txt</GitVersionFile>
+	</PropertyGroup>
+
+	<Target Name="PopulateInfo" DependsOnTargets="GitVersion" BeforeTargets="GetAssemblyVersion;GenerateNuspec;GetPackageContents">
+		<PropertyGroup>
+			<PackageVersion>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</PackageVersion>
+			<Version>$(PackageVersion)</Version>
+			<RepositoryBranch>$(GitBranch)</RepositoryBranch>
+			<RepositoryCommit>$(GitCommit)</RepositoryCommit>
+			<SourceRevisionId>$(GitBranch) $(GitCommit)</SourceRevisionId>
+		</PropertyGroup>
+	</Target>
+	
+	<!--Platform specific config-->
+	<PropertyGroup Condition="$(SysDvrTarget)=='windows'">
+		<!-- Due to antimalware vendors flagging AOT releases https://github.com/exelix11/SysDVR/issues/338 -->
+		<!-- Windows releases now don't use AOT anymore but framework-independent dotnet releases -->
+		<!-- This is not optimal since we have to ship the whole framework along with sysdvr but at least it's not detected -->
+		<PublishAot>false</PublishAot>
+		<PublishTrimmed>true</PublishTrimmed>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(SysDvrTarget)!='android'">
+		<!--On android we build as a shared library that is loaded by the SDL java shell-->
+		<!--On other platforms we build as a standalone executable-->
 		<OutputType>Exe</OutputType>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="$(SysDvrTarget)=='windows'">
-		<PublishAot>true</PublishAot>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$(SysDvrTarget)=='linux'">
@@ -34,9 +62,10 @@
 
 	<ItemGroup Condition="$(SysDvrTarget)=='android'">
 		<!--Android needs a proper soname property or it will refuse to load the library-->
-		<LinkerArg Include="-Wl,-soname,SysDVR-Client.so" />
+		<!--Also it seems some NDK versions need undefined-version https://github.com/dotnet/runtime/issues/92272 -->
+		<LinkerArg Include="-Wl,-soname,SysDVR-Client.so,--undefined-version" />
 	</ItemGroup>
-	
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<Optimize>false</Optimize>
 	</PropertyGroup>
@@ -65,11 +94,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="GitInfo" Version="3.3.5">
-	    <PrivateAssets>all</PrivateAssets>
-	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  </PackageReference>
-	  <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.8" />
-	  <PackageReference Include="System.Text.Json" Version="8.0.4" />
+		<PackageReference Include="GitInfo" Version="3.3.5">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="System.Text.Json" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.8" />
 	</ItemGroup>
 </Project>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SysDVR-Client
+Comment=Stream switch games to your PC via USB or network
+Icon=com.github.exelix11.sysdvr
+Exec=SysDVR-Client
+Terminal=false
+Categories=Game;
+Keywords=Nintendo;Switch;

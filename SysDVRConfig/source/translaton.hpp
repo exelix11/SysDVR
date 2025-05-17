@@ -34,6 +34,16 @@ namespace Strings
 
 		std::string ActiveMode = "Enabled";
 		std::string DefaultMode = "On boot";
+
+		std::string OptTerminateSysmodule = "Terminate SysDVR";
+		std::string WarnSysmoduleKill = "This will terminate the SysDVR process and free its memory for other sysmodules to use.\nNote that this option may cause conflicts with third-party sysmodule managers.";
+		std::string ContinueQuestion = "Do you want to continue?";
+		std::string Yes = "Yes";
+		std::string No = "No";
+
+		std::string OptTryStart = "Try to start SysDVR";
+		std::string StartFailed = "Launching SysDVR failed. Error code: ";
+		std::string StartSuccess = "SysDVR was started. Close and open this app again.";
 	};
 
 	struct GuideTable
@@ -65,6 +75,11 @@ namespace Strings
 
 		std::string NotInstalled = "SysDVR is not installed on your console";
 		std::string NotInsalledSecondLine = "The file /atmosphere/contents/00FF0000A53BB665/exefs.nsp was not found on your SD card, this means you did not extract the SysDVR zip correctly. Fix the issue then reboot the console.";
+
+		std::string SysmoduleConnectionTroubleshootFull = "Wait a bit and try again if you still can't get past this screen try rebooting your console.";
+		std::string SysmoduleConnectionTroubleshootUsbOnly = "You're using a USB-Only version of SysDVR. The SysDVR-Settings app does not support it.";
+		std::string DiagProcessStatusOn = "The sysmodule process seems to be running.";
+		std::string DiagProcessStatusOff = "The sysmodule process is not running.";
 	};
 
 	struct PatchesTable

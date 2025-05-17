@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: "8.x"
+        dotnet-version: "9.x"
     - name: Cache flatpak builds
       uses: actions/cache@v3
       with:
@@ -28,7 +28,7 @@ jobs:
         chmod +x build-flatpak.sh
         ./build-flatpak.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client.flatpak
         path: Client/Platform/Linux/SysDVR-Client.flatpak

@@ -11,13 +11,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 8.x
+        dotnet-version: 9.x
     - name: Run build script
       shell: cmd
       run: |
           cd Client\Platform
           .\BuildWindows.bat
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: SysDVR-Client-Windows-x64
         path: Client\Client.7z

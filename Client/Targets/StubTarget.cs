@@ -25,11 +25,14 @@ namespace SysDVR.Client.Targets
 		}
 	}
 
-	internal class StubStreamManager : BaseStreamManager
+	internal static class StubStreamManager 
 	{
-		public StubStreamManager(StreamingSource source, CancellationTokenSource cancel) : 
-			base(source, new StubTarget("Video"), new StubTarget("Audio"), cancel)
+		public static StreamManager Create(StreamingSource source, CancellationTokenSource cancel)
 		{
-		}
+            return new StreamManager(source, 
+				source.Options.HasVideo ? new StubTarget("Video") : null,
+				source.Options.HasAudio ? new StubTarget("Audio") : null, 
+				cancel);
+        }
 	}
 }

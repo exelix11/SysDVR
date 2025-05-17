@@ -26,6 +26,7 @@ namespace scenes {
 	void InitFatalError();
 	void FatalError();
 	
+	void InitNoConnection();
 	void NoConnection();
 }
 
@@ -37,6 +38,5 @@ namespace app {
 	void SetNextScene(Scene s);
 	void ReturnToPreviousScene(); 
 
-	void SetWaitOnExit(bool shouldWait);
 	void RequestExit();
 }

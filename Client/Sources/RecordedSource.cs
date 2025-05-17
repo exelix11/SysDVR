@@ -11,7 +11,7 @@ using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Sources
 {
-	// Playsback a recording made with LoggingTarget, useful for developing without a console
+	// Plays back a recording made with LoggingTarget, useful for developing without a console
 	class RecordedSource : StreamingSource
 	{
 		readonly string FileName;
@@ -64,12 +64,18 @@ namespace SysDVR.Client.Sources
 			}
         }
 
-        protected override Task<uint> SendHandshakePacket(ProtoHandshakeRequest req)
+        protected override Task<byte[]> SendHandshakePacket(ProtoHandshakeRequest req, int size)
         {
-            return Task.FromResult(ProtoHandshakeRequest.HandshakeOKCode);
+            ProtoHandshakeResponse03 res = new();
+            res.Result = ProtoHandshakeRequest.HandshakeOKCode;
+
+            var data = new byte[ProtoHandshakeResponse03.Size];
+            MemoryMarshal.TryWrite(data, res);
+
+            return Task.FromResult(data);
         }
 
-		protected override Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
+        protected override Task<byte[]> ReadHandshakeHello(StreamKind stream, int maxBytes)
 		{
 			return Task.FromResult(Encoding.ASCII.GetBytes($"SysDVR|03\0"));
 		}

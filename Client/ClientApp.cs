@@ -29,7 +29,6 @@ public class ClientApp
         ShowDebugInfo = Program.Options.Debug.Log;
 	}
 
-
 	// Fonts are loaded at double the resolution to reduce blurriness when scaling on high DPI
 	const int FontMultiplier = 2;
 	const int FontTextSize = 30 * FontMultiplier;
@@ -219,8 +218,10 @@ public class ClientApp
 		ImGui.CreateContext();
 
         UnsafeImguiInitialization();
-        ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.NavEnableGamepad;
+
+        ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
         ImGui.GetIO().NavVisible = true;
+        ApplyImguiSettings();
 
         InitializeFonts();
 
@@ -295,6 +296,17 @@ public class ClientApp
             Debugger.Break();
         }
 	}
+
+    internal void ApplyImguiSettings() 
+    {
+        sdlCtx.AcceptControllerInput = Program.Options.ControllerInput;
+        sdlCtx.DebugPrintSdlEvents = Program.Options.Debug.SDLEvents;
+
+        if (Program.Options.ControllerInput)
+            ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
+        else
+            ImGui.GetIO().ConfigFlags &= ~ImGuiConfigFlags.NavEnableGamepad;
+    }
 
     internal void EntryPoint()
     {

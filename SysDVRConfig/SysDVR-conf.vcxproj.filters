@@ -134,6 +134,15 @@
     <None Include="romfs\strings\italian.json">
       <Filter>LanguageFiles</Filter>
     </None>
+    <None Include="romfs\strings\spanish.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
+    <None Include="romfs\strings\french.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
+    <None Include="romfs\strings\brazilianPortuguese.json">
+      <Filter>LanguageFiles</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="UI">

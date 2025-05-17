@@ -41,12 +41,13 @@ namespace SysDVR.Client.Targets.Player
         public AVFrame* Frame { get; init; }
     }
 
-    class PlayerManager : BaseStreamManager
+    // Guarantees that the audio and video stream are compatible with the player
+    class PlayerManager : StreamManager
     {
         internal new OpenH264PlayerTarget VideoTarget;
         internal new AudioOutStream AudioTarget;
 
-        public bool IsCompatibleAudioStream;
+        readonly public bool IsCompatibleAudioStream;
 
         static OutStream? MakeAudioStream(bool hasAudio) 
         {

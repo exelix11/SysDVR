@@ -25,12 +25,22 @@ _Static_assert(sizeof(PLACEHOLDER_SERIAL) == sizeof(SetSysSerialNumber));
 char SysDVRBeacon[] = "SysDVR" "|" SYSDVR_VERSION_STRING "|" SYSDVR_PROTOCOL_VERSION "|" PLACEHOLDER_SERIAL;
 int SysDVRBeaconLen = sizeof(SysDVRBeacon);
 
+// We use the version tag to detect the build in the settings app.
+#ifdef USB_ONLY
+const char VERSION_TAG[] = "SYSDVR_BUILD_USB_ONLY/" SYSDVR_VERSION_STRING "/" SYSDVR_PROTOCOL_VERSION;
+#else
+const char VERSION_TAG[] = "SYSDVR_BUILD_FULL/" SYSDVR_VERSION_STRING "/" SYSDVR_PROTOCOL_VERSION;
+#endif
+
 // Statically allocate all needed buffers
 StaticBuffers Buffers;
 
 Result CoreInit()
 {
 	Result rc = setsysInitialize();
+
+	// Copy the version tag to one of the static buffers to force the linker to keep it
+	strcpy((char*)Buffers.UsbMode.EndpointIn, VERSION_TAG);
 
 	// Ignore error, we'll just use a placeholder serial
 	if (R_SUCCEEDED(rc)) {

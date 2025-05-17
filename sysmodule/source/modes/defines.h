@@ -1,13 +1,15 @@
 #pragma once
 
 // This is the main version shown to the user
-#define SYSDVR_VERSION_STRING  "6.1.1"
+#define SYSDVR_VERSION_STRING  "6.2.1"
 //This is a version for the SysDVR net and usb protocol, it's included in the beacon and may be shown in the UI. This is ascii so it's easy to insert in beacons for example as the serial of the USB device
 #define SYSDVR_PROTOCOL_VERSION "03"
 //This is a version for the SysDVR Config app protocol, it's not shown anywhere and not related to the major version
-#define SYSDVR_IPC_VERSION 14
+#define SYSDVR_IPC_VERSION 16
 
 #define SYSDVR_CRASH_MODULEID 0x69
+
+#define SYSDVR_CONTENT_ID 0x00FF0000A53BB665
 
 #define ERR_RTSP_VIDEO MAKERESULT(SYSDVR_CRASH_MODULEID, 1)
 #define ERR_RTSP_AUDIO MAKERESULT(SYSDVR_CRASH_MODULEID, 2)

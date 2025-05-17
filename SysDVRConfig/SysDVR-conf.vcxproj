@@ -54,9 +54,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="romfs\strings\brazilianPortuguese.json" />
     <None Include="romfs\strings\english.json" />
+    <None Include="romfs\strings\french.json" />
     <None Include="romfs\strings\italian.json" />
     <None Include="romfs\strings\simplifiedChinese.json" />
+    <None Include="romfs\strings\spanish.json" />
     <None Include="romfs\strings\traditionalChinese.json" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

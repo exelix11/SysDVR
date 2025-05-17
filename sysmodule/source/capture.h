@@ -18,7 +18,7 @@
 #define AbufSz 0x1000
 
 /*
-	Audio batching adds some delay to the audio streaming in excange for less pressure on
+	Audio batching adds some delay to the audio streaming in exchange for less pressure on
 	the USB and network protocols. A batching of 1 halves the number of audio transfers while
 	adding about a frame of delay.
 	This is acceptable as grc:d already doesn't provide real time audio.
@@ -28,7 +28,6 @@
 
 #define DefaultABatching 3
 
-// five bits
 enum PacketMeta 
 {
 	PacketMeta_Type_Mask = BIT(0) | BIT(1),
@@ -40,6 +39,8 @@ enum PacketMeta
 	PacketMeta_Content_Replay = BIT(3),	// Only if PacketMeta_Type_Video
 	PacketMeta_Content_MultiNal = BIT(4), // Only if PacketMeta_Type_Video
 	PacketMeta_Content_Error = BIT(5)
+
+	// Bits 6 and 7 are reserved for future use
 };
 
 typedef struct {
@@ -70,7 +71,13 @@ typedef struct {
 
 _Static_assert(sizeof(AudioPacket) == sizeof(PacketHeader) + AbufSz * (1 + MaxABatching));
 
-#define ERROR_TYPE_RESULT 1
+// Error values
+#define ERROR_TYPE_VIDEO_CAP 1
+#define ERROR_TYPE_AUDIO_CAP 2
+#define ERROR_TYPE_AUDIO_CAP_BATCH 3
+
+#define ERROR_TYPE_VIDEO_INIT 4
+#define ERROR_TYPE_AUDIO_INIT 5
 
 typedef struct {
 	u32 ErrorType;

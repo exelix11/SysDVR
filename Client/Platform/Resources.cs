@@ -1,4 +1,5 @@
-﻿using SDL2;
+﻿using FFmpeg.AutoGen;
+using SDL2;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Targets.Player;
@@ -20,23 +21,25 @@ namespace SysDVR.Client.Platform
 	{
 #if ANDROID_LIB
         // Android is such a shit platform that you can't fopen(), all resources must be read like this
-        // thank god SDL already wraps its stupid interface
+        // Previously we used SDL file access API but on 32bit andorid they seem to fail with Invalid RWops
         public static byte[] ReadResource(string path)
         {
             Console.WriteLine($"Loading resource {path}");
 
-            var file = SDL.SDL_RWFromFile(path, "r").AssertNotNull(SDL.SDL_GetError);
+            var res = Program.Native.ReadAssetFile(path, out var buffer, out var size);
+            if (res != 0)
+                throw new Exception($"Loading resource {path} failed with error code {res}");
 
-            var len = (int)SDL.SDL_RWsize(file);
-            var buf = new byte[len];
+            Console.WriteLine($"Resource loaded with size {size}");
+            var data = new byte[size];
+            unsafe {
+                var unmanagedMem = new Span<byte>((byte*)buffer, size);
+                unmanagedMem.CopyTo(data);
+            }
 
-            var read = SDL.SDL_RWread(file, buf, 1, len);
-            SDL.SDL_RWclose(file);
-
-            if (read != len)
-                throw new Exception($"Loading resource {path} failed: {SDL.SDL_GetError()}");
-            
-            return buf;
+            Console.WriteLine($"Freeing the unmanaged resource buffer {buffer:x}");
+            Program.Native.FreeDynamicBuffer(buffer);
+            return data;
         }
 
         static unsafe string[] GetTranslationFiles()

@@ -217,31 +217,55 @@ void scenes::ModeSelect()
 			return;
 
 	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
-	switch (ImGuiCenterButtons<std::string_view>({ Strings::Main.OptGuide, Strings::Main.OptSetDefault, Strings::Main.OptPatchManager, Strings::Main.OptSave}))
+	switch (ImGuiCenterButtons<std::string_view>({ Strings::Main.OptGuide, Strings::Main.OptTerminateSysmodule, Strings::Main.OptSetDefault, Strings::Main.OptPatchManager, Strings::Main.OptSave}))
 	{
 	case 0:
 		app::SetNextScene(Scene::Guide);
 		break;
 	case 1:
+		ImGui::OpenPopup("KillSysmodule");
+		break;
+	case 2:
 		if (!SetDefaultBootMode(CurrentMode))
 			app::FatalError(Strings::Error.BootModeChangeFailed, Strings::Error.TroubleshootBootMode);
 		else
 			BootMode = CurrentMode;
 		break;
-	case 2:
+	case 3:
 		app::SetNextScene(Scene::DvrPatches);
 		break;
-	case 3:
-		// Mode was changed, after deinitializing the sysdvr port wait a little
-		// This fixes a possible race condition when the user opens the settings app
-		// right after closing it and sysdvr will miss the request causing the app to hang
-		if (InitialMode != CurrentMode)
-			app::SetWaitOnExit(true);
-		
+	case 4:		
 		app::RequestExit();
 		break;
 	default:
 		break;
+	}
+
+	ImGui::SetNextWindowSize({ 600, 350 });
+	if (ImGui::BeginPopupModal("KillSysmodule", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_AlwaysUseWindowPadding))
+	{
+		ImGui::Spacing();
+		
+		ImGui::SetCursorPosX(10);		
+		ImGui::TextWrapped(Strings::Main.WarnSysmoduleKill.c_str());
+
+		ImGui::NewLine();
+		CenterText(Strings::Main.ContinueQuestion);
+
+		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 200);
+		if (ImGui::Button(Strings::Main.Yes.c_str(), {400 , 0}))
+		{
+			SysDvrProcTerminate();
+			app::RequestExit();
+		}
+
+		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 200);
+		if (ImGui::Button(Strings::Main.No.c_str(), {400 , 0}))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
 	}
 	
 	ImGui::End();

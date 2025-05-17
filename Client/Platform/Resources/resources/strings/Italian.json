@@ -1,6 +1,6 @@
 {
   "translationName": "Italiano",
-  "translationAuthor": "exelix11",
+  "translationAuthor": "",
   "systemLocale": [
     "it-it"
   ],  
@@ -106,6 +106,7 @@
     "disableBacklightWarn": "Questa funzione è sperimentale e potrebbe causare problemi. Puoi resettare lo schermo della console bloccandola con il tasto di accensione.",
     "analyzeKeyframes": "Analizza i NAL keyframe durante lo stream",
     "analyzeNALs": "Analizza tutti i pacchetti NAL",
+    "logSDLEvents": "Log di debug degli eventi di SDL",
     "guiScale": "Scala dell'interfaccia",
     "decoderPopupTitle": "Seleziona il decoder video",
     "decoderChangeButton": "Configure un decoder accelerato dall'hardware",
@@ -113,7 +114,8 @@
     "decderPopupHeading": "Seleziona un decoder",
     "decderPopupContent": "Non tutti i decoder potrebbero essere compatibili con il tuo sistema, disabilita questa funzion in caso di problemi.\nPuoi ottnere altri decoder utilizzando una build custom di ffmpeg (libavcodec) sostituendola a quella inclusa in SysDVR-Client.\n\nQuesta funzione serve per mini-PC come i Raspberry pi dove la decodifica software è troppo lenta. Su computer desktop e smartphone questa opzione non serve.",
     "invalidPathError": "Il percorso inserito non esiste o non è accessibile.",
-    "pathSelectDialog": "Seleziona percorso"
+    "pathSelectDialog": "Seleziona percorso",
+    "controllerInput": "Usa un joypad per interagire con l'interfaccia di SysDVR"
   },
   "player": {
     "confirmQuitPopupTitle": "Conferma",
