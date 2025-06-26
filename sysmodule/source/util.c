@@ -18,8 +18,9 @@ bool UtilSetConsoleScreenMode(bool on)
 			else if (!on && lblstatus == LblBacklightSwitchStatus_Enabled)
 				rc = lblSwitchBacklightOff(0);
 		}
+		lblExit();
 	}
-
+	
 	LOG("UtilSetConsoleScreenMode(%d) %x", on, rc);
 	return R_SUCCEEDED(rc);
 }
