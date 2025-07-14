@@ -157,7 +157,9 @@ namespace SysDVR.Client.Targets.Player
         {
             Pause();
             SDL_CloseAudioDevice(DeviceID);
-            TargetHandle.Free();
+            
+            if (TargetHandle.IsAllocated)
+                TargetHandle.Free();
         }
     }
 
