@@ -315,8 +315,10 @@ public class ClientApp
         ImGuiSDL2Impl.InitForSDLRenderer(sdlCtx.WindowHandle, sdlCtx.RendererHandle);
         ImGuiSDL2Impl.Init(sdlCtx.RendererHandle);
 
+        sdlCtx.UsingImgui = true;
+
         if (CommandLine.LaunchFullscreen)
-			sdlCtx.SetFullScreen(true);
+            sdlCtx.SetFullScreen(true);
 
         UpdateSize();
 

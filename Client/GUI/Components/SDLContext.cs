@@ -29,6 +29,8 @@ namespace SysDVR.Client.GUI.Components
         // Detect bugs such as multiple view pushes in a row
         int SDLThreadId;
 
+        internal bool UsingImgui;
+
         internal IntPtr WindowHandle { get; private set; }
         internal IntPtr RendererHandle { get; private set; }
 
@@ -48,6 +50,10 @@ namespace SysDVR.Client.GUI.Components
 #if ANDROID_LIB
 		bool usingTextinput;
 #endif
+
+        // Should show the cursor ?
+        // This is only used when the app is in fullscreen mode
+        bool CursorState = true;
 
         // SDL functions must only be called from its main thread
         // but it may not always trigger an exception
@@ -275,7 +281,30 @@ namespace SysDVR.Client.GUI.Components
         {
             IsFullscreen = enableFullScreen;
             SDL_SetWindowFullscreen(WindowHandle, enableFullScreen ? (uint)SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-            SDL_ShowCursor(enableFullScreen ? SDL_DISABLE : SDL_ENABLE);
+            ApplyCursorState();
+        }
+
+        public void ShowCursor(bool show)
+        {
+            if (show == CursorState)
+                return;
+
+            CursorState = show;
+            ApplyCursorState();
+        }
+
+        private void ApplyCursorState()
+        {
+            // Ensure imgui is not handling the cursor for us
+            // This is needed because the legacy player runs without imgui
+            if (UsingImgui)
+                ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NoMouseCursorChange;
+
+            // When full screen apply the requested preference, otherwise always show the cursor
+            if (IsFullscreen)
+                SDL_ShowCursor(CursorState ? SDL_ENABLE : SDL_DISABLE);
+            else
+                SDL_ShowCursor(SDL_ENABLE);
         }
 
         public string GetDebugInfo()

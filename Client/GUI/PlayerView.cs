@@ -71,8 +71,8 @@ namespace SysDVR.Client.GUI
             if (manager.HasAudio)
             {
                 Audio = new(manager.AudioTarget);
-				manager.AudioTarget.Volume = Program.Options.DefaultVolume / 100f;
-			}
+                manager.AudioTarget.Volume = Program.Options.DefaultVolume / 100f;
+            }
 
             manager.UseSyncManager(sync);
         }
@@ -146,8 +146,8 @@ namespace SysDVR.Client.GUI
 
             if (Video.AcceleratedDecotr)
             {
-				return string.Format(Program.Strings.Player.CustomDecoderEnabled, Video.DecoderName);
-			}
+                return string.Format(Program.Strings.Player.CustomDecoderEnabled, Video.DecoderName);
+            }
 
             return null;
         }
@@ -185,11 +185,11 @@ namespace SysDVR.Client.GUI
             if (!Video.DecodeFrame())
                 return false;
 
-			SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
-			Video.Decoder.OnFrameEvent.Set();
+            SDL_RenderCopy(Program.SdlCtx.RendererHandle, Video.TargetTexture, ref Video.TargetTextureSize, ref DisplayRect);
+            Video.Decoder.OnFrameEvent.Set();
 
             return true;
-		}
+        }
 
         private unsafe void InitializeLoadingTexture()
         {
@@ -326,14 +326,24 @@ namespace SysDVR.Client.GUI
 
         public override void Draw()
         {
+            // Cursor is hidden only during full screen and when there are no other popups
+            bool shouldHideCursor = Program.SdlCtx.IsFullscreen;
+
             if (!Gui.BeginWindow("Player", ImGuiWindowFlags.NoBackground))
+            {
+                // Nothing to do here
+                Program.SdlCtx.ShowCursor(true);
                 return;
+            }
 
             if (!HasVideo)
             {
+                // When there is no video, show the cursor.
+                shouldHideCursor = false;
+
                 Gui.H2();
                 Gui.CenterText(Strings.AudioOnlyMode);
-				Gui.PopFont();
+                Gui.PopFont();
             }
 
             for (int i = 0; i < notifications.Count; i++)
@@ -350,14 +360,24 @@ namespace SysDVR.Client.GUI
             }
 
             if (drawUi)
+            {
+                shouldHideCursor = false;
                 DrawOverlayMenu();
+            }
 
-            DrawOverlayToggleArea();
+            if (!OverlayAlwaysShowing)
+                DrawOverlayToggleArea();
 
-            DrawQuitModal();
+            if (quitConfirm.Begin())
+            {
+                shouldHideCursor = false;
+                DrawQuitModal();
+            }
 
             if (fatalError.Begin(ImGui.GetIO().DisplaySize * 0.95f))
             {
+                shouldHideCursor = false;
+
                 ImGui.TextWrapped(fatalMessage);
                 if (Gui.CenterButton(GeneralStrings.PopupCloseButton))
                     Program.Instance.PopView();
@@ -367,6 +387,8 @@ namespace SysDVR.Client.GUI
             }
 
             ImGui.End();
+
+            Program.SdlCtx.ShowCursor(!shouldHideCursor);
         }
 
         public override void OnKeyPressed(SDL_Keysym key)
@@ -374,18 +396,18 @@ namespace SysDVR.Client.GUI
             if (!Program.Options.PlayerHotkeys)
                 return;
 
-			// Handle hotkeys
-			if (key.sym == SDL_Keycode.SDLK_s)
-				ButtonScreenshot();
-			if (key.sym == SDL_Keycode.SDLK_r)
-				ButtonToggleRecording();
+            // Handle hotkeys
+            if (key.sym == SDL_Keycode.SDLK_s)
+                ButtonScreenshot();
+            if (key.sym == SDL_Keycode.SDLK_r)
+                ButtonToggleRecording();
             if (key.sym == SDL_Keycode.SDLK_f)
                 Program.SdlCtx.SetFullScreen(!Program.SdlCtx.IsFullscreen);
             if (key.sym == SDL_Keycode.SDLK_UP && player.Manager.AudioTarget is not null)
                 player.Manager.AudioTarget.Volume += 0.1f;
-			if (key.sym == SDL_Keycode.SDLK_DOWN && player.Manager.AudioTarget is not null)
-				player.Manager.AudioTarget.Volume -= 0.1f;
-		}
+            if (key.sym == SDL_Keycode.SDLK_DOWN && player.Manager.AudioTarget is not null)
+                player.Manager.AudioTarget.Volume -= 0.1f;
+        }
 
         public override void BackPressed()
         {
@@ -400,9 +422,6 @@ namespace SysDVR.Client.GUI
 
         void DrawOverlayToggleArea()
         {
-            if (OverlayAlwaysShowing)
-                return;
-
             var rect = new ImRect()
             {
                 Min = ImGui.GetWindowPos(),
@@ -411,25 +430,24 @@ namespace SysDVR.Client.GUI
 
             var id = ImGui.GetID("##TepToReveal");
             ImGui.KeepAliveID(id);
+
             if (ImGui.ButtonBehavior(rect, id, out _, out _, ImGuiButtonFlags.MouseButtonLeft) || ImGui.IsKeyPressed(ImGuiKey.Space))
-            {
                 drawUi = !drawUi;
-            }
         }
 
-        void DrawVolumeSlider(float x, float width) 
+        void DrawVolumeSlider(float x, float width)
         {
-			if (player.Manager.AudioTarget is not null)
-			{
-				var vol = (int)(player.Manager.AudioTarget.Volume * 100);
-				var volnew = vol;
-				ImGui.SetCursorPosX(x);
-				ImGui.PushItemWidth(width);
-				ImGui.SliderInt("##VolumeSlider", ref volnew, 0, 100, volumePercentFormat);
-				if (vol != volnew)
-					player.Manager.AudioTarget.Volume = volnew / 100f;
-			}
-		}
+            if (player.Manager.AudioTarget is not null)
+            {
+                var vol = (int)(player.Manager.AudioTarget.Volume * 100);
+                var volnew = vol;
+                ImGui.SetCursorPosX(x);
+                ImGui.PushItemWidth(width);
+                ImGui.SliderInt("##VolumeSlider", ref volnew, 0, 100, volumePercentFormat);
+                if (vol != volnew)
+                    player.Manager.AudioTarget.Volume = volnew / 100f;
+            }
+        }
 
         void DrawOverlayMenu()
         {
@@ -489,7 +507,7 @@ namespace SysDVR.Client.GUI
                 ImGui.SameLine(0, spacing);
                 if (ImGui.Button(Strings.StopStreaming)) ButtonQuit();
                 ImGui.SameLine(0, spacing);
-                
+
                 if (Program.Options.Debug.Log)
                 {
                     if (ImGui.Button(Strings.DebugInfo)) ButtonStats();
@@ -501,8 +519,8 @@ namespace SysDVR.Client.GUI
 
                 ImGui.NewLine();
                 var w = ImGui.GetWindowSize().X;
-				DrawVolumeSlider(w / 4, w / 2);
-			}
+                DrawVolumeSlider(w / 4, w / 2);
+            }
 
             if (!OverlayAlwaysShowing)
             {
@@ -515,48 +533,45 @@ namespace SysDVR.Client.GUI
 
         void DrawQuitModal()
         {
-            if (quitConfirm.Begin())
+            ImGui.Text(Strings.ConfirmQuitLabel);
+            ImGui.Separator();
+
+            var w = ImGui.GetWindowSize().X / 4;
+            quitOptCenter.StartHere();
+
+            if (ImGui.Button(GeneralStrings.YesButton, new(w, 0)))
             {
-                ImGui.Text(Strings.ConfirmQuitLabel);
-                ImGui.Separator();
-
-                var w = ImGui.GetWindowSize().X / 4;
-                quitOptCenter.StartHere();
-
-				if (ImGui.Button(GeneralStrings.YesButton, new(w, 0)))
-                {
-                    quitConfirm.RequestClose();
-                    Program.Instance.PopView();
-                }
-
-                ImGui.SameLine();
-
-                if (ImGui.Button(GeneralStrings.NoButton, new(w, 0)))
-                    quitConfirm.RequestClose();
-
-                quitOptCenter.EndHere();
-
-				ImGui.EndPopup();
+                quitConfirm.RequestClose();
+                Program.Instance.PopView();
             }
+
+            ImGui.SameLine();
+
+            if (ImGui.Button(GeneralStrings.NoButton, new(w, 0)))
+                quitConfirm.RequestClose();
+
+            quitOptCenter.EndHere();
+
+            ImGui.EndPopup();
         }
 
-        void ScreenshotToClipboard() 
+        void ScreenshotToClipboard()
         {
             if (!Program.IsWindows)
                 throw new Exception("Screenshots to clipboard are only supported on windows");
 
-			using (var cap = SDLCapture.CaptureTexture(player.Video.TargetTexture))
-				Platform.Specific.Win.WinClipboard.CopyCapture(cap);
+            using (var cap = SDLCapture.CaptureTexture(player.Video.TargetTexture))
+                Platform.Specific.Win.WinClipboard.CopyCapture(cap);
 
-			MessageUi(Strings.ScreenshotSavedToClip);
-		}
+            MessageUi(Strings.ScreenshotSavedToClip);
+        }
 
-        void ScreenshotToFile() 
+        void ScreenshotToFile()
         {
-			var path = Program.Options.GetFilePathForScreenshot();
-			SDLCapture.ExportTexture(player.Video.TargetTexture, path);
-			MessageUi(string.Format(Strings.ScreenshotSaved, path));
-		}
+            var path = Program.Options.GetFilePathForScreenshot();
+            SDLCapture.ExportTexture(player.Video.TargetTexture, path);
+            MessageUi(string.Format(Strings.ScreenshotSaved, path));
+        }
 
         void ButtonScreenshot()
         {
@@ -574,10 +589,10 @@ namespace SysDVR.Client.GUI
                         ScreenshotToClipboard();
                         return;
                     }
-				}
+                }
 
                 ScreenshotToFile();
-			}
+            }
             catch (Exception ex)
             {
                 MessageUi($"{GeneralStrings.ErrorMessage} {ex}");
@@ -585,8 +600,8 @@ namespace SysDVR.Client.GUI
 #if ANDROID_LIB
                 MessageUi(Strings.AndroidPermissionError);
 #endif
-			}
-		}
+            }
+        }
 
         void ButtonToggleRecording()
         {
@@ -609,11 +624,11 @@ namespace SysDVR.Client.GUI
                 }
                 catch (Exception ex)
                 {
-                    MessageUi($"{GeneralStrings.ErrorMessage} {ex}");                    
+                    MessageUi($"{GeneralStrings.ErrorMessage} {ex}");
                     videoRecorder?.Dispose();
                     videoRecorder = null;
-				}
-			}
+                }
+            }
             else
             {
                 player.Manager.UnchainTargets(videoRecorder.VideoTarget, videoRecorder.AudioTarget);
@@ -654,6 +669,8 @@ namespace SysDVR.Client.GUI
         public override void Destroy()
         {
             Program.SdlCtx.BugCheckThreadId();
+
+            Program.SdlCtx.ShowCursor(true);
 
             if (IsRecording)
                 ButtonToggleRecording();
