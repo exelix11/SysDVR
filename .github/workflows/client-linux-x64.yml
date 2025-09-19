@@ -6,29 +6,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
+      options: --privileged
     steps:
-    - uses: actions/checkout@v3
-    - name: Install flatpak
-      run: |
-        sudo apt update
-        sudo apt install flatpak flatpak-builder -y
-        flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v3
+    - uses: actions/checkout@v5
+    - name: Checkout shared-modules
+      uses: actions/checkout@v5
       with:
-        dotnet-version: "9.x"
-    - name: Cache flatpak builds
-      uses: actions/cache@v3
+        repository: flathub/shared-modules
+        path: Client/Platform/Linux/shared-modules
+    - name: Build flatpak bundle
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        path: Client/Platform/Linux/.flatpak-builder
-        key: flatpak-${{ runner.os }}
-    - name: Run build script
-      run: |
-        cd Client/Platform/Linux
-        chmod +x build-flatpak.sh
-        ./build-flatpak.sh
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: SysDVR-Client.flatpak
-        path: Client/Platform/Linux/SysDVR-Client.flatpak
+        manifest-path: ./Client/Platform/Linux/com.github.exelix11.sysdvr.json
+        bundle: SysDVR-Client.flatpak

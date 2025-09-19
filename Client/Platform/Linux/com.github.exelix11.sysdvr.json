@@ -3,6 +3,22 @@
 	"runtime": "org.freedesktop.Platform",
 	"runtime-version": "24.08",
 	"sdk": "org.freedesktop.Sdk",
+	"sdk-extensions": ["org.freedesktop.Sdk.Extension.dotnet9"],
+	"build-options": {
+		"build-args": ["--share=network"],
+		"append-path": "/usr/lib/sdk/dotnet9/bin",
+		"append-ld-library-path": "/usr/lib/sdk/dotnet9/lib",
+		"prepend-pkg-config-path": "/usr/lib/sdk/dotnet9/lib/pkgconfig",
+		"env": {
+			"DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+			"DOTNET_NOLOGO": "1"
+		},
+		"arch": {
+			"x86_64": {
+				"env": {"RUNTIME": "linux-x64"}
+			}
+		}
+	},
 	"command": "SysDVR-Client",
 	"finish-args": [
 		"--share=ipc",
@@ -26,10 +42,23 @@
 			],
 			"sources": [{
 			  "type": "archive",
-			  "url": "https://ffmpeg.org/releases/ffmpeg-5.1.6.tar.xz",
-			  "sha256": "f4fa066278f7a47feab316fef905f4db0d5e9b589451949740f83972b30901bd"
+			  "url": "https://ffmpeg.org/releases/ffmpeg-5.1.7.tar.xz",
+			  "sha256": "27d87965c5b0ab857a0092aeb9f55d975becb7126d83aefe39ae24102492180b"
 			}]
-		  },
+		},
+		{
+			"name": "nuget-sources",
+			"buildsystem": "simple",
+			"build-commands": ["dotnet restore -r $RUNTIME --packages /app/nuget-sources ./Client.csproj"],
+			"cleanup": ["/nuget-sources"],
+			"sources":
+			[
+				{
+					"type": "file",
+					"path": "../../Client.csproj"
+				}
+			]
+		},
 		{
 			"name": "sysdvr-client",
 			"buildsystem": "simple",
@@ -40,24 +69,25 @@
 				"ln -s /usr/lib/x86_64-linux-gnu/libSDL2_mixer-2.0.so.0 /app/lib/libSDL2_mixer.so",
 				"ln -s /usr/lib/x86_64-linux-gnu/libSDL2_net-2.0.so.0 /app/lib/libSDL2_net.so",
 				"ln -s /usr/lib/x86_64-linux-gnu/libSDL2_ttf-2.0.so.0 /app/lib/libSDL2_ttf.so",
-				"install -Dm644 com.github.exelix11.sysdvr.desktop /app/share/applications/com.github.exelix11.sysdvr.desktop",
-				"install -Dm644 flatpak_icon.png /app/share/icons/hicolor/256x256/apps/com.github.exelix11.sysdvr.png",
-				"cp -r dvr-build /app/bin"
+				"install -Dm644 ./Client/Platform/Linux/com.github.exelix11.sysdvr.desktop /app/share/applications/com.github.exelix11.sysdvr.desktop",
+				"install -Dm644 ./Client/Platform/Linux/flatpak_icon.png /app/share/icons/hicolor/256x256/apps/com.github.exelix11.sysdvr.png",
+				"mkdir -p ./Client/Platform/Resources/$RUNTIME/native",
+				"cp ./CimguiSDL2Cross/cimgui.so ./Client/Platform/Resources/$RUNTIME/native/cimgui.so",
+				"dotnet publish -c Release -r $RUNTIME --source /app/nuget-sources ./Client",
+				"cp -r ./Client/bin/Release/net*/$RUNTIME/publish /app/bin"
 			],
 			"sources":
 			[
 				{
 					"type": "dir",
-					"path": "dvr-build",
-					"dest": "dvr-build"
+					"path": "../../.."
 				},
 				{
-					"type": "file",
-					"path": "com.github.exelix11.sysdvr.desktop"
-				},
-				{
-					"type": "file",
-					"path": "flatpak_icon.png"
+					"type": "archive",
+					"url": "https://github.com/exelix11/CimguiSDL2Cross/releases/download/r2/linux-x64.zip",
+					"sha256": "d36d08d90e6f9c03a89c8e0739ffe8a49c4af004ed6755fc8b1a506598f6da4f",
+					"only-arches": ["x86_64"],
+					"dest": "CimguiSDL2Cross"
 				}
 			]
 		}
