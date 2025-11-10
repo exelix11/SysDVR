@@ -12,19 +12,30 @@ static SmServiceName serverName;
 static Handle* const serverHandle = &handles[0];
 static Handle* const clientHandle = &handles[1];
 
-static bool isClientConnected = false;
-
 static void StartServer()
 {
-	isClientConnected = false;
+	*serverHandle = INVALID_HANDLE;
+	*clientHandle = INVALID_HANDLE;
+	
 	memcpy(serverName.name, "sysdvr", sizeof("sysdvr"));
 	R_THROW(smRegisterService(serverHandle, serverName, false, 1));
 }
 
+static void DisconnectClient()
+{
+	if (*clientHandle != INVALID_HANDLE)
+	{
+		svcCloseHandle(*clientHandle);
+		*clientHandle = INVALID_HANDLE;
+	}
+}
+
 static void StopServer()
 {
+	DisconnectClient();
 	svcCloseHandle(*serverHandle);
-	R_THROW(smUnregisterService(serverName));
+	smUnregisterService(serverName);
+	*serverHandle = INVALID_HANDLE;
 }
 
 typedef struct {
@@ -161,35 +172,91 @@ static bool HandleCommand(const Request* req)
 	}
 }
 
-static void WaitAndProcessRequest()
+static bool IsClientConnected() {
+	return *clientHandle != INVALID_HANDLE;
+}
+
+typedef enum { 
+	// Command handled, no error
+	IPC_OK,
+	// Non fatal error
+	IPC_AGAIN,
+	// Request to terminate IPC server
+	IPC_TERMINATE
+} IpcStatus;
+
+static IpcStatus WaitAndProcessRequest()
 {
 	s32 index = -1;
+	Result rc = svcWaitSynchronization(&index, handles, IsClientConnected() ? 2 : 1, UINT64_MAX);
 
-	R_THROW(svcWaitSynchronization(&index, handles, isClientConnected ? 2 : 1, UINT64_MAX));
+	// Handle common errors
+	if (R_FAILED(rc))
+	{
+		LOG("svcWaitSynchronization: %x", rc);
+
+		// Note: we currently don't use cancellation, but it's best to avoid throwing fatal here in case the OS or some other process tries to mess with us
+		if (rc == KERNELRESULT(ThreadTerminating) || rc == KERNELRESULT(Cancelled))
+			return IPC_TERMINATE;
+		else if (rc == KERNELRESULT(InvalidHandle))
+		{
+			// The client might have disconnected unexpectedly
+			if (IsClientConnected()) 
+			{
+				LOG("Unexpected client disconnection %x", rc);
+				DisconnectClient();
+				return IPC_AGAIN;
+			}
+			else
+			{
+				// Our server handle went bad, terminate the server. Let's avoid crashing the console.
+				LOG("The IPC server is terminating due to %x", rc);
+				return IPC_TERMINATE;
+			}
+		}
+
+		// Other errors are fatal
+		fatalThrow(rc);
+	}
 
 	if (index == 0)
 	{
 		Handle newcli;
 		// Accept session
-		R_THROW(svcAcceptSession(&newcli, *serverHandle));
+		if (R_FAILED(svcAcceptSession(&newcli, *serverHandle)))
+			return IPC_AGAIN;
 		
 		// Max clients reached
-		if (isClientConnected)
-			R_THROW(svcCloseHandle(newcli));
+		if (IsClientConnected())
+		{
+			svcCloseHandle(newcli);
+			return IPC_AGAIN;
+		}
 
-		isClientConnected = true;
+		// New client connected, reset any pending state
+		modeToSet = TYPE_MODE_INVALID;
 		*clientHandle = newcli;
+		return IPC_OK;
 	}
 	else if (index == 1)
 	{
-		// Handle message
-		if (!isClientConnected) {
-			fatalThrow(ERR_IPC_NOCLIENT);
+		if (!IsClientConnected()) {
+			// This should never happen
+			LOG("Received message but no client connected!");
+			return IPC_AGAIN;
 		}
 
+		// Reeive the request
 		s32 _idx;
-		R_THROW(svcReplyAndReceive(&_idx, clientHandle, 1, 0, UINT64_MAX));
+		rc = svcReplyAndReceive(&_idx, clientHandle, 1, 0, UINT64_MAX);
+		if (R_FAILED(rc))
+		{
+			LOG("svcReplyAndReceive (1): %x", rc);
+			DisconnectClient();
+			return IPC_AGAIN;
+		}
 
+		// Decode and handle the message
 		bool shouldClose = false;
 		Request r = ParseRequestFromTLS();
 		switch (r.type)
@@ -206,18 +273,27 @@ static void WaitAndProcessRequest()
 			break;
 		}
 
-		Result rc = svcReplyAndReceive(&_idx, clientHandle, 0, *clientHandle, 0);
+		// Finally, send the response.
+		rc = svcReplyAndReceive(&_idx, clientHandle, 0, *clientHandle, 0);
+		if (R_FAILED(rc))
+		{
+			LOG("svcReplyAndReceive (2): %x", rc);
+			DisconnectClient();
+			return IPC_AGAIN;
+		}
 
-		if (rc != KERNELRESULT(TimedOut))
-			R_THROW(rc);
-
-		if (shouldClose) {
-			R_THROW(svcCloseHandle(*clientHandle));
-			isClientConnected = false;
+		if (shouldClose) 
+		{
+			DisconnectClient();
+			// If this is a clean disconnection, apply any pending mode changes now
 			ApplyModeChanges();
 		}
+
+		return IPC_OK;
 	}
-	else return;
+
+	LOG("Unknown index from svcWaitSynchronization: %d", index);
+	return IPC_AGAIN;
 }
 
 void IpcThread()
@@ -225,7 +301,11 @@ void IpcThread()
 	StartServer();
 
 	while (1)
-		WaitAndProcessRequest();
+	{
+		IpcStatus status = WaitAndProcessRequest();
+		if (status == IPC_TERMINATE)
+			break;
+	}
 
 	StopServer();
 }
