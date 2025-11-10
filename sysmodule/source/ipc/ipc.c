@@ -193,7 +193,7 @@ static IpcStatus WaitAndProcessRequest()
 	// Handle common errors
 	if (R_FAILED(rc))
 	{
-		LOG("svcWaitSynchronization: %x", rc);
+		LOG("svcWaitSynchronization: %x\n", rc);
 
 		// Note: we currently don't use cancellation, but it's best to avoid throwing fatal here in case the OS or some other process tries to mess with us
 		if (rc == KERNELRESULT(ThreadTerminating) || rc == KERNELRESULT(Cancelled))
@@ -203,14 +203,14 @@ static IpcStatus WaitAndProcessRequest()
 			// The client might have disconnected unexpectedly
 			if (IsClientConnected()) 
 			{
-				LOG("Unexpected client disconnection %x", rc);
+				LOG("Unexpected client disconnection %x\n", rc);
 				DisconnectClient();
 				return IPC_AGAIN;
 			}
 			else
 			{
 				// Our server handle went bad, terminate the server. Let's avoid crashing the console.
-				LOG("The IPC server is terminating due to %x", rc);
+				LOG("The IPC server is terminating due to %x\n", rc);
 				return IPC_TERMINATE;
 			}
 		}
@@ -242,7 +242,7 @@ static IpcStatus WaitAndProcessRequest()
 	{
 		if (!IsClientConnected()) {
 			// This should never happen
-			LOG("Received message but no client connected!");
+			LOG("Received message but no client connected!\n");
 			return IPC_AGAIN;
 		}
 
@@ -251,7 +251,7 @@ static IpcStatus WaitAndProcessRequest()
 		rc = svcReplyAndReceive(&_idx, clientHandle, 1, 0, UINT64_MAX);
 		if (R_FAILED(rc))
 		{
-			LOG("svcReplyAndReceive (1): %x", rc);
+			LOG("svcReplyAndReceive (1): %x\n", rc);
 			DisconnectClient();
 			return IPC_AGAIN;
 		}
@@ -274,10 +274,10 @@ static IpcStatus WaitAndProcessRequest()
 		}
 
 		// Finally, send the response.
-		rc = svcReplyAndReceive(&_idx, clientHandle, 0, *clientHandle, 0);
-		if (R_FAILED(rc))
+		rc = svcReplyAndReceive(&_idx, NULL, 0, *clientHandle, 0);
+		if (R_FAILED(rc) && rc != KERNELRESULT(TimedOut))
 		{
-			LOG("svcReplyAndReceive (2): %x", rc);
+			LOG("svcReplyAndReceive (2): %x\n", rc);
 			DisconnectClient();
 			return IPC_AGAIN;
 		}
@@ -292,13 +292,15 @@ static IpcStatus WaitAndProcessRequest()
 		return IPC_OK;
 	}
 
-	LOG("Unknown index from svcWaitSynchronization: %d", index);
+	LOG("Unknown index from svcWaitSynchronization: %d\n", index);
 	return IPC_AGAIN;
 }
 
 void IpcThread()
 {
+	LOG("IPC server starting\n");
 	StartServer();
+	LOG("IPC server started\n");
 
 	while (1)
 	{
@@ -307,6 +309,8 @@ void IpcThread()
 			break;
 	}
 
+	LOG("IPC server terminating\n");
 	StopServer();
+	LOG("IPC server terminated\n");
 }
 #endif
