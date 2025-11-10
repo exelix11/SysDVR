@@ -91,10 +91,24 @@ void LaunchThread(Thread* t, ThreadFunc f, void* arg, void* stackLocation, u32 s
 
 void JoinThread(Thread* t)
 {
+	if (t->handle == INVALID_HANDLE)
+		return;
+
 	Result rc = threadWaitForExit(t);
-	if (R_FAILED(rc)) fatalThrow(rc);
+	if (R_FAILED(rc))
+	{
+		LOG("threadWaitForExit failed: %x\n", rc);
+		fatalThrow(rc);
+	}
+
 	rc = threadClose(t);
-	if (R_FAILED(rc)) fatalThrow(rc);
+	if (R_FAILED(rc))
+	{
+		LOG("threadClose failed: %x\n", rc);
+		fatalThrow(rc);
+	}
+
+	t->handle = INVALID_HANDLE;
 }
 
 static Thread AudioThread;
@@ -198,16 +212,18 @@ static void SwitchModesThreadMain(void*)
 
 static void SwitchModes(const StreamMode* mode)
 {
+	LOG("Mode switch requested\n");
 	mutexLock(&ModeSwitchingMutex);
 
-	LOG("Mode switch requested\n");
+	LOG("Begin mode switch\n");
 	SwitchModeTarget = mode;
-
 	if (!IsModeSwitchPending)
 	{
 		IsModeSwitchPending = true;
 
-		if (ModeSwitchThread.handle) {
+		if (ModeSwitchThread.handle) 
+		{
+			// Dispose the previous mode switch thread. By now it shouldn't be running anymore so this won't block
 			LOG("Closing old mode switch thread\n");
 			JoinThread(&ModeSwitchThread);
 		}
@@ -227,6 +243,7 @@ static void SwitchModes(const StreamMode* mode)
 		}
 	}
 
+	LOG("Mode switch done\n");
 	mutexUnlock(&ModeSwitchingMutex);
 }
 
