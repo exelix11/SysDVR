@@ -269,6 +269,12 @@ namespace SysDVR.Client.Targets.Player
             codectx->extradata_size = sz;
             codectx->extradata = (byte*)ex.ToPointer();
 
+            if (Program.Options.Debug.Log)
+            {
+                Program.DebugLog("Setting strict compliance to experimental for the decoder.");
+                codectx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+            }
+
             avcodec_open2(codectx, codec, null).AssertZero("Couldn't open the codec.");
 
             var pic = av_frame_alloc();
