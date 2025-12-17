@@ -36,7 +36,8 @@ namespace Strings
 		//{ "SetLanguage_RU", ASSET("strings/example.json")},
 		//{ "SetLanguage_FRCA", ASSET("strings/example.json")},
 		{ "SetLanguage_ES419", ASSET("strings/spanish.json")},
-		{ "SetLanguage_PTBR", ASSET("strings/brazilianPortuguese.json")}
+		{ "SetLanguage_PTBR", ASSET("strings/brazilianPortuguese.json")},
+		{ "SetLanguage_FA", ASSET("strings/persian.json")}
 	};
 
 	#define STRING_META_ITERATE(v1) cb(ptr, obj.v1);
@@ -84,7 +85,8 @@ namespace Strings
 		map(Japanese),
 		map(Korean),
 		map(Thai),
-		map(Vietnamese)
+		map(Vietnamese),
+		map(Arabic)
 	})
 
 #undef map

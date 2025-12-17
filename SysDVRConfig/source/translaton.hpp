@@ -143,7 +143,8 @@ namespace Strings
 		Japanese,
 		Korean,
 		Thai,
-		Vietnamese
+		Vietnamese,
+		Arabic
 	};
 
 	extern std::string FontName;

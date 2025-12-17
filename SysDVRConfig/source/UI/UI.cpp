@@ -67,6 +67,8 @@ static ImVector<ImWchar> ImguiPrepareFontRange()
 		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesThai());
 	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Vietnamese)
 		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
+	else if (Strings::ImguiFontGlyphRange == Strings::GlyphRange::Arabic)
+		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesDefault());
 	else
 		builder.AddRanges(ImGui::GetIO().Fonts->GetGlyphRangesDefault());
 

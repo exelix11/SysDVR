@@ -1,7 +1,7 @@
 {
   "LanguageName": "فارسی",
-  "FontName": "opensans.ttf",
-  "ImguiGlyphRange": "Default",
+  "FontName": "NotoSansArabic-Regular.ttf",
+  "ImguiGlyphRange": "Arabic",
   "TranslationAuthor": "rafi_ghanbari",
   "Connecting": {
     "Description": "اگر کنسول خود را به تازگی روشن کرده‌اید، ممکن است تا ۲۰ ثانیه طول بکشد.",
