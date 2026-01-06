@@ -36,8 +36,8 @@ namespace SysDVR.Client.Targets.Player
     // Guarantees that the audio and video stream are compatible with the player
     class PlayerManager : StreamManager
     {
-        internal new H264StreamTarget VideoTarget;
-        internal new AudioOutStream AudioTarget;
+        internal new DecodeH264Target VideoTarget;
+        internal new BaseAudioPlayerTarget AudioTarget;
 
         readonly public bool IsCompatibleAudioStream;
 
@@ -57,7 +57,7 @@ namespace SysDVR.Client.Targets.Player
             if (useCompat)
                 return new QueuedStreamAudioTarget();
             else
-                return new AudioStreamTarget(); 
+                return new AudioPlayerTarget(); 
         }
 
         static OutStream? MakeVideoStream(bool hasVideo)
@@ -65,22 +65,22 @@ namespace SysDVR.Client.Targets.Player
             if (!hasVideo)
                 return null;
 
-            return new H264StreamTarget();
+            return new DecodeH264Target();
         }
 
         public void UseSyncManager(StreamSynchronizationHelper manager)
         {
-            if (AudioTarget is AudioStreamTarget)
+            if (AudioTarget is AudioPlayerTarget)
             {
-                ((AudioStreamTarget)AudioTarget).SyncHelper = manager;
+                ((AudioPlayerTarget)AudioTarget).SyncHelper = manager;
             }
         }
 
         public PlayerManager(StreamingSource source, CancellationTokenSource cancel) :
             base(source, MakeVideoStream(source.Options.HasVideo), MakeAudioStream(source.Options.HasAudio), cancel)
         {
-            VideoTarget = base.VideoTarget as H264StreamTarget;
-            AudioTarget = base.AudioTarget as AudioOutStream;
+            VideoTarget = base.VideoTarget as DecodeH264Target;
+            AudioTarget = base.AudioTarget as BaseAudioPlayerTarget;
             IsCompatibleAudioStream = AudioTarget is QueuedStreamAudioTarget;
         }
     }
@@ -100,7 +100,7 @@ namespace SysDVR.Client.Targets.Player
 
         public const ushort AudioFormat = AUDIO_S16LSB;
 
-        public AudioPlayer(AudioOutStream target) 
+        public AudioPlayer(BaseAudioPlayerTarget target) 
         {
             Program.SdlCtx.BugCheckThreadId();
 

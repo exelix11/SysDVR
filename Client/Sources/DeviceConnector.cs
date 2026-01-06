@@ -64,7 +64,21 @@ namespace SysDVR.Client.Sources
             return StubStreamManager.Create(await ConnectInternal(), Token);
         }
 
-		public async Task<PlayerManager> ConnectForPlayer()
+        public async Task<StreamManager> ConnectWithTargets(OutStream? videoTarget, OutStream? audioTarget)
+        {
+            try
+            {
+                var source = await ConnectInternal().ConfigureAwait(false);
+                return new StreamManager(source, videoTarget, audioTarget, Token);
+            }
+            catch
+            {
+                Info?.Dispose();
+                throw;
+            }
+        }
+
+        public async Task<PlayerManager> ConnectForPlayer()
         {
             try
             {

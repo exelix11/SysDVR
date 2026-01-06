@@ -18,9 +18,9 @@ using System.Runtime.InteropServices;
 
 namespace SysDVR.Client
 {
-	public static class Program
-	{
-		// Currently android needs a special ifdef due to dotnet8 not supporting this API yet (i think it's cause the target is linux-bionic rather than android ?)
+    public static class Program
+    {
+        // Currently android needs a special ifdef due to dotnet8 not supporting this API yet (i think it's cause the target is linux-bionic rather than android ?)
 #if ANDROID_LIB
 		public readonly static bool IsWindows = false;
 		public readonly static bool IsMacOs = false;
@@ -28,47 +28,47 @@ namespace SysDVR.Client
         public readonly static bool IsContainerApp = false;
 		public readonly static bool IsAndroid = true;
 #else
-		public readonly static bool IsWindows = OperatingSystem.IsWindows();
-		public readonly static bool IsMacOs = OperatingSystem.IsMacOS();
-		public readonly static bool IsLinux = OperatingSystem.IsLinux();
-		public readonly static bool IsContainerApp = false;
-		public readonly static bool IsAndroid = false;
+        public readonly static bool IsWindows = OperatingSystem.IsWindows();
+        public readonly static bool IsMacOs = OperatingSystem.IsMacOS();
+        public readonly static bool IsLinux = OperatingSystem.IsLinux();
+        public readonly static bool IsContainerApp = false;
+        public readonly static bool IsAndroid = false;
 #endif
 
-		static Program()
-		{
-			// Detect platform specific stuff, for example if we are inside of flatpak.
-			// This is needed to know where to store settings
+        static Program()
+        {
+            // Detect platform specific stuff, for example if we are inside of flatpak.
+            // This is needed to know where to store settings
 
-			if (IsLinux)
-			{
-				// https://stackoverflow.com/questions/75274925/is-there-a-way-to-find-out-if-i-am-running-inside-a-flatpak-appimage-or-another
-				IsContainerApp = new[] {
-					Environment.GetEnvironmentVariable("container"),
-					Environment.GetEnvironmentVariable("APPIMAGE"),
-					Environment.GetEnvironmentVariable("SNAP"),
-				}.Any(x => !string.IsNullOrWhiteSpace(x));
-			}
+            if (IsLinux)
+            {
+                // https://stackoverflow.com/questions/75274925/is-there-a-way-to-find-out-if-i-am-running-inside-a-flatpak-appimage-or-another
+                IsContainerApp = new[] {
+                    Environment.GetEnvironmentVariable("container"),
+                    Environment.GetEnvironmentVariable("APPIMAGE"),
+                    Environment.GetEnvironmentVariable("SNAP"),
+                }.Any(x => !string.IsNullOrWhiteSpace(x));
+            }
 
-			//File.WriteAllText("english.json", new StringTable().Serialize());
-		}
-        
-		public static SDLContext SdlCtx;
+            //File.WriteAllText("english.json", new StringTable().Serialize());
+        }
+
+        public static SDLContext SdlCtx;
 
         // This is the static instance of the client app. This is initialized once at the start of the program.
         internal static IApplicationInstance Instance = null!;
-		internal static StringTable Strings = new();
+        internal static StringTable Strings = new();
 
-		static readonly StringBuilder InitializationError = new();
-		
-		[UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "It works here")]
-		public static readonly string DisplayVersion = ThisAssembly.Git.SemVer.Patch == "0" ?
-			$"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}" :
-			$"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}";
+        static readonly StringBuilder InitializationError = new();
+
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file", Justification = "It works here")]
+        public static readonly string DisplayVersion = ThisAssembly.Git.SemVer.Patch == "0" ?
+            $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}" :
+            $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}";
 
         public static readonly string BuildID = ThisAssembly.Git.Commit.ToString();
 
-		public static Options Options = new();
+        public static Options Options = new();
 #if ANDROID_LIB
         public static NativeInitBlock Native;
 
@@ -86,22 +86,22 @@ namespace SysDVR.Client
             return NativeError.Success;
         }
 #else
-		public static void Main(string[] args)
-		{
-			RunApp(args);
-		}
+        public static void Main(string[] args)
+        {
+            RunApp(args);
+        }
 #endif
 
-		public static void DebugLog(string message)
-		{
-			if (Options.Debug.Log)
-				Console.WriteLine(message);
-		}
+        public static void DebugLog(string message)
+        {
+            if (Options.Debug.Log)
+                Console.WriteLine(message);
+        }
 
-		private static void RunApp(string[] args)
-		{
-			// Exception handlers so we can log exceptions on platforms that are hard to debug (android)
-			// depending on how far the initialization went we should be able to get the stack trace over logcat
+        private static void RunApp(string[] args)
+        {
+            // Exception handlers so we can log exceptions on platforms that are hard to debug (android)
+            // depending on how far the initialization went we should be able to get the stack trace over logcat
 #if !DEBUG
             try
             {
@@ -125,63 +125,74 @@ namespace SysDVR.Client
 #if !DEBUG
             try
 #endif
-			{
+            {
 #if DEBUG
-				Console.WriteLine("SysDVR Client entrypoint");
+                Console.WriteLine("SysDVR Client entrypoint");
 #endif
-				if (Instance is null)
-				{
-					DynamicLibraryLoader.Initialize();
+                if (Instance is null)
+                {
+                    DynamicLibraryLoader.Initialize();
 
-					Console.WriteLine($"SysDVR-Client {DisplayVersion} - by exelix");
-					Console.WriteLine("https://github.com/exelix11/SysDVR");
-					Console.WriteLine($"Build ID: {BuildID}\n");
+                    Console.WriteLine($"SysDVR-Client {DisplayVersion} - by exelix");
+                    Console.WriteLine("https://github.com/exelix11/SysDVR");
+                    Console.WriteLine($"Build ID: {BuildID}\n");
 
-					var cli = CommandLineOptions.Parse(args);
+                    var cli = CommandLineOptions.Parse(args);
 
-					if (cli.Version)
-						return;
-					else if (cli.Help)
-					{
-						Console.WriteLine(CommandLineOptions.HelpMessage);
-						return;
-					}
-					else if (cli.DebugList)
-					{
-						Console.WriteLine(CommandLineOptions.GetDebugFlagsList());
-						return;
-					}
-					else if (cli.ShowDecoders)
-					{
-						Targets.Player.LibavUtils.PrintAllCodecs();
-						return;
-					}
+                    if (cli.Version)
+                        return;
+                    else if (cli.Help)
+                    {
+                        Console.WriteLine(CommandLineOptions.HelpMessage);
+                        return;
+                    }
+                    else if (cli.DebugList)
+                    {
+                        Console.WriteLine(CommandLineOptions.GetDebugFlagsList());
+                        return;
+                    }
+                    else if (cli.ShowDecoders)
+                    {
+                        Targets.Player.LibavUtils.PrintAllCodecs();
+                        return;
+                    }
 
-					LoadSettings();
-					LoadTranslations();
-					cli.PrintDeprecationWarnings();
-					cli.ApplyOptionOverrides();
+                    LoadSettings();
+                    LoadTranslations();
+                    cli.PrintDeprecationWarnings();
+                    cli.ApplyOptionOverrides();
 
-					SdlCtx = new();
+                    if (cli.Headless)
+                    {
+                        // Headless options go here, these do not need an SDL context
+                        if (cli.OutputFile is not null)
+                            Instance = new CommandLineRecorder(cli);
+                        else
+                            throw new InvalidOperationException("The specified commandline option is not valid. Can't run in headless mode.");
+                    }
+                    else
+                    {
+                        SdlCtx = new();
 
-					if (IsWindows)
-						Platform.Specific.Win.AntiInject.Initialize();
+                        if (IsWindows)
+                            Platform.Specific.Win.AntiInject.Initialize();
 
-					if (cli.LegacyPlayer)
-						Instance = new LegacyPlayer(cli);
-					else
-						Instance = new ClientApp(cli);
+                        if (cli.LegacyPlayer)
+                            Instance = new LegacyPlayer(cli);
+                        else
+                            Instance = new ClientApp(cli);
+                    }
 
                     Instance.Initialize();
                 }
-				else
-				{
-					// If we are here it means the app was suspended and resumed, this should only happen on android.
-					// SDL should have kept the context alive but we may be running on a different thread
-					// This is fine as SDL is the only thing that is sensitive to the caller thread and being here means this thread is now fine.
-					Console.WriteLine("Resuming the application");
-					SdlCtx.SetNewThreadOwner();
-				}
+                else
+                {
+                    // If we are here it means the app was suspended and resumed, this should only happen on android.
+                    // SDL should have kept the context alive but we may be running on a different thread
+                    // This is fine as SDL is the only thing that is sensitive to the caller thread and being here means this thread is now fine.
+                    Console.WriteLine("Resuming the application");
+                    SdlCtx.SetNewThreadOwner();
+                }
 
                 Instance.Entrypoint();
             }
@@ -192,81 +203,81 @@ namespace SysDVR.Client
                 SDL.SDL_Quit();
             }
 #endif
-		}
+        }
 
-		private static void LoadTranslations()
-		{
-			try
-			{
-				var lang = (Options.PreferredLanguage ?? SystemUtil.GetLanguageCode()).ToLower();
-				Program.DebugLog($"Requested language {lang}");
+        private static void LoadTranslations()
+        {
+            try
+            {
+                var lang = (Options.PreferredLanguage ?? SystemUtil.GetLanguageCode()).ToLower();
+                Program.DebugLog($"Requested language {lang}");
 
-				var useLanguage = Resources.GetAvailableTranslations()
-					.FirstOrDefault(x => x.SystemLocale.Contains(lang));
+                var useLanguage = Resources.GetAvailableTranslations()
+                    .FirstOrDefault(x => x.SystemLocale.Contains(lang));
 
-				if (useLanguage is null)
-					return;
+                if (useLanguage is null)
+                    return;
 
-				if (useLanguage.FontName is not null)
-				{
-					if (!Resources.OverrideMainFont(Path.Combine("fonts", useLanguage.FontName)))
-					{
-						AddInitializationError($"Failed to load the custom font for language {lang}, the language will be set to English.");
-						return;
-					}
-				}
+                if (useLanguage.FontName is not null)
+                {
+                    if (!Resources.OverrideMainFont(Path.Combine("fonts", useLanguage.FontName)))
+                    {
+                        AddInitializationError($"Failed to load the custom font for language {lang}, the language will be set to English.");
+                        return;
+                    }
+                }
 
-				Program.DebugLog($"Loading translation {useLanguage.FileName}");
-				Strings = Resources.LoadTranslationFromAssetName(useLanguage.FileName);
-			}
-			catch (Exception ex)
-			{
-				AddInitializationError($"Failed to load translation, the language will be set to English.\n{ex}");
-			}
-		}
+                Program.DebugLog($"Loading translation {useLanguage.FileName}");
+                Strings = Resources.LoadTranslationFromAssetName(useLanguage.FileName);
+            }
+            catch (Exception ex)
+            {
+                AddInitializationError($"Failed to load translation, the language will be set to English.\n{ex}");
+            }
+        }
 
-		internal static string GetInitializationError() =>
-			InitializationError.ToString();
+        internal static string GetInitializationError() =>
+            InitializationError.ToString();
 
-		internal static void AddInitializationError(string error)
-		{
-			InitializationError.AppendLine(error);
+        internal static void AddInitializationError(string error)
+        {
+            InitializationError.AppendLine(error);
 
-			Console.ForegroundColor = ConsoleColor.Red;
-			Console.WriteLine(error);
-			Console.ResetColor();
-		}
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(error);
+            Console.ResetColor();
+        }
 
-		private static void LoadSettings()
-		{
-			try
-			{
-				var set = SystemUtil.LoadSettingsString();
-				if (set is not null)
-				{
-					Program.Options = Options.FromJson(set);
-					Console.WriteLine("Settings loaded");
-				}
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Failed to load settings: {ex}");
-			}
+        private static void LoadSettings()
+        {
+            try
+            {
+                var set = SystemUtil.LoadSettingsString();
+                if (set is not null)
+                {
+                    Program.Options = Options.FromJson(set);
+                    Console.WriteLine("Settings loaded");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load settings: {ex}");
+            }
 
-			if (Debugger.IsAttached)
-				Options.Debug.Log = true;
-		}
+            if (Debugger.IsAttached)
+                Options.Debug.Log = true;
+        }
 
-		private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
-		{
-			Console.WriteLine("TaskScheduler_UnobservedTaskException: " + e.Exception.ToString());
-			SDL.SDL_Quit();
-		}
+        private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            Console.WriteLine("TaskScheduler_UnobservedTaskException: " + e.Exception.ToString());
+            SDL.SDL_Quit();
+        }
 
-		private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-		{
-			Console.WriteLine("CurrentDomain_UnhandledException: " + e.ExceptionObject.ToString());
-			SDL.SDL_Quit();
-		}
-	}
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine("CurrentDomain_UnhandledException: " + e.ExceptionObject.ToString());
+            SDL.SDL_Quit();
+        }
+    }
 }

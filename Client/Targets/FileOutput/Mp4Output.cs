@@ -26,8 +26,9 @@ namespace SysDVR.Client.Targets.FileOutput
 
         public void Start()
         {
-            var OutFmt = av_guess_format(null, Path.GetFileName(Filename), null);
-            if (OutFmt == null) throw new Exception("Couldn't find output format");
+            var name = Path.GetFileName(Filename);
+            var OutFmt = av_guess_format(null, name, null);
+            if (OutFmt == null) throw new Exception($"Couldn't find a valid output format for the provided file name: {name}");
 
             AVFormatContext* ctx = null;
             avformat_alloc_output_context2(&ctx, OutFmt, null, null).AssertNotNeg();

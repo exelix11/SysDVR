@@ -54,7 +54,7 @@ namespace SysDVR.Client
 			new OptionNoArg("--stdout", x => x.LowLatencyDeprecationWarning = true),
 
 			// Deprecated file option
-			new OptionNoArg("--file", x => x.FileDeprecationWarning = true),
+			new OptionArg("--file", (x, v) => x.OutputFile = v),
 
 #if !ANDROID_LIB
 			// This only makes sense on desktop systems
@@ -145,9 +145,11 @@ namespace SysDVR.Client
 
 		public bool RTSPDeprecationWarning;
 		public bool LowLatencyDeprecationWarning;
-		public bool FileDeprecationWarning;
+		
+		public string? OutputFile;
+		public bool Headless => OutputFile is not null;
 
-		public string? ConsoleSerial;
+        public string? ConsoleSerial;
 		public string? NetStreamHostname;
 
 		public bool LaunchFullscreen;
@@ -209,10 +211,9 @@ namespace SysDVR.Client
 
 		public void PrintDeprecationWarnings() 
 		{
-			if (FileDeprecationWarning)
-				Console.WriteLine("The --file option has been removed starting from SysDVR 6.0, you can use the gameplay recording feature whitin the new player instead.");
 			if (LowLatencyDeprecationWarning)
 				Console.WriteLine("The --mpv and --stdout options have been removed starting from SysDVR 6.0, you should use the default player.");
+
 			if (RTSPDeprecationWarning)
 				Console.WriteLine("The --rtsp options have been removed starting from SysDVR 6.0, to stram over RTSP use simple network mode from your console.");
 		}
@@ -255,6 +256,10 @@ Player options:
 	`--legacy` : Use the old player without the GUI, not all the other options are available when this is used
 	`--debug <debug options>` : Enables debug options. Multiple options are comma separated for example: --debug log,stats
 		When a debugger is attached `log` is enabled by default.
+
+Headless options:
+	These options are used to stream to a file instead of a player, useful for recording or piping to another application.
+	`--file <path>` : Streams the output to the specified file path, the format is mp4 by default. When this option is used no player is launched.
 
 Extra options:
 	These options will not stream, they just print the output and then quit.

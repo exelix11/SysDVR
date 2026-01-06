@@ -14,7 +14,7 @@ using static FFmpeg.AutoGen.ffmpeg;
 
 namespace SysDVR.Client.Targets.Player
 {
-    abstract class AudioOutStream : OutStream
+    abstract class BaseAudioPlayerTarget : OutStream
     {
         float _volume = 1;
         int SDL_Volume = SDL.SDL_MIX_MAXVOLUME;
@@ -89,7 +89,7 @@ namespace SysDVR.Client.Targets.Player
 	// On some devices (mainly mac os) audio doesn't work with our AudioStreamTarget implementation
 	// It's unclear why but SDL_QueueAudio seems to always work
 	// However we lose control over A/V syncrhonization so this is really just a workaround for some platforms
-	class QueuedStreamAudioTarget : AudioOutStream
+	class QueuedStreamAudioTarget : BaseAudioPlayerTarget
     {
         // This is set by the SDL audio manager during initialization
         internal uint DeviceID;
@@ -109,10 +109,10 @@ namespace SysDVR.Client.Targets.Player
     static class AudioStreamTargetNative
     {
         public static unsafe void SDLCallback(IntPtr userdata, IntPtr buf, int len) =>
-            ((AudioStreamTarget)GCHandle.FromIntPtr(userdata).Target).SDLCallback(new Span<byte>(buf.ToPointer(), len));
+            ((AudioPlayerTarget)GCHandle.FromIntPtr(userdata).Target).SDLCallback(new Span<byte>(buf.ToPointer(), len));
     }
 
-    class AudioStreamTarget : AudioOutStream
+    class AudioPlayerTarget : BaseAudioPlayerTarget
     {
         // Only as debug info
         public int Pending;
@@ -223,7 +223,7 @@ namespace SysDVR.Client.Targets.Player
         }
     }
 
-    class H264StreamTarget : OutStream
+    class DecodeH264Target : OutStream
     {
         Task VideoConsumerTask = null!;
         
@@ -312,13 +312,13 @@ namespace SysDVR.Client.Targets.Player
             }
         }
 
-        unsafe public H264StreamTarget()
+        unsafe public DecodeH264Target()
         {
             packet = av_packet_alloc();
             log = Program.Options.Debug.Log;
         }
 
-        unsafe ~H264StreamTarget()
+        unsafe ~DecodeH264Target()
         {
             fixed (AVPacket** p = &packet)
                 av_packet_free(p);

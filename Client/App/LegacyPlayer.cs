@@ -28,8 +28,12 @@ namespace SysDVR.Client.App
 
             if (conn is not null)
             {
-                conn.OnMessage += Conn_OnMessage;
-                return conn.ConnectForPlayer().GetAwaiter().GetResult();
+                conn.OnMessage += Console.WriteLine;
+                var device = conn.ConnectForPlayer().GetAwaiter().GetResult();
+
+                device.OnErrorMessage += Console.WriteLine;
+                device.OnFatalError += Console.WriteLine;
+                return device;
             }
 
             return null;
@@ -60,8 +64,6 @@ namespace SysDVR.Client.App
                 }
             }
 
-            conn.OnErrorMessage += Conn_OnErrorMessage;
-            conn.OnFatalError += Conn_OnFatalError;
             player = new PlayerCore(conn);
 
             if (conn.HasVideo && player.GetChosenDecoder() is var decoder)
@@ -108,21 +110,6 @@ namespace SysDVR.Client.App
         break_main_loop:
             player.Destroy();
             sdlCtx.DestroyWindow();
-        }
-
-        private void Conn_OnMessage(string obj)
-        {
-            Console.WriteLine(obj);
-        }
-
-        private void Conn_OnFatalError(Exception obj)
-        {
-            Console.WriteLine(obj);
-        }
-
-        private void Conn_OnErrorMessage(string obj)
-        {
-            Console.WriteLine(obj);
         }
     }
 }
