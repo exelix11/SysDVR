@@ -1,15 +1,11 @@
 ﻿using ImGuiNET;
 using SysDVR.Client.Core;
-using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SysDVR.Client.GUI
 {

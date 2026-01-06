@@ -1,16 +1,8 @@
 ﻿using ImGuiNET;
-using LibUsbDotNet;
 using SysDVR.Client.Core;
-using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
-using SysDVR.Client.Targets.Player;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 

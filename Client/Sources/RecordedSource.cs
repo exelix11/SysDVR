@@ -1,4 +1,5 @@
 ﻿#if DEBUG
+using SysDVR.Client.Core;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -6,8 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using FFmpeg.AutoGen;
-using SysDVR.Client.Core;
 
 namespace SysDVR.Client.Sources
 {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SysDVR.Client.Core
 {

@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO.Compression;
 using System.IO;
-using System.Linq;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using static SysDVR.Client.Platform.Specific.Win.SetupApi;
-using System.Reflection.Emit;
 
 namespace SysDVR.Client.Platform.Specific.Win
 {

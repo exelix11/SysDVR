@@ -1,12 +1,8 @@
 ﻿using SysDVR.Client.Core;
 using SysDVR.Client.Sources;
-using SysDVR.Client.Targets.Player;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SysDVR.Client
 {

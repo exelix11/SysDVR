@@ -1,7 +1,5 @@
-﻿using LibUsbDotNet;
-using SysDVR.Client.Sources;
+﻿using SysDVR.Client.Sources;
 using System;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SysDVR.Client.Core

@@ -1,5 +1,4 @@
-﻿using FFmpeg.AutoGen;
-using ImGuiNET;
+﻿using ImGuiNET;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;

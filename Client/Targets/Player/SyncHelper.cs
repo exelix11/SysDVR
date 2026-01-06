@@ -1,12 +1,4 @@
-﻿using FFmpeg.AutoGen;
-using SysDVR.Client.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SysDVR.Client.Targets.Player
+﻿namespace SysDVR.Client.Targets.Player
 {
     class StreamSynchronizationHelper
     {

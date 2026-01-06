@@ -1,12 +1,11 @@
 ﻿#if DEBUG
+using SysDVR.Client.Core;
+using SysDVR.Client.Sources;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using SysDVR.Client.Core;
-using SysDVR.Client.Sources;
 
 namespace SysDVR.Client.Targets.FileOutput
 {

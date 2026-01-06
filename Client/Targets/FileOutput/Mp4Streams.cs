@@ -1,6 +1,6 @@
-﻿using System;
-using FFmpeg.AutoGen;
+﻿using FFmpeg.AutoGen;
 using SysDVR.Client.Core;
+using System;
 using static FFmpeg.AutoGen.ffmpeg;
 
 namespace SysDVR.Client.Targets.FileOutput

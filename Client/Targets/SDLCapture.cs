@@ -1,14 +1,9 @@
 ﻿using SysDVR.Client.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 using static SDL2.SDL;
 using static SDL2.SDL_image;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SysDVR.Client.Targets
 {

@@ -2,7 +2,6 @@
 
 using SysDVR.Client.Core;
 using System;
-using System.Collections.Generic;
 
 namespace SysDVR.Client.Sources
 {

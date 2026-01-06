@@ -1,19 +1,13 @@
-﻿using System;
+﻿using FFmpeg.AutoGen;
+using SysDVR.Client.Core;
+using SysDVR.Client.Sources;
+using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static SDL2.SDL;
-using FFmpeg.AutoGen;
-using static FFmpeg.AutoGen.ffmpeg;
 using System.Threading;
-using System.Linq;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using SysDVR.Client.Core;
-using SysDVR.Client.GUI;
-using ImGuiNET;
-using SDL2;
-using SysDVR.Client.Sources;
+using static FFmpeg.AutoGen.ffmpeg;
+using static SDL2.SDL;
 
 namespace SysDVR.Client.Targets.Player
 {

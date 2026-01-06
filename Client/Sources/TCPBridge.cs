@@ -1,15 +1,7 @@
-﻿using FFmpeg.AutoGen;
-using LibUsbDotNet;
-using SysDVR.Client.Core;
+﻿using SysDVR.Client.Core;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Configuration;
-using System.IO;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;

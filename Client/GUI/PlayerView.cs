@@ -1,21 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Numerics;
-using ImGuiNET;
+﻿using ImGuiNET;
 using SysDVR.Client.Core;
-using SysDVR.Client.Targets.Player;
+using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Targets;
-
-using static SDL2.SDL;
 using SysDVR.Client.Targets.FileOutput;
-using SysDVR.Client.GUI.Components;
+using SysDVR.Client.Targets.Player;
+using System;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json.Serialization;
-using System.IO;
-using System.ComponentModel;
+using System.Threading;
+using static SDL2.SDL;
 
 namespace SysDVR.Client.GUI
 {

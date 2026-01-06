@@ -2,10 +2,6 @@
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SysDVR.Client.Platform.Specific.Win
 {

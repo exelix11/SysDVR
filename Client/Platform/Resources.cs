@@ -1,19 +1,10 @@
-﻿using FFmpeg.AutoGen;
-using SDL2;
-using SysDVR.Client.Core;
+﻿using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
-using SysDVR.Client.Targets.Player;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace SysDVR.Client.Platform
 {

@@ -5,13 +5,8 @@ using SysDVR.Client.GUI.Components;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SysDVR.Client.GUI
 {
