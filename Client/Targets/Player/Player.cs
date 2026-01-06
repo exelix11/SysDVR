@@ -166,15 +166,15 @@ namespace SysDVR.Client.Targets.Player
         FormatConverterContext Converter; // Initialized only when the decoder output format doesn't match the SDL texture format
 
         public string DecoderName { get; private set; }
-        public bool AcceleratedDecotr { get; private set; }
+        public bool UsingCustomDecoder { get; private set; }
 
         public object TextureLock;
         public IntPtr TargetTexture;
         public SDL_Rect TargetTextureSize;
 
-        public VideoPlayer(string? preferredDecoderName, bool hwAccel)
+        public VideoPlayer(string? preferredDecoderName)
         {
-            InitVideoDecoder(preferredDecoderName, hwAccel);
+            InitVideoDecoder(preferredDecoderName);
             InitSDLRenderTexture();
         }
 
@@ -204,27 +204,16 @@ namespace SysDVR.Client.Targets.Player
             TextureLock = new object();
         }
 
-        unsafe void InitVideoDecoder(string? name, bool useHwAcc)
+        unsafe void InitVideoDecoder(string? name)
         {
             AVCodec* codec = null;
 
             if (name is not null)
             {
                 codec = avcodec_find_decoder_by_name(name);
-            }
-            
-            if (codec == null && useHwAcc)
-            {
-                name = LibavUtils.GetH264Decoders().Where(x => x.Name != "h264").FirstOrDefault()?.Name;
-
-                if (name != null)
-                {
-                    codec = avcodec_find_decoder_by_name(name);
-                    if (codec != null)
-                    {
-                        AcceleratedDecotr = true;
-                    }
-                }
+                
+                if (codec != null)
+                    UsingCustomDecoder = true;
             }
 
             if (codec == null)

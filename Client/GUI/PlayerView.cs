@@ -56,7 +56,7 @@ namespace SysDVR.Client.GUI
 
             if (manager.HasVideo)
             {
-                Video = new(Program.Options.DecoderName, Program.Options.HardwareAccel);
+                Video = new(Program.Options.DecoderName);
                 Video.Decoder.SyncHelper = sync;
                 manager.VideoTarget.UseContext(Video.Decoder);
 
@@ -141,7 +141,7 @@ namespace SysDVR.Client.GUI
                 }
             }
 
-            if (Video.AcceleratedDecotr)
+            if (Video.UsingCustomDecoder)
             {
                 return string.Format(Program.Strings.Player.CustomDecoderEnabled, Video.DecoderName);
             }

@@ -249,7 +249,6 @@ Stream options:
 Player options:
 	Since 6.0 SysDVR-Client only comes with the built-in player, the following options are available:
 	`--volume <value>` : Set the player volume to a number between 0 and 100
-	`--hw-acc` : Try to use hardware acceleration for decoding, this option uses the first detected decoder, it's recommended to manually specify the decoder name with --decoder
 	`--decoder <name>` : Use a specific decoder for ffmpeg decoding, you can see all supported codecs with --show-decoders
 	`--fullscreen` : Start in full screen mode. Press F11 to toggle manually
 	`--title <some text>` : Adds the argument string to the title of the player window
