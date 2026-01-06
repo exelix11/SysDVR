@@ -10,6 +10,7 @@ namespace SysDVR.Client.App
     {
         readonly CommandLineOptions CommandLine = CommandLine;
         bool printErrors = true;
+        bool isInteractiveConsole = true;
 
         void ErrorHandler(string msg)
         {
@@ -69,11 +70,12 @@ namespace SysDVR.Client.App
 
             while (!cancel)
             {
-                if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter)
+                if (isInteractiveConsole && Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter)
                 {
                     Console.WriteLine("Return key pressed, exiting...");
                     break;
                 }
+
                 Thread.Sleep(100);
             }
 
@@ -86,6 +88,17 @@ namespace SysDVR.Client.App
         public override void Initialize()
         {
             Console.WriteLine("Starting command line recorder...");
+
+            // https://github.com/exelix11/SysDVR/issues/372#issuecomment-3715184846
+            try
+            {
+                _ = Console.KeyAvailable;
+                isInteractiveConsole = true;
+            }
+            catch 
+            {
+                isInteractiveConsole = false;
+            }
         }
     }
 }
