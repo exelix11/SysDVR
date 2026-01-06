@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.Sources;
 using System;
@@ -23,8 +24,8 @@ namespace SysDVR.Client.GUI
 		string? autoConnectGuiText;
 		string? lastError;
 
-		public UsbDevicesView(StreamingOptions options, string? autoConnect = null)
-		{
+		public UsbDevicesView(ClientApp owner, StreamingOptions options, string? autoConnect = null) : base(owner)
+        {
 			this.options = options;
 			this.autoConnect = autoConnect;
 
@@ -149,12 +150,12 @@ namespace SysDVR.Client.GUI
 				devices = null;
 			}
 
-			Program.Instance.PushView(new ConnectingView(info.Info, options));
+			Owner.PushView(new ConnectingView(Owner, info.Info, options));
 		}
 
 		public override void Draw()
 		{
-			var portrait = Program.Instance.IsPortrait;
+			var portrait = Owner.IsPortrait;
 
 			if (!Gui.BeginWindow("USB Devices list"))
 				return;
@@ -224,7 +225,7 @@ namespace SysDVR.Client.GUI
 			Gui.CursorFromBottom(sz.Y);
 			if (Gui.CenterButton(GeneralStrings.BackButton, sz))
 			{
-				Program.Instance.PopView();
+				Owner.PopView();
 			}
 
 			if (incompatiblePopup.Begin())

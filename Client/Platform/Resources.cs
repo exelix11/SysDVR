@@ -163,10 +163,9 @@ namespace SysDVR.Client.Platform
 		public static string MainFont { get; private set; } = ResourcePath("fonts/OpenSans.ttf");
 		public static string LoadingImage => ResourcePath("loading.yuv");
 
-		public readonly static LazyImage Logo = new LazyImage(ResourcePath("logo.png"));
-		public readonly static LazyImage UsbIcon = new LazyImage(ResourcePath("ico_usb.png"));
-		public readonly static LazyImage WifiIcon = new LazyImage(ResourcePath("ico_wifi.png"));
-
+		public readonly static string Logo = ResourcePath("logo.png");
+		public readonly static string UsbIcon = ResourcePath("ico_usb.png");
+		public readonly static string WifiIcon = ResourcePath("ico_wifi.png");
 
         public static StringTableMetadata[] GetAvailableTranslations()
         {

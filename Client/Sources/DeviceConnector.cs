@@ -15,9 +15,6 @@ namespace SysDVR.Client.Sources
         readonly CancellationTokenSource Token;
         readonly StreamingOptions Options;
 
-        // TODO: Legacy non-player managers
-        //readonly bool IsForPlayer;
-
         void MessageReceived(string msg) 
         {
             Console.WriteLine(msg);

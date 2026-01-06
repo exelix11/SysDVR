@@ -4,7 +4,7 @@ using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Targets.Player;
 using System;
 
-namespace SysDVR.Client
+namespace SysDVR.Client.App
 {
     // the legacy player is a standalone player that uses its own SDL context without imgui
     // it is used for playback without any additional GUI features
@@ -35,7 +35,12 @@ namespace SysDVR.Client
             return null;
         }
 
-        public void EntryPoint()
+        public override void Initialize()
+        {
+            
+        }
+
+        override public void Entrypoint()
         {
             var conn = ConnectToConsole();
 

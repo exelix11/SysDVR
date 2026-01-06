@@ -1,11 +1,12 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI;
 using System;
 
 namespace SysDVR.Client.Platform.Specific.Win
 {
-	internal class WinDirverInstallView : View
+	internal class WinDirverInstallView(ClientApp Owner) : View(Owner)
 	{
 		readonly StringTable.UsbDriverTable Strings = Program.Strings.UsbDriver;
 
@@ -66,7 +67,7 @@ namespace SysDVR.Client.Platform.Specific.Win
 			Gui.CenterText(Strings.Title);
 			ImGui.NewLine();
 
-			var portrait = Program.Instance.IsPortrait;
+			var portrait = Owner.IsPortrait;
 			var win = ImGui.GetWindowSize();
 			var sz = win;
 

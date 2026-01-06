@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.Sources;
 using System;
@@ -27,7 +28,7 @@ namespace SysDVR.Client.GUI
         Gui.CenterGroup popupTbCenter = new();
         string? lastError;            
 
-        public NetworkScanView(StreamingOptions opt, string? autoConnect = null)
+        public NetworkScanView(ClientApp owner, StreamingOptions opt, string? autoConnect = null) : base(owner)
         {
             Popups.Add(ipEnterPopup);
             Popups.Add(incompatiblePopup);
@@ -106,12 +107,12 @@ namespace SysDVR.Client.GUI
             }
 
             autoConnect = null;
-            Program.Instance.PushView(new ConnectingView(info, options));
+            Owner.PushView(new ConnectingView(Owner, info, options));
         }
 
         public override void Draw()
         {
-            var portrait = Program.Instance.IsPortrait;
+            var portrait = Owner.IsPortrait;
 
             if (!Gui.BeginWindow("Network scanner"))
                 return;
@@ -171,7 +172,7 @@ namespace SysDVR.Client.GUI
             Gui.CursorFromBottom(sz.Y);
             if (Gui.CenterButton(GeneralStrings.BackButton, sz))
             {
-                Program.Instance.PopView();
+                Owner.PopView();
             }
 
             DrawIpEnterPopup();

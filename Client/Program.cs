@@ -1,4 +1,5 @@
 ﻿using SDL2;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
@@ -51,9 +52,11 @@ namespace SysDVR.Client
 
 			//File.WriteAllText("english.json", new StringTable().Serialize());
 		}
+        
+		public static SDLContext SdlCtx;
 
-		internal static ClientApp Instance = null!;
-		internal static LegacyPlayer? LegacyInstance;
+        // This is the static instance of the client app. This is initialized once at the start of the program.
+        internal static IApplicationInstance Instance = null!;
 		internal static StringTable Strings = new();
 
 		static readonly StringBuilder InitializationError = new();
@@ -66,9 +69,6 @@ namespace SysDVR.Client
         public static readonly string BuildID = ThisAssembly.Git.Commit.ToString();
 
 		public static Options Options = new();
-
-		// This is initialized by the ClientApp constructor
-		public static SDLContext SdlCtx;
 #if ANDROID_LIB
         public static NativeInitBlock Native;
 
@@ -129,7 +129,7 @@ namespace SysDVR.Client
 #if DEBUG
 				Console.WriteLine("SysDVR Client entrypoint");
 #endif
-				if (Instance is null && LegacyInstance is null)
+				if (Instance is null)
 				{
 					DynamicLibraryLoader.Initialize();
 
@@ -168,13 +168,12 @@ namespace SysDVR.Client
 						Platform.Specific.Win.AntiInject.Initialize();
 
 					if (cli.LegacyPlayer)
-						LegacyInstance = new LegacyPlayer(cli);
+						Instance = new LegacyPlayer(cli);
 					else
-					{
 						Instance = new ClientApp(cli);
-						Instance.Initialize();
-					}
-				}
+
+                    Instance.Initialize();
+                }
 				else
 				{
 					// If we are here it means the app was suspended and resumed, this should only happen on android.
@@ -184,11 +183,8 @@ namespace SysDVR.Client
 					SdlCtx.SetNewThreadOwner();
 				}
 
-				if (LegacyInstance is not null)
-					LegacyInstance.EntryPoint();
-				else
-					Instance.EntryPoint();
-			}
+                Instance.Entrypoint();
+            }
 #if !DEBUG
             catch (Exception ex)
             {

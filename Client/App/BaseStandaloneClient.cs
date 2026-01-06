@@ -4,14 +4,23 @@ using System;
 using System.Linq;
 using System.Threading;
 
-namespace SysDVR.Client
+namespace SysDVR.Client.App
 {
-	internal abstract class BaseStandaloneClient
+	public interface IApplicationInstance 
 	{
+		void Initialize();
+		void Entrypoint();
+	}
+
+	internal abstract class BaseStandaloneClient : IApplicationInstance
+    {
 		internal readonly StringTable.LegacyPlayerTable Strings = Program.Strings.LegacyPlayer;
 		protected DvrUsbContext? usb;
 
-		protected DeviceInfo? FindUsbDevice(string? wantedSerial, int attempts)
+		abstract public void Initialize();
+		abstract public void Entrypoint();
+
+        protected DeviceInfo? FindUsbDevice(string? wantedSerial, int attempts)
 		{
 			usb ??= new DvrUsbContext(Program.Options.UsbLogging);
 

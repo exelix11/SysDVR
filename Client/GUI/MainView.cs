@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
@@ -13,6 +14,10 @@ namespace SysDVR.Client.GUI
 
         readonly string Heading;
         readonly string SecondLine;
+
+        readonly Image Logo;
+        readonly Image UsbIcon;
+        readonly Image WifiIcon;
 
         // Only shown when compiled as DEBUG
         readonly string DevelopmentBuild;
@@ -32,7 +37,7 @@ namespace SysDVR.Client.GUI
         int ModeButtonWidth;
         int ModeButtonHeight;
 
-        public MainView()
+        public MainView(ClientApp owner) : base(owner)
         {
             Popups.Add(initErrorPopup);
 
@@ -45,6 +50,10 @@ namespace SysDVR.Client.GUI
 			initError = Program.GetInitializationError();
 			if (!string.IsNullOrWhiteSpace(initError))
                 Popups.Open(initErrorPopup);
+
+            Logo = Image.FromFile(Owner, Resources.Logo);
+            UsbIcon = Image.FromFile(Owner, Resources.UsbIcon);
+            WifiIcon = Image.FromFile(Owner, Resources.WifiIcon);
         }
 
 		public override void EnterForeground()
@@ -65,7 +74,7 @@ namespace SysDVR.Client.GUI
             centerRadios.Reset();
             centerOptions.Reset();
 
-            uiScale = Program.Instance.UiScale;
+            uiScale = Owner.UiScale;
             ModeButtonWidth = (int)(350 * uiScale);
             ModeButtonHeight = (int)(200 * uiScale);
 
@@ -77,10 +86,10 @@ namespace SysDVR.Client.GUI
             if (!Gui.BeginWindow("Main"))
                 return;
 
-            Gui.CenterImage(Resources.Logo, 120);
-            Gui.H1();
+            Gui.CenterImage(Logo, 120);
+            H1();
             Gui.CenterText(Heading);
-			Gui.PopFont();
+			PopFont();
             Gui.CenterText(SecondLine);
 
             bool wifi = false, usb = false;
@@ -93,12 +102,12 @@ namespace SysDVR.Client.GUI
                 var center = w / 2 - ModeButtonWidth / 2;
 
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton(Resources.WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += 20 * uiScale + ModeButtonHeight;
 
                 ImGui.SetCursorPos(new(center, y));
-                usb = ModeButton(Resources.UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
@@ -106,18 +115,18 @@ namespace SysDVR.Client.GUI
             {
                 var center = w / 2 - (ModeButtonWidth + ModeButtonWidth + 20) / 2;
                 ImGui.SetCursorPos(new(center, y));
-                wifi = ModeButton(Resources.WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
+                wifi = ModeButton(WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
-                usb = ModeButton(Resources.UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
 
                 y += ModeButtonHeight;
             }
 
             if (usb)
-                Program.Instance.PushView(new UsbDevicesView(BuildOptions()));
+                Owner.PushView(new UsbDevicesView(Owner, BuildOptions()));
             else if (wifi)
-                Program.Instance.PushView(new NetworkScanView(BuildOptions()));
+                Owner.PushView(new NetworkScanView(Owner, BuildOptions()));
 
             ImGui.SetCursorPos(new(0, y + 30 * uiScale));
 
@@ -159,13 +168,13 @@ namespace SysDVR.Client.GUI
             {
                 ImGui.SameLine();
                 if (ImGui.Button(Strings.DriverInstallButton))
-                    Program.Instance.PushView(new Platform.Specific.Win.WinDirverInstallView());
+                    Owner.PushView(new Platform.Specific.Win.WinDirverInstallView(Owner));
             }
 
 			ImGui.SameLine();
             if (ImGui.Button(Strings.SettingsButton))
             {
-                Program.Instance.PushView(new OptionsView());
+                Owner.PushView(new OptionsView(Owner));
             }
 
             centerOptions.EndHere();
@@ -214,9 +223,9 @@ namespace SysDVR.Client.GUI
             // TITLE TITLE
             //   <image> 
 
-            Gui.H2();
+            H2();
             var titleLen = ImGui.CalcTextSize(title);
-			Gui.PopFont();
+			PopFont();
 
             Vector2 imageFrame = new(
                 width - InnerPadding * 2,
@@ -252,9 +261,9 @@ namespace SysDVR.Client.GUI
 
             // Title
             ImGui.SetCursorPos(new(x + width / 2 - titleLen.X / 2, y));
-            Gui.H2();
+            H2();
             ImGui.Text(title);
-			Gui.PopFont();
+			PopFont();
 
             y += InnerPadding + titleLen.Y;
 

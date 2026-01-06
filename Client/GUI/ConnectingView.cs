@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.Sources;
 using SysDVR.Client.Targets.Player;
@@ -21,7 +22,7 @@ namespace SysDVR.Client.GUI
         bool isError;
         string? errorLine;
 
-        public ConnectingView(DeviceInfo info, StreamingOptions opt)
+        public ConnectingView(ClientApp owner, DeviceInfo info, StreamingOptions opt) : base(owner)
         {
             this.info = info;
          
@@ -33,7 +34,7 @@ namespace SysDVR.Client.GUI
         {
             errorLine ??= "";
             errorLine += obj + "\n";
-            Program.Instance.KickRendering(true);
+            Owner.KickRendering(true);
         }
 
         public override void BackPressed()
@@ -72,11 +73,11 @@ namespace SysDVR.Client.GUI
             }
 
             // This must execute on the main thread
-            Program.Instance.PostAction(() =>
+            Owner.PostAction(() =>
             {
                 try
                 {
-                    Program.Instance.ReplaceView(new PlayerView((PlayerManager)manager));
+                    Owner.ReplaceView(new PlayerView(Owner, (PlayerManager)manager));
                     connected = true;
                 }
                 catch (Exception e)
@@ -107,12 +108,12 @@ namespace SysDVR.Client.GUI
 
             ImGui.NewLine();
 
-            Gui.H2();
+            H2();
 
             var title = isError ? Strings.Error : Strings.Title;
 			Gui.CenterText(title);
 			
-            Gui.PopFont();
+            PopFont();
 
             Gui.CenterText(info.ToString());
             

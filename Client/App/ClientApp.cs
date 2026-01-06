@@ -1,4 +1,4 @@
-﻿namespace SysDVR.Client;
+﻿namespace SysDVR.Client.App;
 
 using ImGuiNET;
 using SDL2;
@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-public class ClientApp
+public class ClientApp : IApplicationInstance
 {
     public static string Version;
 
@@ -207,7 +207,7 @@ public class ClientApp
         ImGui.GetIO().NativePtr->IniFilename = null;
     }
 
-    internal void Initialize() 
+    public void Initialize() 
     {
         if (Program.Options.Debug.Log)
 		    Console.WriteLine("Initializing app");
@@ -277,17 +277,17 @@ public class ClientApp
     {
         // If no streaming has been requested boot into the main menu
         if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.None)
-            HandlePushView(new MainView());
+            HandlePushView(new MainView(this));
         // If mode = network and no IP specified, connect to the first available console
         else if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.Network && string.IsNullOrWhiteSpace(CommandLine.NetStreamHostname))
-			HandlePushView(new NetworkScanView(Program.Options.Streaming, CommandLine.ConsoleSerial ?? "")); // ConsoleSerial is null when non specified, make it "" so the network view takes it as a 'cnnect to anything command'
+			HandlePushView(new NetworkScanView(this, Program.Options.Streaming, CommandLine.ConsoleSerial ?? "")); // ConsoleSerial is null when non specified, make it "" so the network view takes it as a 'cnnect to anything command'
         // If mode = network and IP specified, connect directly to that
 		else if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.Network)
-			HandlePushView(new ConnectingView(DeviceInfo.ForIp(CommandLine.NetStreamHostname), Program.Options.Streaming));
+			HandlePushView(new ConnectingView(this, DeviceInfo.ForIp(CommandLine.NetStreamHostname), Program.Options.Streaming));
 		else if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.Usb)
-            HandlePushView(new UsbDevicesView(Program.Options.Streaming, CommandLine.ConsoleSerial ?? ""));
+            HandlePushView(new UsbDevicesView(this, Program.Options.Streaming, CommandLine.ConsoleSerial ?? ""));
 		else if (CommandLine.StreamingMode == CommandLineOptions.StreamMode.Stub)
-			HandlePushView(new ConnectingView(DeviceInfo.Stub(), Program.Options.Streaming));
+			HandlePushView(new ConnectingView(this, DeviceInfo.Stub(), Program.Options.Streaming));
 		else 
         {
             Debugger.Break();
@@ -305,7 +305,7 @@ public class ClientApp
             ImGui.GetIO().ConfigFlags &= ~ImGuiConfigFlags.NavEnableGamepad;
     }
 
-    internal void EntryPoint()
+    public void Entrypoint()
     {
         sdlCtx.CreateWindow(CommandLine.WindowTitle);
 

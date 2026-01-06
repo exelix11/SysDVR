@@ -295,8 +295,7 @@ namespace SysDVR.Client.Targets.Player
                     else
                     {
                         success = true;
-                        // Tell the UI thread to start rendering again
-                        Program.Instance?.KickRendering(false);
+                        //Program.Instance.KickRendering(true);
                         break;
                     }
                 }

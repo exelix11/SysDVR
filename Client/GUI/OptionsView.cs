@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.Platform;
 using SysDVR.Client.Targets.Player;
@@ -191,8 +192,8 @@ namespace SysDVR.Client.GUI
 				DecoderButtonText = Strings.DecoderChangeButton;
 		}
 
-		public OptionsView()
-		{
+		public OptionsView(ClientApp owner) : base(owner)
+        {
 			Popups.Add(PathInput.Popup);
 			Popups.Add(ErrorPopup);
 			Popups.Add(PickDecoderPopup);
@@ -229,7 +230,7 @@ namespace SysDVR.Client.GUI
 
 			SaveCenter.StartHere();
 			if (ImGui.Button(GeneralStrings.BackButton))
-				Program.Instance.PopView();
+				Owner.PopView();
 
 			ImGui.SameLine();
 			if (ImGui.Button(Strings.SaveButton))
@@ -289,7 +290,7 @@ namespace SysDVR.Client.GUI
 				ImGui.SliderInt("##SliderAudioVolume", ref Program.Options.DefaultVolume, 0, 100, "%d %%");
 
 				if (ImGui.Checkbox(Strings.ControllerInput, ref Program.Options.ControllerInput))
-					Program.Instance.ApplyImguiSettings();
+					Owner.ApplyImguiSettings();
 
                 ImGui.Unindent();
 				ImGui.NewLine();
@@ -334,7 +335,7 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox(Strings.AnalyzeNALs, ref Program.Options.Debug.Nal);
 				
 				if (ImGui.Checkbox(Strings.LogSDLEvents, ref Program.Options.Debug.SDLEvents))
-                    Program.Instance.ApplyImguiSettings();
+                    Owner.ApplyImguiSettings();
 
 				ImGui.NewLine();
                 ImGui.Text(Strings.GuiScale); 

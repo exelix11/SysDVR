@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using SDL2;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using System;
@@ -10,10 +11,11 @@ using System.Numerics;
 
 namespace SysDVR.Client.GUI
 {
-    public abstract class View
+    public abstract class View(ClientApp Owner)
     {
         public FramerateCapOptions RenderMode = FramerateCapOptions.Adaptive();
-        protected readonly Gui.PopupManager Popups = new();
+        protected readonly ClientApp Owner = Owner;
+        protected readonly Gui.PopupManager Popups = new(Owner);
         internal readonly StringTable.GeneralTable GeneralStrings = Program.Strings.General;
 
         public abstract void Draw();
@@ -32,7 +34,7 @@ namespace SysDVR.Client.GUI
             if (Popups.HandleBackButton())
                 return;
 
-            Program.Instance.PopView();
+            Owner.PopView();
         }
 
         public virtual void Created() { }
@@ -44,7 +46,29 @@ namespace SysDVR.Client.GUI
 
         protected void SignalEvent() 
         {
-            Program.Instance.KickRendering(false);
+            Owner.KickRendering(false);
+        }
+
+        // Imgui does not yet have an API to push the font scale as a style var
+        // Also we can't make multiple size atlas or we risk running out of font space in SDL
+        // so this is the best we can do for multiple font sizes
+        // https://github.com/ocornut/imgui/issues/1018
+        public unsafe void H1()
+        {
+            Owner.FontText.NativePtr->Scale *= ClientApp.FontH1Scale;
+            ImGui.PushFont(Owner.FontText);
+        }
+
+        public unsafe void H2()
+        {
+            Owner.FontText.NativePtr->Scale *= ClientApp.FontH2Scale;
+            ImGui.PushFont(Owner.FontText);
+        }
+
+        public unsafe void PopFont()
+        {
+            Owner.FontText.NativePtr->Scale = 1;
+            ImGui.PopFont();
         }
     }
 
@@ -93,24 +117,31 @@ namespace SysDVR.Client.GUI
             }
         }
 
-        public class PopupManager : IEnumerable<Popup>
+        public class PopupManager(ClientApp Owner) : IEnumerable<Popup>
         {
-            readonly List<Popup> popups = new();
+            readonly List<Popup> Popups = new();
+            readonly ClientApp Owner = Owner;
 
-            public bool AnyOpen => popups.Any(x => x.IsOpen);
+            public bool AnyOpen => Popups.Any(x => x.IsOpen);
 
-            public void Add(Popup popup) =>
-                popups.Add(popup);
+            public void Add(Popup popup)
+            {
+                if (popup.Owner is not null)
+                    throw new Exception("Popup already registered to another manager");
+
+                popup.Owner = Owner;
+                Popups.Add(popup);
+            }
 
             public bool HandleBackButton()
             {
-                return popups.Any(x => x.HandleBackButton());
+                return Popups.Any(x => x.HandleBackButton());
             }
 
             public bool CloseAll() 
             {
                 bool any = false;
-                foreach (var popup in popups)
+                foreach (var popup in Popups)
                 {
                     if (popup.IsOpen)
                     {
@@ -124,7 +155,7 @@ namespace SysDVR.Client.GUI
             public void Open(Popup toOpen)
             {
                 bool opened = false;
-                foreach (var popup in popups)
+                foreach (var popup in Popups)
                 {
                     if (popup == toOpen)
                     {
@@ -141,12 +172,14 @@ namespace SysDVR.Client.GUI
                     throw new Exception("Unregistered popup");
             }
 
-            public IEnumerator<Popup> GetEnumerator() => popups.GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => popups.GetEnumerator();
+            public IEnumerator<Popup> GetEnumerator() => Popups.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Popups.GetEnumerator();
         }
 
         public class Popup 
         {
+            internal ClientApp? Owner;
+
             public readonly string Name;
             public bool IsOpen { get; private set; }
 
@@ -187,10 +220,13 @@ namespace SysDVR.Client.GUI
                 if (!IsOpen)
                     return false;
 
+                if (Owner is null)
+                    throw new Exception("Popup not registered to a PopupManager");
+
                 ImGuiWindowFlags flags = ImGuiWindowFlags.NoMove;
                 if (size == Vector2.Zero)
                 {
-                    if (Program.Instance.IsPortrait)
+                    if (Owner.IsPortrait)
                         size.X = ImGui.GetIO().DisplaySize.X;
                     else
                         size.X = ImGui.GetIO().DisplaySize.X * 0.75f;
@@ -289,28 +325,6 @@ namespace SysDVR.Client.GUI
             // If the layout is already too low do nothing to avoid overlapping components
             if (cur < y)
                 ImGui.SetCursorPosY(y);
-        }
-
-        // Imgui does not yet have an API to push the font scale as a style var
-        // Also we can't make multiple size atlas or we risk running out of font space in SDL
-        // so this is the best we can do for multiple font sizes
-		// https://github.com/ocornut/imgui/issues/1018
-		public unsafe static void H1() 
-        {
-            Program.Instance.FontText.NativePtr->Scale *= ClientApp.FontH1Scale;
-			ImGui.PushFont(Program.Instance.FontText);
-        }
-
-        public unsafe static void H2()
-        {
-			Program.Instance.FontText.NativePtr->Scale *= ClientApp.FontH2Scale;
-			ImGui.PushFont(Program.Instance.FontText);
-		}
-
-        public unsafe static void PopFont() 
-        {
-			Program.Instance.FontText.NativePtr->Scale = 1;
-			ImGui.PopFont();
         }
     }
 }

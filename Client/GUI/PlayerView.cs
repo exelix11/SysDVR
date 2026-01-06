@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using SysDVR.Client.Platform;
@@ -273,7 +274,7 @@ namespace SysDVR.Client.GUI
                 MessageUi(dec);
         }
 
-        public PlayerView(PlayerManager manager)
+        public PlayerView(ClientApp owner, PlayerManager manager) : base(owner)
         {
             // Adaptive rendering causes a lot of stuttering, for now avoid it in the video player
             RenderMode =
@@ -337,9 +338,9 @@ namespace SysDVR.Client.GUI
                 // When there is no video, show the cursor.
                 shouldHideCursor = false;
 
-                Gui.H2();
+                H2();
                 Gui.CenterText(Strings.AudioOnlyMode);
-                Gui.PopFont();
+                PopFont();
             }
 
             for (int i = 0; i < notifications.Count; i++)
@@ -376,7 +377,7 @@ namespace SysDVR.Client.GUI
 
                 ImGui.TextWrapped(fatalMessage);
                 if (Gui.CenterButton(GeneralStrings.PopupCloseButton))
-                    Program.Instance.PopView();
+                    Owner.PopView();
 
                 Gui.MakeWindowScrollable();
                 ImGui.EndPopup();
@@ -449,7 +450,7 @@ namespace SysDVR.Client.GUI
         {
             float OverlayY = ImGui.GetWindowSize().Y;
 
-            if (Program.Instance.IsPortrait)
+            if (Owner.IsPortrait)
             {
                 OverlayY = OverlayY * 6 / 10;
                 ImGui.SetCursorPosY(OverlayY + ImGui.GetStyle().WindowPadding.Y);
@@ -538,7 +539,7 @@ namespace SysDVR.Client.GUI
             if (ImGui.Button(GeneralStrings.YesButton, new(w, 0)))
             {
                 quitConfirm.RequestClose();
-                Program.Instance.PopView();
+                Owner.PopView();
             }
 
             ImGui.SameLine();
@@ -577,7 +578,7 @@ namespace SysDVR.Client.GUI
                 {
                     var clip = Program.Options.Windows_ScreenToClip;
                     // shift inverts the clipboard flag
-                    if (Program.Instance.ShiftDown)
+                    if (Owner.ShiftDown)
                         clip = !clip;
 
                     if (clip)
@@ -638,7 +639,7 @@ namespace SysDVR.Client.GUI
 
         void ButtonStats()
         {
-            Program.Instance.ShowDebugInfo = !Program.Instance.ShowDebugInfo;
+            Owner.ShowDebugInfo = !Owner.ShowDebugInfo;
         }
 
         void ButtonQuit()
