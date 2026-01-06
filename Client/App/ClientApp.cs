@@ -23,7 +23,7 @@ public class ClientApp : IApplicationInstance
 	public ClientApp(CommandLineOptions args)
     {
         CommandLine = args;
-        ShowDebugInfo = Program.Options.Debug.Log;
+        ShowDebugInfo = Program.Options.Debug.GuiDebug;
 	}
 
 	// Fonts are loaded at double the resolution to reduce blurriness when scaling on high DPI
@@ -209,8 +209,7 @@ public class ClientApp : IApplicationInstance
 
     public void Initialize() 
     {
-        if (Program.Options.Debug.Log)
-		    Console.WriteLine("Initializing app");
+        Program.DebugLog("Initializing app");
 
 		ImGui.CreateContext();
 
@@ -303,6 +302,8 @@ public class ClientApp : IApplicationInstance
             ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
         else
             ImGui.GetIO().ConfigFlags &= ~ImGuiConfigFlags.NavEnableGamepad;
+
+        ShowDebugInfo = Program.Options.Debug.GuiDebug;
     }
 
     public void Entrypoint()

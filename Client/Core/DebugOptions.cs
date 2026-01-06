@@ -13,6 +13,9 @@ namespace SysDVR.Client.Core
         // Verbose logging
         public bool Log;
 
+        // SDL/Imgui debug window + framerate
+        public bool GuiDebug;
+
         // Decode the content of keyframes and measure delay
         public bool Keyframe;
        

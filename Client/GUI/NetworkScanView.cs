@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using SysDVR.Client.App;
 using SysDVR.Client.Core;
+using SysDVR.Client.Platform;
 using SysDVR.Client.Sources;
 using System;
 using System.Collections.Generic;
@@ -47,6 +48,13 @@ namespace SysDVR.Client.GUI
                 else
 					autoConnectGuiText = string.Format(Program.Strings.Connection.AutoConnectWithSerial, autoConnect);
 			}
+
+            if (!string.IsNullOrWhiteSpace(Program.Options.LastNetworkModeIP))
+            {
+                var data = Encoding.UTF8.GetBytes(Program.Options.LastNetworkModeIP);
+                if (data.Length < IpAddressTextBuf.Length - 1)
+                    data.AsSpan().CopyTo(IpAddressTextBuf);
+            }
         }
 
         private void OnDeviceFound(DeviceInfo info)
@@ -190,20 +198,40 @@ namespace SysDVR.Client.GUI
             Gui.EndWindow();
         }
 
+        void SaveIpPreference(string ipAddress)
+        {
+            if (Program.Options.LastNetworkModeIP != ipAddress)
+            {
+                Program.Options.LastNetworkModeIP = ipAddress;
+
+                try
+                {
+                    SystemUtil.StoreSettingsString(Program.Options.SerializeToJson());
+                }
+                catch (Exception e)
+                {
+                    Program.DebugLog("Failed to store settings: " + e);
+                }
+            }
+        }
+
         void DrawIpEnterPopup() 
         {
             if (ipEnterPopup.Begin())
             {
                 ImGui.TextWrapped(Strings.ConnectByIPLabel);
+
                 popupTbCenter.StartHere();
                 ImGui.InputText("##ip", IpAddressTextBuf, (uint)IpAddressTextBuf.Length);
                 popupTbCenter.EndHere();
+
                 ImGui.Spacing();
                 popupBtnCenter.StartHere();
                 if (ImGui.Button(Strings.ConnectByIPButton))
                 {
                     ipEnterPopup.RequestClose();
                     var ip = Encoding.UTF8.GetString(IpAddressTextBuf, 0, Array.IndexOf<byte>(IpAddressTextBuf, 0));
+                    SaveIpPreference(ip);
                     ConnectToDevice(DeviceInfo.ForIp(ip));
                 }
 

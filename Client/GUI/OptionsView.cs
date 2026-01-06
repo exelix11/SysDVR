@@ -324,7 +324,11 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox(Strings.ForceSDLSoftwareRenderer, ref Program.Options.ForceSoftwareRenderer);
 				ImGui.Checkbox(Strings.PrintRealtimeLogs, ref Program.Options.Debug.Stats);
 				ImGui.Checkbox(Strings.VerboseDebugging, ref Program.Options.Debug.Log);
-				ImGui.Checkbox(Strings.DisableSynchronization, ref Program.Options.Debug.NoSync);
+				
+				if (ImGui.Checkbox(Strings.GUIDebugging, ref Program.Options.Debug.GuiDebug))
+                    Owner.ApplyImguiSettings();
+
+                ImGui.Checkbox(Strings.DisableSynchronization, ref Program.Options.Debug.NoSync);
 				ImGui.NewLine();
 
 				ImGui.Checkbox(Strings.DisableBacklight, ref Program.Options.Streaming.TurnOffConsoleScreen);

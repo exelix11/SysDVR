@@ -65,6 +65,7 @@ namespace SysDVR.Client
 		record DebugOptionArg(string Name, string Description, Action<DebugOptions> Handle);
 		readonly static DebugOptionArg[] DebugOptions = new DebugOptionArg[] {
 			new ("log", "Enable verbose logging, auto enabled when a debugger is connected", x => x.Log = true),
+			new ("fps", "Show framerate and other GUI debug information", x => x.GuiDebug = true),
 			new ("stats", "Print received packets info in real time", x => x.Stats = true),
 			new ("keyframe", "Decode NALs and print IDR frames", x => x.Keyframe = true),
 			new ("nal", "Decode all NALs and print the type", x => x.Nal = true),

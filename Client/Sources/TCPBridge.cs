@@ -276,8 +276,7 @@ namespace SysDVR.Client.Sources
 				int counter = 0;
 				var magicBypte = (byte)(PacketHeader.MagicResponse & 0xFF);
 
-				if (Program.Options.Debug.Log)
-					Console.WriteLine($"TCP {StreamName} performing resync...");
+				Program.DebugLog($"TCP {StreamName} performing resync...");
 
 				while (!cancel.IsCancellationRequested)
 				{

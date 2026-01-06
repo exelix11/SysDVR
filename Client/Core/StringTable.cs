@@ -206,6 +206,7 @@ namespace SysDVR.Client.Core
 			public string ForceSDLSoftwareRenderer = "Force SDL software rendering";
 			public string PrintRealtimeLogs = "Print real-time streaming information";
 			public string VerboseDebugging = "Enable verbose logging";
+			public string GUIDebugging = "Show framerate and other GUI debugging info";
 			public string DisableSynchronization = "Disable Audio/Video synchronization";
 			
 			public string DisableBacklight = "Turn off the console screen backlight during streaming";

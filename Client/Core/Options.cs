@@ -66,6 +66,8 @@ namespace SysDVR.Client.Core
 
         public bool ControllerInput = true;
 
+        public string LastNetworkModeIP = "";
+
 		public string ScaleHintForSDL => RendererScale switch
         {
             SDLScaleMode.Linear => "linear",
