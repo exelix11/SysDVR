@@ -11,6 +11,8 @@ namespace SysDVR.Client.Targets.FileOutput
 {
     class LoggingTarget
     {
+        readonly object syncLock = new object();
+
         readonly BinaryWriter bin;
         readonly MemoryStream mem = new MemoryStream();
         readonly string filename;
@@ -19,7 +21,6 @@ namespace SysDVR.Client.Targets.FileOutput
         readonly public OutStream AudioTarget;
 
         bool Written = false;
-        readonly object lockObj = new object();
 
         public LoggingTarget(string filename)
         {
@@ -32,7 +33,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
         public void FlushToDisk()
         {
-            lock (lockObj)
+            lock (syncLock)
             {
                 if (Written) return;
                 Written = true;
@@ -44,7 +45,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
         protected void AddBuffer(StreamKind kind, PoolBuffer data, ulong ts)
         {
-            lock (this)
+            lock (syncLock)
             {
                 sw.Stop();
                 var elapsed = sw.ElapsedMilliseconds;

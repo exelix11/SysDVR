@@ -3,24 +3,18 @@ using SysDVR.Client.Core;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using static FFmpeg.AutoGen.ffmpeg;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
     class StreamsSyncObject
     {
-        object sync = new();
         long firstTs = -1;
 
-        public long GetOrSetFirstTimestamp(ulong ts)
+        public long GetOrSetFirstTimestamp(long ts)
         {
-            lock (sync)
-            {
-                if (firstTs == -1)
-                {
-                    firstTs = (long)ts;
-                }
-            }
+            Interlocked.CompareExchange(ref firstTs, ts, -1);
             return firstTs;
         }
     }
@@ -32,7 +26,8 @@ namespace SysDVR.Client.Targets.FileOutput
 
     unsafe class Mp4AudioTarget : OutStream, IFileOutputCodecInfo
     {
-        StreamsSyncObject Sync;
+        readonly object syncLock = new();
+        StreamsSyncObject crossTargetLock;
 
         AVFormatContext* outCtx;
         AVCodecContext* codecCtx;
@@ -49,7 +44,7 @@ namespace SysDVR.Client.Targets.FileOutput
             if (!running)
                 return;
 
-            lock (this)
+            lock (syncLock)
             {
                 running = false;
                 // Flush the encoder
@@ -61,7 +56,7 @@ namespace SysDVR.Client.Targets.FileOutput
         public void OpenEncoder(AVFormatContext* ctx, StreamsSyncObject sync, int id)
         {
             outCtx = ctx;
-            Sync = sync;
+            crossTargetLock = sync;
             channelId = id;
 
             // Audio is raw samples and needs re-encoding, use an encoder and then copy the output parameters
@@ -118,10 +113,10 @@ namespace SysDVR.Client.Targets.FileOutput
 
             double diffTs = 0;
 
-            lock (this)
+            lock (syncLock)
             {
                 if (firstTs == -1)
-                    firstTs = Sync.GetOrSetFirstTimestamp(ts);
+                    firstTs = crossTargetLock.GetOrSetFirstTimestamp((long)ts);
 
                 while (source.Length > 0 && running)
                 {
@@ -182,7 +177,7 @@ namespace SysDVR.Client.Targets.FileOutput
             while (avcodec_receive_packet(codecCtx, packet) == 0)
             {
                 packet->stream_index = channelId;
-                lock (Sync)
+                lock (crossTargetLock)
                     av_interleaved_write_frame(outCtx, packet).AssertNotNeg();
                 av_packet_unref(packet);
             }
@@ -227,15 +222,17 @@ namespace SysDVR.Client.Targets.FileOutput
 
     unsafe class Mp4VideoTarget : OutStream, IFileOutputCodecInfo
     {
+        readonly object syncLock = new();
+
         AVFormatContext* outCtx;
-        StreamsSyncObject Sync;
+        StreamsSyncObject crossTargetLock;
 
         int timebase_den;
-
         bool running = true;
+
         public void Stop()
         {
-            lock (this)
+            lock (syncLock)
             {
                 running = false;
                 outCtx = null;
@@ -248,7 +245,7 @@ namespace SysDVR.Client.Targets.FileOutput
                 throw new ArgumentException("The video stream should be the first stream in the file");
 
             outCtx = ctx;
-            Sync = sync;
+            crossTargetLock = sync;
 
             // We copy the intput h264 as-is to the output, this means we don't need to allocate an encoder. Manually populate the stream codec parameters
             var stream = outCtx->streams[id];
@@ -277,7 +274,7 @@ namespace SysDVR.Client.Targets.FileOutput
             if (!running)
                 return;
 
-            lock (this)
+            lock (syncLock)
             {
                 // Must add SPS and PPS to the first frame manually to keep ffmpeg happy
                 if (firstTs == -1)
@@ -289,7 +286,7 @@ namespace SysDVR.Client.Targets.FileOutput
 
                     data = next;
 
-                    firstTs = Sync.GetOrSetFirstTimestamp(ts);
+                    firstTs = crossTargetLock.GetOrSetFirstTimestamp((long)ts);
                 }
 
                 fixed (byte* nal_data = data)
@@ -301,7 +298,7 @@ namespace SysDVR.Client.Targets.FileOutput
                     pkt->dts = pkt->pts = ((long)ts - firstTs) * timebase_den / (long)1E+6;
                     pkt->stream_index = 0;
 
-                    lock (Sync)
+                    lock (crossTargetLock)
                         av_interleaved_write_frame(outCtx, pkt).AssertNotNeg();
 
                     av_packet_free(&pkt);

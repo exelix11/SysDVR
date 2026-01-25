@@ -19,7 +19,9 @@ namespace SysDVR.Client.GUI
         readonly NetworkScan scanner = new();
         readonly List<DeviceInfo> devices = new List<DeviceInfo>();
         readonly byte[] IpAddressTextBuf = new byte[256];
-        
+
+        readonly object syncLock = new();
+
         string? autoConnect;
         string autoConnectGuiText;
 
@@ -59,7 +61,7 @@ namespace SysDVR.Client.GUI
 
         private void OnDeviceFound(DeviceInfo info)
         {
-            lock (this)
+            lock (syncLock)
             {
                 devices.Add(info);
             }
@@ -75,7 +77,7 @@ namespace SysDVR.Client.GUI
 
         private void OnFailure(string obj)
         {
-            lock (this)
+            lock (syncLock)
             {
                 lastError = obj;
             }
@@ -95,7 +97,7 @@ namespace SysDVR.Client.GUI
         {
             scanner.StopScannning();
 
-            lock (this)
+            lock (syncLock)
                 devices.Clear();
 
             base.LeaveForeground();
@@ -149,7 +151,7 @@ namespace SysDVR.Client.GUI
             sz.Y *= portrait ? .5f : .4f;
             sz.X *= portrait ? .92f : .82f;
             
-            lock (this)
+            lock (syncLock)
             {
                 ImGui.SetCursorPosX(win.X / 2 - sz.X / 2);
                 ImGui.BeginChildFrame(ImGui.GetID("##DevList"), sz, ImGuiWindowFlags.NavFlattened);

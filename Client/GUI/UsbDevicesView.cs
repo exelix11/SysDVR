@@ -11,7 +11,8 @@ namespace SysDVR.Client.GUI
 {
 	internal class UsbDevicesView : View
 	{
-		readonly StringTable.UsbPageTable Strings = Program.Strings.Usb;
+		readonly object syncLock = new();
+        readonly StringTable.UsbPageTable Strings = Program.Strings.Usb;
 
 		readonly StreamingOptions options;
 		readonly DvrUsbContext? context;
@@ -73,7 +74,7 @@ namespace SysDVR.Client.GUI
 
 		void StopAutoConnect()
 		{
-			lock (this)
+			lock (syncLock)
 			{
 				autoConnect = null;
 				autoConnectCancel?.Cancel();
@@ -103,7 +104,7 @@ namespace SysDVR.Client.GUI
 
 		void SearchDevices()
 		{
-			lock (this)
+			lock (syncLock)
 			{
 				if (context is null)
 					return;
