@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics.X86;
 
 using static FFmpeg.AutoGen.ffmpeg;
 using System.Numerics;
+using System.Diagnostics;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
@@ -31,8 +32,8 @@ namespace SysDVR.Client.Targets.FileOutput
     unsafe class Mp4AudioTarget : OutStream, IFileOutputCodecInfo
     {
         readonly object syncLock = new();
-        readonly bool UseAvx2;
-        readonly int FloatsInVector;
+        readonly bool UseSIMD;
+        readonly int SamplesInVector;
 
         StreamsSyncObject crossTargetLock;
 
@@ -48,14 +49,12 @@ namespace SysDVR.Client.Targets.FileOutput
 
         public Mp4AudioTarget() 
         {
-            UseAvx2 = Program.Options.UseSIMDAcceleration && Avx2.IsSupported && Vector256.IsHardwareAccelerated;
+            UseSIMD = Program.Options.UseSIMDAcceleration && Vector128.IsHardwareAccelerated;
 
-            if (UseAvx2)
+            if (UseSIMD)
             {
-                Program.DebugLog("Audio encoding is using AVX2");
-                FloatsInVector = Vector<float>.Count;
-                if (Vector<float>.Count != Vector<short>.Count * 2)
-                    throw new NotImplementedException();
+                Program.DebugLog("Audio encoding is using Vector256 acceleration");
+                SamplesInVector = Vector128<float>.Count;
             }
         }
 
@@ -121,6 +120,7 @@ namespace SysDVR.Client.Targets.FileOutput
         int frameFreeSpaceInSamples = 0;
         // We encode the output as floats, this is required by the AAC encoder
         const int EncodedSampleSize = sizeof(float);
+        readonly Stopwatch sw = new();
         private void SendData(Span<byte> __data, ulong ts)
         {
             if (!running)
@@ -168,10 +168,13 @@ namespace SysDVR.Client.Targets.FileOutput
                     int copySamples = Math.Min(source.Length / 2, targetLeft.Length);
 
                     // Manually resample from short to float
-                    if (UseAvx2)
-                        AudioConversionAVX2(source, copySamples, targetLeft, targetRight);
+                    sw.Restart();
+                    if (UseSIMD)
+                        AudioConversionSIMD(source, copySamples, targetLeft, targetRight);
                     else
                         AudioConversion(source, copySamples, targetLeft, targetRight);
+                    sw.Stop();
+                    Console.WriteLine(sw.Elapsed);
 
                     source = source.Slice(copySamples * 2);
 
@@ -184,47 +187,43 @@ namespace SysDVR.Client.Targets.FileOutput
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void AudioConversionAVX2(Span<short> source, int stereoSamplesToCopy, Span<float> left, Span<float> right)
+        void AudioConversionSIMD(Span<short> source, int stereoSamplesToCopy, Span<float> left, Span<float> right)
         {
-            // Each iteration reads 256 bits worth of data. This is 16 shorts, or 8 stereo samples
-            // Source is incremented by 16 shorts and left and right by 8 floats
-            const int StereoSamplesPerVector = 256 / 8 / sizeof(short) / 2; // 8
-
-            var VecConversion = Vector256.Create(-1f / short.MinValue);
-            while (stereoSamplesToCopy >= StereoSamplesPerVector)
+            // Each iteration reads StereoSamplesInVector * 2 samples. 
+            // Source is incremented by StereoSamplesInVector * 2 samples (mind the conversion to short)
+            // while left and right are incremented by StereoSamplesInVector since each is a channel
+            while (stereoSamplesToCopy >= SamplesInVector)
             {
-                var samples = Vector256.Create<short>(source);
+                var samples = Vector128.Create<short>(source);
+                var (intsLower, intsUpper) = Vector128.Widen(samples);
 
                 // Convert them to floats and scale to -1.0 to 1.0
-                var floatsLow = Avx2.ConvertToVector256Single(Avx2.ConvertToVector256Int32(samples.GetLower())) * VecConversion;
-                var floatsUpper = Avx2.ConvertToVector256Single(Avx2.ConvertToVector256Int32(samples.GetUpper())) * VecConversion;
+                var floatsLower = Vector128.ConvertToSingle(intsLower) * Vector128.Create(-1f / short.MinValue);
+                var floatsUpper = Vector128.ConvertToSingle(intsUpper) * Vector128.Create(-1f / short.MinValue);
 
                 // Convert from non-planar to planar
                 // We crrently have two lanes of:
                 //  L0 R0 L1 R1 | L2 R2 L3 R3
                 //  L4 R4 L5 R5 | L6 R6 L7 R7
 
-                // 10_00_10_00 picks the first and third element from each 128 bit lane
-                // This contains L0 L1 L4 L5 | L2 L3 L6 L7
-                var leftSide = Avx.Shuffle(floatsLow, floatsUpper, 0b10_00_10_00);
+                // Pick only the indicies we care about for each channel
+                var left1 = Vector128.Shuffle(floatsLower, Vector128.Create(0, 2, 0, 0)).AsUInt32();
+                var left2 = Vector128.Shuffle(floatsUpper, Vector128.Create(0, 0, 0, 2)).AsUInt32();
 
-                // This contains R0 R1 R4 R5 | R2 R3 R6 R7
-                var rightSide = Avx.Shuffle(floatsLow, floatsUpper, 0b11_01_11_01);
+                var right1 = Vector128.Shuffle(floatsLower, Vector128.Create(1, 3, 0, 0)).AsUInt32();
+                var right2 = Vector128.Shuffle(floatsUpper, Vector128.Create(0, 0, 1, 3)).AsUInt32();
 
-                // We want to swap the middle doubles of each 256 bit lane
-                //     L0 L1 L4 L5 | L2 L3 L6 L7
-                //           ^^^^^   ^^^^^
-                // At that point the samples are in the correct order for planar storage
-                leftSide = Avx2.Permute4x64(leftSide.AsDouble(), 0b11_01_10_00).AsSingle();
-                rightSide = Avx2.Permute4x64(rightSide.AsDouble(), 0b11_01_10_00).AsSingle();
+                // Then join them into a single vector via masking away the parts we don't want.
+                var leftSide = Vector128.ConditionalSelect(Vector128.Create(uint.MaxValue, uint.MaxValue, 0, 0), left1, left2).AsSingle();
+                var rightSide = Vector128.ConditionalSelect(Vector128.Create(uint.MaxValue, uint.MaxValue, 0, 0), right1, right2).AsSingle();
 
                 leftSide.CopyTo(left);
                 rightSide.CopyTo(right);
 
-                source = source.Slice(StereoSamplesPerVector * 2);
-                left = left.Slice(StereoSamplesPerVector);
-                right = right.Slice(StereoSamplesPerVector);
-                stereoSamplesToCopy -= StereoSamplesPerVector;
+                source = source.Slice(SamplesInVector * 2);
+                left = left.Slice(SamplesInVector);
+                right = right.Slice(SamplesInVector);
+                stereoSamplesToCopy -= SamplesInVector;
             }
 
             if (stereoSamplesToCopy != 0)
