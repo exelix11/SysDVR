@@ -231,7 +231,9 @@ namespace SysDVR.Client.Core
 			public string PathSelectDialog = "Select path";
 			
 			public string ControllerInput = "Enable joypad input for controlling the SysDVR GUI";
-		}
+            
+			public string UseSIMDAccel = "Use CPU SIMD instructions where available";
+        }
 
 		internal class PlayerTable
 		{

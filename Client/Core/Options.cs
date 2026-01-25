@@ -59,6 +59,7 @@ namespace SysDVR.Client.Core
 
 		// Debug settings
 		public DebugOptions Debug = new();
+        public bool UseSIMDAcceleration = true;
 
         public float GuiFontScale = 1;
 

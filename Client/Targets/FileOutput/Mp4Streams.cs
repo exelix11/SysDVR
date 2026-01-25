@@ -1,10 +1,14 @@
 ﻿using FFmpeg.AutoGen;
 using SysDVR.Client.Core;
 using System;
-using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
 using static FFmpeg.AutoGen.ffmpeg;
+using System.Numerics;
 
 namespace SysDVR.Client.Targets.FileOutput
 {
@@ -19,7 +23,7 @@ namespace SysDVR.Client.Targets.FileOutput
         }
     }
 
-    interface IFileOutputCodecInfo 
+    interface IFileOutputCodecInfo
     {
         unsafe void OpenEncoder(AVFormatContext* ctx, StreamsSyncObject sync, int id);
     }
@@ -27,18 +31,34 @@ namespace SysDVR.Client.Targets.FileOutput
     unsafe class Mp4AudioTarget : OutStream, IFileOutputCodecInfo
     {
         readonly object syncLock = new();
+        readonly bool UseAvx2;
+        readonly int FloatsInVector;
+
         StreamsSyncObject crossTargetLock;
 
         AVFormatContext* outCtx;
         AVCodecContext* codecCtx;
-
         AVFrame* frame;
         AVPacket* packet;
 
         int channelId;
         int timebase_den;
 
-        bool running = false;
+        bool running;
+
+        public Mp4AudioTarget() 
+        {
+            UseAvx2 = Program.Options.UseSIMDAcceleration && Avx2.IsSupported && Vector256.IsHardwareAccelerated;
+
+            if (UseAvx2)
+            {
+                Program.DebugLog("Audio encoding is using AVX2");
+                FloatsInVector = Vector<float>.Count;
+                if (Vector<float>.Count != Vector<short>.Count * 2)
+                    throw new NotImplementedException();
+            }
+        }
+
         public void Stop()
         {
             if (!running)
@@ -62,13 +82,13 @@ namespace SysDVR.Client.Targets.FileOutput
             // Audio is raw samples and needs re-encoding, use an encoder and then copy the output parameters
 
             var encoder = avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC);
-            if (encoder == null) 
+            if (encoder == null)
                 throw new Exception("Couldn't find AAC encoder");
 
             codecCtx = avcodec_alloc_context3(encoder);
-            if (codecCtx == null) 
+            if (codecCtx == null)
                 throw new Exception("Couldn't allocate AAC encoder");
-            
+
             timebase_den = StreamInfo.AudioSampleRate;
 
             codecCtx->sample_rate = StreamInfo.AudioSampleRate;
@@ -99,7 +119,7 @@ namespace SysDVR.Client.Targets.FileOutput
         long firstTs = -1;
         // need to fill the encoder frame before sending it, it can also happen across SendData calls
         int frameFreeSpaceInSamples = 0;
-        // We encode the output as floats
+        // We encode the output as floats, this is required by the AAC encoder
         const int EncodedSampleSize = sizeof(float);
         private void SendData(Span<byte> __data, ulong ts)
         {
@@ -145,24 +165,81 @@ namespace SysDVR.Client.Targets.FileOutput
                     var targetRight = new Span<float>(frame->data[1] + frame->linesize[0] - frameFreeSpaceInSamples * EncodedSampleSize, frameFreeSpaceInSamples);
 
                     // Source is non planar but target is, we will be consuming double the samples from source
-                    int copySamples = Math.Min(source.Length * 2, targetLeft.Length);
+                    int copySamples = Math.Min(source.Length / 2, targetLeft.Length);
 
                     // Manually resample from short to float
-                    for (int i = 0; i < copySamples; i++)
-                    {
-                        var sampleL = (float)source[i * 2] / -(float)short.MinValue;
-                        var sampleR = (float)source[i * 2 + 1] / -(float)short.MinValue;
-                        targetLeft[i] = sampleL;
-                        targetRight[i] = sampleR;
-                    }
+                    if (UseAvx2)
+                        AudioConversionAVX2(source, copySamples, targetLeft, targetRight);
+                    else
+                        AudioConversion(source, copySamples, targetLeft, targetRight);
 
-					source = source.Slice(copySamples * 2);
-                    
+                    source = source.Slice(copySamples * 2);
+
                     frameFreeSpaceInSamples -= copySamples;
 
                     if (frameFreeSpaceInSamples == 0)
                         SendFrame(frame);
                 }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void AudioConversionAVX2(Span<short> source, int stereoSamplesToCopy, Span<float> left, Span<float> right)
+        {
+            // Each iteration reads 256 bits worth of data. This is 16 shorts, or 8 stereo samples
+            // Source is incremented by 16 shorts and left and right by 8 floats
+            const int StereoSamplesPerVector = 256 / 8 / sizeof(short) / 2; // 8
+
+            var VecConversion = Vector256.Create(-1f / short.MinValue);
+            while (stereoSamplesToCopy >= StereoSamplesPerVector)
+            {
+                var samples = Vector256.Create<short>(source);
+
+                // Convert them to floats and scale to -1.0 to 1.0
+                var floatsLow = Avx2.ConvertToVector256Single(Avx2.ConvertToVector256Int32(samples.GetLower())) * VecConversion;
+                var floatsUpper = Avx2.ConvertToVector256Single(Avx2.ConvertToVector256Int32(samples.GetUpper())) * VecConversion;
+
+                // Convert from non-planar to planar
+                // We crrently have two lanes of:
+                //  L0 R0 L1 R1 | L2 R2 L3 R3
+                //  L4 R4 L5 R5 | L6 R6 L7 R7
+
+                // 10_00_10_00 picks the first and third element from each 128 bit lane
+                // This contains L0 L1 L4 L5 | L2 L3 L6 L7
+                var leftSide = Avx.Shuffle(floatsLow, floatsUpper, 0b10_00_10_00);
+
+                // This contains R0 R1 R4 R5 | R2 R3 R6 R7
+                var rightSide = Avx.Shuffle(floatsLow, floatsUpper, 0b11_01_11_01);
+
+                // We want to swap the middle doubles of each 256 bit lane
+                //     L0 L1 L4 L5 | L2 L3 L6 L7
+                //           ^^^^^   ^^^^^
+                // At that point the samples are in the correct order for planar storage
+                leftSide = Avx2.Permute4x64(leftSide.AsDouble(), 0b11_01_10_00).AsSingle();
+                rightSide = Avx2.Permute4x64(rightSide.AsDouble(), 0b11_01_10_00).AsSingle();
+
+                leftSide.CopyTo(left);
+                rightSide.CopyTo(right);
+
+                source = source.Slice(StereoSamplesPerVector * 2);
+                left = left.Slice(StereoSamplesPerVector);
+                right = right.Slice(StereoSamplesPerVector);
+                stereoSamplesToCopy -= StereoSamplesPerVector;
+            }
+
+            if (stereoSamplesToCopy != 0)
+                AudioConversion(source, stereoSamplesToCopy, left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void AudioConversion(Span<short> source, int stereoSamplesToCopy, Span<float> left, Span<float> right)
+        {
+            for (int i = 0; i < stereoSamplesToCopy; i++)
+            {
+                var sampleL = (float)source[i * 2] / -(float)short.MinValue;
+                var sampleR = (float)source[i * 2 + 1] / -(float)short.MinValue;
+                left[i] = sampleL;
+                right[i] = sampleR;
             }
         }
 
@@ -183,11 +260,11 @@ namespace SysDVR.Client.Targets.FileOutput
             }
         }
 
-        void FreeNativeResource() 
+        void FreeNativeResource()
         {
             if (this.frame == null)
                 return;
-            
+
             AVFrame* frame = this.frame;
             av_frame_free(&frame);
             this.frame = null;

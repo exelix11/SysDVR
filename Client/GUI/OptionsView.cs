@@ -313,6 +313,8 @@ namespace SysDVR.Client.GUI
 				ImGui.Checkbox(Strings.CachePackets, ref Program.Options.Streaming.UseNALReplay);
 				ImGui.Checkbox(Strings.CachePacketsKeyframes, ref Program.Options.Streaming.UseNALReplayOnlyOnKeyframes);
 
+				ImGui.Checkbox(Strings.UseSIMDAccel, ref Program.Options.UseSIMDAcceleration);
+
 				ImGui.Unindent();
 				ImGui.NewLine();
 			}
