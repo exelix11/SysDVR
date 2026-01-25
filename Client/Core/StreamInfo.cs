@@ -20,7 +20,7 @@ namespace SysDVR.Client.Core
 
         public const int AudioChannels = 2;
         public const int AudioSampleRate = 48000;
-        public const int AudioSampleSize = 2;
+        public const int AudioSampleSize = sizeof(short);
 
         // Doesn't accoutn for batching, there may be more samples than this
         public const int MinAudioSamplesPerPayload = AudioPayloadSize / (AudioChannels * AudioSampleSize);

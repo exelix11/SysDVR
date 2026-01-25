@@ -8,8 +8,8 @@ namespace SysDVR.Client.Targets.FileOutput
 {
     unsafe class Mp4Output : IDisposable
     {
+        private string Filename;
         bool Running = false;
-        string Filename;
 
         AVFormatContext* OutCtx;
         AVStream* VStream, AStream;
@@ -34,66 +34,60 @@ namespace SysDVR.Client.Targets.FileOutput
             avformat_alloc_output_context2(&ctx, OutFmt, null, null).AssertNotNeg();
             OutCtx = ctx != null ? ctx : throw new Exception("Couldn't allocate output context");
 
+            StreamsSyncObject sync = new();
+
             if (VideoTarget is not null)
             {
                 VStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_H264));
                 if (VStream == null) throw new Exception("Couldn't allocate video stream");
-
-                VStream->codecpar->codec_id = AVCodecID.AV_CODEC_ID_H264;
-                VStream->codecpar->codec_type = AVMediaType.AVMEDIA_TYPE_VIDEO;
-                VStream->codecpar->width = StreamInfo.VideoWidth;
-                VStream->codecpar->height = StreamInfo.VideoHeight;
-                VStream->codecpar->format = (int)AVPixelFormat.AV_PIX_FMT_YUV420P;
-
-                /* 
-				 * TODO: This is needed for MKV files but doesn't seem to be quite right: 
-				 * ffmpeg shows several errors and seeking in mpv doesn't work. Adding this to mp4 files breaks video in the windows 10 video player.
-				*/
-                //var (ptr, sz) = LibavUtils.AllocateH264Extradata();;
-                //VStream->codecpar->extradata = (byte*)ptr.ToPointer();
-                //VStream->codecpar->extradata_size = sz;
+                
+                VideoTarget.OpenEncoder(OutCtx, sync, 0);
             }
 
             if (AudioTarget is not null)
             {
-                AStream = avformat_new_stream(OutCtx, avcodec_find_encoder(AVCodecID.AV_CODEC_ID_MP2));
+                AStream = avformat_new_stream(OutCtx, null);
                 if (AStream == null) throw new Exception("Couldn't allocate audio stream");
-
                 AStream->id = VideoTarget == null ? 0 : 1;
-                AStream->codecpar->codec_id = AVCodecID.AV_CODEC_ID_MP2;
-                AStream->codecpar->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
-                AStream->codecpar->sample_rate = StreamInfo.AudioSampleRate;
-                av_channel_layout_default(&AStream->codecpar->ch_layout, StreamInfo.AudioChannels);
-                AStream->codecpar->format = (int)AVSampleFormat.AV_SAMPLE_FMT_S16;
-                AStream->codecpar->frame_size = StreamInfo.MinAudioSamplesPerPayload;
-                AStream->codecpar->bit_rate = 128000;
+
+                AudioTarget.OpenEncoder(OutCtx, sync, AStream->id);
             }
 
             avio_open(&OutCtx->pb, Filename, AVIO_FLAG_WRITE).AssertZero();
             avformat_write_header(OutCtx, null).AssertZero();
 
-            StreamsSyncObject sync = new();
-            VideoTarget?.StartWithContext(OutCtx, sync);
-            AudioTarget?.StartWithContext(OutCtx, sync, AStream->id);
-
             Running = true;
+        }
+
+        void DisposeNativeResources()
+        {
+            if (OutCtx != null)
+            {
+                if (OutCtx->pb != null)
+                    avio_close(OutCtx->pb);
+                
+                avformat_free_context(OutCtx);
+                OutCtx = null;
+                AStream = null;
+                VStream = null;
+            }
         }
 
         public unsafe void Stop()
         {
-            AudioTarget?.Stop();
-            VideoTarget?.Stop();
+            if (Running)
+            {
+                AudioTarget?.Stop();
+                VideoTarget?.Stop();
 
-            Program.DebugLog("Finalizing recording file...");
+                Program.DebugLog("Finalizing recording file...");
+                av_write_trailer(OutCtx);
 
-            av_write_trailer(OutCtx);
-            avio_close(OutCtx->pb);
-            avformat_free_context(OutCtx);
-            OutCtx = null;
+                Running = false;
+                AudioTarget?.Dispose();
+            }
 
-            Running = false;
-
-            AudioTarget?.Dispose();
+            DisposeNativeResources();
         }
 
         private bool disposedValue;
@@ -101,8 +95,10 @@ namespace SysDVR.Client.Targets.FileOutput
         {
             if (!disposedValue)
             {
-                if (Running)
+                if (disposing)
                     Stop();
+                else
+                    DisposeNativeResources();
 
                 disposedValue = true;
             }
