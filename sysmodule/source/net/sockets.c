@@ -98,11 +98,7 @@ void SocketInit()
 	LOG("Initialied BSD with tmem size %x\n", TMEM_SIZE);
 	SocketReady = true;
 
-#if FAKEDVR
 	Result rc = nifmInitialize(NifmServiceType_User);
-#else
-	Result rc = nifmInitialize(NifmServiceType_Admin);
-#endif
 	if (R_FAILED(rc))
 		LOG("Failed to initialize nifm: %x\n", rc);
 	else
