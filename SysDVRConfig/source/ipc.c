@@ -3,26 +3,6 @@
 #include <malloc.h>
 #include "ipc.h"
 
-#ifndef memmem
-static void* memmem(const void* haystack, size_t haystacklen, const void* needle, size_t needlelen) {
-	const char* h = (const char*)haystack;
-	const char* n = (const char*)needle;
-	size_t i;
-
-	if (needlelen > haystacklen) {
-		return NULL;
-	}
-
-	for (i = 0; i <= haystacklen - needlelen; i++) {
-		if (h[i] == n[0] && memcmp(&h[i], n, needlelen) == 0) {
-			return (void*)&h[i];
-		}
-	}
-
-	return NULL;
-}
-#endif
-
 SYSDVR_VARIANT SysDvrDetectVariant(const char* exefsFilePath)
 {
 	FILE* file = fopen(exefsFilePath, "rb");
