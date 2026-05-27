@@ -13,17 +13,11 @@ extract_dmg() {
 	dmg_file="$1"
 	tmp_dir="$2"
 
-	if command -v dmg2img >/dev/null 2>&1; then
-		dmg2img -i "$dmg_file" -o "$tmp_dir/tmp.hfs"
-		7z x "$tmp_dir/tmp.hfs" -o"$tmp_dir"
-		rm -f "$tmp_dir/tmp.hfs"
-	else
-		mkdir -p "$tmp_dir/mnt"
-		# hdiutil is available on macOS and avoids an external dmg2img dependency.
-		hdiutil attach "$dmg_file" -mountpoint "$tmp_dir/mnt" -nobrowse -quiet
-		cp -R "$tmp_dir/mnt/." "$tmp_dir/"
-		hdiutil detach "$tmp_dir/mnt" -quiet
-	fi
+	mkdir -p "$tmp_dir/mnt"
+	hdiutil attach "$dmg_file" -mountpoint "$tmp_dir/mnt" -nobrowse -quiet
+	cp -R "$tmp_dir/mnt/." "$tmp_dir/"
+	hdiutil detach "$tmp_dir/mnt" -quiet
+	rm -rf "$tmp_dir/mnt"
 }
 
 create_icns_icon() {
@@ -124,12 +118,8 @@ if [ ! -e "macos-deps/SDL2_image.dylib" ]; then
 	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.6.3/SDL2_image-2.6.3.dmg -o SDL2_image.dmg
 	extract_dmg SDL2_image.dmg tmp
 	rm -f SDL2_image.dmg
-	if [ -e "tmp/SDL2_image/SDL2_image.framework/Versions/A/SDL2_image" ]; then
-		mv tmp/SDL2_image/SDL2_image.framework/Versions/A/SDL2_image macos-deps/SDL2_image.dylib
-	else
-		mv tmp/SDL2_image.framework/Versions/A/SDL2_image macos-deps/SDL2_image.dylib
-	fi
-	rm -rf tmp/SDL2_image tmp/SDL2_image.framework tmp/mnt
+	mv tmp/SDL2_image.framework/Versions/A/SDL2_image macos-deps/SDL2_image.dylib
+	rm -rf tmp/SDL2_image.framework
 fi
 
 if [ ! -e "macos-deps/libavcodec.dylib" ]; then
