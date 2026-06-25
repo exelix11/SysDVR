@@ -1,0 +1,487 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		670CB1B22FEDAFD4001B9395 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB19B2FEDAAD5001B9395 /* SDL2.framework */; };
+		670CB1B32FEDAFD4001B9395 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB19B2FEDAAD5001B9395 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1B52FEDAFDA001B9395 /* ffmpegkit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A02FEDAB7D001B9395 /* ffmpegkit.xcframework */; };
+		670CB1B62FEDAFDA001B9395 /* ffmpegkit.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A02FEDAB7D001B9395 /* ffmpegkit.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1B72FEDAFDA001B9395 /* libavcodec.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A12FEDAB7D001B9395 /* libavcodec.xcframework */; };
+		670CB1B82FEDAFDA001B9395 /* libavcodec.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A12FEDAB7D001B9395 /* libavcodec.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1B92FEDAFDA001B9395 /* libavdevice.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A22FEDAB7D001B9395 /* libavdevice.xcframework */; };
+		670CB1BA2FEDAFDA001B9395 /* libavdevice.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A22FEDAB7D001B9395 /* libavdevice.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1BB2FEDAFDA001B9395 /* libavfilter.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A32FEDAB7D001B9395 /* libavfilter.xcframework */; };
+		670CB1BC2FEDAFDA001B9395 /* libavfilter.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A32FEDAB7D001B9395 /* libavfilter.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1BD2FEDAFDA001B9395 /* libavformat.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A42FEDAB7D001B9395 /* libavformat.xcframework */; };
+		670CB1BE2FEDAFDA001B9395 /* libavformat.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A42FEDAB7D001B9395 /* libavformat.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1BF2FEDAFDA001B9395 /* libavutil.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A52FEDAB7D001B9395 /* libavutil.xcframework */; };
+		670CB1C02FEDAFDA001B9395 /* libavutil.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A52FEDAB7D001B9395 /* libavutil.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1C12FEDAFDA001B9395 /* libswresample.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A62FEDAB7D001B9395 /* libswresample.xcframework */; };
+		670CB1C22FEDAFDA001B9395 /* libswresample.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A62FEDAB7D001B9395 /* libswresample.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		670CB1C32FEDAFDA001B9395 /* libswscale.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A72FEDAB7D001B9395 /* libswscale.xcframework */; };
+		670CB1C42FEDAFDA001B9395 /* libswscale.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 670CB1A72FEDAB7D001B9395 /* libswscale.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		67C6A9302FEDBBCC0039B2E3 /* sysDVR.icon in Resources */ = {isa = PBXBuildFile; fileRef = 67C6A92F2FEDBBCC0039B2E3 /* sysDVR.icon */; };
+		67F9EBE52FEDB361004F92B2 /* SysDVR-Client.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 67F9EBE42FEDB361004F92B2 /* SysDVR-Client.dylib */; };
+		67F9EBE62FEDB361004F92B2 /* SysDVR-Client.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 67F9EBE42FEDB361004F92B2 /* SysDVR-Client.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		67F9EBE82FEDB789004F92B2 /* libcimgui.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 67F9EBE72FEDB789004F92B2 /* libcimgui.dylib */; };
+		67F9EBE92FEDB789004F92B2 /* libcimgui.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 67F9EBE72FEDB789004F92B2 /* libcimgui.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		670CB1B42FEDAFD4001B9395 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				67F9EBE62FEDB361004F92B2 /* SysDVR-Client.dylib in Embed Frameworks */,
+				67F9EBE92FEDB789004F92B2 /* libcimgui.dylib in Embed Frameworks */,
+				670CB1BA2FEDAFDA001B9395 /* libavdevice.xcframework in Embed Frameworks */,
+				670CB1BE2FEDAFDA001B9395 /* libavformat.xcframework in Embed Frameworks */,
+				670CB1C22FEDAFDA001B9395 /* libswresample.xcframework in Embed Frameworks */,
+				670CB1B32FEDAFD4001B9395 /* SDL2.framework in Embed Frameworks */,
+				670CB1B82FEDAFDA001B9395 /* libavcodec.xcframework in Embed Frameworks */,
+				670CB1BC2FEDAFDA001B9395 /* libavfilter.xcframework in Embed Frameworks */,
+				670CB1C02FEDAFDA001B9395 /* libavutil.xcframework in Embed Frameworks */,
+				670CB1C42FEDAFDA001B9395 /* libswscale.xcframework in Embed Frameworks */,
+				670CB1B62FEDAFDA001B9395 /* ffmpegkit.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		670CB1412FEDA7B4001B9395 /* sysDVR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sysDVR.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		670CB19B2FEDAAD5001B9395 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
+		670CB1A02FEDAB7D001B9395 /* ffmpegkit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ffmpegkit.xcframework; sourceTree = "<group>"; };
+		670CB1A12FEDAB7D001B9395 /* libavcodec.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libavcodec.xcframework; sourceTree = "<group>"; };
+		670CB1A22FEDAB7D001B9395 /* libavdevice.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libavdevice.xcframework; sourceTree = "<group>"; };
+		670CB1A32FEDAB7D001B9395 /* libavfilter.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libavfilter.xcframework; sourceTree = "<group>"; };
+		670CB1A42FEDAB7D001B9395 /* libavformat.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libavformat.xcframework; sourceTree = "<group>"; };
+		670CB1A52FEDAB7D001B9395 /* libavutil.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libavutil.xcframework; sourceTree = "<group>"; };
+		670CB1A62FEDAB7D001B9395 /* libswresample.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libswresample.xcframework; sourceTree = "<group>"; };
+		670CB1A72FEDAB7D001B9395 /* libswscale.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libswscale.xcframework; sourceTree = "<group>"; };
+		67C6A92F2FEDBBCC0039B2E3 /* sysDVR.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = sysDVR.icon; sourceTree = "<group>"; };
+		67F9EBE42FEDB361004F92B2 /* SysDVR-Client.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "SysDVR-Client.dylib"; path = "../../../ios-build/device/SysDVR-Client.dylib"; sourceTree = "<group>"; };
+		67F9EBE72FEDB789004F92B2 /* libcimgui.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcimgui.dylib; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		670CB1552FEDA7B4001B9395 /* Exceptions for "sysDVR" folder in "sysDVR" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 670CB1402FEDA7B4001B9395 /* sysDVR */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		670CB1432FEDA7B4001B9395 /* sysDVR */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				670CB1552FEDA7B4001B9395 /* Exceptions for "sysDVR" folder in "sysDVR" target */,
+			);
+			path = sysDVR;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		670CB13E2FEDA7B4001B9395 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67F9EBE52FEDB361004F92B2 /* SysDVR-Client.dylib in Frameworks */,
+				67F9EBE82FEDB789004F92B2 /* libcimgui.dylib in Frameworks */,
+				670CB1B92FEDAFDA001B9395 /* libavdevice.xcframework in Frameworks */,
+				670CB1BD2FEDAFDA001B9395 /* libavformat.xcframework in Frameworks */,
+				670CB1C12FEDAFDA001B9395 /* libswresample.xcframework in Frameworks */,
+				670CB1B22FEDAFD4001B9395 /* SDL2.framework in Frameworks */,
+				670CB1B72FEDAFDA001B9395 /* libavcodec.xcframework in Frameworks */,
+				670CB1BB2FEDAFDA001B9395 /* libavfilter.xcframework in Frameworks */,
+				670CB1BF2FEDAFDA001B9395 /* libavutil.xcframework in Frameworks */,
+				670CB1C32FEDAFDA001B9395 /* libswscale.xcframework in Frameworks */,
+				670CB1B52FEDAFDA001B9395 /* ffmpegkit.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		670CB1382FEDA7B4001B9395 = {
+			isa = PBXGroup;
+			children = (
+				670CB1432FEDA7B4001B9395 /* sysDVR */,
+				670CB1962FEDAAC4001B9395 /* Frameworks */,
+				670CB1422FEDA7B4001B9395 /* Products */,
+				670CB19B2FEDAAD5001B9395 /* SDL2.framework */,
+				670CB1A02FEDAB7D001B9395 /* ffmpegkit.xcframework */,
+				670CB1A12FEDAB7D001B9395 /* libavcodec.xcframework */,
+				670CB1A22FEDAB7D001B9395 /* libavdevice.xcframework */,
+				670CB1A32FEDAB7D001B9395 /* libavfilter.xcframework */,
+				670CB1A42FEDAB7D001B9395 /* libavformat.xcframework */,
+				670CB1A52FEDAB7D001B9395 /* libavutil.xcframework */,
+				670CB1A62FEDAB7D001B9395 /* libswresample.xcframework */,
+				670CB1A72FEDAB7D001B9395 /* libswscale.xcframework */,
+				67C6A92F2FEDBBCC0039B2E3 /* sysDVR.icon */,
+			);
+			sourceTree = "<group>";
+		};
+		670CB1422FEDA7B4001B9395 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				670CB1412FEDA7B4001B9395 /* sysDVR.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		670CB1962FEDAAC4001B9395 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				67F9EBE72FEDB789004F92B2 /* libcimgui.dylib */,
+				67F9EBE42FEDB361004F92B2 /* SysDVR-Client.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		670CB1402FEDA7B4001B9395 /* sysDVR */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 670CB1562FEDA7B4001B9395 /* Build configuration list for PBXNativeTarget "sysDVR" */;
+			buildPhases = (
+				670CB13D2FEDA7B4001B9395 /* Sources */,
+				670CB13E2FEDA7B4001B9395 /* Frameworks */,
+				670CB13F2FEDA7B4001B9395 /* Resources */,
+				670CB1B42FEDAFD4001B9395 /* Embed Frameworks */,
+				67F9EBF82FEDB789004F92B2 /* Copy Runtimes Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				670CB1432FEDA7B4001B9395 /* sysDVR */,
+			);
+			name = sysDVR;
+			packageProductDependencies = (
+			);
+			productName = sysDVR;
+			productReference = 670CB1412FEDA7B4001B9395 /* sysDVR.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		670CB1392FEDA7B4001B9395 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					670CB1402FEDA7B4001B9395 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+				};
+			};
+			buildConfigurationList = 670CB13C2FEDA7B4001B9395 /* Build configuration list for PBXProject "sysDVR" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 670CB1382FEDA7B4001B9395;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 670CB1422FEDA7B4001B9395 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				670CB1402FEDA7B4001B9395 /* sysDVR */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		670CB13F2FEDA7B4001B9395 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67C6A9302FEDBBCC0039B2E3 /* sysDVR.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		67F9EBF82FEDB789004F92B2 /* Copy Runtimes Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Runtimes Resources";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/runtimes\"\ncp -R \"${SRCROOT}/../../Resources/resources\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/runtimes/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		670CB13D2FEDA7B4001B9395 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		670CB1572FEDA7B4001B9395 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = sysDVR;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7WPGC5G5X8;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = sysDVR/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = metal;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "/Users/hdrifi/SysDVR/Client/ios-build/device/SysDVR-Client.dylib";
+				PRODUCT_BUNDLE_IDENTIFIER = hdrifi.sysDVR;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		670CB1582FEDA7B4001B9395 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = sysDVR;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7WPGC5G5X8;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = sysDVR/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = metal;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "/Users/hdrifi/SysDVR/Client/ios-build/device/SysDVR-Client.dylib";
+				PRODUCT_BUNDLE_IDENTIFIER = hdrifi.sysDVR;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		670CB1592FEDA7B4001B9395 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 7WPGC5G5X8;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		670CB15A2FEDA7B4001B9395 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 7WPGC5G5X8;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		670CB13C2FEDA7B4001B9395 /* Build configuration list for PBXProject "sysDVR" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				670CB1592FEDA7B4001B9395 /* Debug */,
+				670CB15A2FEDA7B4001B9395 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		670CB1562FEDA7B4001B9395 /* Build configuration list for PBXNativeTarget "sysDVR" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				670CB1572FEDA7B4001B9395 /* Debug */,
+				670CB1582FEDA7B4001B9395 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 670CB1392FEDA7B4001B9395 /* Project object */;
+}
