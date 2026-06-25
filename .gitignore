@@ -375,3 +375,12 @@ Client/Platform/Resources/linux-x64/native/
 
 # iOS AOT compiler build output
 Client/ios-build/
+
+# OS metadata files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
