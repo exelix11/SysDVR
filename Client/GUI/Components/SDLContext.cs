@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using SDL2;
 using SysDVR.Client.Core;
 using System;
@@ -46,7 +46,7 @@ namespace SysDVR.Client.GUI.Components
 
         // On android we must manually check for when imgui needs the keyboard and open it
         // TODO: Will this also open the keyboard when there's a physical one connected?
-#if ANDROID_LIB
+#if ANDROID_LIB || IOS_LIB
 		bool usingTextinput;
 #endif
 
@@ -74,8 +74,10 @@ namespace SysDVR.Client.GUI.Components
 
             SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK).AssertZero(SDL_GetError);
 
+#if !IOS_LIB
             var flags = SDL_image.IMG_InitFlags.IMG_INIT_JPG | SDL_image.IMG_InitFlags.IMG_INIT_PNG;
             SDL_image.IMG_Init(flags).AssertEqual((int)flags, SDL_image.IMG_GetError);
+#endif
 
             SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 
@@ -229,8 +231,8 @@ namespace SysDVR.Client.GUI.Components
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StartMobileTextInput()
         {
-#if !ANDROID_LIB
-            throw new Exception("This method is only valid on android");
+#if !ANDROID_LIB && !IOS_LIB
+            throw new Exception("This method is only valid on mobile");
 #else
 			if (usingTextinput)
 				return;
@@ -243,8 +245,8 @@ namespace SysDVR.Client.GUI.Components
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StopMobileTextInput()
         {
-#if !ANDROID_LIB
-            throw new Exception("This method is only valid on android");
+#if !ANDROID_LIB && !IOS_LIB
+            throw new Exception("This method is only valid on mobile");
 #else
 			if (!usingTextinput)
 				return;

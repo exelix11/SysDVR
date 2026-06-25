@@ -39,8 +39,10 @@ namespace SDL2
 	{
 		static SDL()
 		{
+#if !IOS_LIB
 			if (OperatingSystem.IsIOS())
 				NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, (_, assembly, path) => NativeLibrary.Load("@rpath/SDL2.framework/SDL2", assembly, path));
+#endif
 		}
 
 		#region SDL2# Variables

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -10,7 +10,7 @@ namespace SysDVR.Client.Platform
 	{
 		public static bool OpenURL(string url)
 		{
-#if ANDROID_LIB
+#if ANDROID_LIB || IOS_LIB
             return Program.Native.SysOpenURL(url);
 #else
 			try

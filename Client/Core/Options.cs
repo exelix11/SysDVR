@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -114,6 +114,8 @@ namespace SysDVR.Client.Core
         {
 #if ANDROID_LIB
             return "/sdcard/Movies";  
+#elif IOS_LIB
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 #else
             if (Program.IsWindows)
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
@@ -128,6 +130,8 @@ namespace SysDVR.Client.Core
         {
 #if ANDROID_LIB
             return "/sdcard/Pictures";  
+#elif IOS_LIB
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 #else
             if (Program.IsWindows)
                 return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
@@ -45,8 +45,8 @@
 		<PublishTrimmed>true</PublishTrimmed>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="$(SysDvrTarget)!='android'">
-		<!--On android we build as a shared library that is loaded by the SDL java shell-->
+	<PropertyGroup Condition="$(SysDvrTarget)!='android' And $(SysDvrTarget)!='ios'">
+		<!--On android/ios we build as a shared library that is loaded by the native shell-->
 		<!--On other platforms we build as a standalone executable-->
 		<OutputType>Exe</OutputType>
 	</PropertyGroup>
@@ -57,6 +57,11 @@
 
 	<PropertyGroup Condition="$(SysDvrTarget)=='android'">
 		<DefineConstants>$(DefineConstants);ANDROID_LIB</DefineConstants>
+		<PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$(SysDvrTarget)=='ios'">
+		<DefineConstants>$(DefineConstants);IOS_LIB</DefineConstants>
 		<PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
 	</PropertyGroup>
 

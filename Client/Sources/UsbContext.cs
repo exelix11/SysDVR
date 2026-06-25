@@ -1,4 +1,4 @@
-﻿using LibUsbDotNet.LibUsb;
+using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using SysDVR.Client.Core;
 using System;
@@ -65,6 +65,7 @@ namespace SysDVR.Client.Sources
             set
             {
                 _debugLevel = value;
+#if !IOS_LIB
                 LibUsbCtx.SetDebugLevel(value switch
                 {
                     UsbLogLevel.Error => LibUsbDotNet.LogLevel.Error,
@@ -72,6 +73,7 @@ namespace SysDVR.Client.Sources
                     UsbLogLevel.Debug => LibUsbDotNet.LogLevel.Debug,
                     _ => LibUsbDotNet.LogLevel.None,
                 });
+#endif
             }
             get => _debugLevel;
         }
@@ -79,7 +81,9 @@ namespace SysDVR.Client.Sources
         public DvrUsbContext(UsbLogLevel logLevel = UsbLogLevel.Error)
         {
             //Program.Instance.BugCheckThreadId();
-
+#if IOS_LIB
+            throw new NotSupportedException("USB streaming is not supported on iOS");
+#else
             if (LibUsbCtx == null)
             {
 #if ANDROID_LIB
@@ -92,9 +96,15 @@ namespace SysDVR.Client.Sources
             }
 
             DebugLevel = logLevel;
+#endif
         }
 
-#if ANDROID_LIB
+#if IOS_LIB
+        public DisposableCollection<DvrUsbDevice> FindSysdvrDevices()
+        {
+            return new(new List<DvrUsbDevice>());
+        }
+#elif ANDROID_LIB
         public DisposableCollection<DvrUsbDevice> FindSysdvrDevices()
         {
             Program.Native.EnsureThreadAttached();

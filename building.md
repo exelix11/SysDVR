@@ -72,3 +72,16 @@ You can debug library loading issues by launching the client with the `--debug d
 ## Dependencies for Android
 
 Android builds require the APK to include the native libraries, we use the android NDK preferred way of doing this by copying them to the `app/jni` folder, some are built from source while others are downloaded from github build feeds.
+
+## Dependencies for iOS
+
+All required iOS dependencies (`SDL2.framework`, FFmpeg `.xcframework`s, and `libcimgui.dylib`) are already precompiled and included in the repository under `Client/Platform/iOS/sysDVR/`. You do not need to download or compile them manually to build the project.
+
+If you ever need to update or rebuild them:
+1. **FFmpeg XCFrameworks**: 
+   - Download the updated packages from [ffmpeg-kit releases](https://github.com/exelix11/ffmpeg-kit/releases).
+   - Replace the `.xcframework` folders under `Client/Platform/iOS/sysDVR/`.
+2. **SDL2 Framework**:
+   - Rebuild `SDL2.framework` from the official SDL2 source Xcode project, and copy it to `Client/Platform/iOS/sysDVR/`.
+3. **Cimgui**:
+   - Recompile by running the `Client/Platform/iOS/BuildCimgui.sh` script.

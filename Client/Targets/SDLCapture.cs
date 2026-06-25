@@ -1,4 +1,4 @@
-﻿using SysDVR.Client.Core;
+using SysDVR.Client.Core;
 using System;
 using System.Runtime.InteropServices;
 
@@ -95,8 +95,12 @@ namespace SysDVR.Client.Targets
 
 		public static unsafe void ExportTexture(IntPtr texture, string savePath) 
         {
+#if IOS_LIB
+            throw new NotSupportedException("Taking screenshots is not supported on iOS");
+#else
 			using var capture = CaptureTexture(texture);
 			IMG_SavePNG((IntPtr)capture.surface, savePath).AssertZero(IMG_GetError);
+#endif
 		}
 	}
 }

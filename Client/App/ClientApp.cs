@@ -1,4 +1,4 @@
-﻿namespace SysDVR.Client.App;
+namespace SysDVR.Client.App;
 
 using ImGuiNET;
 using SDL2;
@@ -353,7 +353,7 @@ public class ClientApp : IApplicationInstance
 
 				ImGuiSDL2Impl.ProcessEvent(in evt);
 
-#if ANDROID_LIB
+#if ANDROID_LIB || IOS_LIB
                 if (ImGui.GetIO().WantTextInput)
 					sdlCtx.StartMobileTextInput();
 				else if (!ImGui.GetIO().WantTextInput)

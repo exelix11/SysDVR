@@ -1,4 +1,4 @@
-﻿using SDL2;
+using SDL2;
 using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-#if ANDROID_LIB
+#if ANDROID_LIB || IOS_LIB
 using System.Runtime.InteropServices;
 #endif
 
@@ -27,12 +27,21 @@ namespace SysDVR.Client
 		public readonly static bool IsLinux = false;
         public readonly static bool IsContainerApp = false;
 		public readonly static bool IsAndroid = true;
+		public readonly static bool IsIOS = false;
+#elif IOS_LIB
+		public readonly static bool IsWindows = false;
+		public readonly static bool IsMacOs = false;
+		public readonly static bool IsLinux = false;
+        public readonly static bool IsContainerApp = false;
+		public readonly static bool IsAndroid = false;
+		public readonly static bool IsIOS = true;
 #else
         public readonly static bool IsWindows = OperatingSystem.IsWindows();
         public readonly static bool IsMacOs = OperatingSystem.IsMacOS();
         public readonly static bool IsLinux = OperatingSystem.IsLinux();
         public readonly static bool IsContainerApp = false;
         public readonly static bool IsAndroid = false;
+        public readonly static bool IsIOS = OperatingSystem.IsIOS();
 #endif
 
         static Program()
@@ -69,7 +78,7 @@ namespace SysDVR.Client
         public static readonly string BuildID = ThisAssembly.Git.Commit.ToString();
 
         public static Options Options = new();
-#if ANDROID_LIB
+#if ANDROID_LIB || IOS_LIB
         public static NativeInitBlock Native;
 
 	    [UnmanagedCallersOnly(EntryPoint = "sysdvr_entrypoint")]

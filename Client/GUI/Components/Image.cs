@@ -1,4 +1,4 @@
-﻿using SDL2;
+using SDL2;
 using SysDVR.Client.App;
 using System;
 
@@ -24,11 +24,29 @@ namespace SysDVR.Client.GUI.Components
 
         public static Image FromFile(ClientApp owner, string filename)
         {
+#if IOS_LIB
+            if (filename.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                filename = filename.Substring(0, filename.Length - 4) + ".bmp";
+            }
+            var surface = SDL.SDL_LoadBMP(filename);
+            if (surface == nint.Zero)
+                throw new Exception($"Loading BMP image {filename} failed: {SDL.SDL_GetError()}");
+
+            var tex = SDL.SDL_CreateTextureFromSurface(Program.SdlCtx.RendererHandle, surface);
+            SDL.SDL_FreeSurface(surface);
+
+            if (tex == nint.Zero)
+                throw new Exception($"Creating texture from surface {filename} failed: {SDL.SDL_GetError()}");
+
+            return new Image(owner, tex);
+#else
             var tex = SDL_image.IMG_LoadTexture(Program.SdlCtx.RendererHandle, filename);
             if (tex == nint.Zero)
                 throw new Exception($"Loading image {filename} failed: {SDL_image.IMG_GetError()}");
 
             return new Image(owner, tex);
+#endif
         }
 
         // W / w = H / h  h = w * H / W

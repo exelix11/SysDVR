@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using SysDVR.Client.App;
 using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
@@ -107,7 +107,7 @@ namespace SysDVR.Client.GUI
                 y += 20 * uiScale + ModeButtonHeight;
 
                 ImGui.SetCursorPos(new(center, y));
-                usb = ModeButton(UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight, Program.IsIOS);
 
                 y += ModeButtonHeight;
             }
@@ -118,7 +118,7 @@ namespace SysDVR.Client.GUI
                 wifi = ModeButton(WifiIcon, Strings.NetworkButton, ModeButtonWidth, ModeButtonHeight);
 
                 ImGui.SetCursorPos(new(center + ModeButtonWidth + 20, y));
-                usb = ModeButton(UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight);
+                usb = ModeButton(UsbIcon, Strings.USBButton, ModeButtonWidth, ModeButtonHeight, Program.IsIOS);
 
                 y += ModeButtonHeight;
             }
@@ -215,8 +215,11 @@ namespace SysDVR.Client.GUI
             return opt;
         }
 
-		bool ModeButton(Image image, string title, int width, int height)
+		bool ModeButton(Image image, string title, int width, int height, bool disabled = false)
         {
+            if (disabled)
+                ImGui.BeginDisabled(true);
+
             float InnerPadding = 15 * uiScale;
 
             // This is what we're looking for:
@@ -270,7 +273,10 @@ namespace SysDVR.Client.GUI
             ImGui.SetCursorPos(new Vector2(x + width / 2 - imageFrame.X / 2, y));
             ImGui.Image(image.Texture, imageFrame);
 
-            return btn;
+            if (disabled)
+                ImGui.EndDisabled();
+
+            return disabled ? false : btn;
         }
     }
 }

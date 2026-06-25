@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -29,6 +29,8 @@ namespace SysDVR.Client.Platform
                     return "win";
                 if (Program.IsMacOs)
                     return "osx";
+                if (Program.IsIOS)
+                    return "ios";
                 else return "linux";
             }
         }
@@ -81,7 +83,7 @@ namespace SysDVR.Client.Platform
             var libext = ".so";
                 
             if (Program.IsWindows) libext = ".dll";
-            else if (Program.IsMacOs) libext = ".dylib";
+            else if (Program.IsMacOs || Program.IsIOS) libext = ".dylib";
 
             if (!libraryName.EndsWith(libext))
                 libraryName += libext;
@@ -121,6 +123,31 @@ namespace SysDVR.Client.Platform
 
 		public static IntPtr TryLoadLibrary(string libraryName)
         {
+            if (Program.IsIOS)
+            {
+                // Map library name to iOS Framework structure
+                string mappedName = libraryName;
+                if (libraryName.Contains("avcodec")) mappedName = "@rpath/libavcodec.framework/libavcodec";
+                else if (libraryName.Contains("avformat")) mappedName = "@rpath/libavformat.framework/libavformat";
+                else if (libraryName.Contains("avutil")) mappedName = "@rpath/libavutil.framework/libavutil";
+                else if (libraryName.Contains("swscale")) mappedName = "@rpath/libswscale.framework/libswscale";
+                else if (libraryName.Contains("swresample")) mappedName = "@rpath/libswresample.framework/libswresample";
+                else if (libraryName.Contains("avdevice")) mappedName = "@rpath/libavdevice.framework/libavdevice";
+                else if (libraryName.Contains("avfilter")) mappedName = "@rpath/libavfilter.framework/libavfilter";
+                else if (libraryName.Contains("ffmpegkit")) mappedName = "@rpath/ffmpegkit.framework/ffmpegkit";
+                else if (libraryName.Contains("SDL2")) mappedName = "@rpath/SDL2.framework/SDL2";
+                else if (libraryName.Contains("cimgui")) mappedName = "@rpath/libcimgui.dylib";
+
+                if (NativeLibrary.TryLoad(mappedName, out var result))
+                    return result;
+
+                // Fallback to direct load
+                if (NativeLibrary.TryLoad(libraryName, out result))
+                    return result;
+
+                return IntPtr.Zero;
+            }
+
             var debug = Program.Options.Debug.DynLib;
             
             var paths = FindNativeLibrary(libraryName)
@@ -175,6 +202,9 @@ namespace SysDVR.Client.Platform
             AndroidQuerySysPaths(out var native, out var managed);
             if (!AndroidCheckDependencies(native, managed))
                throw new Exception("Native android dependencies are missing, possibly they are missing from the APK path. Note that on android SysDVR supports only arm64 builds.");
+#elif IOS_LIB
+            // Register the smart unified resolver on iOS for both SDL2 and cimgui
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), CachedLibraryloader);
 #else
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), CachedLibraryloader);
 

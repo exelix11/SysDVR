@@ -372,3 +372,6 @@ Client/Platform/Linux/tmp/
 Client/Platform/Linux/shared-modules/
 Client/Platform/Linux-x64.zip
 Client/Platform/Resources/linux-x64/native/
+
+# iOS AOT compiler build output
+Client/ios-build/

@@ -1,0 +1,31 @@
+name: SysDVR-Client ios
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: "9.x"
+
+    - name: Install iOS Workload
+      run: dotnet workload install ios
+
+    - name: Run build script
+      shell: bash
+      run: |
+        cd Client/Platform/iOS/
+        chmod +x BuildIpa.sh
+        ./BuildIpa.sh
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SysDVR-Client-iOS-unsigned
+        path: Client/ios-build/sysDVR-unsigned.ipa

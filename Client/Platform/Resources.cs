@@ -1,4 +1,4 @@
-﻿using SysDVR.Client.Core;
+using SysDVR.Client.Core;
 using SysDVR.Client.GUI.Components;
 using System;
 using System.Collections.Generic;
@@ -128,7 +128,11 @@ namespace SysDVR.Client.Platform
 		public static string? SettingsStorePath()
 		{
 			string? path = null;
-			if (Program.IsContainerApp)
+			if (Program.IsIOS)
+			{
+				path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+			}
+			else if (Program.IsContainerApp)
 			{
 				// https://github.com/exelix11/SysDVR/issues/255
 				if (Program.IsLinux)
