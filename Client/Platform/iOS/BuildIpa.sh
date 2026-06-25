@@ -62,8 +62,7 @@ echo "=== 3/5 Embedding Dynamic Libraries and Resources ==="
 mkdir -p "$APP_PATH/Frameworks"
 cp -f "$CLIENT_DIR/ios-build/device/SysDVR-Client.dylib" "$APP_PATH/Frameworks/SysDVR-Client.dylib"
 cp -f "$SCRIPT_DIR/sysDVR/libcimgui.dylib" "$APP_PATH/Frameworks/libcimgui.dylib"
-cp -R "$CLIENT_DIR/ios-build/device/runtimes" "$APP_PATH/"
-echo "Embedded SysDVR-Client.dylib, libcimgui.dylib and runtimes resources in sysDVR.app/"
+echo "Embedded SysDVR-Client.dylib and libcimgui.dylib in sysDVR.app/"
 echo ""
 
 # 4. Package Unsigned IPA

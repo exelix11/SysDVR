@@ -384,6 +384,3 @@ Client/ios-build/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Cimgui cross build tool
-CimguiSDL2Cross/
