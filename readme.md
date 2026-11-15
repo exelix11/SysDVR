@@ -16,7 +16,8 @@ This is a sysmodule that allows capturing the running game output to a pc via US
 - Stream via USB or Wifi.
 - **Video quality is fixed to 720p @ 30fps with h264 compression, this is a hardware limit**.
 - Audio quality is fixed to 16bit PCM @ 48kHz stereo. Not compressed.
-- Very low latency with an optimal setup, most games are playable !
+- Uses native gameplay recording, without affecting game performances.
+- Not vibecoded
 
 # Limitations
 - **Only works on games that have video recording enabled** (aka you can long-press the capture button to save a video)
